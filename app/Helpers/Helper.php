@@ -1027,11 +1027,22 @@ if (!function_exists('FeeMonthId')) {
         if($syear==''){
             $syear = session()->get('syear');
         }
+        // Fee reports call this several times PER STUDENT with the same school/year (fees defaulters
+        // alone ran it ~5x per student), and map_year changes only when an admin edits the fee year.
+        // Reuse the result for 30s so long-lived workers still pick up edits.
+        static $memo = [];
+        $memoKey = $sub_institute_id . '|' . $syear;
+        if (isset($memo[$memoKey]) && (time() - $memo[$memoKey][0]) < 30) {
+            return $memo[$memoKey][1];
+        }
+
         $data = map_year::where([
             'sub_institute_id' => $sub_institute_id,
             'syear' => $syear,
         ])->get()->toArray();
         if (count($data) == 0) {
+            $memo[$memoKey] = [time(), array()];
+
             return array();
             exit;
         }
@@ -1056,6 +1067,8 @@ if (!function_exists('FeeMonthId')) {
             }
             ++$start_month;
         }
+
+        $memo[$memoKey] = [time(), $months_arr];
 
         return $months_arr;
     }

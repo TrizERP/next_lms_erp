@@ -299,6 +299,10 @@ class InteractionPlannerTest extends TestCase
                 ['label' => 'A model', 'text' => 'A model is a simplified representation that keeps only what matters.'],
                 ['label' => 'A copy', 'text' => 'A copy would keep every detail, which a model ignores on purpose.'],
             ]],
+            'reveal whose cards are numbered placeholders' => ['kind' => 'reveal', 'intro' => 'Select a card.', 'items' => [
+                ['label' => 'Key idea 1', 'text' => 'A model is a simplified representation that keeps only what matters.'],
+                ['label' => 'Key idea 2', 'text' => 'A copy would keep every detail, which a model ignores on purpose.'],
+            ]],
             'match with two pairs' => ['kind' => 'match', 'intro' => 'Pair them.', 'pairs' => [
                 ['term' => 'Model', 'meaning' => 'A simplified representation of a real system.'],
                 ['term' => 'Law', 'meaning' => 'Describes a repeated pattern.'],

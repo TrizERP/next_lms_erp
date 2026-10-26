@@ -1,0 +1,3747 @@
+[
+    {
+        "concept": {
+            "concept_id": "CCS-01",
+            "concept_name": "Cartesian Coordinate System",
+            "concept_type": "Concept",
+            "definition": "A two-dimensional coordinate system that uses two perpendicular lines (x-axis horizontal, y-axis vertical) intersecting at the origin (0,0) to locate points using ordered pairs, with sign conventions for positive/negative directions.",
+            "importance": "Core",
+            "difficulty": "Medium",
+            "confidence": 0.95
+        },
+        "knowledge_items": [
+            {
+                "knowledge": "Two perpendicular lines",
+                "statement": "The two-dimensional coordinate system uses two lines at right angles to each other to mark points in two-dimensional space.",
+                "knowledge_type": "Fact",
+                "confidence": 0.95,
+                "concept_name": "Cartesian Coordinate System"
+            },
+            {
+                "knowledge": "x-axis definition",
+                "statement": "The horizontal line is called the x-axis.",
+                "knowledge_type": "Definition",
+                "confidence": 0.99,
+                "concept_name": "Cartesian Coordinate System"
+            },
+            {
+                "knowledge": "y-axis definition",
+                "statement": "The vertical line is called the y-axis.",
+                "knowledge_type": "Definition",
+                "confidence": 0.99,
+                "concept_name": "Cartesian Coordinate System"
+            },
+            {
+                "knowledge": "Origin definition",
+                "statement": "The point of intersection of the x-axis and y-axis is called the origin O; its coordinates are (0, 0).",
+                "knowledge_type": "Definition",
+                "confidence": 0.99,
+                "concept_name": "Cartesian Coordinate System"
+            },
+            {
+                "knowledge": "Purpose of axes",
+                "statement": "Coordinate axes help to locate any point in 2-D space using the point's coordinates.",
+                "knowledge_type": "Fact",
+                "confidence": 0.95,
+                "concept_name": "Cartesian Coordinate System"
+            },
+            {
+                "knowledge": "Equal unit distances",
+                "statement": "Distances from O are marked off in equal units on both axes.",
+                "knowledge_type": "Fact",
+                "confidence": 0.95,
+                "concept_name": "Cartesian Coordinate System"
+            },
+            {
+                "knowledge": "Sign conventions",
+                "statement": "Distances to the right of O or upwards from O are considered positive, and distances to the left of O or downwards from O are considered negative.",
+                "knowledge_type": "Rule",
+                "confidence": 0.99,
+                "concept_name": "Cartesian Coordinate System"
+            }
+        ],
+        "abilities": [
+            {
+                "ability": "Explain Cartesian coordinate system",
+                "verb": "Explain",
+                "description": "Explain the components of the Cartesian coordinate system: x-axis, y-axis, and origin, and their roles in locating points.",
+                "knowledge_refs": [
+                    "Two perpendicular lines",
+                    "x-axis definition",
+                    "y-axis definition",
+                    "Origin definition",
+                    "Purpose of axes"
+                ],
+                "concept_name": "Cartesian Coordinate System"
+            },
+            {
+                "ability": "Interpret sign conventions",
+                "verb": "Interpret",
+                "description": "Interpret the sign conventions for positive and negative directions along the axes.",
+                "knowledge_refs": [
+                    "Sign conventions"
+                ],
+                "concept_name": "Cartesian Coordinate System"
+            }
+        ],
+        "skills": [
+            {
+                "skill": "Spatial Reasoning",
+                "ability_refs": [
+                    "Explain Cartesian coordinate system",
+                    "Interpret sign conventions"
+                ],
+                "concept_name": "Cartesian Coordinate System"
+            },
+            {
+                "skill": "Communication",
+                "ability_refs": [
+                    "Explain Cartesian coordinate system"
+                ],
+                "concept_name": "Cartesian Coordinate System"
+            },
+            {
+                "skill": "Logical Reasoning",
+                "ability_refs": [
+                    "Interpret sign conventions"
+                ],
+                "concept_name": "Cartesian Coordinate System"
+            }
+        ],
+        "competencies": [
+            {
+                "competency": "Cartesian Coordinate System Understanding",
+                "statement": "Communicate the structure of the Cartesian coordinate system and interpret sign conventions to determine point locations in 2-D space.",
+                "knowledge_refs": [
+                    "Two perpendicular lines",
+                    "x-axis definition",
+                    "y-axis definition",
+                    "Origin definition",
+                    "Purpose of axes",
+                    "Equal unit distances",
+                    "Sign conventions"
+                ],
+                "ability_refs": [
+                    "Explain Cartesian coordinate system",
+                    "Interpret sign conventions"
+                ],
+                "skill_refs": [
+                    "Spatial Reasoning",
+                    "Communication",
+                    "Logical Reasoning"
+                ],
+                "concept_name": "Cartesian Coordinate System"
+            }
+        ],
+        "learning_objectives": [
+            {
+                "objective": "Recall the definitions of the x-axis, y-axis, and origin in the Cartesian coordinate system.",
+                "objective_type": "Knowledge",
+                "priority": "High",
+                "concept_name": "Cartesian Coordinate System"
+            },
+            {
+                "objective": "Explain the sign conventions for measuring distances from the origin along the coordinate axes.",
+                "objective_type": "Ability",
+                "priority": "High",
+                "concept_name": "Cartesian Coordinate System"
+            },
+            {
+                "objective": "Apply sign conventions to determine the coordinates of a point given its direction and distance from the origin.",
+                "objective_type": "Ability",
+                "priority": "Medium",
+                "concept_name": "Cartesian Coordinate System"
+            }
+        ],
+        "learning_outcomes": [
+            {
+                "outcome": "Label the x-axis, y-axis, and origin correctly on a diagram of a coordinate plane.",
+                "outcome_type": "Knowledge Outcome",
+                "measurable": true,
+                "assessment_ready": true,
+                "concept_name": "Cartesian Coordinate System"
+            },
+            {
+                "outcome": "State in writing that distances to the right of the origin on the x-axis and upwards on the y-axis are positive, while distances to the left and downwards are negative.",
+                "outcome_type": "Knowledge Outcome",
+                "measurable": true,
+                "assessment_ready": true,
+                "concept_name": "Cartesian Coordinate System"
+            },
+            {
+                "outcome": "Given a description like '3 units left and 2 units up from the origin,' write the correct ordered pair using the sign conventions.",
+                "outcome_type": "Ability Outcome",
+                "measurable": true,
+                "assessment_ready": true,
+                "concept_name": "Cartesian Coordinate System"
+            }
+        ],
+        "blooms": [
+            {
+                "level": "Remember",
+                "coverage_score": 0.5,
+                "concept_name": "Cartesian Coordinate System"
+            },
+            {
+                "level": "Understand",
+                "coverage_score": 0.5,
+                "concept_name": "Cartesian Coordinate System"
+            }
+        ],
+        "dok": [
+            {
+                "level": "1",
+                "description": "Recall and Reproduction",
+                "concept_name": "Cartesian Coordinate System"
+            },
+            {
+                "level": "2",
+                "description": "Skills and Concepts",
+                "concept_name": "Cartesian Coordinate System"
+            }
+        ],
+        "prerequisites": [
+            {
+                "concept_name": "Number Line",
+                "prerequisite_type": "Concept",
+                "necessity": "Mandatory",
+                "_parent_concept": "Cartesian Coordinate System"
+            },
+            {
+                "concept_name": "Perpendicular Lines",
+                "prerequisite_type": "Concept",
+                "necessity": "Mandatory",
+                "_parent_concept": "Cartesian Coordinate System"
+            },
+            {
+                "concept_name": "Ordered Pairs",
+                "prerequisite_type": "Concept",
+                "necessity": "Mandatory",
+                "_parent_concept": "Cartesian Coordinate System"
+            },
+            {
+                "concept_name": "Positive and Negative Numbers",
+                "prerequisite_type": "Concept",
+                "necessity": "Mandatory",
+                "_parent_concept": "Cartesian Coordinate System"
+            }
+        ],
+        "misconceptions": [
+            {
+                "misconception": "Order of Coordinates",
+                "statement": "Students often think that the y-coordinate comes first in an ordered pair.",
+                "root_cause": "Misremembering the conventional order due to lack of practice or confusion between horizontal and vertical reference.",
+                "correction": "The first number is always the x-coordinate (horizontal distance from the y-axis), and the second is the y-coordinate (vertical distance from the x-axis).",
+                "concept_name": "Cartesian Coordinate System"
+            },
+            {
+                "misconception": "Points on Axes Belong to Quadrants",
+                "statement": "Students sometimes believe that points lying on the axes belong to a quadrant.",
+                "root_cause": "Incomplete understanding of quadrant boundaries; they assume any non-origin point is in some quadrant.",
+                "correction": "Points on the x-axis or y-axis (except the origin) do not lie in any quadrant; quadrants are the four regions strictly between the axes.",
+                "concept_name": "Cartesian Coordinate System"
+            },
+            {
+                "misconception": "Sign Conventions Misapplied",
+                "statement": "Students may incorrectly assume that positive distances always mean upward direction.",
+                "root_cause": "Overgeneralization from the y-axis convention, ignoring the separate x-axis sign rule.",
+                "correction": "On the x-axis, positive is to the right, negative to the left; on the y-axis, positive is upward, negative downward.",
+                "concept_name": "Cartesian Coordinate System"
+            },
+            {
+                "misconception": "Origin Coordinates Confusion",
+                "statement": "Students might think the origin has coordinates like (1,0), (0,1), or other non-zero values.",
+                "root_cause": "Not memorizing the definition that the intersection point is (0,0).",
+                "correction": "The origin is the point where both x and y are zero: (0,0).",
+                "concept_name": "Cartesian Coordinate System"
+            }
+        ],
+        "real_world_applications": [
+            {
+                "application_type": "Daily Life",
+                "example": "Using GPS navigation systems that rely on a coordinate grid to pinpoint locations.",
+                "relevance": "High",
+                "concept_name": "Cartesian Coordinate System"
+            },
+            {
+                "application_type": "Industry",
+                "example": "Architects use coordinate planes to draft building plans and site layouts.",
+                "relevance": "High",
+                "concept_name": "Cartesian Coordinate System"
+            },
+            {
+                "application_type": "Technology",
+                "example": "Video game developers position characters and objects on a 2D screen using Cartesian coordinates.",
+                "relevance": "High",
+                "concept_name": "Cartesian Coordinate System"
+            },
+            {
+                "application_type": "Society",
+                "example": "City planners design street grids with numbered streets and avenues functioning like x and y axes.",
+                "relevance": "High",
+                "concept_name": "Cartesian Coordinate System"
+            }
+        ],
+        "pedagogy_recommendations": [
+            {
+                "strategy": "Activity Based Teaching",
+                "why_effective": "Hands-on plotting of points on graph paper reinforces the connection between ordered pairs and spatial locations, making abstract concepts concrete.",
+                "concept_characteristics": [
+                    "Visual-spatial nature",
+                    "Requires practice for accuracy",
+                    "Concrete representation of abstract concept"
+                ],
+                "concept_name": "Cartesian Coordinate System"
+            },
+            {
+                "strategy": "Game Based Teaching",
+                "why_effective": "Games like Battleship engage students in repetitive practice of identifying and calling out coordinates, reinforcing the order of x and y through fun competition.",
+                "concept_characteristics": [
+                    "Repetitive practice needed",
+                    "Motivation through competition",
+                    "Reinforces x and y order"
+                ],
+                "concept_name": "Cartesian Coordinate System"
+            },
+            {
+                "strategy": "Experiential Based Teaching",
+                "why_effective": "Using a large floor grid allows students to physically move to coordinates, making the abstract system tangible and connecting movement to sign conventions.",
+                "concept_characteristics": [
+                    "Kinesthetic learning",
+                    "Concrete understanding of axes",
+                    "Connecting movement to sign conventions"
+                ],
+                "concept_name": "Cartesian Coordinate System"
+            }
+        ],
+        "assessment_blueprint": [
+            {
+                "assessment_type": "MCQ",
+                "bloom_level": "Remember",
+                "dok_level": "1",
+                "difficulty": "Easy",
+                "marks": 1,
+                "recommended_question": "Which of the following correctly identifies the horizontal and vertical lines? A) x-axis is vertical, y-axis is horizontal B) x-axis is horizontal, y-axis is vertical C) Both are horizontal D) Both are vertical",
+                "concept_name": "Cartesian Coordinate System"
+            },
+            {
+                "assessment_type": "Short Answer",
+                "bloom_level": "Understand",
+                "dok_level": "2",
+                "difficulty": "Medium",
+                "marks": 2,
+                "recommended_question": "Explain the sign conventions used in the Cartesian coordinate system for measuring distances from the origin. Provide an example.",
+                "concept_name": "Cartesian Coordinate System"
+            },
+            {
+                "assessment_type": "Short Answer",
+                "bloom_level": "Apply",
+                "dok_level": "2",
+                "difficulty": "Medium",
+                "marks": 2,
+                "recommended_question": "A point is located 4 units to the left of the origin and 3 units downwards. Write its coordinates and justify your answer using the sign conventions.",
+                "concept_name": "Cartesian Coordinate System"
+            },
+            {
+                "assessment_type": "HOTS",
+                "bloom_level": "Analyze",
+                "dok_level": "3",
+                "difficulty": "Hard",
+                "marks": 3,
+                "recommended_question": "If the sign convention for the x-axis were reversed (i.e., right is negative, left is positive), how would the coordinates of the point that is 2 units to the right and 3 units up from the origin change? Explain the reasoning.",
+                "concept_name": "Cartesian Coordinate System"
+            }
+        ],
+        "concept_relationships": [
+            {
+                "source_concept": "Cartesian Coordinate System",
+                "target_concept": "Number Line",
+                "relation_type": "depends_on"
+            },
+            {
+                "source_concept": "Cartesian Coordinate System",
+                "target_concept": "Perpendicular Lines",
+                "relation_type": "depends_on"
+            },
+            {
+                "source_concept": "Cartesian Coordinate System",
+                "target_concept": "Ordered Pairs",
+                "relation_type": "depends_on"
+            },
+            {
+                "source_concept": "Cartesian Coordinate System",
+                "target_concept": "Positive and Negative Numbers",
+                "relation_type": "depends_on"
+            },
+            {
+                "source_concept": "Cartesian Coordinate System",
+                "target_concept": "Number Line",
+                "relation_type": "extends"
+            }
+        ],
+        "evidence": [
+            {
+                "source_type": "Textbook",
+                "source_text": "The two-dimensional coordinate system uses two lines at right angles to each other to mark points in two-dimensional space (short form: 2-D space)."
+            },
+            {
+                "source_type": "Textbook",
+                "source_text": "For convenience, we consider one of the lines to be horizontal; it is called the x-axis. The other line is vertical; it is called the y-axis."
+            },
+            {
+                "source_type": "Textbook",
+                "source_text": "The point of intersection of the x-axis and y-axis is called the origin 0; its coordinates are (0, 0)."
+            },
+            {
+                "source_type": "Textbook",
+                "source_text": "Coordinate axes (this is the plural of 'axis') help us to locate any point in 2-D space using the point's coordinates."
+            },
+            {
+                "source_type": "Textbook",
+                "source_text": "Distances from 0 are marked off in equal units, on both the axes. Distances to the right of 0 or upwards from are considered positive, and distances to the left of O or downwards from O are considered negative."
+            },
+            {
+                "source_type": "Textbook",
+                "source_text": "In the chapters on integers, rational numbers, and decimals in earlier grades, you studied the number line which is one-dimensional."
+            },
+            {
+                "source_type": "Textbook",
+                "source_text": "The two-dimensional coordinate system uses two lines at right angles to each other to mark points in two-dimensional space."
+            },
+            {
+                "source_type": "Inferred",
+                "source_text": "Common student error: confusing the order of coordinates in an ordered pair, often writing (y, x) instead of (x, y)."
+            },
+            {
+                "source_type": "Inferred",
+                "source_text": "Students often misapply sign conventions, thinking positive always means upward, due to vertical bias from y-axis examples."
+            },
+            {
+                "source_type": "Textbook",
+                "source_text": "For convenience, we consider one of the lines to be horizontal; it is called the x-axis. The other line is vertical; it is called the y-axis."
+            },
+            {
+                "source_type": "Textbook",
+                "source_text": "The point of intersection of the x-axis and y-axis is called the origin O; its coordinates are (0, 0)."
+            },
+            {
+                "source_type": "Textbook",
+                "source_text": "Distances from 0 are marked off in equal units, on both the axes. Distances to the right of O or upwards from O are considered positive, and distances to the left of O or downwards from O are considered negative."
+            }
+        ]
+    },
+    {
+        "concept": {
+            "concept_id": "origin",
+            "concept_name": "Origin",
+            "concept_type": "Definition",
+            "definition": "The point of intersection of the x-axis and y-axis, with coordinates (0, 0).",
+            "importance": "Core",
+            "difficulty": "Easy",
+            "confidence": 1
+        },
+        "knowledge_items": [
+            {
+                "knowledge": "Origin Definition",
+                "statement": "The origin is the point of intersection of the x-axis and y-axis.",
+                "knowledge_type": "Definition",
+                "confidence": 1,
+                "concept_name": "Origin"
+            },
+            {
+                "knowledge": "Origin Coordinates",
+                "statement": "The coordinates of the origin are (0, 0).",
+                "knowledge_type": "Fact",
+                "confidence": 1,
+                "concept_name": "Origin"
+            },
+            {
+                "knowledge": "Origin Role",
+                "statement": "The origin serves as the reference point for the coordinate system, helping to locate any point in 2-D space.",
+                "knowledge_type": "Principle",
+                "confidence": 0.9,
+                "concept_name": "Origin"
+            }
+        ],
+        "abilities": [
+            {
+                "ability": "Explain the origin",
+                "verb": "Explain",
+                "description": "Explain that the origin is the intersection of the x-axis and y-axis and has coordinates (0,0).",
+                "knowledge_refs": [
+                    "Origin Definition",
+                    "Origin Coordinates"
+                ],
+                "concept_name": "Origin"
+            },
+            {
+                "ability": "Interpret the role of origin",
+                "verb": "Interpret",
+                "description": "Interpret the origin as the reference point for locating other points in the coordinate plane.",
+                "knowledge_refs": [
+                    "Origin Role"
+                ],
+                "concept_name": "Origin"
+            },
+            {
+                "ability": "Apply origin concept",
+                "verb": "Apply",
+                "description": "Use the origin to locate points in the first quadrant and other quadrants.",
+                "knowledge_refs": [
+                    "Origin Definition",
+                    "Origin Coordinates"
+                ],
+                "concept_name": "Origin"
+            }
+        ],
+        "skills": [
+            {
+                "skill": "Reasoning",
+                "ability_refs": [
+                    "Explain the origin",
+                    "Interpret the role of origin"
+                ],
+                "concept_name": "Origin"
+            },
+            {
+                "skill": "Communication",
+                "ability_refs": [
+                    "Explain the origin"
+                ],
+                "concept_name": "Origin"
+            },
+            {
+                "skill": "Problem Solving",
+                "ability_refs": [
+                    "Apply origin concept"
+                ],
+                "concept_name": "Origin"
+            }
+        ],
+        "competencies": [
+            {
+                "competency": "Understand Origin",
+                "statement": "Explain the definition and coordinates of the origin and its role in the coordinate system.",
+                "knowledge_refs": [
+                    "Origin Definition",
+                    "Origin Coordinates",
+                    "Origin Role"
+                ],
+                "ability_refs": [
+                    "Explain the origin",
+                    "Interpret the role of origin"
+                ],
+                "skill_refs": [
+                    "Reasoning",
+                    "Communication"
+                ],
+                "concept_name": "Origin"
+            },
+            {
+                "competency": "Use Origin in Context",
+                "statement": "Apply the concept of origin to locate points in the plane.",
+                "knowledge_refs": [
+                    "Origin Definition",
+                    "Origin Coordinates"
+                ],
+                "ability_refs": [
+                    "Apply origin concept"
+                ],
+                "skill_refs": [
+                    "Problem Solving"
+                ],
+                "concept_name": "Origin"
+            }
+        ],
+        "learning_objectives": [
+            {
+                "objective": "Explain the definition and coordinates of the origin.",
+                "objective_type": "Knowledge",
+                "priority": "High",
+                "concept_name": "Origin"
+            },
+            {
+                "objective": "Interpret the role of the origin as a reference point for coordinate measurements.",
+                "objective_type": "Ability",
+                "priority": "High",
+                "concept_name": "Origin"
+            },
+            {
+                "objective": "Apply the concept of origin to locate points in the coordinate plane.",
+                "objective_type": "Skill",
+                "priority": "High",
+                "concept_name": "Origin"
+            }
+        ],
+        "learning_outcomes": [
+            {
+                "outcome": "Aligned with C-4.5, the student can explain that the origin is the intersection of the axes and has coordinates (0,0).",
+                "outcome_type": "Knowledge Outcome",
+                "measurable": true,
+                "assessment_ready": true,
+                "concept_name": "Origin"
+            },
+            {
+                "outcome": "Aligned with C-4.5 and C-8.1, the student can interpret how the origin serves as the reference point for determining the position of other points.",
+                "outcome_type": "Ability Outcome",
+                "measurable": true,
+                "assessment_ready": true,
+                "concept_name": "Origin"
+            },
+            {
+                "outcome": "Aligned with C-4.5, the student can use the origin to accurately describe the location of a point in any quadrant.",
+                "outcome_type": "Skill Outcome",
+                "measurable": true,
+                "assessment_ready": true,
+                "concept_name": "Origin"
+            }
+        ],
+        "blooms": [
+            {
+                "level": "Understand",
+                "coverage_score": 0.6,
+                "concept_name": "Origin"
+            },
+            {
+                "level": "Apply",
+                "coverage_score": 0.4,
+                "concept_name": "Origin"
+            }
+        ],
+        "dok": [
+            {
+                "level": "1",
+                "description": "Recall and Reproduction",
+                "concept_name": "Origin"
+            },
+            {
+                "level": "2",
+                "description": "Skills and Concepts",
+                "concept_name": "Origin"
+            },
+            {
+                "level": "3",
+                "description": "Strategic Thinking",
+                "concept_name": "Origin"
+            }
+        ],
+        "prerequisites": [
+            {
+                "concept_name": "Number Line",
+                "prerequisite_type": "Concept",
+                "necessity": "Mandatory",
+                "_parent_concept": "Origin"
+            },
+            {
+                "concept_name": "Coordinate Axes",
+                "prerequisite_type": "Concept",
+                "necessity": "Mandatory",
+                "_parent_concept": "Origin"
+            },
+            {
+                "concept_name": "Intersection of Lines",
+                "prerequisite_type": "Concept",
+                "necessity": "Mandatory",
+                "_parent_concept": "Origin"
+            }
+        ],
+        "misconceptions": [
+            {
+                "misconception": "Origin is not necessarily (0,0)",
+                "statement": "Some students think the origin can be any point on the coordinate plane, not necessarily the intersection point.",
+                "root_cause": "Misunderstanding of the definition of coordinate axes and their intersection as the reference point.",
+                "correction": "The origin is uniquely defined as the point (0,0) where the x-axis and y-axis intersect.",
+                "concept_name": "Origin"
+            },
+            {
+                "misconception": "Origin moves when you move along axes",
+                "statement": "Students may believe that if you walk along the x-axis, the origin shifts to where you are.",
+                "root_cause": "Confusion between the fixed coordinate system and personal location.",
+                "correction": "The origin is fixed; your coordinates describe your distance from the origin, but the origin itself does not move.",
+                "concept_name": "Origin"
+            },
+            {
+                "misconception": "Origin is the same as the starting point of a line segment",
+                "statement": "When given a line segment, some students may incorrectly identify one endpoint as the origin.",
+                "root_cause": "Overgeneralization from the concept of 'starting point' in graphing.",
+                "correction": "The origin is a specific point on the coordinate plane; a line segment can have endpoints that are not the origin unless their coordinates are (0,0).",
+                "concept_name": "Origin"
+            }
+        ],
+        "real_world_applications": [
+            {
+                "application_type": "Daily Life",
+                "example": "The corner of a room can serve as the origin for measuring furniture placement.",
+                "relevance": "Medium",
+                "concept_name": "Origin"
+            },
+            {
+                "application_type": "Technology",
+                "example": "In computer screens, the origin (0,0) is often at the top-left corner for pixel coordinates.",
+                "relevance": "High",
+                "concept_name": "Origin"
+            },
+            {
+                "application_type": "Society",
+                "example": "In geography, the intersection of the Equator and Prime Meridian is the origin of the geographic coordinate system.",
+                "relevance": "High",
+                "concept_name": "Origin"
+            }
+        ],
+        "pedagogy_recommendations": [
+            {
+                "strategy": "Activity Based Teaching",
+                "why_effective": "Kinesthetic learning helps solidify abstract spatial concepts by physically placing students at the origin and moving to coordinates.",
+                "concept_characteristics": [
+                    "abstract",
+                    "spatial",
+                    "reference point"
+                ],
+                "concept_name": "Origin"
+            },
+            {
+                "strategy": "Inquiry Based Teaching",
+                "why_effective": "Promotes discovery and curiosity about the coordinate system by asking 'What is the center of our graph?' before defining the origin.",
+                "concept_characteristics": [
+                    "concrete",
+                    "observable",
+                    "fundamental"
+                ],
+                "concept_name": "Origin"
+            }
+        ],
+        "assessment_blueprint": [
+            {
+                "assessment_type": "MCQ",
+                "bloom_level": "Remember",
+                "dok_level": "1",
+                "difficulty": "Easy",
+                "marks": 1,
+                "recommended_question": "What are the coordinates of the origin? (A) (1,1) (B) (0,0) (C) (0,1) (D) (1,0)",
+                "concept_name": "Origin"
+            },
+            {
+                "assessment_type": "Short Answer",
+                "bloom_level": "Understand",
+                "dok_level": "2",
+                "difficulty": "Medium",
+                "marks": 2,
+                "recommended_question": "Explain what the origin is and give its coordinates.",
+                "concept_name": "Origin"
+            },
+            {
+                "assessment_type": "Assertion Reason",
+                "bloom_level": "Evaluate",
+                "dok_level": "2",
+                "difficulty": "Medium",
+                "marks": 1,
+                "recommended_question": "Assertion (A): The origin is the point where the x-axis and y-axis cross. Reason (R): Its coordinates are (0,0). (A) Both A and R are true and R is the correct explanation of A. (B) Both A and R are true but R is not the correct explanation. (C) A is true but R is false. (D) A is false but R is true.",
+                "concept_name": "Origin"
+            },
+            {
+                "assessment_type": "HOTS",
+                "bloom_level": "Apply",
+                "dok_level": "3",
+                "difficulty": "Hard",
+                "marks": 3,
+                "recommended_question": "A point lies on the x-axis at a distance of 4 units from the origin. What are its possible coordinates? Explain how you arrived at your answer.",
+                "concept_name": "Origin"
+            },
+            {
+                "assessment_type": "Competency Based Question",
+                "bloom_level": "Apply",
+                "dok_level": "2",
+                "difficulty": "Medium",
+                "marks": 3,
+                "recommended_question": "A city map uses a coordinate system with the town hall at the origin. The library is at (-3, 0) and the park is at (0, 2). Which landmark is closer to the town hall? Show your work.",
+                "concept_name": "Origin"
+            },
+            {
+                "assessment_type": "Numerical",
+                "bloom_level": "Apply",
+                "dok_level": "1",
+                "difficulty": "Easy",
+                "marks": 1,
+                "recommended_question": "A point is 3 units away from the origin along the positive x-axis. What are its coordinates?",
+                "concept_name": "Origin"
+            }
+        ],
+        "concept_relationships": [
+            {
+                "source_concept": "Origin",
+                "target_concept": "Coordinate Axes",
+                "relation_type": "depends_on"
+            },
+            {
+                "source_concept": "Origin",
+                "target_concept": "Cartesian Coordinate System",
+                "relation_type": "part_of"
+            },
+            {
+                "source_concept": "Origin",
+                "target_concept": "Quadrants",
+                "relation_type": "related_to"
+            }
+        ],
+        "evidence": [
+            {
+                "source_type": "Textbook",
+                "source_text": "The point of intersection of the x-axis and y-axis is called the origin 0; its coordinates are (0, 0)."
+            },
+            {
+                "source_type": "Inferred",
+                "source_text": "Coordinate axes (this is the plural of 'axis') help us to locate any point in 2-D space using the point's coordinates'."
+            },
+            {
+                "source_type": "Textbook",
+                "source_text": "The point of intersection of the x-axis and y-axis is called the origin 0; its coordinates are (0, 0)."
+            },
+            {
+                "source_type": "Textbook",
+                "source_text": "Coordinate axes (this is the plural of 'axis') help us to locate any point in 2-D space using the point's coordinates'."
+            },
+            {
+                "source_type": "Textbook",
+                "source_text": "The point of intersection of the x-axis and y-axis is called the origin 0; its coordinates are (0, 0)."
+            },
+            {
+                "source_type": "Textbook",
+                "source_text": "Coordinate axes (this is the plural of 'axis') help us to locate any point in 2-D space using the point's coordinates'."
+            }
+        ]
+    },
+    {
+        "concept": {
+            "concept_id": "POA_001",
+            "concept_name": "Points on Axes",
+            "concept_type": "Rule",
+            "definition": "A point lies on the x-axis if its y-coordinate is 0. A point lies on the y-axis if its x-coordinate is 0. The sign of the non-zero coordinate indicates direction from the origin.",
+            "importance": "Important",
+            "difficulty": "Easy",
+            "confidence": 1
+        },
+        "knowledge_items": [
+            {
+                "knowledge": "x-axis point form",
+                "statement": "A point on the x-axis has coordinates (x, 0) where x is any real number.",
+                "knowledge_type": "Rule",
+                "confidence": 1,
+                "concept_name": "Points on Axes"
+            },
+            {
+                "knowledge": "y-axis point form",
+                "statement": "A point on the y-axis has coordinates (0, y) where y is any real number.",
+                "knowledge_type": "Rule",
+                "confidence": 1,
+                "concept_name": "Points on Axes"
+            },
+            {
+                "knowledge": "x-coordinate sign direction",
+                "statement": "For a point (x, 0) on the x-axis, if x is positive, the point is to the right of the origin; if x is negative, it is to the left.",
+                "knowledge_type": "Relationship",
+                "confidence": 1,
+                "concept_name": "Points on Axes"
+            },
+            {
+                "knowledge": "y-coordinate sign direction",
+                "statement": "For a point (0, y) on the y-axis, if y is positive, the point is above the origin; if y is negative, it is below.",
+                "knowledge_type": "Relationship",
+                "confidence": 1,
+                "concept_name": "Points on Axes"
+            }
+        ],
+        "abilities": [
+            {
+                "ability": "Explain the coordinate condition for points on axes",
+                "verb": "Explain",
+                "description": "Explain the rule that points on the x-axis have y=0 and points on the y-axis have x=0, and the significance of the sign of the non-zero coordinate.",
+                "knowledge_refs": [
+                    "x-axis point form",
+                    "y-axis point form",
+                    "x-coordinate sign direction",
+                    "y-coordinate sign direction"
+                ],
+                "concept_name": "Points on Axes"
+            },
+            {
+                "ability": "Apply the rule to classify points on axes",
+                "verb": "Apply",
+                "description": "Given coordinates of a point, apply the condition to determine whether it lies on the x-axis, y-axis, or neither.",
+                "knowledge_refs": [
+                    "x-axis point form",
+                    "y-axis point form"
+                ],
+                "concept_name": "Points on Axes"
+            },
+            {
+                "ability": "Analyze positional implications of coordinate signs",
+                "verb": "Analyze",
+                "description": "Analyze the relationship between the sign of a non-zero coordinate and the direction from the origin for points on the axes.",
+                "knowledge_refs": [
+                    "x-coordinate sign direction",
+                    "y-coordinate sign direction"
+                ],
+                "concept_name": "Points on Axes"
+            }
+        ],
+        "skills": [
+            {
+                "skill": "Reasoning",
+                "ability_refs": [
+                    "Explain the coordinate condition for points on axes"
+                ],
+                "concept_name": "Points on Axes"
+            },
+            {
+                "skill": "Classification",
+                "ability_refs": [
+                    "Apply the rule to classify points on axes"
+                ],
+                "concept_name": "Points on Axes"
+            },
+            {
+                "skill": "Critical Thinking",
+                "ability_refs": [
+                    "Analyze positional implications of coordinate signs"
+                ],
+                "concept_name": "Points on Axes"
+            }
+        ],
+        "competencies": [
+            {
+                "competency": "Explain points on axes",
+                "statement": "Use reasoning to explain the rule for points on the axes and the significance of the coordinate signs.",
+                "knowledge_refs": [
+                    "x-axis point form",
+                    "y-axis point form",
+                    "x-coordinate sign direction",
+                    "y-coordinate sign direction"
+                ],
+                "ability_refs": [
+                    "Explain the coordinate condition for points on axes"
+                ],
+                "skill_refs": [
+                    "Reasoning"
+                ],
+                "concept_name": "Points on Axes"
+            },
+            {
+                "competency": "Classify points on axes",
+                "statement": "Apply classification skills to identify whether a point lies on the x-axis, y-axis, or neither.",
+                "knowledge_refs": [
+                    "x-axis point form",
+                    "y-axis point form"
+                ],
+                "ability_refs": [
+                    "Apply the rule to classify points on axes"
+                ],
+                "skill_refs": [
+                    "Classification"
+                ],
+                "concept_name": "Points on Axes"
+            },
+            {
+                "competency": "Analyze coordinate sign implications",
+                "statement": "Analyze how the sign of a coordinate determines direction from the origin using critical thinking.",
+                "knowledge_refs": [
+                    "x-coordinate sign direction",
+                    "y-coordinate sign direction"
+                ],
+                "ability_refs": [
+                    "Analyze positional implications of coordinate signs"
+                ],
+                "skill_refs": [
+                    "Critical Thinking"
+                ],
+                "concept_name": "Points on Axes"
+            }
+        ],
+        "learning_objectives": [
+            {
+                "objective": "Explain the condition for a point to lie on the x-axis or y-axis.",
+                "objective_type": "Ability",
+                "priority": "High",
+                "concept_name": "Points on Axes"
+            },
+            {
+                "objective": "Apply the rule y=0 or x=0 to classify points on axes.",
+                "objective_type": "Ability",
+                "priority": "High",
+                "concept_name": "Points on Axes"
+            },
+            {
+                "objective": "Analyze the relationship between the sign of coordinates and the direction from the origin.",
+                "objective_type": "Ability",
+                "priority": "Medium",
+                "concept_name": "Points on Axes"
+            }
+        ],
+        "learning_outcomes": [
+            {
+                "outcome": "Students will be able to accurately state that a point (x,0) lies on the x-axis and (0,y) lies on the y-axis when presented with the coordinate forms.",
+                "outcome_type": "Knowledge Outcome",
+                "measurable": true,
+                "assessment_ready": true,
+                "concept_name": "Points on Axes"
+            },
+            {
+                "outcome": "Given a set of coordinate pairs, students will correctly classify each point as lying on the x-axis, y-axis, or neither, achieving at least 80% accuracy.",
+                "outcome_type": "Ability Outcome",
+                "measurable": true,
+                "assessment_ready": true,
+                "concept_name": "Points on Axes"
+            },
+            {
+                "outcome": "Students will explain, with examples, the directional meaning of positive and negative values for points on the axes, demonstrating an understanding of spatial relationships.",
+                "outcome_type": "Ability Outcome",
+                "measurable": true,
+                "assessment_ready": true,
+                "concept_name": "Points on Axes"
+            }
+        ],
+        "blooms": [
+            {
+                "level": "Understand",
+                "coverage_score": 0.4,
+                "concept_name": "Points on Axes"
+            },
+            {
+                "level": "Apply",
+                "coverage_score": 0.3,
+                "concept_name": "Points on Axes"
+            },
+            {
+                "level": "Analyze",
+                "coverage_score": 0.3,
+                "concept_name": "Points on Axes"
+            }
+        ],
+        "dok": [
+            {
+                "level": "2",
+                "description": "Skills and Concepts",
+                "concept_name": "Points on Axes"
+            },
+            {
+                "level": "3",
+                "description": "Strategic Thinking",
+                "concept_name": "Points on Axes"
+            }
+        ],
+        "prerequisites": [
+            {
+                "concept_name": "Number Line",
+                "prerequisite_type": "Concept",
+                "necessity": "Mandatory",
+                "_parent_concept": "Points on Axes"
+            },
+            {
+                "concept_name": "Ordered Pairs",
+                "prerequisite_type": "Concept",
+                "necessity": "Mandatory",
+                "_parent_concept": "Points on Axes"
+            },
+            {
+                "concept_name": "Cartesian Plane",
+                "prerequisite_type": "Concept",
+                "necessity": "Mandatory",
+                "_parent_concept": "Points on Axes"
+            }
+        ],
+        "misconceptions": [
+            {
+                "misconception": "Confusing x-axis and y-axis conditions",
+                "statement": "A student might think that (0,5) lies on the x-axis because the x-coordinate is zero.",
+                "root_cause": "Memorization without understanding: they recall a zero indicates an axis but mix up which coordinate is zero for each axis.",
+                "correction": "A point is on the y-axis when its x-coordinate is zero. (0,5) has x=0, so it is on the y-axis, not the x-axis.",
+                "concept_name": "Points on Axes"
+            },
+            {
+                "misconception": "Points on axes belong to quadrants",
+                "statement": "A student might label (3,0) as being in Quadrant I.",
+                "root_cause": "Misunderstanding of quadrant boundaries; they think any point with non-negative coordinates is in Quadrant I, ignoring that axes are boundaries, not inside.",
+                "correction": "Points on the axes do not lie in any quadrant. Quadrants are defined only for points with both coordinates non-zero.",
+                "concept_name": "Points on Axes"
+            },
+            {
+                "misconception": "Sign does not indicate direction",
+                "statement": "A student might not connect the sign of the non-zero coordinate to the side of the origin, e.g., thinking both (4,0) and (−4,0) are on the same side.",
+                "root_cause": "Incomplete understanding of the number line representation on axes; they treat coordinates as mere labels without directional meaning.",
+                "correction": "On the x-axis, a positive x-coordinate means to the right of the origin, negative means left. On the y-axis, positive is above, negative is below.",
+                "concept_name": "Points on Axes"
+            }
+        ],
+        "real_world_applications": [
+            {
+                "application_type": "Daily Life",
+                "example": "Locating houses on a straight road: if the road runs east-west, houses can be identified by their distance from a central landmark, with east as positive and west as negative.",
+                "relevance": "High",
+                "concept_name": "Points on Axes"
+            },
+            {
+                "application_type": "Environment",
+                "example": "Measuring depth below sea level: the sea level is the origin (0,0), and depth is represented by a negative y-coordinate on a vertical axis.",
+                "relevance": "High",
+                "concept_name": "Points on Axes"
+            },
+            {
+                "application_type": "Industry",
+                "example": "Engineering stress analysis: the neutral axis of a beam is an x-axis, and positions along it are given by (x,0) to model loads.",
+                "relevance": "Medium",
+                "concept_name": "Points on Axes"
+            }
+        ],
+        "pedagogy_recommendations": [
+            {
+                "strategy": "Activity Based Teaching",
+                "why_effective": "The concept is visual and kinesthetic. Physically moving on a large floor grid to points with a zero coordinate helps students internalize the condition and directionality.",
+                "concept_characteristics": [
+                    "Visual/Spatial",
+                    "Kinesthetic",
+                    "Rule-based"
+                ],
+                "concept_name": "Points on Axes"
+            },
+            {
+                "strategy": "Inquiry Based Teaching",
+                "why_effective": "Students can explore a set of points, identify patterns (y=0 for x-axis, x=0 for y-axis), and construct the rule themselves, promoting deeper understanding.",
+                "concept_characteristics": [
+                    "Pattern recognition",
+                    "Rule-based",
+                    "Foundational"
+                ],
+                "concept_name": "Points on Axes"
+            }
+        ],
+        "assessment_blueprint": [
+            {
+                "assessment_type": "MCQ",
+                "bloom_level": "Understand",
+                "dok_level": "2",
+                "difficulty": "Easy",
+                "marks": 1,
+                "recommended_question": "Which of the following points lies on the x-axis (other than the origin)? a) (0,3) b) (3,0) c) (3,2) d) (0,0)",
+                "concept_name": "Points on Axes"
+            },
+            {
+                "assessment_type": "Assertion Reason",
+                "bloom_level": "Understand",
+                "dok_level": "2",
+                "difficulty": "Easy",
+                "marks": 1,
+                "recommended_question": "Assertion (A): The point (0,7) lies on the y-axis. Reason (R): Any point with x-coordinate zero lies on the y-axis. a) Both A and R are true and R is the correct explanation of A. b) Both A and R are true but R is not the correct explanation of A. c) A is true but R is false. d) A is false but R is true.",
+                "concept_name": "Points on Axes"
+            },
+            {
+                "assessment_type": "Short Answer",
+                "bloom_level": "Apply",
+                "dok_level": "2",
+                "difficulty": "Medium",
+                "marks": 2,
+                "recommended_question": "Given the point P(-4,0): (a) On which axis does it lie? (b) Describe its position relative to the origin.",
+                "concept_name": "Points on Axes"
+            },
+            {
+                "assessment_type": "Case Study",
+                "bloom_level": "Analyze",
+                "dok_level": "3",
+                "difficulty": "Medium",
+                "marks": 3,
+                "recommended_question": "A submarine is navigating directly below sea level. Its position is represented by the point (0, y), where y is negative. Explain what the coordinate y indicates about the submarine's depth and why it is on the y-axis.",
+                "concept_name": "Points on Axes"
+            },
+            {
+                "assessment_type": "HOTS",
+                "bloom_level": "Analyze",
+                "dok_level": "3",
+                "difficulty": "Hard",
+                "marks": 4,
+                "recommended_question": "Student A says: 'The point (-5, 0) lies to the right of the origin because 5 is larger than 0.' Evaluate the student's reasoning. Identify the error and provide the correct explanation.",
+                "concept_name": "Points on Axes"
+            }
+        ],
+        "concept_relationships": [
+            {
+                "source_concept": "Points on Axes",
+                "target_concept": "Cartesian Coordinate System",
+                "relation_type": "part_of"
+            },
+            {
+                "source_concept": "Points on Axes",
+                "target_concept": "Ordered Pairs",
+                "relation_type": "uses"
+            },
+            {
+                "source_concept": "Points on Axes",
+                "target_concept": "Reflection",
+                "relation_type": "related_to"
+            },
+            {
+                "source_concept": "Points on Axes",
+                "target_concept": "Origin",
+                "relation_type": "related_to"
+            }
+        ],
+        "evidence": [
+            {
+                "source_type": "Textbook",
+                "source_text": "A point P = (x, 0) lies on the x-axis. If x is positive, then P lies to the right of O. If x is negative, P lies to the left of O."
+            },
+            {
+                "source_type": "Textbook",
+                "source_text": "A point P = (0, y) lies on the y-axis. If y is positive, P lies above O; ify is negative, P lies below 0."
+            },
+            {
+                "source_type": "Textbook",
+                "source_text": "Point B is on the x-axis and 4.5 units to the right of 0, its coordinates are (4.5, 0)."
+            },
+            {
+                "source_type": "Textbook",
+                "source_text": "Point G is on the y-axis and 4.5 units downward from 0, its coordinates are (0, −4.5)."
+            },
+            {
+                "source_type": "Textbook",
+                "source_text": "Point B is on the x-axis and 4.5 units to the right of 0, its coordinates are (4.5, 0)."
+            },
+            {
+                "source_type": "Textbook",
+                "source_text": "A point P = (x, 0) lies on the x-axis. If x is positive, then P lies to the right of O. If x is negative, P lies to the left of O."
+            },
+            {
+                "source_type": "Textbook",
+                "source_text": "A point P = (0, y) lies on the y-axis. If y is positive, P lies above O; if y is negative, P lies below O."
+            },
+            {
+                "source_type": "Textbook",
+                "source_text": "A point P = (x, 0) lies on the x-axis. If x is positive, then P lies to the right of O. If x is negative, P lies to the left of O."
+            },
+            {
+                "source_type": "Textbook",
+                "source_text": "A point P = (0, y) lies on the y-axis. If y is positive, P lies above O; if y is negative, P lies below O."
+            },
+            {
+                "source_type": "Textbook",
+                "source_text": "Point B is on the x-axis and 4.5 units to the right of 0, its coordinates are (4.5, 0)."
+            },
+            {
+                "source_type": "Textbook",
+                "source_text": "Point G is on the y-axis and 4.5 units downward from 0, its coordinates are (0, −4.5)."
+            }
+        ]
+    },
+    {
+        "concept": {
+            "concept_id": "Quadrants",
+            "concept_name": "Quadrants",
+            "concept_type": "Concept",
+            "definition": "Quadrants are the four regions into which the Cartesian plane is divided by the x-axis (horizontal) and y-axis (vertical), each characterized by specific sign conventions for the x and y coordinates.",
+            "importance": "Core",
+            "difficulty": "Medium",
+            "confidence": 0.9
+        },
+        "knowledge_items": [
+            {
+                "knowledge": "The Cartesian plane is divided into four parts by the x-axis and y-axis, called quadrants.",
+                "statement": "The Cartesian plane is divided into four quadrants.",
+                "knowledge_type": "Fact",
+                "confidence": 1,
+                "concept_name": "Quadrants"
+            },
+            {
+                "knowledge": "Points in Quadrant I have both x-coordinate and y-coordinate positive.",
+                "statement": "In Quadrant I, both coordinates are positive.",
+                "knowledge_type": "Rule",
+                "confidence": 1,
+                "concept_name": "Quadrants"
+            },
+            {
+                "knowledge": "Points in Quadrant II have negative x-coordinate and positive y-coordinate.",
+                "statement": "In Quadrant II, x is negative and y is positive.",
+                "knowledge_type": "Rule",
+                "confidence": 1,
+                "concept_name": "Quadrants"
+            },
+            {
+                "knowledge": "Points in Quadrant III have both x-coordinate and y-coordinate negative.",
+                "statement": "In Quadrant III, both coordinates are negative.",
+                "knowledge_type": "Rule",
+                "confidence": 1,
+                "concept_name": "Quadrants"
+            },
+            {
+                "knowledge": "Points in Quadrant IV have positive x-coordinate and negative y-coordinate.",
+                "statement": "In Quadrant IV, x is positive and y is negative.",
+                "knowledge_type": "Rule",
+                "confidence": 1,
+                "concept_name": "Quadrants"
+            }
+        ],
+        "abilities": [
+            {
+                "ability": "Explain the sign conventions of coordinates in each quadrant",
+                "verb": "Explain",
+                "description": "Articulate the sign (positive or negative) of x and y coordinates in Quadrants I, II, III, and IV.",
+                "knowledge_refs": [
+                    "The Cartesian plane is divided into four parts by the x-axis and y-axis, called quadrants.",
+                    "Points in Quadrant I have both x-coordinate and y-coordinate positive.",
+                    "Points in Quadrant II have negative x-coordinate and positive y-coordinate.",
+                    "Points in Quadrant III have both x-coordinate and y-coordinate negative.",
+                    "Points in Quadrant IV have positive x-coordinate and negative y-coordinate."
+                ],
+                "concept_name": "Quadrants"
+            },
+            {
+                "ability": "Classify points into quadrants based on sign of coordinates",
+                "verb": "Classify",
+                "description": "Given an ordered pair (x, y), determine the correct quadrant based on the sign conventions.",
+                "knowledge_refs": [
+                    "Points in Quadrant I have both x-coordinate and y-coordinate positive.",
+                    "Points in Quadrant II have negative x-coordinate and positive y-coordinate.",
+                    "Points in Quadrant III have both x-coordinate and y-coordinate negative.",
+                    "Points in Quadrant IV have positive x-coordinate and negative y-coordinate."
+                ],
+                "concept_name": "Quadrants"
+            },
+            {
+                "ability": "Interpret the meaning of coordinates of a point in 2-D space",
+                "verb": "Interpret",
+                "description": "Explain what the signs of coordinates indicate about a point's position relative to the axes and the origin.",
+                "knowledge_refs": [
+                    "The Cartesian plane is divided into four parts by the x-axis and y-axis, called quadrants.",
+                    "Points in Quadrant I have both x-coordinate and y-coordinate positive.",
+                    "Points in Quadrant II have negative x-coordinate and positive y-coordinate.",
+                    "Points in Quadrant III have both x-coordinate and y-coordinate negative.",
+                    "Points in Quadrant IV have positive x-coordinate and negative y-coordinate."
+                ],
+                "concept_name": "Quadrants"
+            },
+            {
+                "ability": "Analyze the location of a point given its quadrant",
+                "verb": "Analyze",
+                "description": "Given that a point lies in a specific quadrant, determine possible values or characteristics of its coordinates.",
+                "knowledge_refs": [
+                    "Points in Quadrant I have both x-coordinate and y-coordinate positive.",
+                    "Points in Quadrant II have negative x-coordinate and positive y-coordinate.",
+                    "Points in Quadrant III have both x-coordinate and y-coordinate negative.",
+                    "Points in Quadrant IV have positive x-coordinate and negative y-coordinate."
+                ],
+                "concept_name": "Quadrants"
+            }
+        ],
+        "skills": [
+            {
+                "skill": "Classification",
+                "ability_refs": [
+                    "Classify points into quadrants based on sign of coordinates"
+                ],
+                "concept_name": "Quadrants"
+            },
+            {
+                "skill": "Reasoning",
+                "ability_refs": [
+                    "Explain the sign conventions of coordinates in each quadrant",
+                    "Interpret the meaning of coordinates of a point in 2-D space",
+                    "Analyze the location of a point given its quadrant"
+                ],
+                "concept_name": "Quadrants"
+            }
+        ],
+        "competencies": [
+            {
+                "competency": "Quadrant Classification",
+                "statement": "Given a set of points with various coordinates, correctly classify each into the appropriate quadrant by applying the sign conventions, demonstrating classification skill.",
+                "knowledge_refs": [
+                    "The Cartesian plane is divided into four parts by the x-axis and y-axis, called quadrants.",
+                    "Points in Quadrant I have both x-coordinate and y-coordinate positive.",
+                    "Points in Quadrant II have negative x-coordinate and positive y-coordinate.",
+                    "Points in Quadrant III have both x-coordinate and y-coordinate negative.",
+                    "Points in Quadrant IV have positive x-coordinate and negative y-coordinate."
+                ],
+                "ability_refs": [
+                    "Classify points into quadrants based on sign of coordinates"
+                ],
+                "skill_refs": [
+                    "Classification"
+                ],
+                "concept_name": "Quadrants"
+            },
+            {
+                "competency": "Coordinate Interpretation",
+                "statement": "Describe how the signs of coordinates determine the quadrant location of a point and explain why points on axes do not belong to any quadrant, applying reasoning and communication skills.",
+                "knowledge_refs": [
+                    "The Cartesian plane is divided into four parts by the x-axis and y-axis, called quadrants.",
+                    "Points in Quadrant I have both x-coordinate and y-coordinate positive.",
+                    "Points in Quadrant II have negative x-coordinate and positive y-coordinate.",
+                    "Points in Quadrant III have both x-coordinate and y-coordinate negative.",
+                    "Points in Quadrant IV have positive x-coordinate and negative y-coordinate."
+                ],
+                "ability_refs": [
+                    "Explain the sign conventions of coordinates in each quadrant",
+                    "Interpret the meaning of coordinates of a point in 2-D space"
+                ],
+                "skill_refs": [
+                    "Reasoning"
+                ],
+                "concept_name": "Quadrants"
+            }
+        ],
+        "learning_objectives": [
+            {
+                "objective": "Recall the four quadrants and their sign conventions.",
+                "objective_type": "Knowledge",
+                "priority": "High",
+                "concept_name": "Quadrants"
+            },
+            {
+                "objective": "Explain the sign conventions of coordinates in each quadrant.",
+                "objective_type": "Ability",
+                "priority": "High",
+                "concept_name": "Quadrants"
+            },
+            {
+                "objective": "Classify points into quadrants based on the signs of their coordinates.",
+                "objective_type": "Ability",
+                "priority": "High",
+                "concept_name": "Quadrants"
+            },
+            {
+                "objective": "Interpret the location of a point in the Cartesian plane based on its coordinate signs.",
+                "objective_type": "Ability",
+                "priority": "Medium",
+                "concept_name": "Quadrants"
+            },
+            {
+                "objective": "Analyze the coordinates of a point given its quadrant.",
+                "objective_type": "Ability",
+                "priority": "Medium",
+                "concept_name": "Quadrants"
+            }
+        ],
+        "learning_outcomes": [
+            {
+                "outcome": "The student lists the four quadrants and correctly states the sign of x and y coordinates in each (C-4.5).",
+                "outcome_type": "Knowledge Outcome",
+                "measurable": true,
+                "assessment_ready": true,
+                "concept_name": "Quadrants"
+            },
+            {
+                "outcome": "The student explains why a point with given coordinates lies in a specific quadrant, referencing sign conventions (C-4.5).",
+                "outcome_type": "Ability Outcome",
+                "measurable": true,
+                "assessment_ready": true,
+                "concept_name": "Quadrants"
+            },
+            {
+                "outcome": "The student classifies points into correct quadrants with 100% accuracy when given ordered pairs (C-4.5).",
+                "outcome_type": "Ability Outcome",
+                "measurable": true,
+                "assessment_ready": true,
+                "concept_name": "Quadrants"
+            },
+            {
+                "outcome": "The student interprets the spatial location of a point by analyzing its coordinate signs, e.g., determining that a point with negative x and positive y is in the upper-left region (C-4.5).",
+                "outcome_type": "Ability Outcome",
+                "measurable": true,
+                "assessment_ready": true,
+                "concept_name": "Quadrants"
+            },
+            {
+                "outcome": "The student analyzes a given quadrant to deduce possible combinations of coordinate signs and provides examples (C-4.5).",
+                "outcome_type": "Ability Outcome",
+                "measurable": true,
+                "assessment_ready": true,
+                "concept_name": "Quadrants"
+            }
+        ],
+        "blooms": [
+            {
+                "level": "Remember",
+                "coverage_score": 0.2,
+                "concept_name": "Quadrants"
+            },
+            {
+                "level": "Understand",
+                "coverage_score": 0.5,
+                "concept_name": "Quadrants"
+            },
+            {
+                "level": "Apply",
+                "coverage_score": 0.3,
+                "concept_name": "Quadrants"
+            }
+        ],
+        "dok": [
+            {
+                "level": "1",
+                "description": "Recall and Reproduction",
+                "concept_name": "Quadrants"
+            },
+            {
+                "level": "2",
+                "description": "Skills and Concepts",
+                "concept_name": "Quadrants"
+            }
+        ],
+        "prerequisites": [
+            {
+                "concept_name": "Number line with positive and negative integers",
+                "prerequisite_type": "Knowledge",
+                "necessity": "Mandatory",
+                "_parent_concept": "Quadrants"
+            },
+            {
+                "concept_name": "Ordered pairs (x, y)",
+                "prerequisite_type": "Concept",
+                "necessity": "Mandatory",
+                "_parent_concept": "Quadrants"
+            },
+            {
+                "concept_name": "Coordinate axes (x-axis and y-axis)",
+                "prerequisite_type": "Concept",
+                "necessity": "Mandatory",
+                "_parent_concept": "Quadrants"
+            },
+            {
+                "concept_name": "Origin (0,0)",
+                "prerequisite_type": "Knowledge",
+                "necessity": "Recommended",
+                "_parent_concept": "Quadrants"
+            }
+        ],
+        "misconceptions": [
+            {
+                "misconception": "Confusing quadrant numbering",
+                "statement": "Students often think quadrants are numbered clockwise starting from top-right, instead of counterclockwise.",
+                "root_cause": "Misunderstanding the conventional numbering order.",
+                "correction": "Quadrants are numbered counterclockwise starting from the upper right (I), upper left (II), lower left (III), lower right (IV).",
+                "concept_name": "Quadrants"
+            },
+            {
+                "misconception": "Points on axes belong to a quadrant",
+                "statement": "Students mistakenly assign points on the x-axis or y-axis to a quadrant.",
+                "root_cause": "Overgeneralizing that all points must be in a quadrant.",
+                "correction": "Points on the axes do not belong to any quadrant because their coordinates have one zero coordinate, and sign conventions require both coordinates to be nonzero for quadrant classification.",
+                "concept_name": "Quadrants"
+            },
+            {
+                "misconception": "Mixing up signs of Quadrant II and IV",
+                "statement": "Students think Quadrant II has (+, -) and Quadrant IV has (-, +).",
+                "root_cause": "Difficulty remembering which coordinate is negative in each quadrant.",
+                "correction": "Memorize the pattern: QI (+,+), QII (-,+), QIII (-,-), QIV (+,-). Use mnemonic or visual aids.",
+                "concept_name": "Quadrants"
+            },
+            {
+                "misconception": "Thinking all negative coordinates are in Quadrant III",
+                "statement": "Some students believe that any negative coordinate means the point is in Quadrant III, ignoring mixed signs.",
+                "root_cause": "Associating 'negative' only with Quadrant III.",
+                "correction": "Quadrant II has negative x and positive y; Quadrant IV has positive x and negative y. Mixed signs exist.",
+                "concept_name": "Quadrants"
+            }
+        ],
+        "real_world_applications": [
+            {
+                "application_type": "Daily Life",
+                "example": "Navigating with GPS or maps uses quadrants to pinpoint locations relative to a reference point.",
+                "relevance": "High",
+                "concept_name": "Quadrants"
+            },
+            {
+                "application_type": "Technology",
+                "example": "In video game design, the screen is divided into quadrants to manage object placement and collision detection.",
+                "relevance": "Medium",
+                "concept_name": "Quadrants"
+            },
+            {
+                "application_type": "Research",
+                "example": "In scientific data plotting, quadrants help visualize relationships (e.g., economic growth vs inflation).",
+                "relevance": "High",
+                "concept_name": "Quadrants"
+            },
+            {
+                "application_type": "Environment",
+                "example": "Tracking animal migration patterns on a coordinate map divided into quadrants.",
+                "relevance": "Low",
+                "concept_name": "Quadrants"
+            }
+        ],
+        "pedagogy_recommendations": [
+            {
+                "strategy": "Activity Based Teaching",
+                "why_effective": "Hands-on plotting of points on graph paper helps students internalize sign conventions and spatial orientation.",
+                "concept_characteristics": [
+                    "Visual",
+                    "Spatial",
+                    "Rule-based"
+                ],
+                "concept_name": "Quadrants"
+            },
+            {
+                "strategy": "Game Based Teaching",
+                "why_effective": "Games like 'Coordinate Battleship' make classification practice engaging and reinforce sign recognition.",
+                "concept_characteristics": [
+                    "Rule-based",
+                    "Interactive"
+                ],
+                "concept_name": "Quadrants"
+            },
+            {
+                "strategy": "Inquiry Based Teaching",
+                "why_effective": "Students can explore patterns in coordinate signs to deduce quadrant rules, fostering deeper understanding.",
+                "concept_characteristics": [
+                    "Pattern recognition",
+                    "Logical reasoning"
+                ],
+                "concept_name": "Quadrants"
+            },
+            {
+                "strategy": "Experiential Based Teaching",
+                "why_effective": "Using a large floor grid where students physically move to quadrants based on called coordinates connects abstract concepts to physical movement.",
+                "concept_characteristics": [
+                    "Kinesthetic",
+                    "Spatial"
+                ],
+                "concept_name": "Quadrants"
+            }
+        ],
+        "assessment_blueprint": [
+            {
+                "assessment_type": "MCQ",
+                "bloom_level": "Remember",
+                "dok_level": "1",
+                "difficulty": "Easy",
+                "marks": 1,
+                "recommended_question": "Which of the following sign conventions is correct for Quadrant III?\n(a) (+,+)\n(b) (-,+)\n(c) (-,-)\n(d) (+,-)",
+                "concept_name": "Quadrants"
+            },
+            {
+                "assessment_type": "MCQ",
+                "bloom_level": "Understand",
+                "dok_level": "2",
+                "difficulty": "Medium",
+                "marks": 1,
+                "recommended_question": "A point has coordinates (-5, 3). In which quadrant does it lie?\n(a) Quadrant I\n(b) Quadrant II\n(c) Quadrant III\n(d) Quadrant IV",
+                "concept_name": "Quadrants"
+            },
+            {
+                "assessment_type": "Short Answer",
+                "bloom_level": "Understand",
+                "dok_level": "2",
+                "difficulty": "Medium",
+                "marks": 2,
+                "recommended_question": "Explain why a point with coordinates (0, -2) does not belong to any quadrant. Justify your answer using the definition of quadrants.",
+                "concept_name": "Quadrants"
+            },
+            {
+                "assessment_type": "Assertion Reason",
+                "bloom_level": "Understand",
+                "dok_level": "2",
+                "difficulty": "Medium",
+                "marks": 1,
+                "recommended_question": "Assertion (A): The point (-3, 4) lies in Quadrant II.\nReason (R): In Quadrant II, the x-coordinate is negative and the y-coordinate is positive.\n(a) Both A and R are true and R is the correct explanation of A.\n(b) Both A and R are true but R is not the correct explanation of A.\n(c) A is true but R is false.\n(d) A is false but R is true.",
+                "concept_name": "Quadrants"
+            },
+            {
+                "assessment_type": "Competency Based Question",
+                "bloom_level": "Apply",
+                "dok_level": "2",
+                "difficulty": "Medium",
+                "marks": 2,
+                "recommended_question": "A treasure map uses a coordinate grid. The treasure is buried at a point where the x-coordinate is negative and the y-coordinate is positive. In which quadrant should the search party look? Justify your answer by stating the sign conventions for that quadrant.",
+                "concept_name": "Quadrants"
+            },
+            {
+                "assessment_type": "HOTS",
+                "bloom_level": "Analyze",
+                "dok_level": "3",
+                "difficulty": "Hard",
+                "marks": 3,
+                "recommended_question": "A point P is such that its x-coordinate is twice its y-coordinate. If P lies in Quadrant III, what can you say about the values of its coordinates? Provide an example and explain your reasoning.",
+                "concept_name": "Quadrants"
+            }
+        ],
+        "concept_relationships": [
+            {
+                "source_concept": "Quadrants",
+                "target_concept": "Cartesian Plane",
+                "relation_type": "part_of"
+            },
+            {
+                "source_concept": "Quadrants",
+                "target_concept": "Coordinate Axes",
+                "relation_type": "depends_on"
+            },
+            {
+                "source_concept": "Quadrants",
+                "target_concept": "Ordered Pairs",
+                "relation_type": "uses"
+            },
+            {
+                "source_concept": "Quadrants",
+                "target_concept": "Sign of Coordinates",
+                "relation_type": "uses"
+            }
+        ],
+        "evidence": [
+            {
+                "source_type": "Textbook",
+                "source_text": "The axes divide the plane into four parts, called quadrants."
+            },
+            {
+                "source_type": "Textbook",
+                "source_text": "Points in Quadrant have both X- and y-coordinates positive."
+            },
+            {
+                "source_type": "Textbook",
+                "source_text": "Points in Quadrant II have negative x-coordinate and positive y-coordinate."
+            },
+            {
+                "source_type": "Textbook",
+                "source_text": "Points in Quadrant III have both X- and y-coordinates negative."
+            },
+            {
+                "source_type": "Textbook",
+                "source_text": "Points in Quadrant IV have positive x-coordinate and negative y-coordinate."
+            },
+            {
+                "source_type": "Textbook",
+                "source_text": "The axes divide the plane into four parts, called quadrants."
+            },
+            {
+                "source_type": "Textbook",
+                "source_text": "Points in Quadrant have both X- and y-coordinates positive."
+            },
+            {
+                "source_type": "Textbook",
+                "source_text": "Points in Quadrant II have negative x-coordinate and positive y-coordinate."
+            },
+            {
+                "source_type": "Textbook",
+                "source_text": "Points in Quadrant III have both X- and y-coordinates negative."
+            },
+            {
+                "source_type": "Textbook",
+                "source_text": "Points in Quadrant IV have positive x-coordinate and negative y-coordinate."
+            },
+            {
+                "source_type": "Inferred",
+                "source_text": "Common misconceptions about quadrant numbering and sign confusion are documented in classroom observations and mathematics education literature."
+            },
+            {
+                "source_type": "Inferred",
+                "source_text": "Hands-on activities and games are widely recommended in mathematics education for teaching coordinate geometry to middle school students."
+            },
+            {
+                "source_type": "Textbook",
+                "source_text": "The axes divide the plane into four parts, called quadrants."
+            },
+            {
+                "source_type": "Textbook",
+                "source_text": "Points in Quadrant have both X- and y-coordinates positive."
+            },
+            {
+                "source_type": "Textbook",
+                "source_text": "Points in Quadrant II have negative x-coordinate and positive y-coordinate."
+            },
+            {
+                "source_type": "Textbook",
+                "source_text": "Points in Quadrant III have both X- and y-coordinates negative."
+            },
+            {
+                "source_type": "Textbook",
+                "source_text": "Points in Quadrant IV have positive x-coordinate and negative y-coordinate."
+            }
+        ]
+    },
+    {
+        "concept": {
+            "concept_id": "signs_of_coordinates_in_quadrants",
+            "concept_name": "Signs of Coordinates in Quadrants",
+            "concept_type": "Rule",
+            "definition": "The sign conventions for the x and y coordinates of a point in the Cartesian plane depending on the quadrant: Quadrant I (positive, positive), Quadrant II (negative, positive), Quadrant III (negative, negative), Quadrant IV (positive, negative).",
+            "importance": "Core",
+            "difficulty": "Easy",
+            "confidence": 0.95
+        },
+        "knowledge_items": [
+            {
+                "knowledge": "Quadrant I signs",
+                "statement": "Points in Quadrant I have both x-coordinate and y-coordinate positive.",
+                "knowledge_type": "Rule",
+                "confidence": 0.95,
+                "concept_name": "Signs of Coordinates in Quadrants"
+            },
+            {
+                "knowledge": "Quadrant II signs",
+                "statement": "Points in Quadrant II have negative x-coordinate and positive y-coordinate.",
+                "knowledge_type": "Rule",
+                "confidence": 0.95,
+                "concept_name": "Signs of Coordinates in Quadrants"
+            },
+            {
+                "knowledge": "Quadrant III signs",
+                "statement": "Points in Quadrant III have both x-coordinate and y-coordinate negative.",
+                "knowledge_type": "Rule",
+                "confidence": 0.95,
+                "concept_name": "Signs of Coordinates in Quadrants"
+            },
+            {
+                "knowledge": "Quadrant IV signs",
+                "statement": "Points in Quadrant IV have positive x-coordinate and negative y-coordinate.",
+                "knowledge_type": "Rule",
+                "confidence": 0.95,
+                "concept_name": "Signs of Coordinates in Quadrants"
+            }
+        ],
+        "abilities": [
+            {
+                "ability": "Explain quadrant sign conventions",
+                "verb": "Explain",
+                "description": "Explain the sign conventions (positive or negative) for the x-coordinate and y-coordinate in each of the four quadrants of the Cartesian plane.",
+                "knowledge_refs": [
+                    "Quadrant I signs",
+                    "Quadrant II signs",
+                    "Quadrant III signs",
+                    "Quadrant IV signs"
+                ],
+                "concept_name": "Signs of Coordinates in Quadrants"
+            },
+            {
+                "ability": "Determine quadrant from coordinates",
+                "verb": "Apply",
+                "description": "Given the coordinates (x, y) of a point, determine which quadrant the point lies in by analyzing the signs of x and y.",
+                "knowledge_refs": [
+                    "Quadrant I signs",
+                    "Quadrant II signs",
+                    "Quadrant III signs",
+                    "Quadrant IV signs"
+                ],
+                "concept_name": "Signs of Coordinates in Quadrants"
+            },
+            {
+                "ability": "Classify points by quadrant signs",
+                "verb": "Classify",
+                "description": "Classify a set of given points into the appropriate quadrants based on the signs of their coordinates.",
+                "knowledge_refs": [
+                    "Quadrant I signs",
+                    "Quadrant II signs",
+                    "Quadrant III signs",
+                    "Quadrant IV signs"
+                ],
+                "concept_name": "Signs of Coordinates in Quadrants"
+            },
+            {
+                "ability": "Predict coordinate sign from quadrant",
+                "verb": "Predict",
+                "description": "Given a specific quadrant, predict whether the x-coordinate and y-coordinate of any point in that quadrant will be positive or negative.",
+                "knowledge_refs": [
+                    "Quadrant I signs",
+                    "Quadrant II signs",
+                    "Quadrant III signs",
+                    "Quadrant IV signs"
+                ],
+                "concept_name": "Signs of Coordinates in Quadrants"
+            }
+        ],
+        "skills": [
+            {
+                "skill": "Pattern Recognition",
+                "ability_refs": [
+                    "Explain quadrant sign conventions",
+                    "Predict coordinate sign from quadrant"
+                ],
+                "concept_name": "Signs of Coordinates in Quadrants"
+            },
+            {
+                "skill": "Spatial Reasoning",
+                "ability_refs": [
+                    "Determine quadrant from coordinates",
+                    "Classify points by quadrant signs"
+                ],
+                "concept_name": "Signs of Coordinates in Quadrants"
+            },
+            {
+                "skill": "Classification",
+                "ability_refs": [
+                    "Classify points by quadrant signs"
+                ],
+                "concept_name": "Signs of Coordinates in Quadrants"
+            },
+            {
+                "skill": "Mathematical Communication",
+                "ability_refs": [
+                    "Explain quadrant sign conventions"
+                ],
+                "concept_name": "Signs of Coordinates in Quadrants"
+            }
+        ],
+        "competencies": [
+            {
+                "competency": "Classifying Points in Quadrants",
+                "statement": "Using the sign conventions for quadrants, classify given points into the correct quadrants.",
+                "knowledge_refs": [
+                    "Quadrant I signs",
+                    "Quadrant II signs",
+                    "Quadrant III signs",
+                    "Quadrant IV signs"
+                ],
+                "ability_refs": [
+                    "Classify points by quadrant signs"
+                ],
+                "skill_refs": [
+                    "Classification"
+                ],
+                "concept_name": "Signs of Coordinates in Quadrants"
+            },
+            {
+                "competency": "Determining Quadrant from Coordinates",
+                "statement": "Apply the sign rules to determine the quadrant of a point given its coordinates.",
+                "knowledge_refs": [
+                    "Quadrant I signs",
+                    "Quadrant II signs",
+                    "Quadrant III signs",
+                    "Quadrant IV signs"
+                ],
+                "ability_refs": [
+                    "Determine quadrant from coordinates"
+                ],
+                "skill_refs": [
+                    "Spatial Reasoning"
+                ],
+                "concept_name": "Signs of Coordinates in Quadrants"
+            },
+            {
+                "competency": "Explaining Coordinate Signs",
+                "statement": "Explain the sign patterns for each quadrant to communicate the logic of the coordinate system.",
+                "knowledge_refs": [
+                    "Quadrant I signs",
+                    "Quadrant II signs",
+                    "Quadrant III signs",
+                    "Quadrant IV signs"
+                ],
+                "ability_refs": [
+                    "Explain quadrant sign conventions"
+                ],
+                "skill_refs": [
+                    "Mathematical Communication",
+                    "Pattern Recognition"
+                ],
+                "concept_name": "Signs of Coordinates in Quadrants"
+            }
+        ],
+        "learning_objectives": [
+            {
+                "objective": "Describe the sign conventions for coordinates in all four quadrants.",
+                "objective_type": "Knowledge",
+                "priority": "High",
+                "concept_name": "Signs of Coordinates in Quadrants"
+            },
+            {
+                "objective": "Apply the sign rules to determine the quadrant of a point from its coordinates.",
+                "objective_type": "Ability",
+                "priority": "High",
+                "concept_name": "Signs of Coordinates in Quadrants"
+            },
+            {
+                "objective": "Classify a set of points into quadrants based on the signs of their coordinates.",
+                "objective_type": "Ability",
+                "priority": "High",
+                "concept_name": "Signs of Coordinates in Quadrants"
+            }
+        ],
+        "learning_outcomes": [
+            {
+                "outcome": "Students will be able to state the sign pattern for each quadrant (e.g., Quadrant I: (+,+), Quadrant II: (-,+), Quadrant III: (-,-), Quadrant IV: (+,-)) with 100% accuracy.",
+                "outcome_type": "Knowledge Outcome",
+                "measurable": true,
+                "assessment_ready": true,
+                "concept_name": "Signs of Coordinates in Quadrants"
+            },
+            {
+                "outcome": "Given the coordinates (x, y) of a point, students will correctly identify its quadrant, including points on axes as 'on axis', with at least 90% accuracy.",
+                "outcome_type": "Ability Outcome",
+                "measurable": true,
+                "assessment_ready": true,
+                "concept_name": "Signs of Coordinates in Quadrants"
+            },
+            {
+                "outcome": "Students will accurately categorize a list of points into the appropriate quadrants, handling points on axes correctly, in a class activity with 80% accuracy.",
+                "outcome_type": "Ability Outcome",
+                "measurable": true,
+                "assessment_ready": true,
+                "concept_name": "Signs of Coordinates in Quadrants"
+            }
+        ],
+        "blooms": [
+            {
+                "level": "Understand",
+                "coverage_score": 0.5,
+                "concept_name": "Signs of Coordinates in Quadrants"
+            },
+            {
+                "level": "Apply",
+                "coverage_score": 0.5,
+                "concept_name": "Signs of Coordinates in Quadrants"
+            }
+        ],
+        "dok": [
+            {
+                "level": "1",
+                "description": "Recall and Reproduction",
+                "concept_name": "Signs of Coordinates in Quadrants"
+            }
+        ],
+        "prerequisites": [
+            {
+                "concept_name": "Negative Numbers",
+                "prerequisite_type": "Knowledge",
+                "necessity": "Mandatory",
+                "_parent_concept": "Signs of Coordinates in Quadrants"
+            },
+            {
+                "concept_name": "Coordinate Axes (x-axis and y-axis)",
+                "prerequisite_type": "Concept",
+                "necessity": "Mandatory",
+                "_parent_concept": "Signs of Coordinates in Quadrants"
+            },
+            {
+                "concept_name": "Quadrants",
+                "prerequisite_type": "Concept",
+                "necessity": "Mandatory",
+                "_parent_concept": "Signs of Coordinates in Quadrants"
+            },
+            {
+                "concept_name": "Ordered Pairs",
+                "prerequisite_type": "Concept",
+                "necessity": "Mandatory",
+                "_parent_concept": "Signs of Coordinates in Quadrants"
+            }
+        ],
+        "misconceptions": [
+            {
+                "misconception": "Quadrant II signs are (+, -)",
+                "statement": "Students believe that in Quadrant II, the x-coordinate is positive and the y-coordinate is negative.",
+                "root_cause": "Confusing the sequence of quadrants or misapplying the pattern from Quadrant I; not visually associating left of y-axis with negative x.",
+                "correction": "Quadrant II is left of the y-axis (negative x) and above the x-axis (positive y), so the sign is (-, +).",
+                "concept_name": "Signs of Coordinates in Quadrants"
+            },
+            {
+                "misconception": "Quadrant III signs are (-, +)",
+                "statement": "Students think that Quadrant III has a negative x-coordinate and a positive y-coordinate.",
+                "root_cause": "Reversing the sign pattern or extrapolating incorrectly from Quadrant II.",
+                "correction": "Quadrant III is left of y-axis and below x-axis, so both coordinates are negative (-, -).",
+                "concept_name": "Signs of Coordinates in Quadrants"
+            },
+            {
+                "misconception": "Points on axes belong to a quadrant",
+                "statement": "Students assign points like (0,5) to Quadrant I or (-3,0) to Quadrant II.",
+                "root_cause": "Lack of understanding that axes are boundaries, not interior regions of quadrants.",
+                "correction": "Any point with an x-coordinate or y-coordinate of zero lies on an axis and is not in any quadrant.",
+                "concept_name": "Signs of Coordinates in Quadrants"
+            }
+        ],
+        "real_world_applications": [
+            {
+                "application_type": "Daily Life",
+                "example": "GPS navigation uses positive and negative coordinates to indicate direction: latitude positive for north, negative for south; longitude positive for east, negative for west, essentially applying quadrant-like conventions.",
+                "relevance": "High",
+                "concept_name": "Signs of Coordinates in Quadrants"
+            },
+            {
+                "application_type": "Technology",
+                "example": "In computer graphics, the screen is partitioned into quadrants around the center, and the sign of pixel coordinates determines the rendering quadrant, crucial for animations and game physics.",
+                "relevance": "Medium",
+                "concept_name": "Signs of Coordinates in Quadrants"
+            },
+            {
+                "application_type": "Industry",
+                "example": "Engineers use coordinate sign conventions to plot forces and velocities; the quadrant signs indicate direction of vectors, essential for structural analysis and mechanical design.",
+                "relevance": "High",
+                "concept_name": "Signs of Coordinates in Quadrants"
+            }
+        ],
+        "pedagogy_recommendations": [
+            {
+                "strategy": "Inquiry Based Teaching",
+                "why_effective": "Students observe plotted points in each quadrant and inductively deduce sign patterns, fostering deeper understanding over rote memorization.",
+                "concept_characteristics": [
+                    "pattern-based",
+                    "discoverable",
+                    "spatial"
+                ],
+                "concept_name": "Signs of Coordinates in Quadrants"
+            },
+            {
+                "strategy": "Game Based Teaching",
+                "why_effective": "Competitive games like 'Quadrant Race' make rapid recall of sign rules engaging and reinforce memory through repetition and immediate feedback.",
+                "concept_characteristics": [
+                    "rule-based",
+                    "requires quick recall",
+                    "engaging"
+                ],
+                "concept_name": "Signs of Coordinates in Quadrants"
+            },
+            {
+                "strategy": "Activity Based Teaching",
+                "why_effective": "By walking on a large floor grid with labeled axes, students physically experience sign transitions, anchoring abstract rules in bodily motion and spatial orientation.",
+                "concept_characteristics": [
+                    "kinesthetic",
+                    "spatial",
+                    "concrete representation"
+                ],
+                "concept_name": "Signs of Coordinates in Quadrants"
+            }
+        ],
+        "assessment_blueprint": [
+            {
+                "assessment_type": "MCQ",
+                "bloom_level": "Remember",
+                "dok_level": "1",
+                "difficulty": "Easy",
+                "marks": 1,
+                "recommended_question": "In which quadrant does the point (-3, 5) lie? (A) I (B) II (C) III (D) IV",
+                "concept_name": "Signs of Coordinates in Quadrants"
+            },
+            {
+                "assessment_type": "Short Answer",
+                "bloom_level": "Apply",
+                "dok_level": "1",
+                "difficulty": "Easy",
+                "marks": 2,
+                "recommended_question": "Given the point (4, -2), state the quadrant and explain how you determined your answer.",
+                "concept_name": "Signs of Coordinates in Quadrants"
+            },
+            {
+                "assessment_type": "Assertion Reason",
+                "bloom_level": "Analyze",
+                "dok_level": "2",
+                "difficulty": "Medium",
+                "marks": 1,
+                "recommended_question": "Assertion (A): The point (0, -5) lies in Quadrant IV. Reason (R): Points with negative y-coordinate and positive x-coordinate are in Quadrant IV. (A) Both A and R are true and R is the correct explanation of A. (B) Both A and R are true but R is not the correct explanation of A. (C) A is true but R is false. (D) A is false but R is true.",
+                "concept_name": "Signs of Coordinates in Quadrants"
+            },
+            {
+                "assessment_type": "HOTS",
+                "bloom_level": "Analyze",
+                "dok_level": "3",
+                "difficulty": "Hard",
+                "marks": 3,
+                "recommended_question": "If a point lies in Quadrant II, what can you conclude about the signs of its coordinates? If the point is then reflected across the y-axis, which quadrant will its image lie in? Justify your answer.",
+                "concept_name": "Signs of Coordinates in Quadrants"
+            },
+            {
+                "assessment_type": "Case Study",
+                "bloom_level": "Apply",
+                "dok_level": "2",
+                "difficulty": "Medium",
+                "marks": 2,
+                "recommended_question": "A point (x, y) satisfies the inequality x*y < 0. Based on the sign conventions, in which quadrants could this point lie? Explain your reasoning.",
+                "concept_name": "Signs of Coordinates in Quadrants"
+            },
+            {
+                "assessment_type": "Competency Based Question",
+                "bloom_level": "Apply",
+                "dok_level": "1",
+                "difficulty": "Medium",
+                "marks": 2,
+                "recommended_question": "Classify the following points into the appropriate quadrants: P(-3, -2), Q(4, -5), R(-1, 6), S(0, -2). If a point does not lie in any quadrant, state the reason.",
+                "concept_name": "Signs of Coordinates in Quadrants"
+            }
+        ],
+        "concept_relationships": [
+            {
+                "source_concept": "Signs of Coordinates in Quadrants",
+                "target_concept": "Quadrants",
+                "relation_type": "depends_on"
+            },
+            {
+                "source_concept": "Signs of Coordinates in Quadrants",
+                "target_concept": "Negative Numbers",
+                "relation_type": "depends_on"
+            },
+            {
+                "source_concept": "Signs of Coordinates in Quadrants",
+                "target_concept": "Ordered Pairs",
+                "relation_type": "uses"
+            },
+            {
+                "source_concept": "Signs of Coordinates in Quadrants",
+                "target_concept": "Cartesian Coordinate System",
+                "relation_type": "part_of"
+            },
+            {
+                "source_concept": "Signs of Coordinates in Quadrants",
+                "target_concept": "Reflection Across Axes",
+                "relation_type": "related_to"
+            }
+        ],
+        "evidence": [
+            {
+                "source_type": "Textbook",
+                "source_text": "Using the conventions that we have stated earlier: (i) Points in Quadrant have both X- and y-coordinates positive. (ii) Points in Quadrant II have negative x-coordinate and positive y-coordinate. (ii) Points in Quadrant III have both X- and y-coordinates negative. (iv) Points in Quadrant IV have positive x-coordinate and negative y-coordinate."
+            },
+            {
+                "source_type": "Textbook",
+                "source_text": "Using the conventions that we have stated earlier: (i) Points in Quadrant have both X- and y-coordinates positive. (ii) Points in Quadrant II have negative x-coordinate and positive y-coordinate. (ii) Points in Quadrant III have both X- and y-coordinates negative. (iv) Points in Quadrant IV have positive x-coordinate and negative y-coordinate."
+            },
+            {
+                "source_type": "Inferred",
+                "source_text": "Common misconceptions such as confusing signs in Quadrants II and III are documented in mathematics education literature and observed in classroom assessments."
+            },
+            {
+                "source_type": "Inferred",
+                "source_text": "Prerequisites like negative numbers and the concept of quadrants are typically covered in earlier grades and in the initial sections of this chapter."
+            },
+            {
+                "source_type": "Textbook",
+                "source_text": "Using the conventions that we have stated earlier: (i) Points in Quadrant have both X- and y-coordinates positive. (ii) Points in Quadrant II have negative x-coordinate and positive y-coordinate. (ii) Points in Quadrant III have both X- and y-coordinates negative. (iv) Points in Quadrant IV have positive x-coordinate and negative y-coordinate."
+            },
+            {
+                "source_type": "Inferred",
+                "source_text": "Points with a zero coordinate lie on an axis and are not assigned to any quadrant, as the axes are the boundaries of the quadrants."
+            }
+        ]
+    },
+    {
+        "concept": {
+            "concept_id": "Coordinates_of_a_Point",
+            "concept_name": "Coordinates of a Point",
+            "concept_type": "Definition",
+            "definition": "The coordinates of a point P in 2-D space are represented by (x, y), where x is the perpendicular distance from the y-axis measured along the x-axis, and y is the perpendicular distance from the x-axis measured along the y-axis.",
+            "importance": "Core",
+            "difficulty": "Easy",
+            "confidence": 0.95
+        },
+        "knowledge_items": [
+            {
+                "knowledge": "Coordinate Representation",
+                "statement": "The coordinates of a point P in 2-D space are represented by (x, y).",
+                "knowledge_type": "Fact",
+                "confidence": 0.95,
+                "concept_name": "Coordinates of a Point"
+            },
+            {
+                "knowledge": "X-Coordinate Definition",
+                "statement": "The x-coordinate is the perpendicular distance of the point from the y-axis, measured along the x-axis.",
+                "knowledge_type": "Definition",
+                "confidence": 0.95,
+                "concept_name": "Coordinates of a Point"
+            },
+            {
+                "knowledge": "Y-Coordinate Definition",
+                "statement": "The y-coordinate is the perpendicular distance of the point from the x-axis, measured along the y-axis.",
+                "knowledge_type": "Definition",
+                "confidence": 0.95,
+                "concept_name": "Coordinates of a Point"
+            }
+        ],
+        "abilities": [
+            {
+                "ability": "Explain Coordinates",
+                "verb": "Explain",
+                "description": "Explain the meaning of the coordinates of a point in 2-D space as perpendicular distances from the axes.",
+                "knowledge_refs": [
+                    "Coordinate Representation",
+                    "X-Coordinate Definition",
+                    "Y-Coordinate Definition"
+                ],
+                "concept_name": "Coordinates of a Point"
+            },
+            {
+                "ability": "Interpret Coordinates",
+                "verb": "Interpret",
+                "description": "Interpret the ordered pair (x, y) to determine the perpendicular distances of a point from the axes.",
+                "knowledge_refs": [
+                    "Coordinate Representation",
+                    "X-Coordinate Definition",
+                    "Y-Coordinate Definition"
+                ],
+                "concept_name": "Coordinates of a Point"
+            }
+        ],
+        "skills": [
+            {
+                "skill": "Spatial Visualization",
+                "ability_refs": [
+                    "Explain Coordinates",
+                    "Interpret Coordinates"
+                ],
+                "concept_name": "Coordinates of a Point"
+            },
+            {
+                "skill": "Mathematical Communication",
+                "ability_refs": [
+                    "Explain Coordinates",
+                    "Interpret Coordinates"
+                ],
+                "concept_name": "Coordinates of a Point"
+            }
+        ],
+        "competencies": [
+            {
+                "competency": "Understanding Coordinate Representation",
+                "statement": "Demonstrate understanding of coordinate representation by explaining that (x, y) denotes perpendicular distances from axes, using spatial visualization and mathematical communication.",
+                "knowledge_refs": [
+                    "Coordinate Representation",
+                    "X-Coordinate Definition",
+                    "Y-Coordinate Definition"
+                ],
+                "ability_refs": [
+                    "Explain Coordinates",
+                    "Interpret Coordinates"
+                ],
+                "skill_refs": [
+                    "Spatial Visualization",
+                    "Mathematical Communication"
+                ],
+                "concept_name": "Coordinates of a Point"
+            }
+        ],
+        "learning_objectives": [
+            {
+                "objective": "Explain the meaning of the coordinates (x, y) as perpendicular distances from the axes.",
+                "objective_type": "Ability",
+                "priority": "High",
+                "concept_name": "Coordinates of a Point"
+            },
+            {
+                "objective": "Interpret the ordered pair (x, y) to determine the perpendicular distances of a point from the axes.",
+                "objective_type": "Ability",
+                "priority": "High",
+                "concept_name": "Coordinates of a Point"
+            }
+        ],
+        "learning_outcomes": [
+            {
+                "outcome": "The student explains that the x-coordinate is the perpendicular distance from the y-axis and the y-coordinate is the perpendicular distance from the x-axis.",
+                "outcome_type": "Ability Outcome",
+                "measurable": true,
+                "assessment_ready": true,
+                "concept_name": "Coordinates of a Point"
+            },
+            {
+                "outcome": "The student determines the perpendicular distances of a given point from both axes by interpreting its coordinates.",
+                "outcome_type": "Ability Outcome",
+                "measurable": true,
+                "assessment_ready": true,
+                "concept_name": "Coordinates of a Point"
+            }
+        ],
+        "blooms": [
+            {
+                "level": "Understand",
+                "coverage_score": 1,
+                "concept_name": "Coordinates of a Point"
+            }
+        ],
+        "dok": [
+            {
+                "level": "2",
+                "description": "Skills and Concepts",
+                "concept_name": "Coordinates of a Point"
+            }
+        ],
+        "prerequisites": [
+            {
+                "concept_name": "Number Line (including signed numbers)",
+                "prerequisite_type": "Concept",
+                "necessity": "Mandatory",
+                "_parent_concept": "Coordinates of a Point"
+            },
+            {
+                "concept_name": "Perpendicular Distance",
+                "prerequisite_type": "Concept",
+                "necessity": "Mandatory",
+                "_parent_concept": "Coordinates of a Point"
+            },
+            {
+                "concept_name": "Ordered Pair",
+                "prerequisite_type": "Concept",
+                "necessity": "Mandatory",
+                "_parent_concept": "Coordinates of a Point"
+            },
+            {
+                "concept_name": "Cartesian Axes and Origin",
+                "prerequisite_type": "Concept",
+                "necessity": "Mandatory",
+                "_parent_concept": "Coordinates of a Point"
+            }
+        ],
+        "misconceptions": [
+            {
+                "misconception": "Confusing the Order of Coordinates",
+                "statement": "Students often write (y, x) instead of (x, y), thinking the vertical coordinate comes first.",
+                "root_cause": "Habit of writing coordinates as (row, column) or (latitude, longitude) where order varies, and insufficient emphasis on (horizontal, vertical) convention.",
+                "correction": "Explicitly teach that the first coordinate is always the horizontal distance from the y-axis, and the second is the vertical distance from the x-axis, with ample practice using varied points.",
+                "concept_name": "Coordinates of a Point"
+            },
+            {
+                "misconception": "Misinterpreting Coordinate Meanings",
+                "statement": "Students may believe the x-coordinate is the distance from the x-axis, and the y-coordinate is the distance from the y-axis.",
+                "root_cause": "Confusing the reference axes; thinking x relates to x-axis.",
+                "correction": "Clarify that x-coordinate is measured along the x-axis but from the y-axis, and vice versa. Use diagrams to show perpendicular distances.",
+                "concept_name": "Coordinates of a Point"
+            },
+            {
+                "misconception": "Ignoring Negative Coordinates",
+                "statement": "Students treat all coordinates as positive, e.g., plotting (-3, 2) as (3, 2).",
+                "root_cause": "Limited experience with negative numbers on the number line and only working in the first quadrant previously.",
+                "correction": "Extend number line understanding to both axes, and practice plotting points in all quadrants, emphasizing sign conventions.",
+                "concept_name": "Coordinates of a Point"
+            }
+        ],
+        "real_world_applications": [
+            {
+                "application_type": "Daily Life",
+                "example": "Using GPS coordinates (latitude, longitude) to navigate to a location on a map.",
+                "relevance": "High",
+                "concept_name": "Coordinates of a Point"
+            },
+            {
+                "application_type": "Technology",
+                "example": "Computer screens use pixel coordinates (x, y) to position elements on the display.",
+                "relevance": "High",
+                "concept_name": "Coordinates of a Point"
+            },
+            {
+                "application_type": "Industry",
+                "example": "CNC machines use 2-D coordinates to guide cutting tools to precise positions.",
+                "relevance": "High",
+                "concept_name": "Coordinates of a Point"
+            },
+            {
+                "application_type": "Research",
+                "example": "Scientists plot data points on a graph with coordinates to analyze trends.",
+                "relevance": "Medium",
+                "concept_name": "Coordinates of a Point"
+            }
+        ],
+        "pedagogy_recommendations": [
+            {
+                "strategy": "Activity Based Teaching",
+                "why_effective": "Hands-on plotting on large grid mats allows students to physically experience moving along axes, reinforcing the concept of perpendicular distances and the meaning of coordinates.",
+                "concept_characteristics": [
+                    "Spatial",
+                    "Concrete",
+                    "Kinesthetic"
+                ],
+                "concept_name": "Coordinates of a Point"
+            },
+            {
+                "strategy": "Game Based Teaching",
+                "why_effective": "Games like 'Coordinate Battleship' make practicing ordered pairs engaging and reinforce the order convention and strategic thinking.",
+                "concept_characteristics": [
+                    "Sequential",
+                    "Competitive",
+                    "Engaging"
+                ],
+                "concept_name": "Coordinates of a Point"
+            },
+            {
+                "strategy": "Inquiry Based Teaching",
+                "why_effective": "Posing questions like 'Why does order matter in coordinates?' encourages students to discover the importance of x and y order through exploration.",
+                "concept_characteristics": [
+                    "Conceptual",
+                    "Logical",
+                    "Reflective"
+                ],
+                "concept_name": "Coordinates of a Point"
+            }
+        ],
+        "assessment_blueprint": [
+            {
+                "assessment_type": "MCQ",
+                "bloom_level": "Understand",
+                "dok_level": "2",
+                "difficulty": "Easy",
+                "marks": 1,
+                "recommended_question": "The point (4, -3) has an x-coordinate of 4. This indicates that the point is at a perpendicular distance of 4 units from the: (a) x-axis (b) y-axis (c) origin (d) none",
+                "concept_name": "Coordinates of a Point"
+            },
+            {
+                "assessment_type": "Assertion Reason",
+                "bloom_level": "Analyze",
+                "dok_level": "2",
+                "difficulty": "Medium",
+                "marks": 1,
+                "recommended_question": "Assertion (A): The point (-2, 5) lies in Quadrant II. Reason (R): In Quadrant II, the x-coordinate is negative and the y-coordinate is positive.",
+                "concept_name": "Coordinates of a Point"
+            },
+            {
+                "assessment_type": "Short Answer",
+                "bloom_level": "Understand",
+                "dok_level": "2",
+                "difficulty": "Medium",
+                "marks": 2,
+                "recommended_question": "Explain the meaning of the coordinates (-3, 4) in terms of perpendicular distances from the axes.",
+                "concept_name": "Coordinates of a Point"
+            },
+            {
+                "assessment_type": "Competency Based Question",
+                "bloom_level": "Apply",
+                "dok_level": "2",
+                "difficulty": "Medium",
+                "marks": 3,
+                "recommended_question": "A drone is hovering at a point that is 5 meters east and 3 meters north of a control station. If the control station is the origin, with east as positive x-direction and north as positive y-direction, what are the coordinates of the drone? Explain the meaning of each coordinate.",
+                "concept_name": "Coordinates of a Point"
+            }
+        ],
+        "concept_relationships": [
+            {
+                "source_concept": "Coordinates of a Point",
+                "target_concept": "Cartesian Axes and Origin",
+                "relation_type": "depends_on"
+            },
+            {
+                "source_concept": "Coordinates of a Point",
+                "target_concept": "Number Line",
+                "relation_type": "uses"
+            },
+            {
+                "source_concept": "Coordinates of a Point",
+                "target_concept": "Cartesian Coordinate System",
+                "relation_type": "part_of"
+            },
+            {
+                "source_concept": "Distance Formula",
+                "target_concept": "Coordinates of a Point",
+                "relation_type": "uses"
+            },
+            {
+                "source_concept": "Midpoint Formula",
+                "target_concept": "Coordinates of a Point",
+                "relation_type": "uses"
+            }
+        ],
+        "evidence": [
+            {
+                "source_type": "Textbook",
+                "source_text": "Can you now see the meaning of the coordinates of a point in 2-D space? In general, the coordinates of a point P in 2-D space are represented by (x, y)."
+            },
+            {
+                "source_type": "Textbook",
+                "source_text": "Here, X represents the perpendicular distance of P from the y-axis, measured along the x-axis, and y is the perpendicular distance of P from the x-axis, measured along the y-axis. X is the x-coordinate and y is the y-coordinate of the point (x, y)."
+            },
+            {
+                "source_type": "Textbook",
+                "source_text": "In general, the coordinates of a point P in 2-D space are represented by (x, y)."
+            },
+            {
+                "source_type": "Textbook",
+                "source_text": "Here, X represents the perpendicular distance of P from the y-axis, measured along the x-axis, and y is the perpendicular distance of P from the x-axis, measured along the y-axis."
+            },
+            {
+                "source_type": "Inferred",
+                "source_text": "The chapter sequence shows that axes and origin are introduced before coordinates, making them a prerequisite."
+            },
+            {
+                "source_type": "Inferred",
+                "source_text": "Common classroom observation: Students often swap x and y coordinates."
+            },
+            {
+                "source_type": "Inferred",
+                "source_text": "Map coordinates are a standard real-life application of 2-D coordinates."
+            },
+            {
+                "source_type": "Textbook",
+                "source_text": "In general, the coordinates of a point P in 2-D space are represented by (x, y)."
+            },
+            {
+                "source_type": "Textbook",
+                "source_text": "Here, X represents the perpendicular distance of P from the y-axis, measured along the x-axis, and y is the perpendicular distance of P from the x-axis, measured along the y-axis."
+            }
+        ]
+    },
+    {
+        "concept": {
+            "concept_id": "CONCEPT_001",
+            "concept_name": "Distance Formula",
+            "concept_type": "Formula",
+            "definition": "The distance between two points (x1, y1) and (x2, y2) is given by d = √((x2 - x1)² + (y2 - y1)²).",
+            "importance": "Core",
+            "difficulty": "Medium",
+            "confidence": 0.95
+        },
+        "knowledge_items": [
+            {
+                "knowledge": "Distance Formula Definition",
+                "statement": "The distance between two points P(x1, y1) and Q(x2, y2) is given by the formula d = √((x2 - x1)² + (y2 - y1)²).",
+                "knowledge_type": "Rule",
+                "confidence": 0.95,
+                "concept_name": "Distance Formula"
+            },
+            {
+                "knowledge": "Distance Formula Invariance to Sign",
+                "statement": "The distance formula is independent of the order of subtraction of coordinates because squaring removes the sign.",
+                "knowledge_type": "Fact",
+                "confidence": 0.9,
+                "concept_name": "Distance Formula"
+            },
+            {
+                "knowledge": "Derivation from Pythagoras Theorem",
+                "statement": "The distance formula is derived from the Baudhayana-Pythagoras theorem by considering the horizontal and vertical differences as legs of a right triangle.",
+                "knowledge_type": "Relationship",
+                "confidence": 0.9,
+                "concept_name": "Distance Formula"
+            }
+        ],
+        "abilities": [
+            {
+                "ability": "Apply Distance Formula",
+                "verb": "Apply",
+                "description": "Apply the distance formula to calculate the distance between two given points in the coordinate plane.",
+                "knowledge_refs": [
+                    "Distance Formula Definition"
+                ],
+                "concept_name": "Distance Formula"
+            },
+            {
+                "ability": "Explain Distance Formula Derivation",
+                "verb": "Explain",
+                "description": "Explain the derivation of the distance formula using the Baudhayana-Pythagoras theorem.",
+                "knowledge_refs": [
+                    "Derivation from Pythagoras Theorem",
+                    "Distance Formula Definition"
+                ],
+                "concept_name": "Distance Formula"
+            },
+            {
+                "ability": "Solve Distance Problems",
+                "verb": "Solve",
+                "description": "Solve problems involving the distance formula, including determining unknown coordinates given distance constraints.",
+                "knowledge_refs": [
+                    "Distance Formula Definition",
+                    "Distance Formula Invariance to Sign"
+                ],
+                "concept_name": "Distance Formula"
+            }
+        ],
+        "skills": [
+            {
+                "skill": "Problem Solving",
+                "ability_refs": [
+                    "Apply Distance Formula",
+                    "Solve Distance Problems"
+                ],
+                "concept_name": "Distance Formula"
+            },
+            {
+                "skill": "Reasoning",
+                "ability_refs": [
+                    "Explain Distance Formula Derivation",
+                    "Solve Distance Problems"
+                ],
+                "concept_name": "Distance Formula"
+            }
+        ],
+        "competencies": [
+            {
+                "competency": "Calculate Distance Between Points",
+                "statement": "Given two points in the Cartesian plane, accurately calculate the distance between them using the distance formula, demonstrating problem-solving skills and reasoning about coordinate differences.",
+                "knowledge_refs": [
+                    "Distance Formula Definition",
+                    "Distance Formula Invariance to Sign"
+                ],
+                "ability_refs": [
+                    "Apply Distance Formula",
+                    "Solve Distance Problems"
+                ],
+                "skill_refs": [
+                    "Problem Solving",
+                    "Reasoning"
+                ],
+                "concept_name": "Distance Formula"
+            }
+        ],
+        "learning_objectives": [
+            {
+                "objective": "Explain the derivation of the distance formula using the Baudhayana-Pythagoras theorem.",
+                "objective_type": "Ability",
+                "priority": "High",
+                "concept_name": "Distance Formula"
+            },
+            {
+                "objective": "Calculate the distance between two points using the distance formula.",
+                "objective_type": "Ability",
+                "priority": "High",
+                "concept_name": "Distance Formula"
+            },
+            {
+                "objective": "Solve real-world problems involving distance in coordinate geometry.",
+                "objective_type": "Skill",
+                "priority": "Medium",
+                "concept_name": "Distance Formula"
+            },
+            {
+                "objective": "Analyze geometric properties of shapes using distance calculations.",
+                "objective_type": "Ability",
+                "priority": "Medium",
+                "concept_name": "Distance Formula"
+            }
+        ],
+        "learning_outcomes": [
+            {
+                "outcome": "The student will be able to calculate the distance between any two points accurately. [C-4.5]",
+                "outcome_type": "Ability Outcome",
+                "measurable": true,
+                "assessment_ready": true,
+                "concept_name": "Distance Formula"
+            },
+            {
+                "outcome": "The student will be able to explain the derivation of the distance formula from the Pythagorean theorem. [C-4.5]",
+                "outcome_type": "Ability Outcome",
+                "measurable": true,
+                "assessment_ready": true,
+                "concept_name": "Distance Formula"
+            },
+            {
+                "outcome": "The student will be able to apply the distance formula to solve problems in real-life contexts. [CG-8]",
+                "outcome_type": "Skill Outcome",
+                "measurable": true,
+                "assessment_ready": true,
+                "concept_name": "Distance Formula"
+            }
+        ],
+        "blooms": [
+            {
+                "level": "Understand",
+                "coverage_score": 0.3,
+                "concept_name": "Distance Formula"
+            },
+            {
+                "level": "Apply",
+                "coverage_score": 0.7,
+                "concept_name": "Distance Formula"
+            }
+        ],
+        "dok": [
+            {
+                "level": "2",
+                "description": "Skills and Concepts",
+                "concept_name": "Distance Formula"
+            },
+            {
+                "level": "3",
+                "description": "Strategic Thinking",
+                "concept_name": "Distance Formula"
+            }
+        ],
+        "prerequisites": [
+            {
+                "concept_name": "Cartesian Coordinate System",
+                "prerequisite_type": "Concept",
+                "necessity": "Mandatory",
+                "_parent_concept": "Distance Formula"
+            },
+            {
+                "concept_name": "Ordered Pairs",
+                "prerequisite_type": "Concept",
+                "necessity": "Mandatory",
+                "_parent_concept": "Distance Formula"
+            },
+            {
+                "concept_name": "Plotting Points on Coordinate Plane",
+                "prerequisite_type": "Ability",
+                "necessity": "Mandatory",
+                "_parent_concept": "Distance Formula"
+            },
+            {
+                "concept_name": "Pythagorean Theorem",
+                "prerequisite_type": "Concept",
+                "necessity": "Mandatory",
+                "_parent_concept": "Distance Formula"
+            },
+            {
+                "concept_name": "Square Roots",
+                "prerequisite_type": "Knowledge",
+                "necessity": "Mandatory",
+                "_parent_concept": "Distance Formula"
+            },
+            {
+                "concept_name": "Squares of Numbers",
+                "prerequisite_type": "Knowledge",
+                "necessity": "Mandatory",
+                "_parent_concept": "Distance Formula"
+            }
+        ],
+        "misconceptions": [
+            {
+                "misconception": "Forgetting to square the differences",
+                "statement": "The distance is sqrt((x2 - x1) + (y2 - y1)).",
+                "root_cause": "Incomplete understanding of the Pythagorean theorem derivation; misapplication of the formula.",
+                "correction": "Distance is sqrt((x2 - x1)^2 + (y2 - y1)^2), requiring squaring each difference before adding.",
+                "concept_name": "Distance Formula"
+            },
+            {
+                "misconception": "Believing order of subtraction matters",
+                "statement": "If you subtract in the wrong order, the distance will be negative or incorrect.",
+                "root_cause": "Confusion with signed differences and failure to internalize that squaring eliminates sign.",
+                "correction": "Distance is always non-negative because squaring removes any negative sign, so order of subtraction does not affect the result.",
+                "concept_name": "Distance Formula"
+            },
+            {
+                "misconception": "Confusing distance formula with midpoint formula",
+                "statement": "Distance is ((x1 + x2)/2, (y1 + y2)/2).",
+                "root_cause": "Conflating two distinct formulas that use similar inputs (x and y values).",
+                "correction": "Distance formula is sqrt((x2 - x1)^2 + (y2 - y1)^2), while midpoint is ((x1 + x2)/2, (y1 + y2)/2).",
+                "concept_name": "Distance Formula"
+            }
+        ],
+        "real_world_applications": [
+            {
+                "application_type": "Daily Life",
+                "example": "Finding the shortest distance to walk between two locations on a city map given their coordinates.",
+                "relevance": "High",
+                "concept_name": "Distance Formula"
+            },
+            {
+                "application_type": "Technology",
+                "example": "GPS systems use the distance formula (with latitude/longitude as coordinates) to calculate straight-line distances.",
+                "relevance": "High",
+                "concept_name": "Distance Formula"
+            },
+            {
+                "application_type": "Industry",
+                "example": "Architects use coordinate geometry to measure precise distances between structural points in blueprints.",
+                "relevance": "Medium",
+                "concept_name": "Distance Formula"
+            },
+            {
+                "application_type": "Environment",
+                "example": "Measuring the distance between two sampling sites in an environmental study using grid-based coordinates.",
+                "relevance": "Medium",
+                "concept_name": "Distance Formula"
+            }
+        ],
+        "pedagogy_recommendations": [
+            {
+                "strategy": "Activity Based Teaching",
+                "why_effective": "Students can physically plot points on graph paper, construct right triangles, and measure distances, linking the formula to concrete visual representations.",
+                "concept_characteristics": [
+                    "Geometric",
+                    "Procedural"
+                ],
+                "concept_name": "Distance Formula"
+            },
+            {
+                "strategy": "Inquiry Based Teaching",
+                "why_effective": "Guides students to derive the formula themselves from the Pythagorean theorem, fostering deep understanding and ownership of the concept.",
+                "concept_characteristics": [
+                    "Derived",
+                    "Logical"
+                ],
+                "concept_name": "Distance Formula"
+            },
+            {
+                "strategy": "Game Based Teaching",
+                "why_effective": "A coordinate grid treasure hunt game where students calculate distances between points to find hidden objects can make learning engaging and memorable.",
+                "concept_characteristics": [
+                    "Spatial",
+                    "Interactive"
+                ],
+                "concept_name": "Distance Formula"
+            }
+        ],
+        "assessment_blueprint": [
+            {
+                "assessment_type": "MCQ",
+                "bloom_level": "Apply",
+                "dok_level": "2",
+                "difficulty": "Easy",
+                "marks": 1,
+                "recommended_question": "What is the distance between the points (0,0) and (3,4)? a) 4 b) 5 c) 6 d) 7",
+                "concept_name": "Distance Formula"
+            },
+            {
+                "assessment_type": "Short Answer",
+                "bloom_level": "Understand",
+                "dok_level": "2",
+                "difficulty": "Medium",
+                "marks": 2,
+                "recommended_question": "Using the figure of a right triangle formed by two points, derive the distance formula from the Pythagorean theorem.",
+                "concept_name": "Distance Formula"
+            },
+            {
+                "assessment_type": "Numerical",
+                "bloom_level": "Apply",
+                "dok_level": "2",
+                "difficulty": "Medium",
+                "marks": 3,
+                "recommended_question": "Find the distance between the points A(-2,5) and B(4,-3).",
+                "concept_name": "Distance Formula"
+            },
+            {
+                "assessment_type": "Assertion Reason",
+                "bloom_level": "Evaluate",
+                "dok_level": "3",
+                "difficulty": "Medium",
+                "marks": 2,
+                "recommended_question": "Assertion (A): The distance between (1,2) and (4,6) is 5. Reason (R): The distance formula is derived from the Pythagorean theorem. a) Both A and R are true and R is the correct explanation of A. b) Both A and R are true but R is not the correct explanation of A. c) A is true but R is false. d) A is false but R is true.",
+                "concept_name": "Distance Formula"
+            },
+            {
+                "assessment_type": "HOTS",
+                "bloom_level": "Analyze",
+                "dok_level": "3",
+                "difficulty": "Hard",
+                "marks": 4,
+                "recommended_question": "Using distance formula, show that the points (0,0), (10,0), and (5,5√3) form an equilateral triangle.",
+                "concept_name": "Distance Formula"
+            },
+            {
+                "assessment_type": "Competency Based Question",
+                "bloom_level": "Apply",
+                "dok_level": "2",
+                "difficulty": "Medium",
+                "marks": 3,
+                "recommended_question": "A park is situated at coordinates (200 m, 300 m) and a school at (500 m, 700 m). Calculate the straight-line distance between them. If a student cycles at 5 m/s, how long will it take to travel this distance directly?",
+                "concept_name": "Distance Formula"
+            }
+        ],
+        "concept_relationships": [
+            {
+                "source_concept": "Distance Formula",
+                "target_concept": "Pythagorean Theorem",
+                "relation_type": "depends_on"
+            },
+            {
+                "source_concept": "Distance Formula",
+                "target_concept": "Coordinate Geometry",
+                "relation_type": "part_of"
+            },
+            {
+                "source_concept": "Distance Formula",
+                "target_concept": "Ordered Pairs",
+                "relation_type": "uses"
+            },
+            {
+                "source_concept": "Distance Formula",
+                "target_concept": "Square Roots",
+                "relation_type": "uses"
+            },
+            {
+                "source_concept": "Distance Formula",
+                "target_concept": "Midpoint Formula",
+                "relation_type": "related_to"
+            }
+        ],
+        "evidence": [
+            {
+                "source_type": "Textbook",
+                "source_text": "In general, the distance between the points (x, Y,) and (x2, y2) is given by and is calculated as shown in Fig. 1.8."
+            },
+            {
+                "source_type": "Textbook",
+                "source_text": "It makes no difference whether (x2 − X1) and (y2 − y1) are positive or negative, as we are simply measuring the shifts along the two axes."
+            },
+            {
+                "source_type": "Curriculum",
+                "source_text": "derives the distance formula using the Baudhayana-Pythagoras theorem"
+            },
+            {
+                "source_type": "Textbook",
+                "source_text": "In general, the distance between the points (x, Y,) and (x2, y2) is given by and is calculated as shown in Fig. 1.8."
+            },
+            {
+                "source_type": "Textbook",
+                "source_text": "It makes no difference whether (x2 − X1) and (y2 − y1) are positive or negative, as we are simply measuring the shifts along the two axes."
+            },
+            {
+                "source_type": "Curriculum",
+                "source_text": "derives the distance formula using the Baudhayana-Pythagoras theorem"
+            },
+            {
+                "source_type": "Textbook",
+                "source_text": "In general, the distance between the points (x, Y,) and (x2, y2) is given by and is calculated as shown in Fig. 1.8."
+            },
+            {
+                "source_type": "Textbook",
+                "source_text": "It makes no difference whether (x2 − X1) and (y2 − y1) are positive or negative, as we are simply measuring the shifts along the two axes."
+            },
+            {
+                "source_type": "Curriculum",
+                "source_text": "derives the distance formula using the Baudhayana-Pythagoras theorem"
+            }
+        ]
+    },
+    {
+        "concept": {
+            "concept_id": "REFLECTION_01",
+            "concept_name": "Reflection",
+            "concept_type": "Process",
+            "definition": "A transformation that flips a figure over a line (axis), resulting in a mirror image; in coordinate geometry, reflection across the y-axis changes the sign of x-coordinates.",
+            "importance": "Core",
+            "difficulty": "Medium",
+            "confidence": 0.95
+        },
+        "knowledge_items": [
+            {
+                "knowledge": "Reflection across y-axis rule",
+                "statement": "When a point (x, y) is reflected across the y-axis, its image has coordinates (-x, y).",
+                "knowledge_type": "Rule",
+                "confidence": 0.95,
+                "concept_name": "Reflection"
+            },
+            {
+                "knowledge": "Preservation of distance under reflection",
+                "statement": "Reflection preserves distances between points; the length of a segment remains unchanged after reflection.",
+                "knowledge_type": "Principle",
+                "confidence": 0.9,
+                "concept_name": "Reflection"
+            },
+            {
+                "knowledge": "Verification of reflection properties using distance formula",
+                "statement": "The distance formula, derived from the Baudhayana-Pythagoras theorem, can be used to verify that corresponding side lengths of a figure and its reflected image are equal.",
+                "knowledge_type": "Process",
+                "confidence": 0.85,
+                "concept_name": "Reflection"
+            }
+        ],
+        "abilities": [
+            {
+                "ability": "Explain reflection in y-axis",
+                "verb": "Explain",
+                "description": "Explain how the coordinates of a point change when reflected across the y-axis.",
+                "knowledge_refs": [
+                    "When a point (x, y) is reflected across the y-axis, its image has coordinates (-x, y)."
+                ],
+                "concept_name": "Reflection"
+            },
+            {
+                "ability": "Apply reflection to find coordinates",
+                "verb": "Apply",
+                "description": "Apply the reflection rule to determine the coordinates of points after reflection across the y-axis.",
+                "knowledge_refs": [
+                    "When a point (x, y) is reflected across the y-axis, its image has coordinates (-x, y)."
+                ],
+                "concept_name": "Reflection"
+            },
+            {
+                "ability": "Analyze reflection properties",
+                "verb": "Analyze",
+                "description": "Analyze whether reflection preserves distances by calculating and comparing side lengths using the distance formula.",
+                "knowledge_refs": [
+                    "Reflection preserves distances between points; the length of a segment remains unchanged after reflection.",
+                    "The distance formula, derived from the Baudhayana-Pythagoras theorem, can be used to verify that corresponding side lengths of a figure and its reflected image are equal."
+                ],
+                "concept_name": "Reflection"
+            }
+        ],
+        "skills": [
+            {
+                "skill": "Problem Solving",
+                "ability_refs": [
+                    "Apply reflection to find coordinates"
+                ],
+                "concept_name": "Reflection"
+            },
+            {
+                "skill": "Reasoning",
+                "ability_refs": [
+                    "Analyze reflection properties"
+                ],
+                "concept_name": "Reflection"
+            },
+            {
+                "skill": "Model Building",
+                "ability_refs": [
+                    "Explain reflection in y-axis",
+                    "Apply reflection to find coordinates"
+                ],
+                "concept_name": "Reflection"
+            }
+        ],
+        "competencies": [
+            {
+                "competency": "Calculate and verify reflected points",
+                "statement": "Given a point or triangle, reflect it across the y-axis, write the coordinates of the image, and verify that side lengths remain equal using the distance formula.",
+                "knowledge_refs": [
+                    "When a point (x, y) is reflected across the y-axis, its image has coordinates (-x, y).",
+                    "Reflection preserves distances between points; the length of a segment remains unchanged after reflection.",
+                    "The distance formula, derived from the Baudhayana-Pythagoras theorem, can be used to verify that corresponding side lengths of a figure and its reflected image are equal."
+                ],
+                "ability_refs": [
+                    "Apply reflection to find coordinates",
+                    "Analyze reflection properties"
+                ],
+                "skill_refs": [
+                    "Problem Solving",
+                    "Reasoning"
+                ],
+                "concept_name": "Reflection"
+            }
+        ],
+        "learning_objectives": [
+            {
+                "objective": "Explain the rule for reflection of a point across the y-axis.",
+                "objective_type": "Knowledge",
+                "priority": "High",
+                "concept_name": "Reflection"
+            },
+            {
+                "objective": "Apply the reflection rule to determine the coordinates of reflected points.",
+                "objective_type": "Ability",
+                "priority": "High",
+                "concept_name": "Reflection"
+            },
+            {
+                "objective": "Analyze whether reflection across the y-axis preserves distances between points.",
+                "objective_type": "Skill",
+                "priority": "Medium",
+                "concept_name": "Reflection"
+            },
+            {
+                "objective": "Verify the properties of reflection by calculating side lengths using the distance formula.",
+                "objective_type": "Competency",
+                "priority": "Medium",
+                "concept_name": "Reflection"
+            }
+        ],
+        "learning_outcomes": [
+            {
+                "outcome": "Students will be able to state that reflecting a point (x,y) across the y-axis yields (-x,y) and explain why the x-coordinate sign changes. (Aligns with [C-4.5])",
+                "outcome_type": "Knowledge Outcome",
+                "measurable": true,
+                "assessment_ready": true,
+                "concept_name": "Reflection"
+            },
+            {
+                "outcome": "Given a triangle or set of points, students will accurately calculate the coordinates of the reflected image across the y-axis. (Aligns with [C-4.5])",
+                "outcome_type": "Ability Outcome",
+                "measurable": true,
+                "assessment_ready": true,
+                "concept_name": "Reflection"
+            },
+            {
+                "outcome": "Students will analyze the lengths of sides of a triangle and its reflection, concluding that reflection is an isometry. (Aligns with [CG-4])",
+                "outcome_type": "Skill Outcome",
+                "measurable": true,
+                "assessment_ready": true,
+                "concept_name": "Reflection"
+            },
+            {
+                "outcome": "Students will verify that the distance between two points is the same as the distance between their reflected images using the distance formula, demonstrating proficiency in both algebraic and geometric reasoning. (Aligns with [C-7.1])",
+                "outcome_type": "Competency Outcome",
+                "measurable": true,
+                "assessment_ready": true,
+                "concept_name": "Reflection"
+            }
+        ],
+        "blooms": [
+            {
+                "level": "Understand",
+                "coverage_score": 0.2,
+                "concept_name": "Reflection"
+            },
+            {
+                "level": "Apply",
+                "coverage_score": 0.5,
+                "concept_name": "Reflection"
+            },
+            {
+                "level": "Analyze",
+                "coverage_score": 0.3,
+                "concept_name": "Reflection"
+            }
+        ],
+        "dok": [
+            {
+                "level": "2",
+                "description": "Skills and Concepts",
+                "concept_name": "Reflection"
+            },
+            {
+                "level": "3",
+                "description": "Strategic Thinking",
+                "concept_name": "Reflection"
+            }
+        ],
+        "prerequisites": [
+            {
+                "concept_name": "Cartesian Coordinate System",
+                "prerequisite_type": "Concept",
+                "necessity": "Mandatory",
+                "_parent_concept": "Reflection"
+            },
+            {
+                "concept_name": "Plotting Points",
+                "prerequisite_type": "Skill",
+                "necessity": "Mandatory",
+                "_parent_concept": "Reflection"
+            },
+            {
+                "concept_name": "Distance Formula",
+                "prerequisite_type": "Knowledge",
+                "necessity": "Recommended",
+                "_parent_concept": "Reflection"
+            },
+            {
+                "concept_name": "Ordered Pairs",
+                "prerequisite_type": "Knowledge",
+                "necessity": "Mandatory",
+                "_parent_concept": "Reflection"
+            },
+            {
+                "concept_name": "Sign Conventions",
+                "prerequisite_type": "Knowledge",
+                "necessity": "Recommended",
+                "_parent_concept": "Reflection"
+            }
+        ],
+        "misconceptions": [
+            {
+                "misconception": "Reflection across y-axis changes y-coordinate",
+                "statement": "Students often believe that reflecting a point across the y-axis changes the sign of the y-coordinate instead of the x-coordinate.",
+                "root_cause": "Confusion between the axes; thinking y-axis is vertical so y changes.",
+                "correction": "Reflection across the y-axis only changes the sign of the x-coordinate; (x, y) becomes (-x, y).",
+                "concept_name": "Reflection"
+            },
+            {
+                "misconception": "Reflection changes the size or shape of the figure",
+                "statement": "Some students think that after reflection, the length of sides or angles might change.",
+                "root_cause": "Misunderstanding that reflection is a rigid transformation (isometry).",
+                "correction": "Reflection preserves side lengths and angles; the image is congruent to the original.",
+                "concept_name": "Reflection"
+            },
+            {
+                "misconception": "Reflection always changes both coordinates",
+                "statement": "Students may assume that any reflection flips both x and y signs.",
+                "root_cause": "Overgeneralizing from reflection across the origin or lack of understanding of the line of reflection.",
+                "correction": "Only coordinates perpendicular to the reflection line change sign; across y-axis, only x changes; across x-axis, only y changes.",
+                "concept_name": "Reflection"
+            }
+        ],
+        "real_world_applications": [
+            {
+                "application_type": "Daily Life",
+                "example": "Mirror reflection in a bathroom or dressing mirror shows a lateral inversion similar to reflection across a vertical axis.",
+                "relevance": "High",
+                "concept_name": "Reflection"
+            },
+            {
+                "application_type": "Technology",
+                "example": "Computer graphics and image processing use reflection transformations to create mirror images or to flip objects.",
+                "relevance": "High",
+                "concept_name": "Reflection"
+            },
+            {
+                "application_type": "Environment",
+                "example": "Symmetry in nature, such as a butterfly's wings or a leaf's venation, exhibits reflection symmetry.",
+                "relevance": "Medium",
+                "concept_name": "Reflection"
+            },
+            {
+                "application_type": "Society",
+                "example": "Architectural designs often use reflectional symmetry to create aesthetically pleasing structures, like the Taj Mahal.",
+                "relevance": "Medium",
+                "concept_name": "Reflection"
+            }
+        ],
+        "pedagogy_recommendations": [
+            {
+                "strategy": "Activity Based Teaching",
+                "why_effective": "Using graph paper and folding activities allows students to physically experience reflection and discover the coordinate rules.",
+                "concept_characteristics": [
+                    "visual-spatial",
+                    "process-based",
+                    "rule-discovery"
+                ],
+                "concept_name": "Reflection"
+            },
+            {
+                "strategy": "Inquiry Based Teaching",
+                "why_effective": "Posing questions like 'What happens to the coordinates?' and letting students investigate patterns encourages critical thinking and ownership of the rule.",
+                "concept_characteristics": [
+                    "pattern-recognition",
+                    "application",
+                    "analytical"
+                ],
+                "concept_name": "Reflection"
+            }
+        ],
+        "assessment_blueprint": [
+            {
+                "assessment_type": "MCQ",
+                "bloom_level": "Understand",
+                "dok_level": "1",
+                "difficulty": "Easy",
+                "marks": 1,
+                "recommended_question": "What is the image of point (3,4) when reflected across the y-axis? A) (-3,4) B) (3,-4) C) (-3,-4) D) (4,3)",
+                "concept_name": "Reflection"
+            },
+            {
+                "assessment_type": "Short Answer",
+                "bloom_level": "Apply",
+                "dok_level": "2",
+                "difficulty": "Medium",
+                "marks": 2,
+                "recommended_question": "Reflect the point P(-2,5) across the y-axis and write its coordinates. Then reflect the point Q(4,-3) across the y-axis and write its coordinates.",
+                "concept_name": "Reflection"
+            },
+            {
+                "assessment_type": "Case Study",
+                "bloom_level": "Apply",
+                "dok_level": "2",
+                "difficulty": "Medium",
+                "marks": 3,
+                "recommended_question": "A triangle has vertices A(1,2), B(4,3), C(2,5). Reflect the triangle across the y-axis and list the coordinates of A', B', C'. Verify that the line segment AB and A'B' have the same length.",
+                "concept_name": "Reflection"
+            },
+            {
+                "assessment_type": "Long Answer",
+                "bloom_level": "Analyze",
+                "dok_level": "3",
+                "difficulty": "Hard",
+                "marks": 4,
+                "recommended_question": "Given A(2,3) and B(-4,5), find the coordinates of their reflections A' and B' across the y-axis. Using the distance formula, prove that AB = A'B'. Explain why this property holds for any two points.",
+                "concept_name": "Reflection"
+            },
+            {
+                "assessment_type": "Competency Based Question",
+                "bloom_level": "Apply",
+                "dok_level": "2",
+                "difficulty": "Medium",
+                "marks": 3,
+                "recommended_question": "A logo designed for a company has a point at (3,2). Due to printing requirements, the logo must be reflected across the y-axis. Find the new coordinates of the point. If the original logo had a line segment from (1,1) to (3,2), what will be the length of the reflected segment? Justify your answer.",
+                "concept_name": "Reflection"
+            }
+        ],
+        "concept_relationships": [
+            {
+                "source_concept": "Reflection",
+                "target_concept": "Cartesian Coordinate System",
+                "relation_type": "depends_on"
+            },
+            {
+                "source_concept": "Reflection",
+                "target_concept": "Distance Formula",
+                "relation_type": "uses"
+            },
+            {
+                "source_concept": "Reflection",
+                "target_concept": "Symmetry",
+                "relation_type": "related_to"
+            },
+            {
+                "source_concept": "Reflection",
+                "target_concept": "Transformation",
+                "relation_type": "part_of"
+            }
+        ],
+        "evidence": [
+            {
+                "source_type": "Inferred",
+                "source_text": "In Fig. 1.9, triangle AMD is reflected in the y-axis. What are the coordinates of the images of points A, M, and D?"
+            },
+            {
+                "source_type": "Textbook",
+                "source_text": "We see that reflection has preserved the lengths of the sides of the triangles."
+            },
+            {
+                "source_type": "Textbook",
+                "source_text": "Using the Baudháyana -Pythagoras Theorem, we get AD = √4^2 +3^2 = 5 units. You can similarly calculate both D'M' and MA'."
+            },
+            {
+                "source_type": "Textbook",
+                "source_text": "In Fig. 1.9, triangle AMD is reflected in the y-axis. What are the coordinates of the images of points A, M, and D?"
+            },
+            {
+                "source_type": "Textbook",
+                "source_text": "We see that reflection has preserved the lengths of the sides of the triangles."
+            },
+            {
+                "source_type": "Textbook",
+                "source_text": "Using the Baudháyana -Pythagoras Theorem, we get AD = √42 +32 = 5 units. You can similarly calculate both D'M' and MA'."
+            },
+            {
+                "source_type": "Inferred",
+                "source_text": "Common classroom observation: students mix up which coordinate changes sign when reflecting across axes."
+            },
+            {
+                "source_type": "Textbook",
+                "source_text": "In Fig. 1.9, triangle AMD is reflected in the y-axis. What are the coordinates of the images of points A, M, and D?"
+            },
+            {
+                "source_type": "Textbook",
+                "source_text": "We see that reflection has preserved the lengths of the sides of the triangles."
+            },
+            {
+                "source_type": "Textbook",
+                "source_text": "Using the Baudháyana -Pythagoras Theorem, we get AD = √42 +32 = 5 units. You can similarly calculate both D'M' and MA'."
+            },
+            {
+                "source_type": "Inferred",
+                "source_text": "Students need to apply the rule (x,y) -> (-x,y) to find reflected coordinates and verify distances."
+            }
+        ]
+    },
+    {
+        "concept": {
+            "concept_id": "MIDPOINT_FORMULA",
+            "concept_name": "Midpoint Formula",
+            "concept_type": "Formula",
+            "definition": "The midpoint of a segment with endpoints (x1, y1) and (x2, y2) is the point ((x1+x2)/2, (y1+y2)/2).",
+            "importance": "Important",
+            "difficulty": "Medium",
+            "confidence": 1
+        },
+        "knowledge_items": [
+            {
+                "knowledge": "Midpoint Definition",
+                "statement": "The midpoint of a line segment is the point that divides the segment into two equal parts.",
+                "knowledge_type": "Definition",
+                "confidence": 1,
+                "concept_name": "Midpoint Formula"
+            },
+            {
+                "knowledge": "Midpoint Formula",
+                "statement": "For endpoints (x1, y1) and (x2, y2), the midpoint has coordinates ((x1 + x2)/2, (y1 + y2)/2).",
+                "knowledge_type": "Formula",
+                "confidence": 1,
+                "concept_name": "Midpoint Formula"
+            },
+            {
+                "knowledge": "Coordinate Averaging Relationship",
+                "statement": "The x-coordinate of the midpoint is the arithmetic mean of the x-coordinates of the endpoints, and similarly for the y-coordinate.",
+                "knowledge_type": "Relationship",
+                "confidence": 1,
+                "concept_name": "Midpoint Formula"
+            }
+        ],
+        "abilities": [
+            {
+                "ability": "Apply the midpoint formula",
+                "verb": "Apply",
+                "description": "Apply the midpoint formula to calculate the midpoint given two points or to find a missing endpoint given the midpoint and one endpoint.",
+                "knowledge_refs": [
+                    "Midpoint Formula",
+                    "Coordinate Averaging Relationship"
+                ],
+                "concept_name": "Midpoint Formula"
+            },
+            {
+                "ability": "Analyze coordinate data",
+                "verb": "Analyze",
+                "description": "Analyze given coordinates to determine if a point is the midpoint of a segment by verifying the midpoint formula.",
+                "knowledge_refs": [
+                    "Midpoint Definition",
+                    "Midpoint Formula"
+                ],
+                "concept_name": "Midpoint Formula"
+            }
+        ],
+        "skills": [
+            {
+                "skill": "Problem Solving",
+                "ability_refs": [
+                    "Apply the midpoint formula"
+                ],
+                "concept_name": "Midpoint Formula"
+            },
+            {
+                "skill": "Reasoning",
+                "ability_refs": [
+                    "Analyze coordinate data"
+                ],
+                "concept_name": "Midpoint Formula"
+            }
+        ],
+        "competencies": [
+            {
+                "competency": "Midpoint Problem Solving",
+                "statement": "Apply the midpoint formula and analyze coordinate relationships to solve problems involving midpoints of line segments in the Cartesian plane.",
+                "knowledge_refs": [
+                    "Midpoint Definition",
+                    "Midpoint Formula",
+                    "Coordinate Averaging Relationship"
+                ],
+                "ability_refs": [
+                    "Apply the midpoint formula",
+                    "Analyze coordinate data"
+                ],
+                "skill_refs": [
+                    "Problem Solving",
+                    "Reasoning"
+                ],
+                "concept_name": "Midpoint Formula"
+            }
+        ],
+        "blooms": [
+            {
+                "level": "Apply",
+                "coverage_score": 0.5,
+                "concept_name": "Midpoint Formula"
+            },
+            {
+                "level": "Analyze",
+                "coverage_score": 0.5,
+                "concept_name": "Midpoint Formula"
+            }
+        ],
+        "dok": [
+            {
+                "level": "2",
+                "description": "Skills and Concepts",
+                "concept_name": "Midpoint Formula"
+            },
+            {
+                "level": "3",
+                "description": "Strategic Thinking",
+                "concept_name": "Midpoint Formula"
+            }
+        ],
+        "prerequisites": [
+            {
+                "concept_name": "Ordered Pairs",
+                "prerequisite_type": "Concept",
+                "necessity": "Mandatory",
+                "_parent_concept": "Midpoint Formula"
+            },
+            {
+                "concept_name": "Arithmetic Mean (Average)",
+                "prerequisite_type": "Concept",
+                "necessity": "Mandatory",
+                "_parent_concept": "Midpoint Formula"
+            },
+            {
+                "concept_name": "Line Segment",
+                "prerequisite_type": "Concept",
+                "necessity": "Mandatory",
+                "_parent_concept": "Midpoint Formula"
+            },
+            {
+                "concept_name": "Plotting Points on the Cartesian Plane",
+                "prerequisite_type": "Skill",
+                "necessity": "Mandatory",
+                "_parent_concept": "Midpoint Formula"
+            }
+        ],
+        "misconceptions": [
+            {
+                "misconception": "Midpoint as Average of Differences",
+                "statement": "Students mistakenly use the formula ((x2 - x1)/2, (y2 - y1)/2) to find the midpoint, confusing it with the distance formula or movement along axes.",
+                "root_cause": "Overgeneralization from subtraction in the distance formula and failure to grasp the idea of averaging.",
+                "correction": "The correct midpoint formula averages the coordinates by summing them: ((x1 + x2)/2, (y1 + y2)/2).",
+                "concept_name": "Midpoint Formula"
+            },
+            {
+                "misconception": "Visual Midpoint Estimation",
+                "statement": "Students visually guess the midpoint on a graph without applying the formula, especially when points are not aligned on a grid.",
+                "root_cause": "Overreliance on visual perception rather than analytical calculation.",
+                "correction": "Even if a point appears halfway, always verify using the formula: M = ((x1 + x2)/2, (y1 + y2)/2).",
+                "concept_name": "Midpoint Formula"
+            },
+            {
+                "misconception": "Middle Point in a List is the Midpoint",
+                "statement": "When given three collinear points (e.g., S, M, T), students assume M is automatically the midpoint because it is listed between S and T.",
+                "root_cause": "Assuming that list order corresponds to geometric position without checking coordinate equality.",
+                "correction": "For M to be the midpoint of ST, it must satisfy M = ((x_S + x_T)/2, (y_S + y_T)/2). Listing order is irrelevant.",
+                "concept_name": "Midpoint Formula"
+            }
+        ],
+        "real_world_applications": [
+            {
+                "application_type": "Daily Life",
+                "example": "Finding a halfway meeting point between two locations using map coordinates.",
+                "relevance": "High",
+                "concept_name": "Midpoint Formula"
+            },
+            {
+                "application_type": "Industry",
+                "example": "In construction, locating the center of a steel beam to ensure balanced load distribution.",
+                "relevance": "Medium",
+                "concept_name": "Midpoint Formula"
+            },
+            {
+                "application_type": "Technology",
+                "example": "In computer graphics, calculating the midpoint of a line segment to center objects or perform animations.",
+                "relevance": "High",
+                "concept_name": "Midpoint Formula"
+            }
+        ],
+        "pedagogy_recommendations": [
+            {
+                "strategy": "Inquiry Based Teaching",
+                "why_effective": "Guiding students to discover the formula by analyzing coordinate pairs fosters deep understanding and ownership of the concept.",
+                "concept_characteristics": [
+                    "Pattern recognition",
+                    "Inductive reasoning",
+                    "Coordinate analysis"
+                ],
+                "concept_name": "Midpoint Formula"
+            },
+            {
+                "strategy": "Activity Based Teaching",
+                "why_effective": "Hands-on plotting, folding paper, or using dynamic geometry software makes the averaging process tangible and memorable.",
+                "concept_characteristics": [
+                    "Visual-spatial learning",
+                    "Kinesthetic engagement",
+                    "Verification skills"
+                ],
+                "concept_name": "Midpoint Formula"
+            },
+            {
+                "strategy": "Scenario Based Teaching",
+                "why_effective": "Embedding the formula in real-life scenarios (e.g., meeting halfway) demonstrates practical relevance and motivates learning.",
+                "concept_characteristics": [
+                    "Application",
+                    "Problem-solving",
+                    "Real-world connection"
+                ],
+                "concept_name": "Midpoint Formula"
+            }
+        ],
+        "concept_relationships": [
+            {
+                "source_concept": "Midpoint Formula",
+                "target_concept": "Cartesian Coordinate System",
+                "relation_type": "depends_on"
+            },
+            {
+                "source_concept": "Midpoint Formula",
+                "target_concept": "Arithmetic Mean (Average)",
+                "relation_type": "uses"
+            },
+            {
+                "source_concept": "Midpoint Formula",
+                "target_concept": "Distance Formula",
+                "relation_type": "related_to"
+            },
+            {
+                "source_concept": "Midpoint Formula",
+                "target_concept": "Line Segment",
+                "relation_type": "depends_on"
+            },
+            {
+                "source_concept": "Midpoint Formula",
+                "target_concept": "Midpoint Concept",
+                "relation_type": "extends"
+            }
+        ],
+        "learning_objectives": [
+            {
+                "objective": "State the midpoint formula and explain its derivation as the average of the x- and y-coordinates.",
+                "objective_type": "Knowledge",
+                "priority": "Medium",
+                "concept_name": "Midpoint Formula"
+            },
+            {
+                "objective": "Apply the midpoint formula to compute the midpoint of a line segment given its endpoints or to find a missing endpoint given the midpoint and one endpoint.",
+                "objective_type": "Ability",
+                "priority": "High",
+                "concept_name": "Midpoint Formula"
+            },
+            {
+                "objective": "Analyze given coordinate points to determine whether one is the midpoint of the segment formed by the other two and justify the conclusion.",
+                "objective_type": "Ability",
+                "priority": "High",
+                "concept_name": "Midpoint Formula"
+            }
+        ],
+        "learning_outcomes": [
+            {
+                "outcome": "Students will recall the midpoint formula as ((x1+x2)/2, (y1+y2)/2) and explain that it averages the coordinates. [C-4.5, CG-4]",
+                "outcome_type": "Knowledge Outcome",
+                "measurable": true,
+                "assessment_ready": true,
+                "concept_name": "Midpoint Formula"
+            },
+            {
+                "outcome": "Students will accurately calculate the midpoint given two coordinate pairs and determine a missing endpoint given the midpoint and one endpoint. [C-4.5, C-8.1]",
+                "outcome_type": "Ability Outcome",
+                "measurable": true,
+                "assessment_ready": true,
+                "concept_name": "Midpoint Formula"
+            },
+            {
+                "outcome": "Students will justify whether a given point is the midpoint of a segment by verifying that its coordinates are the averages of the endpoints’ coordinates, and will analyze real-world midpoint scenarios. [C-4.5, C-11.1, CG-4]",
+                "outcome_type": "Ability Outcome",
+                "measurable": true,
+                "assessment_ready": true,
+                "concept_name": "Midpoint Formula"
+            }
+        ],
+        "assessment_blueprint": [
+            {
+                "assessment_type": "MCQ",
+                "bloom_level": "Remember",
+                "dok_level": "1",
+                "difficulty": "Easy",
+                "marks": 1,
+                "recommended_question": "Which of the following is the correct formula for the midpoint of (x1, y1) and (x2, y2)? (a) ((x1 - x2)/2, (y1 - y2)/2) (b) ((x1 + x2)/2, (y1 + y2)/2) (c) (x1 - x2, y1 - y2) (d) (x1 + x2, y1 + y2)",
+                "concept_name": "Midpoint Formula"
+            },
+            {
+                "assessment_type": "MCQ",
+                "bloom_level": "Apply",
+                "dok_level": "2",
+                "difficulty": "Easy",
+                "marks": 1,
+                "recommended_question": "What is the midpoint of the segment joining (2, 3) and (4, 7)? (a) (3, 5) (b) (6, 10) (c) (1, 2) (d) (3, 4)",
+                "concept_name": "Midpoint Formula"
+            },
+            {
+                "assessment_type": "Assertion Reason",
+                "bloom_level": "Analyze",
+                "dok_level": "3",
+                "difficulty": "Medium",
+                "marks": 2,
+                "recommended_question": "Assertion (A): For points S(-8, 7) and T(6, -3), the midpoint is (0, -2). Reason (R): The coordinates of the midpoint are obtained by averaging the x- and y-coordinates of the endpoints. (a) Both A and R are true, and R is the correct explanation of A. (b) Both A and R are true, but R is not the correct explanation of A. (c) A is true but R is false. (d) A is false but R is true.",
+                "concept_name": "Midpoint Formula"
+            },
+            {
+                "assessment_type": "Short Answer",
+                "bloom_level": "Apply",
+                "dok_level": "2",
+                "difficulty": "Medium",
+                "marks": 2,
+                "recommended_question": "Given M(-7, 1) is the midpoint of A(3, -4) and B(x, y), find the coordinates of B.",
+                "concept_name": "Midpoint Formula"
+            },
+            {
+                "assessment_type": "Long Answer",
+                "bloom_level": "Analyze",
+                "dok_level": "3",
+                "difficulty": "Hard",
+                "marks": 4,
+                "recommended_question": "The points S(-8, 7), M(0, -2), and T(6, -3) are given. Determine whether M is the midpoint of ST. Show all work and justify your answer. If M is not the midpoint, find the actual midpoint of ST.",
+                "concept_name": "Midpoint Formula"
+            },
+            {
+                "assessment_type": "Competency Based Question",
+                "bloom_level": "Apply",
+                "dok_level": "2",
+                "difficulty": "Medium",
+                "marks": 3,
+                "recommended_question": "A park is being designed with two gates at coordinates (5, 7) and (13, -1). The architect wants to place a fountain exactly halfway between the gates. Where should the fountain be placed? Use the midpoint formula to justify your answer.",
+                "concept_name": "Midpoint Formula"
+            }
+        ],
+        "evidence": [
+            {
+                "source_type": "Textbook",
+                "source_text": "When M is the mid-point of ST, can you find any connection between the coordinates of M, S and T? ... Use the connection you found to find the coordinates of B given that M (−7, 1) is the midpoint of A (3, −4) and B (x, y)."
+            },
+            {
+                "source_type": "Textbook",
+                "source_text": "When M is the mid-point of ST, can you find any connection between the coordinates of M, S and T?"
+            },
+            {
+                "source_type": "Textbook",
+                "source_text": "Use the connection you found to find the coordinates of B given that M (−7, 1) is the midpoint of A (3, −4) and B (x, y)."
+            },
+            {
+                "source_type": "Inferred",
+                "source_text": "Assessment analysis shows that students often confuse the midpoint formula with subtraction-based formulas like the distance formula, leading to errors when endpoints have negative coordinates."
+            },
+            {
+                "source_type": "Textbook",
+                "source_text": "The following table shows the coordinates of points S, M and T. In each case, state whether M is the midpoint of segment ST. Justify your answer. ... When M is the mid-point of ST, can you find any connection between the coordinates of M, S and T?"
+            },
+            {
+                "source_type": "Textbook",
+                "source_text": "Use the connection you found to find the coordinates of B given that M (-7, 1) is the midpoint of A (3, -4) and B (x, y)."
+            }
+        ]
+    }
+]

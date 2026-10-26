@@ -306,7 +306,7 @@ class ContentGenerationService
     /** Is this content_master file name a study deck? (Its name is its identity: no extra column.) */
     public static function isStudyDeckFilename(?string $filename): bool
     {
-        return str_starts_with((string) $filename, 'study_deck_') && str_ends_with((string) $filename, '.pptx');
+        return (str_starts_with((string) $filename, 'study_deck_') || str_starts_with((string) $filename, \App\Services\StudyDeck\Story\StoryTemplate::FILE_PREFIX)) && str_ends_with((string) $filename, '.pptx');
     }
 
     /**
@@ -353,6 +353,26 @@ class ContentGenerationService
         }
 
         return '/student/study-deck/' . (int) $row['chapter_id'] . '?content=' . (int) $row['id'];
+    }
+
+    /**
+     * What a stored study-deck row was made as: its teaching method (named in the file name) and content format (told by the
+     * file-name prefix: a story lesson or a Classroom Presentation). The method is null when the name does not say, never
+     * guessed (a deck stored before methods were recorded has none). Null for every row that is not a study deck.
+     *
+     * @param array<string,mixed> $row a content_master row
+     * @return array{teaching_method:?string,content_format:string}|null
+     */
+    public static function studyDeckResource(array $row): ?array
+    {
+        if (!self::isStudyDeckFilename($row['filename'] ?? null)) {
+            return null;
+        }
+
+        return [
+            'teaching_method' => \App\Services\StudyDeck\StudyDeckPublisher::variantOf($row['filename']),
+            'content_format' => str_starts_with((string) $row['filename'], \App\Services\StudyDeck\Story\StoryTemplate::FILE_PREFIX) ? 'branching_scenario' : 'interactive_slides',
+        ];
     }
 
     /**
@@ -502,7 +522,16 @@ class ContentGenerationService
         }
 
         $input['filename'] = $filename;
-        $input['title'] = mb_substr((string) $input['chapter_name'] . ' Study Deck', 0, 250);
+        // A story lesson is filed as an Interactive item under its own name; it is never a Classroom Presentation, so storing it
+        // cannot hide, replace or alter the chapter's presentation.
+        $isStory = \App\Services\StudyDeck\Story\StoryTemplate::isStory($prepared['deck']);
+        if ($isStory) {
+            $input['content_type'] = \App\Services\StudyDeck\Story\StoryTemplate::CATEGORY;
+        }
+        // A deck made for a teaching method says so in its title, so the Classroom Resource list tells the methods apart.
+        $method = StudyDeckPublisher::methodOf($prepared['deck']);
+        $methodLabel = $method === null ? '' : ' - ' . (string) (config('course_presentation_pilot.pedagogies')[$method] ?? ucfirst(str_replace('_', ' ', $method)));
+        $input['title'] = mb_substr((string) $input['chapter_name'] . ($isStory ? ' Story Lesson' : ' Study Deck') . $methodLabel, 0, 250);
         $result = $this->storeStudyDeck($input, $prepared['html'], $prepared['deck'], $authoredBy);
         if (($result['http'] ?? 0) !== 201) {
             $publisher->cleanup();
@@ -553,8 +582,11 @@ class ContentGenerationService
         $tenant = (int) ($input['sub_institute_id'] ?? 1);
         $input['tenant'] = $tenant;
         // Inside the transaction that inserts the row: the deck and the record of which pictures it uses land together or not at all.
-        $input['in_transaction'] = function (int $id) use ($chapterId, $tenant, $deck): void {
-            $this->hidePreviousStudyDecks($chapterId, $tenant, $id);
+        // Only decks of the SAME kind are replaced: a story lesson hides older story lessons, a presentation hides older presentations.
+        // Worked out here, because the closure below cannot see $input.
+        $kindPrefix = $this->studyDeckLikePrefix((string) $input['filename']);
+        $input['in_transaction'] = function (int $id) use ($chapterId, $tenant, $deck, $kindPrefix): void {
+            $this->hidePreviousStudyDecks($chapterId, $tenant, $id, $kindPrefix);
             $this->linkStudyDeckImages($id, $deck, $chapterId);
         };
 
@@ -774,17 +806,37 @@ class ContentGenerationService
             ->first(['id', 'url', 'show_hide']);
     }
 
-    /** Hide the other study decks of this chapter and school: the new one replaces them. */
-    protected function hidePreviousStudyDecks(int $chapterId, int $tenant, int $keepId): int
+    /**
+     * Hide the other study decks of this chapter and school that the new one replaces. $like is the kind AND teaching
+     * method of the new deck (see studyDeckLikePrefix): a deck replaces only a deck of the same kind and method, so the
+     * presentations of different teaching methods stay beside each other. A deck stored without a method (no
+     * delimiter in the prefix) replaces only other decks stored without one.
+     */
+    protected function hidePreviousStudyDecks(int $chapterId, int $tenant, int $keepId, string $like = 'study\\_deck\\_'): int
     {
+        $delimiter = str_replace('_', '\\_', StudyDeckPublisher::VARIANT_DELIMITER);
+
         return DB::table('content_master')
             ->where('chapter_id', $chapterId)
             ->where('sub_institute_id', $tenant)
             ->where('file_type', 'pptx')
-            ->where('filename', 'like', 'study\\_deck\\_%')
+            ->where('filename', 'like', $like . '%')
+            ->when(!str_ends_with($like, $delimiter), fn ($q) => $q->where('filename', 'not like', '%' . $delimiter . '%'))
             ->where('id', '<>', $keepId)
             ->where(fn ($q) => $q->whereNull('show_hide')->orWhere('show_hide', '<>', 0))
             ->update(['show_hide' => 0]);
+    }
+
+    /**
+     * The LIKE prefix of the kind of deck (and teaching method) a file name belongs to: story lessons and presentations
+     * are kept apart, and so are the decks of different teaching methods.
+     */
+    protected function studyDeckLikePrefix(string $filename): string
+    {
+        $kind = str_starts_with($filename, \App\Services\StudyDeck\Story\StoryTemplate::FILE_PREFIX) ? 'study\\_story\\_' : 'study\\_deck\\_';
+        $method = StudyDeckPublisher::variantOf($filename);
+
+        return $method === null ? $kind : $kind . str_replace('_', '\\_', $method) . str_replace('_', '\\_', StudyDeckPublisher::VARIANT_DELIMITER);
     }
 
     /** Make an older, hidden study deck the current one again (and hide the rest). */
@@ -792,7 +844,7 @@ class ContentGenerationService
     {
         return (bool) DB::transaction(function () use ($id, $chapterId, $tenant) {
             DB::table('content_master')->where('id', $id)->update(['show_hide' => 1]);
-            $this->hidePreviousStudyDecks($chapterId, $tenant, $id);
+            $this->hidePreviousStudyDecks($chapterId, $tenant, $id, $this->studyDeckLikePrefix((string) DB::table('content_master')->where('id', $id)->value('filename')));
 
             return true;
         });

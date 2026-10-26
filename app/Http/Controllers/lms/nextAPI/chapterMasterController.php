@@ -43,7 +43,9 @@ class chapterMasterController extends Controller
         //    v3: chapters now carry their topic_master rows, and each concept
         //    carries the topic it belongs to, so the UI can render
         //    chapter -> topic -> concept.
-        $cacheKey = "chapters_v4_{$subInstituteId}_{$standardId}_{$subjectId}_page_{$page}_limit_{$perPage}";
+        //    v5: the response also carries subject_name and standard_name, so a header
+        //    can show names without fetching the whole course catalog.
+        $cacheKey = "chapters_v5_{$subInstituteId}_{$standardId}_{$subjectId}_page_{$page}_limit_{$perPage}";
         
         return Cache::remember($cacheKey, 3600, function () use ($subInstituteId, $standardId, $subjectId, $perPage) {
             
@@ -154,10 +156,24 @@ class chapterMasterController extends Controller
                 }
             }
 
+            // The names behind the ids in the URL, so the screen's heading can read
+            // "Science - Grade 9" even when the course catalog has no row for this
+            // subject (it is scoped to the signed-in user, these are not).
+            $subjectName = DB::table('subject')
+                ->where('id', $subjectId)
+                ->where('sub_institute_id', $subInstituteId)
+                ->value('subject_name');
+            $standardName = DB::table('standard')
+                ->where('id', $standardId)
+                ->where('sub_institute_id', $subInstituteId)
+                ->value('name');
+
             return response()->json([
-                'status'     => true,
-                'message'    => count($formattedResponse) ? 'Chapter data fetched successfully.' : 'No chapter data found.',
-                'data'       => array_values($formattedResponse),
+                'status'        => true,
+                'message'       => count($formattedResponse) ? 'Chapter data fetched successfully.' : 'No chapter data found.',
+                'subject_name'  => $subjectName,
+                'standard_name' => $standardName,
+                'data'          => array_values($formattedResponse),
                 'pagination' => [
                     'current_page' => $paginatedChapters->currentPage(),
                     'per_page'     => $paginatedChapters->perPage(),

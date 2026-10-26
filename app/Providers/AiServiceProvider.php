@@ -33,6 +33,7 @@ use App\Domain\K12\AcademicRisk\AttendanceRiskDetector;
 use App\Domain\K12\AcademicRisk\CreateAcademicInterventionAction;
 use App\Domain\K12\AcademicRisk\Metrics\AssessmentAverageResolver;
 use App\Domain\K12\AcademicRisk\Metrics\AttendanceRateResolver;
+use App\Domain\K12\AcademicRisk\Metrics\PalMasteryTrendResolver;
 use App\Domain\K12\AcademicRisk\MissedAssignmentDetector;
 use App\Domain\K12\AcademicRisk\StudentScope;
 use App\Domain\KnowledgeGraph\GraphQueryService;
@@ -198,6 +199,7 @@ class AiServiceProvider extends ServiceProvider
         $this->app->tag([
             AssessmentAverageResolver::class,
             AttendanceRateResolver::class,
+            PalMasteryTrendResolver::class,
         ], 'ai.metric_resolvers');
 
         $this->app->singleton(OutcomeTracker::class, fn ($app) => new OutcomeTracker(

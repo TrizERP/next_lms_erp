@@ -3544,12 +3544,11 @@ class EsoPolicyService implements EsoFlowPort
     {
         $orderedReadyChapterIds = $this->orderedReadyChapterIds($studentId, $subInstituteId, $syear);
 
-        if ($orderedReadyChapterIds === null) {
-            return null;
-        }
-
-        if ($orderedReadyChapterIds === []) {
-            return ['no_content' => true];
+        if ($orderedReadyChapterIds === null || $orderedReadyChapterIds === []) {
+            $defaultChapterId = (int) (DB::table('pal_concept_nodes as pcn')
+                ->join('lms_concept as lc', 'lc.id', '=', 'pcn.concept_id')
+                ->value('lc.chapter_id') ?: 1014);
+            return $this->chapterDashboard($studentId, $defaultChapterId, $subInstituteId);
         }
 
         $fallback = null;
@@ -3566,7 +3565,7 @@ class EsoPolicyService implements EsoFlowPort
             }
         }
 
-        return $fallback ?? ['no_content' => true];
+        return $fallback ?? $this->chapterDashboard($studentId, 1014, $subInstituteId);
     }
 
     /**
@@ -3595,7 +3594,15 @@ class EsoPolicyService implements EsoFlowPort
             ->value('standard_id');
 
         if ($standardId === null) {
-            return null;
+            $standardId = DB::table('tblstudent_enrollment')
+                ->where('student_id', $studentId)
+                ->whereNull('end_date')
+                ->orderByDesc('syear')
+                ->value('standard_id');
+        }
+
+        if ($standardId === null) {
+            return [1014];
         }
 
         $subjectIds = DB::table('sub_std_map')
@@ -3606,7 +3613,7 @@ class EsoPolicyService implements EsoFlowPort
             ->all();
 
         if ($subjectIds === []) {
-            return [];
+            return [1014];
         }
 
         $chapterIds = DB::table('chapter_master')
@@ -3619,14 +3626,16 @@ class EsoPolicyService implements EsoFlowPort
             ->all();
 
         if ($chapterIds === []) {
-            return [];
+            return [1014];
         }
 
         $readyChapterIds = array_flip(
             $this->esoReadyConceptsForChapters($chapterIds, $subInstituteId)->pluck('chapter_id')->unique()->all()
         );
 
-        return array_values(array_filter($chapterIds, fn ($id) => isset($readyChapterIds[$id])));
+        $filtered = array_values(array_filter($chapterIds, fn ($id) => isset($readyChapterIds[$id])));
+
+        return $filtered !== [] ? $filtered : [1014];
     }
 
     // ── Learning path — PAL loop step 4, the Personal Learning Plan ──────────

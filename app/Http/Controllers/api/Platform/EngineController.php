@@ -172,7 +172,10 @@ class EngineController extends PlatformController
             return $this->unauthenticated($request);
         }
         $key = (string) $request->validate(['task_key' => 'required|string|max:191'])['task_key'];
-        $definition = config('platform_services.tasks.'.$key);
+        // Task keys contain dots, which config() would read as nesting, so the
+        // catalogue is fetched whole and indexed by the full key.
+        $definition = (array) config('platform_services.tasks', []);
+        $definition = $definition[$key] ?? null;
         if (! is_array($definition)) {
             return $this->fail('That task is not in the platform catalogue.', 404);
         }

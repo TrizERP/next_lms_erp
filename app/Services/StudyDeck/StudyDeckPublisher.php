@@ -95,6 +95,41 @@ class StudyDeckPublisher
             }
         }
 
+        // A story scene may carry its own picture (interaction.nodes[].image): the same checks, storage and rewrite as a slide's.
+        foreach ((array) ($deck['slides'] ?? []) as $i => $slide) {
+            foreach ((array) ($slide['interaction']['nodes'] ?? []) as $k => $node) {
+                $places = [['image']];
+                foreach (array_keys((array) ($node['extra_images'] ?? [])) as $e) {
+                    $places[] = ['extra_images', $e];
+                }
+                foreach ($places as $place) {
+                    $image = $place === ['image'] ? ($node['image'] ?? null) : ($node['extra_images'][$place[1]] ?? null);
+                    if (!is_array($image) || empty($image['url'])) {
+                        continue;
+                    }
+                    $url = (string) $image['url'];
+                    [$asset, $how] = $this->resolve($url, $image, $deck, $imageDir, $write);
+                    if (($asset['missing'] ?? false) === true) {
+                        $missing[$url] = $url;
+                        continue;
+                    }
+                    $key = $asset['sha256'];
+                    if (!isset($assets[$key])) {
+                        $assets[$key] = $asset;
+                        $how === 'stored' ? $stored[] = $asset['ref'] : $reused[] = $asset['ref'];
+                    }
+                    if ($place === ['image']) {
+                        $deck['slides'][$i]['interaction']['nodes'][$k]['image']['url'] = $asset['ref'];
+                        $deck['slides'][$i]['interaction']['nodes'][$k]['image']['asset_id'] = $key;
+                    } else {
+                        $deck['slides'][$i]['interaction']['nodes'][$k]['extra_images'][$place[1]]['url'] = $asset['ref'];
+                        $deck['slides'][$i]['interaction']['nodes'][$k]['extra_images'][$place[1]]['asset_id'] = $key;
+                    }
+                    $rewrites[$url] = $asset['ref'];
+                }
+            }
+        }
+
         // A study document may also carry a picture per CONCEPT (`concept_images`, keyed by concept id): the same checks, the same
         // storage, the same rewrite to a stored reference as a part's picture.
         foreach ((array) ($deck['concept_images'] ?? []) as $conceptId => $image) {
@@ -239,6 +274,17 @@ class StudyDeckPublisher
             }
         }
 
+        foreach ((array) ($deck['slides'] ?? []) as $slide) {
+            foreach ((array) ($slide['interaction']['nodes'] ?? []) as $node) {
+                foreach (array_merge([$node['image'] ?? null], (array) ($node['extra_images'] ?? [])) as $img) {
+                    $url = (string) ($img['url'] ?? '');
+                    if ($url !== '' && StudyDeckImages::idFromRef($url) === null && !($allowPending && preg_match(self::PENDING, $url))) {
+                        throw new \RuntimeException("Slide {$slide['n']}'s story scene picture \"$url\" is not a stored picture reference.");
+                    }
+                }
+            }
+        }
+
         foreach ((array) ($deck['concept_images'] ?? []) as $conceptId => $image) {
             $url = (string) ($image['url'] ?? '');
             if ($url !== '' && StudyDeckImages::idFromRef($url) === null && !($allowPending && preg_match(self::PENDING, $url))) {
@@ -257,13 +303,41 @@ class StudyDeckPublisher
         }
     }
 
-    /** The name the presentation file is stored under: stable for a given deck, so a repeat finds the same row. */
+    /**
+     * Between a deck's teaching method and the chapter in its file name. A chapter slug is built from single underscores
+     * only, and a method key never holds two in a row, so this appears in a name exactly when the deck was stored for a
+     * teaching method (a deck stored without one keeps the name it always had).
+     */
+    public const VARIANT_DELIMITER = '__';
+
+    /** The teaching method a deck was made for (`deck.variant.teaching_method`), or null. Only a plain key is ever used in a name. */
+    public static function methodOf(array $deck): ?string
+    {
+        $method = $deck['variant']['teaching_method'] ?? null;
+
+        return is_string($method) && preg_match('/^[a-z][a-z0-9]*(?:_[a-z0-9]+)*$/', $method) ? $method : null;
+    }
+
+    /** The teaching method a stored study-deck file name belongs to, or null for a deck stored without one. */
+    public static function variantOf(?string $filename): ?string
+    {
+        return preg_match('/^study_(?:deck|story)_([a-z][a-z0-9]*(?:_[a-z0-9]+)*?)' . self::VARIANT_DELIMITER . '/', (string) $filename, $m) ? $m[1] : null;
+    }
+
+    /**
+     * The name the presentation file is stored under: stable for a given deck, so a repeat finds the same row. A deck made
+     * for a teaching method carries it in the name, so each method (and, through the prefix, each format) is its own item.
+     */
     public static function filenameFor(string $chapterName, array $deck): string
     {
         $slug = trim(strtolower(preg_replace('/[^a-z0-9]+/i', '_', $chapterName) ?? ''), '_');
         $hash = substr(sha1((string) json_encode($deck, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)), 0, 12);
 
-        return 'study_deck_' . substr($slug, 0, 80) . '_' . $hash . '.pptx';
+        // A story lesson has its own name, so it is a separate content item and never replaces a Classroom Presentation.
+        $prefix = \App\Services\StudyDeck\Story\StoryTemplate::isStory($deck) ? \App\Services\StudyDeck\Story\StoryTemplate::FILE_PREFIX : 'study_deck_';
+        $method = self::methodOf($deck);
+
+        return $prefix . ($method !== null ? $method . self::VARIANT_DELIMITER : '') . substr($slug, 0, 80) . '_' . $hash . '.pptx';
     }
 
     /** Remove the pictures this run stored for the first time, unless a deck uses them. Used when a later step failed. */

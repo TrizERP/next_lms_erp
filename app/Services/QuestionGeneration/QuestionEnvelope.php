@@ -29,18 +29,23 @@ final class QuestionEnvelope
      */
     public static function pairs(mixed $envelope): ?array
     {
-        if (!is_array($envelope) || !isset($envelope['pairs']) || !is_array($envelope['pairs'])) {
+        if (!is_array($envelope)) {
+            return null;
+        }
+
+        $source = $envelope['pairs'] ?? $envelope['interaction_settings']['pairs'] ?? null;
+        if (!is_array($source)) {
             return null;
         }
 
         $pairs = [];
-        foreach ($envelope['pairs'] as $pair) {
+        foreach ($source as $pair) {
             if (!is_array($pair)) {
                 continue;
             }
 
-            $left = trim((string) ($pair['left'] ?? ''));
-            $right = trim((string) ($pair['right'] ?? ''));
+            $left = trim((string) ($pair['left'] ?? $pair[0] ?? ''));
+            $right = trim((string) ($pair['right'] ?? $pair[1] ?? ''));
 
             if ($left !== '' && $right !== '') {
                 $pairs[] = ['left' => $left, 'right' => $right];
@@ -52,21 +57,41 @@ final class QuestionEnvelope
 
     /**
      * `answer.distractors` as a clean list of non-empty strings, or null.
-     *
-     * Null (not an empty list) when the envelope carries none, so the client can tell a
-     * row that never had a word bank from one that has one.
-     *
-     * @param  mixed  $envelope  a decoded envelope
-     * @return list<string>|null
      */
     public static function distractors(mixed $envelope): ?array
     {
-        if (!is_array($envelope) || !isset($envelope['distractors']) || !is_array($envelope['distractors'])) {
+        if (!is_array($envelope)) {
+            return null;
+        }
+
+        $source = $envelope['distractors'] ?? null;
+        if (!is_array($source)) {
+            $wordBank = $envelope['interaction_settings']['word_bank'] ?? $envelope['interaction_settings']['distractors'] ?? null;
+            if (is_array($wordBank)) {
+                $blanks = $envelope['interaction_settings']['blanks'] ?? [];
+                $answers = is_array($blanks) ? array_map('strtolower', array_map('trim', array_values($blanks))) : [];
+                $dist = [];
+                foreach ($wordBank as $word) {
+                    if (is_string($word) && trim($word) !== '') {
+                        $clean = trim($word);
+                        if (!in_array(strtolower($clean), $answers, true)) {
+                            $dist[] = $clean;
+                        }
+                    }
+                }
+                if ($dist !== []) {
+                    return $dist;
+                }
+                $source = $wordBank;
+            }
+        }
+
+        if (!is_array($source)) {
             return null;
         }
 
         $words = [];
-        foreach ($envelope['distractors'] as $word) {
+        foreach ($source as $word) {
             if (is_string($word) && trim($word) !== '') {
                 $words[] = trim($word);
             }
@@ -75,19 +100,38 @@ final class QuestionEnvelope
         return $words === [] ? null : $words;
     }
 
-    /**
-     * Every structured, client-facing field the envelope can carry, keyed as the API row
-     * names them. Spread into a reader's row: `...QuestionEnvelope::clientFields($envelope)`.
-     *
-     * @param  mixed  $envelope  a decoded envelope
-     * @return array<string, mixed>
-     */
+    public static function hotspots(mixed $envelope): ?array
+    {
+        if (!is_array($envelope)) {
+            return null;
+        }
+
+        $hotspots = $envelope['interaction_settings']['hotspots'] ?? $envelope['hotspots'] ?? null;
+        return is_array($hotspots) && $hotspots !== [] ? $hotspots : null;
+    }
+
+    public static function imageRef(mixed $envelope): ?array
+    {
+        if (!is_array($envelope)) {
+            return null;
+        }
+
+        $imageRef = $envelope['image_ref'] ?? null;
+        return is_array($imageRef) && $imageRef !== [] ? $imageRef : null;
+    }
+
+    public static function interactionSettings(mixed $envelope): ?array
+    {
+        if (!is_array($envelope)) {
+            return null;
+        }
+
+        $settings = $envelope['interaction_settings'] ?? null;
+        return is_array($settings) && $settings !== [] ? $settings : null;
+    }
+
     /**
      * The image-based Drag & Drop payload, or null.
-     *
-     * Passed on only when it is a playable one (the same rules the generator enforced),
-     * so a damaged row reaches the player as "no drag_drop" and is reported as
-     * unplayable, rather than as a canvas with zones off the picture.
      */
     public static function dragDrop(mixed $envelope): ?array
     {
@@ -106,6 +150,9 @@ final class QuestionEnvelope
             'drag_drop' => self::dragDrop($envelope),
             'pairs' => self::pairs($envelope),
             'distractors' => self::distractors($envelope),
+            'hotspots' => self::hotspots($envelope),
+            'image_ref' => self::imageRef($envelope),
+            'interaction_settings' => self::interactionSettings($envelope),
         ];
     }
 }

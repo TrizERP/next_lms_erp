@@ -49,6 +49,8 @@ class Kernel extends HttpKernel
              'throttle:1000,1',
             \Illuminate\Routing\Middleware\SubstituteBindings::class,
             'api.jwt',
+            // GET-only response cache + per-school invalidation on writes; see CacheApiResponse.
+            'api.cache:auto',
             // \Inspector\Laravel\Middleware\WebRequestMonitoring::class,
         ],
     ];
@@ -61,10 +63,7 @@ class Kernel extends HttpKernel
      * @var array<string, class-string|string>
      */
     protected $routeMiddleware = [
-        'api.session' => \App\Http\Middleware\ApiSessionHydrator::class,
         'alumni.auth' => \App\Http\Middleware\AlumniAuthenticate::class,
-        'lms.auth' => \App\Http\Middleware\LmsApiAuth::class,
-        'perm' => \App\Http\Middleware\RequirePermission::class,
         'auth' => \App\Http\Middleware\Authenticate::class,
         'auth.basic' => \Illuminate\Auth\Middleware\AuthenticateWithBasicAuth::class,
         'bindings' => \Illuminate\Routing\Middleware\SubstituteBindings::class,
@@ -84,6 +83,7 @@ class Kernel extends HttpKernel
         'api.session' => \App\Http\Middleware\ApiSessionHydrator::class,
         'alumni.auth' => \App\Http\Middleware\AlumniAuthenticate::class,
         'api.jwt' => \App\Http\Middleware\RequireApiJwt::class,
+        'api.cache' => \App\Http\Middleware\CacheApiResponse::class,
         'pal.auth' => \App\Http\Middleware\PalApiAuth::class,
         'lms.auth' => \App\Http\Middleware\LmsApiAuth::class,
         'perm' => \App\Http\Middleware\RequirePermission::class,

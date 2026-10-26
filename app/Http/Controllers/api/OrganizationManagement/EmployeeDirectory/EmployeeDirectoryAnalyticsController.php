@@ -389,22 +389,34 @@ class EmployeeDirectoryAnalyticsController extends Controller
 
             $matrix = [];
 
+            // Two grouped queries instead of one per department and one per department x skill
+            // (departments x skills round trips to a remote DB, which is what made this endpoint hang).
+            $totals = DB::table('tbluser')
+                ->where('sub_institute_id', $subInstituteId)
+                ->whereNull('terminated_date')
+                ->whereIn('department_id', $departments->pluck('id'))
+                ->selectRaw('department_id, COUNT(*) as total')
+                ->groupBy('department_id')
+                ->pluck('total', 'department_id');
+
+            $stats = DB::table('s_skill_matrix as sm')
+                ->join('tbluser as u', 'sm.user_id', '=', 'u.id')
+                ->where('u.sub_institute_id', $subInstituteId)
+                ->whereNull('u.terminated_date')
+                ->whereIn('u.department_id', $departments->pluck('id'))
+                ->whereIn('sm.skill_id', $skills->pluck('id'))
+                ->selectRaw('u.department_id as department_id, sm.skill_id as skill_id, COUNT(sm.user_id) as employeeCount, AVG(sm.skill_level) as actualProficiency')
+                ->groupBy('u.department_id', 'sm.skill_id')
+                ->get()
+                ->keyBy(function ($row) {
+                    return $row->department_id.'|'.$row->skill_id;
+                });
+
             foreach ($departments as $department) {
-                $totalEmployees = DB::table('tbluser')
-                    ->where('department_id', $department->id)
-                    ->where('sub_institute_id', $subInstituteId)
-                    ->whereNull('terminated_date')
-                    ->count();
+                $totalEmployees = (int) ($totals[$department->id] ?? 0);
 
                 foreach ($skills as $skill) {
-                    $employeeStats = DB::table('s_skill_matrix as sm')
-                        ->join('tbluser as u', 'sm.user_id', '=', 'u.id')
-                        ->where('u.department_id', $department->id)
-                        ->where('u.sub_institute_id', $subInstituteId)
-                        ->whereNull('u.terminated_date')
-                        ->where('sm.skill_id', $skill->id)
-                        ->selectRaw('COUNT(sm.user_id) as employeeCount, AVG(sm.skill_level) as actualProficiency')
-                        ->first();
+                    $employeeStats = $stats[$department->id.'|'.$skill->id] ?? null;
 
                     if (!$employeeStats || $employeeStats->employeeCount == 0) {
                         continue;

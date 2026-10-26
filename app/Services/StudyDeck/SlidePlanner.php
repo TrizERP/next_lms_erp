@@ -52,6 +52,8 @@ class SlidePlanner
 
     public const MAX_TAUGHT_PER_SLIDE = 2;
 
+    public const MAX_CONCEPTS_PER_SLIDE = 3;
+
     /**
      * The caps a run may raise (a chapter with many concepts and a bank to match, run with
      * `lms:generate-study-deck --max-practice --per-slide --max-visuals --max-scenarios`). The constants above are the defaults;
@@ -69,6 +71,11 @@ class SlidePlanner
             'questions_per_slide' => max(1, (int) ($l['questions_per_slide'] ?? self::MAX_QUESTIONS_PER_SLIDE)),
             'max_visuals' => max(0, (int) ($l['max_visuals'] ?? self::MAX_VISUALS)),
             'max_scenarios' => max(0, (int) ($l['max_scenarios'] ?? InteractionPlanner::MAX_SCENARIOS)),
+            // 1 = every concept-teaching slide (concept_intro, concept_visual) must carry a picture or diagram; 0 = pictures only where they earn a place.
+            'require_concept_visuals' => (int) (!empty($l['require_concept_visuals'])),
+            'require_every_slide_image' => (int) (!empty($l['require_every_slide_image'])),
+            // How many times a rejected plan is sent back with its reasons (the default is 2; a run on a weaker model may ask for more).
+            'repair_rounds' => max(0, min(6, (int) ($l['repair_rounds'] ?? 2))),
         ];
     }
 
@@ -95,24 +102,82 @@ class SlidePlanner
         $prompt = $this->prompt($context, $map, $eligible);
         [$plan, $errors] = $this->read($this->ask($prompt), $map, $eligible);
 
-        for ($round = 1; $errors && $round <= 2; $round++) {
+        $rounds = self::limits($map)['repair_rounds'];
+        for ($round = 1; $errors && $round <= $rounds; $round++) {
             $min = $map['target_slides']['min'];
             $max = $map['target_slides']['max'];
+            $plannedSlides = count((array) ($plan['slides'] ?? []));
+            $slideCountGuidance = $plannedSlides < $min
+                ? "Your previous plan has {$plannedSlides} slides, below the minimum {$min}; add at least " . ($min - $plannedSlides) . ' distinct, useful teaching slide(s). Use chapter-supported examples, relationships, misconceptions, guided inquiry or transfer/application; do not add filler or repeat a slide.'
+                : '';
+            $specificGuidance = [];
+            foreach ($errors as $error) {
+                if (preg_match('/Slide (\d+) carries more than (\d+) concepts; split it\./', $error, $match)) {
+                    $specificGuidance[] = "Split slide {$match[1]} into distinct slides, each listing no more than {$match[2]} concept_ids; preserve every concept and keep each concept taught.";
+                }
+                if (preg_match('/Slide (\d+) teaches (\d+) concepts; at most (\d+)/', $error, $match)) {
+                    $specificGuidance[] = "Split the teaching on slide {$match[1]} so no slide teaches more than {$match[3]} concepts; give each concept its own real explanation.";
+                }
+                if (preg_match('/needs at least (\d+) "scenario" slide\(s\); the plan has (\d+)/', $error, $match)) {
+                    $specificGuidance[] = "The teaching method requires at least {$match[1]} scenario slides and the rejected plan has only {$match[2]}. Add enough distinct slides with slide_type exactly \"scenario\", grounded in the chapter, and keep them in the required teaching-method order.";
+                }
+            }
             $retry = $prompt . "\n\nYour previous plan was rejected for these reasons:\n- "
                 . implode("\n- ", array_slice($errors, 0, 25))
+                . ($specificGuidance === [] ? '' : "\n\nSpecific corrections required:\n- " . implode("\n- ", array_unique($specificGuidance)))
                 . "\n\nReturn a corrected, COMPLETE plan as strictly valid JSON (every { closed by }, every [ by ], no trailing commas). "
                 . "Fixing one problem must not break another, so every rule still holds: "
                 . "between {$min} and {$max} slides in total, slide 1 has slide_type \"cover\" and no other slide does, every concept is in some slide's "
                 . 'taught_concept_ids, each question id is used at most once and at most ' . self::limits($map)['questions_per_slide'] . ' per slide. '
+                . $slideCountGuidance . ' '
+                . 'Follow every TEACHING METHOD order rule exactly for each concept: when a concept has both required types, put the earlier phase first. '
+                . 'In particular, if the error says scenario then concept_intro, move that concept\'s scenario slide before its concept_intro slide. '
                 . 'If you must cut slides, merge or remove practice or review slides, never the cover.';
             [$plan, $errors] = $this->read($this->ask($retry), $map, $eligible);
         }
 
         if ($errors) {
-            throw new \RuntimeException("Slide plan is invalid after two repair attempts:\n- " . implode("\n- ", $errors));
+            throw new \RuntimeException("Slide plan is invalid after " . ($rounds === 2 ? 'two' : $rounds) . " repair attempts:\n- " . implode("\n- ", $errors));
         }
 
-        return $this->normalise($plan);
+        return $this->withConceptVisuals($this->normalise($plan), $map);
+    }
+
+    /**
+     * A run that requires a picture on every concept slide (limits.require_concept_visuals) gets one asked for on each concept_intro and
+     * concept_visual slide the plan left without. The model is told to ask for them, but a plan is not rejected for forgetting: the pipeline
+     * itself adds a search for the slide's own concept, so the picture ladder (a web picture, then the textbook, then a diagram drawn from the
+     * plan's spec, then an explicit "no suitable picture") always runs for it. Never more than the run's visual cap.
+     *
+     * @param array<string,mixed> $plan a normalised plan
+     * @param array<string,mixed> $map LearningPlanBuilder::build()
+     * @return array<string,mixed>
+     */
+    public function withConceptVisuals(array $plan, array $map): array
+    {
+        $lim = self::limits($map);
+        if (!$lim['require_concept_visuals']) {
+            return $plan;
+        }
+        $have = count(array_filter((array) $plan['slides'], fn ($s) => !empty($s['visual']['required'])));
+        foreach ((array) $plan['slides'] as $i => $s) {
+            if (!in_array($s['slide_type'] ?? '', ['concept_intro', 'concept_visual'], true) || !empty($s['visual']['required'])) {
+                continue;
+            }
+            if ($have >= $lim['max_visuals']) {
+                break;
+            }
+            $id = (int) ((array) ($s['concept_ids'] ?? []))[0] ?? 0;
+            $name = trim((string) ($map['concepts'][$id]['name'] ?? $s['title'] ?? ''));
+            $words = array_values(array_filter(preg_split('/[^\p{L}]+/u', mb_strtolower($name), -1, PREG_SPLIT_NO_EMPTY) ?: [], fn ($w) => mb_strlen($w) >= 3 && !in_array($w, ['the', 'and', 'for', 'with', 'from', 'into', 'how', 'why', 'what'], true)));
+            if ($words === []) {
+                continue;
+            }
+            $plan['slides'][$i]['visual'] = ['required' => true, 'role' => 'phenomenon', 'query' => implode(' ', array_slice($words, 0, 5)), 'purpose' => (string) ($s['teaches'] ?? ('Shows ' . $name . '.')), 'added_by_pipeline' => true];
+            $have++;
+        }
+
+        return $plan;
     }
 
     /**
@@ -129,7 +194,173 @@ class SlidePlanner
             return [[], ['Your reply was not valid JSON (' . json_last_error_msg() . '). Nested objects were probably left unclosed.']];
         }
 
+        $plan = $this->repairPlanStructure($plan, $map);
+        $plan = $this->makeDuplicateTitlesDistinct($plan, $map);
+
         return [$plan, $this->validate($plan, $map, $eligible)];
+    }
+
+    /**
+     * Apply safe structural repairs that preserve each slide's taught concepts.
+     *
+     * @param array<string,mixed> $plan
+     * @param array<string,mixed> $map
+     * @return array<string,mixed>
+     */
+    private function repairPlanStructure(array $plan, array $map): array
+    {
+        $slides = array_values((array) ($plan['slides'] ?? []));
+        foreach ($slides as $i => $slide) {
+            $ids = array_values(array_unique(array_map('intval', (array) ($slide['concept_ids'] ?? []))));
+            $taught = array_values(array_unique(array_map('intval', (array) ($slide['taught_concept_ids'] ?? []))));
+            if (count($ids) <= self::MAX_CONCEPTS_PER_SLIDE || count($taught) > self::MAX_CONCEPTS_PER_SLIDE) {
+                continue;
+            }
+
+            $kept = array_values(array_intersect($taught, $ids));
+            foreach ($ids as $id) {
+                if (count($kept) >= self::MAX_CONCEPTS_PER_SLIDE) {
+                    break;
+                }
+                if (!in_array($id, $kept, true)) {
+                    $kept[] = $id;
+                }
+            }
+            $slides[$i]['concept_ids'] = $kept;
+        }
+
+        $method = TeachingMethodProfile::get((string) ($map['teaching_method'] ?? ''));
+        $orders = (array) ($method['order'] ?? []);
+        if ($orders === [] || count($slides) < 2) {
+            $plan['slides'] = $slides;
+
+            return $plan;
+        }
+
+        $firstByType = [];
+        foreach ($slides as $i => $slide) {
+            $type = (string) ($slide['slide_type'] ?? '');
+            foreach (array_unique(array_map('intval', (array) ($slide['concept_ids'] ?? []))) as $id) {
+                $firstByType[$type][$id] ??= $i;
+            }
+        }
+
+        $edges = array_fill(0, count($slides), []);
+        $incoming = array_fill(0, count($slides), 0);
+        foreach ($orders as [$before, $after]) {
+            foreach ((array) ($firstByType[$before] ?? []) as $id => $from) {
+                $to = $firstByType[$after][$id] ?? null;
+                if ($to === null || $to === $from || isset($edges[$from][$to])) {
+                    continue;
+                }
+                $edges[$from][$to] = true;
+                $incoming[$to]++;
+            }
+        }
+
+        $available = [];
+        foreach ($incoming as $i => $count) {
+            if ($count === 0) {
+                $available[] = $i;
+            }
+        }
+        $ordered = [];
+        while ($available !== []) {
+            sort($available, SORT_NUMERIC);
+            $i = array_shift($available);
+            $ordered[] = $slides[$i];
+            foreach (array_keys($edges[$i]) as $to) {
+                if (--$incoming[$to] === 0) {
+                    $available[] = $to;
+                }
+            }
+        }
+        if (count($ordered) === count($slides)) {
+            $slides = $ordered;
+        }
+
+        $plan['slides'] = $slides;
+
+        return $plan;
+    }
+
+    /**
+     * Give repeated concept headings a useful, plan-backed distinction before validation.
+     *
+     * @param array<string,mixed> $plan
+     * @param array<string,mixed> $map
+     * @return array<string,mixed>
+     */
+    private function makeDuplicateTitlesDistinct(array $plan, array $map): array
+    {
+        $slides = (array) ($plan['slides'] ?? []);
+        $groups = [];
+        foreach ($slides as $i => $slide) {
+            $title = mb_strtolower(trim((string) ($slide['title'] ?? '')));
+            if ($title !== '') {
+                $groups[$title][] = $i;
+            }
+        }
+
+        $duplicates = [];
+        foreach ($groups as $indexes) {
+            if (count($indexes) > 1) {
+                foreach ($indexes as $i) {
+                    $duplicates[$i] = true;
+                }
+            }
+        }
+        if ($duplicates === []) {
+            return $plan;
+        }
+
+        $reserved = [];
+        foreach ($slides as $i => $slide) {
+            if (!isset($duplicates[$i])) {
+                $title = mb_strtolower(trim((string) ($slide['title'] ?? '')));
+                if ($title !== '') {
+                    $reserved[$title] = true;
+                }
+            }
+        }
+
+        $intents = [
+            'concept_visual' => 'Look closely',
+            'concept_intro' => 'Understand',
+            'worked_example' => 'Work through',
+            'relationship' => 'Connect',
+            'misconception' => 'Rethink',
+            'scenario' => 'Explore',
+            'recall' => 'Recall',
+            'practice' => 'Practice',
+            'application' => 'Apply',
+            'challenge' => 'Try',
+        ];
+        foreach ($duplicates as $i => $_) {
+            $slide = $slides[$i];
+            $type = (string) ($slide['slide_type'] ?? '');
+            $intent = $intents[$type] ?? ucfirst(str_replace('_', ' ', $type ?: 'Review'));
+            $ids = array_values(array_unique(array_map('intval', (array) ($slide['taught_concept_ids'] ?? []))));
+            if ($ids === []) {
+                $ids = array_values(array_unique(array_map('intval', (array) ($slide['concept_ids'] ?? []))));
+            }
+            $name = trim((string) ($map['concepts'][$ids[0] ?? 0]['name'] ?? ''));
+            $prefixWords = preg_split('/\s+/u', trim($intent), -1, PREG_SPLIT_NO_EMPTY) ?: [];
+            $nameWords = preg_split('/\s+/u', $name, -1, PREG_SPLIT_NO_EMPTY) ?: [];
+            $name = implode(' ', array_slice($nameWords, 0, max(1, 8 - count($prefixWords))));
+            $base = $name === '' ? $intent : $intent . ': ' . $name;
+            $candidate = $base;
+            $suffix = 2;
+            while (isset($reserved[mb_strtolower($candidate)])) {
+                $candidate = $base . ' ' . $suffix++;
+            }
+            $slides[$i]['title'] = $candidate;
+            $reserved[mb_strtolower($candidate)] = true;
+        }
+
+        $plan['slides'] = $slides;
+
+        return $plan;
     }
 
     private function ask(string $prompt): string
@@ -146,6 +377,11 @@ class SlidePlanner
             }
             if (isset($s['visual']['role'])) {
                 $plan['slides'][$i]['visual']['role'] = strtolower(trim((string) $s['visual']['role']));
+            }
+            // A diagram spec is only the FALLBACK for a picture that cannot be found: a malformed one, or one on a slide with no visual, is dropped
+            // here (the picture search still runs) instead of costing the whole plan a repair round.
+            if (!empty($s['diagram']) && (!is_array($s['diagram']) || DiagramRenderer::problems($s['diagram']) !== [] || empty($s['visual']['required']))) {
+                $plan['slides'][$i]['diagram'] = null;
             }
         }
 
@@ -213,7 +449,7 @@ class SlidePlanner
             if ($ids === [] && in_array($type, self::NEEDS_CONCEPT, true)) {
                 $errors[] = "Slide $n is a $type slide and must list the concept_ids it is about (at least one).";
             }
-            if ($i > 0 && count($ids) > 3) {
+            if ($i > 0 && count($ids) > self::MAX_CONCEPTS_PER_SLIDE) {
                 $errors[] = "Slide $n carries more than 3 concepts; split it.";
             }
             foreach ($ids as $cid) {
@@ -264,6 +500,7 @@ class SlidePlanner
             }
 
             $v = $s['visual'] ?? null;
+
             if (is_array($v) && !empty($v['required'])) {
                 $visuals++;
                 if (!in_array($v['role'] ?? '', self::VISUAL_ROLES, true)) {
@@ -293,6 +530,9 @@ class SlidePlanner
         if ($visuals > $lim['max_visuals']) {
             $errors[] = "The plan asks for $visuals visuals; ask for at most " . $lim['max_visuals'] . ', only where a picture or diagram truly teaches.';
         }
+
+        // A deck planned for a teaching method must contain what that method needs, in its order (off when none is named).
+        array_push($errors, ...TeachingMethodProfile::planErrors($map['teaching_method'] ?? null, $slides));
 
         $missing = array_diff($known, array_keys($taught));
         if ($missing) {
@@ -342,7 +582,7 @@ class SlidePlanner
     private function pictureRule(int $maxV): string
     {
         if ($maxV <= self::MAX_VISUALS) {
-            return '';
+            return '';   // (a run that requires concept visuals gets its own rule beside this one)
         }
 
         return "- Real pictures first. Wherever a concept has something real to look at (a specimen, a micrograph, an instrument, an experiment set up), ask for the PHOTOGRAPH: give the visual a role of object, instrument or phenomenon and a short, concrete search query that names the thing, and ALSO put a \"diagram\" spec on the slide as the fallback (the system uses an openly licensed photograph when it finds a suitable one and draws your diagram when it does not). Use role \"diagram\" on its own only for a process, a comparison or a link between ideas that no single photograph shows. Aim for a real photograph on about half of the slides that have a visual.
@@ -401,7 +641,10 @@ class SlidePlanner
         $roles = implode(', ', self::VISUAL_ROLES);
         $framing = implode(', ', self::FRAMING);
         $practiceRule = $this->practiceRule($maxP, $maxQ);
-        $pictureRule = $this->pictureRule($maxV);
+        $pictureRule = $this->pictureRule($maxV) . ($lim['require_concept_visuals']
+            ? "\n- EVERY concept_intro and concept_visual slide MUST have a required visual: a photograph, map or real labelled figure where one exists, otherwise a role \"diagram\" with a \"diagram\" spec built only from words and numbers in the chapter text. A concept slide with no visual is rejected. Give each slide its own query (do not reuse one query for several slides)."
+            : '');
+        $methodRule = TeachingMethodProfile::plannerRule($map['teaching_method'] ?? null);
 
         return <<<PROMPT
 Plan a classroom study presentation of between {$min} and {$max} slides for the chapter below. Nothing is written yet; you are only planning.
@@ -418,7 +661,7 @@ Rules
 - Visuals: at most {$maxV} in the whole deck, and only where seeing the thing teaches the concept. Give "role": one of {$roles}. A PHOTOGRAPH (role object, instrument or phenomenon) is for a concrete thing worth seeing in itself: an instrument, a natural phenomenon, a specimen. A photo of something merely MENTIONED as an example, or of anything for an abstract idea, a definition, a classification or a chain of reasoning, teaches nothing: leave "visual" null, or give role "diagram" and put a "diagram" spec on the SLIDE (a sibling of "visual", never inside it) which the system will draw. Prefer a drawn diagram (role "diagram") for any concept with several meaningful named parts, ways, steps or kinds: the student will be able to select each part of it and read an explanation, so such a diagram earns a slide of its own and a large size. A diagram spec is {"layout": "flow" | "compare" | "hub", "title": "...", ...}: flow has "nodes": 2 to 6 short labels in order; hub has "center" and "nodes": 2 to 6 labels; compare has "left" and "right", each {"heading", "items": 1 to 5}. Every label must use words and numbers from the chapter text. The query is a plain 2 to 5 word search phrase naming the thing itself (for example "magnetic compass"), never a generic classroom or student photo.
 {$pictureRule}- Choose an h5p_pattern only where it truly fits the concept and a question you placed on THAT slide (reason required); otherwise null. Patterns here are ways to ask a bank question: {$patterns}. flashcards needs a recall-level question; fill_blanks needs a short factual answer; true_false needs a true/false question; matching needs a match-the-following question; drag_drop needs a drag-and-drop question. If the slide has no question, or none of its questions fit, use null. Never use branching or image_hotspots here; hotspots and scenarios are written separately by the system.
 - Slide types allowed: {$types}
-- No slide may repeat another's title. Every slide has one clear idea and something to look at, think about or discuss.
+- No slide may repeat another's title. Every slide has one clear idea and something to look at, think about or discuss.{$methodRule}
 
 Reply with this JSON and nothing else:
 {

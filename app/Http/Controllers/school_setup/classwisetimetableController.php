@@ -48,6 +48,23 @@ class classwisetimetableController extends Controller
         $sub_institute_id = $request->session()->get('sub_institute_id');
         $syear = $request->session()->get('syear');
 
+        // A student only ever sees their own class, whatever the request names: the
+        // class comes from their enrolment for the session's year, not from the client.
+        if ($request->session()->get('is_student')) {
+            $enrolment = DB::table('tblstudent_enrollment')
+                ->where('student_id', $request->session()->get('user_id'))
+                ->where('syear', $syear)
+                ->where('sub_institute_id', $sub_institute_id)
+                ->first(['grade_id', 'standard_id', 'section_id']);
+
+            if (! $enrolment) {
+                return response()->json(['status' => 'ERROR', 'message' => 'No class is assigned to you for this academic year.'], 422);
+            }
+            $academic_section_id = $enrolment->grade_id;
+            $standard_id = $enrolment->standard_id;
+            $division_id = $enrolment->section_id;
+        }
+
         if (! $academic_section_id || ! $standard_id || ! $division_id) {
             return response()->json(['status' => 'ERROR', 'message' => 'academic_section_id, standard_id and division_id are required'], 422);
         }

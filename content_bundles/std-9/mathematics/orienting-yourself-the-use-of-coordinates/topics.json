@@ -1,0 +1,41 @@
+[
+    {
+        "topic": "1.1 Introduction",
+        "description": "Learners are introduced to a system of coordinates as a structured framework that uses numbers to describe exact locations, traced from the grid-planned streets of the Sindhu-Sarasvati Civilisation through Baudhayana, Aryabhata and Brahmagupta to the modern four-quadrant plane.",
+        "estimated_minutes": 20,
+        "concepts": [
+            "Locating a Point with References"
+        ]
+    },
+    {
+        "topic": "1.2 Settling in",
+        "description": "Learners follow Shalini guiding Reiaan around a new home on a rectangular pin grid, and learn to describe any location by counting units along two perpendicular directions. This builds the intuition of an ordered pair before the formal axes are introduced.",
+        "estimated_minutes": 30,
+        "concepts": [
+            "Row and Column Addressing"
+        ]
+    },
+    {
+        "topic": "1.3 The 2-D Cartesian coordinate system",
+        "description": "Learners set up the x-axis, y-axis and origin, and use the sign conventions to plot and read a point (x, y) as its perpendicular distances from the two axes. They also identify the four quadrants and the sign pattern of the coordinates in each.",
+        "estimated_minutes": 45,
+        "concepts": [
+            "Cartesian Coordinate System",
+            "Origin",
+            "Quadrants",
+            "Coordinates of a Point",
+            "Signs of Coordinates in Quadrants",
+            "Reflection",
+            "Points on Axes"
+        ]
+    },
+    {
+        "topic": "1.4 Distance between two points in the 2-D plane",
+        "description": "Learners find the distance between two points that lie on an axis or on a segment parallel to an axis, and then apply the Baudhayana-Pythagoras theorem to derive the distance between any two points in the xy-plane.",
+        "estimated_minutes": 45,
+        "concepts": [
+            "Distance Formula",
+            "Midpoint Formula"
+        ]
+    }
+]

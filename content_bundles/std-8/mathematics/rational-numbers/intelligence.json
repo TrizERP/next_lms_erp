@@ -1,0 +1,4007 @@
+[
+    {
+        "concept": {
+            "concept_type": "Concept",
+            "definition": "The chapter opens with x + 2 = 13, whose solution 11 is itself a natural number, so this first equation can be settled without inventing any new kind of number.",
+            "importance": "Important",
+            "difficulty": "Easy",
+            "confidence": 0.95,
+            "concept_name": "Natural numbers are not enough",
+            "concept_id": "C451-1"
+        },
+        "topic_id": 25370,
+        "topic_name": "Introduction: Why Rational Numbers",
+        "knowledge_items": [
+            {
+                "knowledge": "Substitution check",
+                "statement": "A value is the solution of an equation when putting it in place of the letter makes the left side equal the right side, as 11 does in x + 2 = 13.",
+                "knowledge_type": "Process",
+                "confidence": 0.95,
+                "concept_name": "Natural numbers are not enough",
+                "topic_id": 25370,
+                "topic_name": "Introduction: Why Rational Numbers"
+            }
+        ],
+        "abilities": [
+            {
+                "ability": "Verify a proposed solution",
+                "verb": "Verify",
+                "description": "Substitute a candidate value into a simple equation and decide whether it satisfies that equation.",
+                "knowledge_refs": [
+                    "Substitution check"
+                ],
+                "concept_name": "Natural numbers are not enough",
+                "topic_id": 25370,
+                "topic_name": "Introduction: Why Rational Numbers"
+            }
+        ],
+        "skills": [
+            {
+                "skill": "Working inside the natural numbers",
+                "ability_refs": [
+                    "Verify a proposed solution"
+                ],
+                "concept_name": "Natural numbers are not enough",
+                "topic_id": 25370,
+                "topic_name": "Introduction: Why Rational Numbers"
+            }
+        ],
+        "competencies": [
+            {
+                "competency": "Equation sense",
+                "statement": "Decides whether a given equation can be settled inside the number system currently available.",
+                "knowledge_refs": [
+                    "Substitution check"
+                ],
+                "ability_refs": [
+                    "Verify a proposed solution"
+                ],
+                "skill_refs": [
+                    "Working inside the natural numbers"
+                ],
+                "concept_name": "Natural numbers are not enough",
+                "topic_id": 25370,
+                "topic_name": "Introduction: Why Rational Numbers"
+            }
+        ],
+        "blooms": [
+            {
+                "level": "Remember",
+                "coverage_score": 40,
+                "concept_name": "Natural numbers are not enough",
+                "topic_id": 25370,
+                "topic_name": "Introduction: Why Rational Numbers"
+            },
+            {
+                "level": "Understand",
+                "coverage_score": 60,
+                "concept_name": "Natural numbers are not enough",
+                "topic_id": 25370,
+                "topic_name": "Introduction: Why Rational Numbers"
+            }
+        ],
+        "dok": [
+            {
+                "level": "1",
+                "description": "Recall and Reproduction",
+                "concept_name": "Natural numbers are not enough",
+                "topic_id": 25370,
+                "topic_name": "Introduction: Why Rational Numbers"
+            }
+        ],
+        "prerequisites": [
+            {
+                "concept_name": "Solving simple linear equations from Class 7",
+                "prerequisite_type": "Knowledge",
+                "necessity": "Mandatory",
+                "_parent_concept": "Natural numbers are not enough",
+                "topic_id": 25370,
+                "topic_name": "Introduction: Why Rational Numbers"
+            }
+        ],
+        "misconceptions": [
+            {
+                "misconception": "Zero counts as a natural number",
+                "statement": "Learners include zero among the natural numbers and so see no reason why the whole numbers were ever needed.",
+                "root_cause": "Number lines and counting displays often begin at zero, which blurs the boundary of the counting numbers.",
+                "correction": "List the natural numbers as 1, 2, 3 and onwards, then show that x + 5 = 5 has no solution there.",
+                "concept_name": "Natural numbers are not enough",
+                "topic_id": 25370,
+                "topic_name": "Introduction: Why Rational Numbers"
+            }
+        ],
+        "real_world_applications": [
+            {
+                "application_type": "Daily Life",
+                "example": "Counting items on a shopping list, where only whole positive quantities can be meant.",
+                "relevance": "Medium",
+                "concept_name": "Natural numbers are not enough",
+                "topic_id": 25370,
+                "topic_name": "Introduction: Why Rational Numbers"
+            }
+        ],
+        "pedagogy_recommendations": [
+            {
+                "strategy": "Inquiry Based Teaching",
+                "why_effective": "Asking whether every equation can be settled with counting numbers turns the gap into the learner's own discovery.",
+                "concept_characteristics": [
+                    "historical motivation",
+                    "equation solving"
+                ],
+                "concept_name": "Natural numbers are not enough",
+                "topic_id": 25370,
+                "topic_name": "Introduction: Why Rational Numbers"
+            }
+        ],
+        "learning_objectives": [
+            {
+                "objective": "Check by substitution that 11 satisfies x + 2 = 13 and note that 11 is a natural number.",
+                "objective_type": "Knowledge",
+                "priority": "Medium",
+                "concept_name": "Natural numbers are not enough",
+                "topic_id": 25370,
+                "topic_name": "Introduction: Why Rational Numbers"
+            }
+        ],
+        "learning_outcomes": [
+            {
+                "outcome": "Substitutes a given value into a simple equation and states whether it is a solution.",
+                "outcome_type": "Knowledge Outcome",
+                "measurable": true,
+                "assessment_ready": true,
+                "concept_name": "Natural numbers are not enough",
+                "topic_id": 25370,
+                "topic_name": "Introduction: Why Rational Numbers"
+            }
+        ],
+        "assessment_blueprint": [
+            {
+                "assessment_type": "MCQ",
+                "bloom_level": "Remember",
+                "dok_level": "1",
+                "difficulty": "Easy",
+                "marks": 1,
+                "recommended_question": "Which value of x satisfies x + 2 = 13, and does that value belong to the natural numbers?",
+                "concept_name": "Natural numbers are not enough",
+                "topic_id": 25370,
+                "topic_name": "Introduction: Why Rational Numbers"
+            },
+            {
+                "assessment_type": "Short Answer",
+                "bloom_level": "Understand",
+                "dok_level": "2",
+                "difficulty": "Easy",
+                "marks": 2,
+                "recommended_question": "Show by substitution that 11 solves x + 2 = 13, then explain why no new kind of number was needed for it.",
+                "concept_name": "Natural numbers are not enough",
+                "topic_id": 25370,
+                "topic_name": "Introduction: Why Rational Numbers"
+            }
+        ]
+    },
+    {
+        "concept": {
+            "concept_type": "Fact",
+            "definition": "The equation x + 5 = 5 has the solution zero, which is not a natural number, so zero was added to the naturals to give the whole numbers.",
+            "importance": "Core",
+            "difficulty": "Easy",
+            "confidence": 0.96,
+            "concept_name": "Zero and the whole numbers",
+            "concept_id": "C451-2"
+        },
+        "topic_id": 25370,
+        "topic_name": "Introduction: Why Rational Numbers",
+        "knowledge_items": [
+            {
+                "knowledge": "Whole numbers defined",
+                "statement": "The whole numbers are the natural numbers together with zero, introduced so that an equation such as x + 5 = 5 has a solution.",
+                "knowledge_type": "Definition",
+                "confidence": 0.96,
+                "concept_name": "Zero and the whole numbers",
+                "topic_id": 25370,
+                "topic_name": "Introduction: Why Rational Numbers"
+            }
+        ],
+        "abilities": [
+            {
+                "ability": "Identify the equation that forces zero",
+                "verb": "Identify",
+                "description": "Point to an equation whose solution lies outside the naturals but inside the whole numbers.",
+                "knowledge_refs": [
+                    "Whole numbers defined"
+                ],
+                "concept_name": "Zero and the whole numbers",
+                "topic_id": 25370,
+                "topic_name": "Introduction: Why Rational Numbers"
+            }
+        ],
+        "skills": [
+            {
+                "skill": "Tracing how a number system is extended",
+                "ability_refs": [
+                    "Identify the equation that forces zero"
+                ],
+                "concept_name": "Zero and the whole numbers",
+                "topic_id": 25370,
+                "topic_name": "Introduction: Why Rational Numbers"
+            }
+        ],
+        "competencies": [
+            {
+                "competency": "System extension reasoning",
+                "statement": "Explains that a number system grows precisely when an equation it cannot settle is met.",
+                "knowledge_refs": [
+                    "Whole numbers defined"
+                ],
+                "ability_refs": [
+                    "Identify the equation that forces zero"
+                ],
+                "skill_refs": [
+                    "Tracing how a number system is extended"
+                ],
+                "concept_name": "Zero and the whole numbers",
+                "topic_id": 25370,
+                "topic_name": "Introduction: Why Rational Numbers"
+            }
+        ],
+        "blooms": [
+            {
+                "level": "Remember",
+                "coverage_score": 30,
+                "concept_name": "Zero and the whole numbers",
+                "topic_id": 25370,
+                "topic_name": "Introduction: Why Rational Numbers"
+            },
+            {
+                "level": "Understand",
+                "coverage_score": 70,
+                "concept_name": "Zero and the whole numbers",
+                "topic_id": 25370,
+                "topic_name": "Introduction: Why Rational Numbers"
+            }
+        ],
+        "dok": [
+            {
+                "level": "2",
+                "description": "Skills and Concepts",
+                "concept_name": "Zero and the whole numbers",
+                "topic_id": 25370,
+                "topic_name": "Introduction: Why Rational Numbers"
+            }
+        ],
+        "prerequisites": [
+            {
+                "concept_name": "Natural numbers are not enough",
+                "prerequisite_type": "Concept",
+                "necessity": "Mandatory",
+                "_parent_concept": "Zero and the whole numbers",
+                "topic_id": 25370,
+                "topic_name": "Introduction: Why Rational Numbers"
+            }
+        ],
+        "misconceptions": [
+            {
+                "misconception": "Zero means nothing at all",
+                "statement": "Learners treat zero as the absence of a number rather than as a number in its own right.",
+                "root_cause": "Everyday speech uses nothing and zero interchangeably, so zero never feels like a member of the set.",
+                "correction": "Solve x + 5 = 5 and point out that the answer zero must be a number because it satisfies an equation.",
+                "concept_name": "Zero and the whole numbers",
+                "topic_id": 25370,
+                "topic_name": "Introduction: Why Rational Numbers"
+            }
+        ],
+        "real_world_applications": [
+            {
+                "application_type": "Daily Life",
+                "example": "A bank balance of zero rupees is a genuine reading of the account, not a missing one.",
+                "relevance": "Medium",
+                "concept_name": "Zero and the whole numbers",
+                "topic_id": 25370,
+                "topic_name": "Introduction: Why Rational Numbers"
+            }
+        ],
+        "pedagogy_recommendations": [
+            {
+                "strategy": "Activity Based Teaching",
+                "why_effective": "Building the whole numbers on a floor number line makes the single extra element physically visible.",
+                "concept_characteristics": [
+                    "number system growth",
+                    "concrete representation"
+                ],
+                "concept_name": "Zero and the whole numbers",
+                "topic_id": 25370,
+                "topic_name": "Introduction: Why Rational Numbers"
+            }
+        ],
+        "learning_objectives": [
+            {
+                "objective": "Explain why zero had to be joined to the natural numbers to give the whole numbers.",
+                "objective_type": "Knowledge",
+                "priority": "High",
+                "concept_name": "Zero and the whole numbers",
+                "topic_id": 25370,
+                "topic_name": "Introduction: Why Rational Numbers"
+            }
+        ],
+        "learning_outcomes": [
+            {
+                "outcome": "States that the whole numbers are the naturals together with zero and names an equation needing zero.",
+                "outcome_type": "Knowledge Outcome",
+                "measurable": true,
+                "assessment_ready": true,
+                "concept_name": "Zero and the whole numbers",
+                "topic_id": 25370,
+                "topic_name": "Introduction: Why Rational Numbers"
+            }
+        ],
+        "assessment_blueprint": [
+            {
+                "assessment_type": "MCQ",
+                "bloom_level": "Remember",
+                "dok_level": "1",
+                "difficulty": "Easy",
+                "marks": 1,
+                "recommended_question": "Which of x + 2 = 13 and x + 5 = 5 shows that the natural numbers alone are not enough?",
+                "concept_name": "Zero and the whole numbers",
+                "topic_id": 25370,
+                "topic_name": "Introduction: Why Rational Numbers"
+            },
+            {
+                "assessment_type": "Short Answer",
+                "bloom_level": "Understand",
+                "dok_level": "2",
+                "difficulty": "Easy",
+                "marks": 2,
+                "recommended_question": "Name the number system formed when zero joins the naturals, and give the equation that made it necessary.",
+                "concept_name": "Zero and the whole numbers",
+                "topic_id": 25370,
+                "topic_name": "Introduction: Why Rational Numbers"
+            }
+        ]
+    },
+    {
+        "concept": {
+            "concept_type": "Fact",
+            "definition": "The equation x + 18 = 5 needs the value -13, which is not a whole number, so negative numbers were joined to the wholes to form the integers.",
+            "importance": "Core",
+            "difficulty": "Easy",
+            "confidence": 0.96,
+            "concept_name": "Negatives and the integers",
+            "concept_id": "C451-3"
+        },
+        "topic_id": 25370,
+        "topic_name": "Introduction: Why Rational Numbers",
+        "knowledge_items": [
+            {
+                "knowledge": "Integers defined",
+                "statement": "The integers consist of the negative numbers, zero and the positive numbers, with the positive integers corresponding to the natural numbers.",
+                "knowledge_type": "Definition",
+                "confidence": 0.96,
+                "concept_name": "Negatives and the integers",
+                "topic_id": 25370,
+                "topic_name": "Introduction: Why Rational Numbers"
+            }
+        ],
+        "abilities": [
+            {
+                "ability": "Solve an equation needing a negative value",
+                "verb": "Solve",
+                "description": "Work out that x + 18 = 5 gives -13 and place that value outside the whole numbers.",
+                "knowledge_refs": [
+                    "Integers defined"
+                ],
+                "concept_name": "Negatives and the integers",
+                "topic_id": 25370,
+                "topic_name": "Introduction: Why Rational Numbers"
+            }
+        ],
+        "skills": [
+            {
+                "skill": "Reading values on both sides of zero",
+                "ability_refs": [
+                    "Solve an equation needing a negative value"
+                ],
+                "concept_name": "Negatives and the integers",
+                "topic_id": 25370,
+                "topic_name": "Introduction: Why Rational Numbers"
+            }
+        ],
+        "competencies": [
+            {
+                "competency": "Signed number fluency",
+                "statement": "Treats a negative result as a legitimate answer rather than as a sign of a mistake.",
+                "knowledge_refs": [
+                    "Integers defined"
+                ],
+                "ability_refs": [
+                    "Solve an equation needing a negative value"
+                ],
+                "skill_refs": [
+                    "Reading values on both sides of zero"
+                ],
+                "concept_name": "Negatives and the integers",
+                "topic_id": 25370,
+                "topic_name": "Introduction: Why Rational Numbers"
+            }
+        ],
+        "blooms": [
+            {
+                "level": "Understand",
+                "coverage_score": 60,
+                "concept_name": "Negatives and the integers",
+                "topic_id": 25370,
+                "topic_name": "Introduction: Why Rational Numbers"
+            },
+            {
+                "level": "Apply",
+                "coverage_score": 40,
+                "concept_name": "Negatives and the integers",
+                "topic_id": 25370,
+                "topic_name": "Introduction: Why Rational Numbers"
+            }
+        ],
+        "dok": [
+            {
+                "level": "2",
+                "description": "Skills and Concepts",
+                "concept_name": "Negatives and the integers",
+                "topic_id": 25370,
+                "topic_name": "Introduction: Why Rational Numbers"
+            }
+        ],
+        "prerequisites": [
+            {
+                "concept_name": "Zero and the whole numbers",
+                "prerequisite_type": "Concept",
+                "necessity": "Mandatory",
+                "_parent_concept": "Negatives and the integers",
+                "topic_id": 25370,
+                "topic_name": "Introduction: Why Rational Numbers"
+            }
+        ],
+        "misconceptions": [
+            {
+                "misconception": "Minus thirteen is less than nothing",
+                "statement": "Learners believe a negative answer means the equation was set up wrongly, since one cannot have less than nothing.",
+                "root_cause": "Early arithmetic is taught with quantities of physical objects, where a negative count is genuinely impossible.",
+                "correction": "Use temperature below freezing and money owed to show that negative values describe real readings.",
+                "concept_name": "Negatives and the integers",
+                "topic_id": 25370,
+                "topic_name": "Introduction: Why Rational Numbers"
+            }
+        ],
+        "real_world_applications": [
+            {
+                "application_type": "Daily Life",
+                "example": "A winter temperature of minus thirteen degrees is read straight off a thermometer scale.",
+                "relevance": "High",
+                "concept_name": "Negatives and the integers",
+                "topic_id": 25370,
+                "topic_name": "Introduction: Why Rational Numbers"
+            }
+        ],
+        "pedagogy_recommendations": [
+            {
+                "strategy": "Experiential Based Teaching",
+                "why_effective": "Stepping backwards past zero along a marked line gives the negative integers an immediate physical meaning.",
+                "concept_characteristics": [
+                    "number line",
+                    "signed quantities"
+                ],
+                "concept_name": "Negatives and the integers",
+                "topic_id": 25370,
+                "topic_name": "Introduction: Why Rational Numbers"
+            }
+        ],
+        "learning_objectives": [
+            {
+                "objective": "Solve x + 18 = 5 and explain why its answer forced the integers into being.",
+                "objective_type": "Ability",
+                "priority": "High",
+                "concept_name": "Negatives and the integers",
+                "topic_id": 25370,
+                "topic_name": "Introduction: Why Rational Numbers"
+            }
+        ],
+        "learning_outcomes": [
+            {
+                "outcome": "Produces the solution -13 for x + 18 = 5 and classifies it as an integer but not a whole number.",
+                "outcome_type": "Ability Outcome",
+                "measurable": true,
+                "assessment_ready": true,
+                "concept_name": "Negatives and the integers",
+                "topic_id": 25370,
+                "topic_name": "Introduction: Why Rational Numbers"
+            }
+        ],
+        "assessment_blueprint": [
+            {
+                "assessment_type": "Numerical",
+                "bloom_level": "Apply",
+                "dok_level": "2",
+                "difficulty": "Easy",
+                "marks": 2,
+                "recommended_question": "Solve x + 18 = 5 and state which number system the answer belongs to.",
+                "concept_name": "Negatives and the integers",
+                "topic_id": 25370,
+                "topic_name": "Introduction: Why Rational Numbers"
+            },
+            {
+                "assessment_type": "Short Answer",
+                "bloom_level": "Understand",
+                "dok_level": "2",
+                "difficulty": "Medium",
+                "marks": 3,
+                "recommended_question": "Explain why the whole numbers had to be extended to the integers, taking x + 18 = 5 as your example.",
+                "concept_name": "Negatives and the integers",
+                "topic_id": 25370,
+                "topic_name": "Introduction: Why Rational Numbers"
+            }
+        ]
+    },
+    {
+        "concept": {
+            "concept_type": "Concept",
+            "definition": "The equations 2x = 3 and 5x + 7 = 0 have no solution among the integers; 3/2 and -7/5 are needed, and that fourth widening produces the rational numbers.",
+            "importance": "Core",
+            "difficulty": "Medium",
+            "confidence": 0.95,
+            "concept_name": "Fractions and the rationals",
+            "concept_id": "C451-4"
+        },
+        "topic_id": 25370,
+        "topic_name": "Introduction: Why Rational Numbers",
+        "knowledge_items": [
+            {
+                "knowledge": "Rationals complete the sequence",
+                "statement": "The rational numbers are the fourth widening in a single sequence, reached because equations such as 2x = 3 and 5x + 7 = 0 have no integer solution.",
+                "knowledge_type": "Principle",
+                "confidence": 0.95,
+                "concept_name": "Fractions and the rationals",
+                "topic_id": 25370,
+                "topic_name": "Introduction: Why Rational Numbers"
+            }
+        ],
+        "abilities": [
+            {
+                "ability": "Produce the fractional solution an equation demands",
+                "verb": "Determine",
+                "description": "Solve 2x = 3 and 5x + 7 = 0 and recognise 3/2 and -7/5 as rational rather than integer values.",
+                "knowledge_refs": [
+                    "Rationals complete the sequence"
+                ],
+                "concept_name": "Fractions and the rationals",
+                "topic_id": 25370,
+                "topic_name": "Introduction: Why Rational Numbers"
+            }
+        ],
+        "skills": [
+            {
+                "skill": "Choosing the number system an answer belongs to",
+                "ability_refs": [
+                    "Produce the fractional solution an equation demands"
+                ],
+                "concept_name": "Fractions and the rationals",
+                "topic_id": 25370,
+                "topic_name": "Introduction: Why Rational Numbers"
+            }
+        ],
+        "competencies": [
+            {
+                "competency": "Number system placement",
+                "statement": "Places any solution in the smallest of the four systems that actually contains it.",
+                "knowledge_refs": [
+                    "Rationals complete the sequence"
+                ],
+                "ability_refs": [
+                    "Produce the fractional solution an equation demands"
+                ],
+                "skill_refs": [
+                    "Choosing the number system an answer belongs to"
+                ],
+                "concept_name": "Fractions and the rationals",
+                "topic_id": 25370,
+                "topic_name": "Introduction: Why Rational Numbers"
+            }
+        ],
+        "blooms": [
+            {
+                "level": "Understand",
+                "coverage_score": 50,
+                "concept_name": "Fractions and the rationals",
+                "topic_id": 25370,
+                "topic_name": "Introduction: Why Rational Numbers"
+            },
+            {
+                "level": "Apply",
+                "coverage_score": 50,
+                "concept_name": "Fractions and the rationals",
+                "topic_id": 25370,
+                "topic_name": "Introduction: Why Rational Numbers"
+            }
+        ],
+        "dok": [
+            {
+                "level": "2",
+                "description": "Skills and Concepts",
+                "concept_name": "Fractions and the rationals",
+                "topic_id": 25370,
+                "topic_name": "Introduction: Why Rational Numbers"
+            }
+        ],
+        "prerequisites": [
+            {
+                "concept_name": "Negatives and the integers",
+                "prerequisite_type": "Concept",
+                "necessity": "Mandatory",
+                "_parent_concept": "Fractions and the rationals",
+                "topic_id": 25370,
+                "topic_name": "Introduction: Why Rational Numbers"
+            }
+        ],
+        "misconceptions": [
+            {
+                "misconception": "Fractions are not proper numbers",
+                "statement": "Learners regard 3/2 as an unfinished division waiting to be turned into a whole number.",
+                "root_cause": "Division is first met as sharing that comes out exactly, so anything left over looks like a failure.",
+                "correction": "Show that 3/2 satisfies 2x = 3 exactly, so it is a finished answer and not a stage on the way to one.",
+                "concept_name": "Fractions and the rationals",
+                "topic_id": 25370,
+                "topic_name": "Introduction: Why Rational Numbers"
+            }
+        ],
+        "real_world_applications": [
+            {
+                "application_type": "Industry",
+                "example": "A machinist cutting stock to three halves of a unit length works from the exact ratio, not a rounded one.",
+                "relevance": "Medium",
+                "concept_name": "Fractions and the rationals",
+                "topic_id": 25370,
+                "topic_name": "Introduction: Why Rational Numbers"
+            }
+        ],
+        "pedagogy_recommendations": [
+            {
+                "strategy": "Inquiry Based Teaching",
+                "why_effective": "Letting learners hunt in vain for an integer solution to 2x = 3 makes the need for a new number undeniable.",
+                "concept_characteristics": [
+                    "number system growth",
+                    "equation solving",
+                    "generalisation"
+                ],
+                "concept_name": "Fractions and the rationals",
+                "topic_id": 25370,
+                "topic_name": "Introduction: Why Rational Numbers"
+            }
+        ],
+        "learning_objectives": [
+            {
+                "objective": "Solve 2x = 3 and 5x + 7 = 0 and name the number system their solutions require.",
+                "objective_type": "Ability",
+                "priority": "High",
+                "concept_name": "Fractions and the rationals",
+                "topic_id": 25370,
+                "topic_name": "Introduction: Why Rational Numbers"
+            }
+        ],
+        "learning_outcomes": [
+            {
+                "outcome": "Gives 3/2 and -7/5 as the solutions and identifies them as rational numbers lying outside the integers.",
+                "outcome_type": "Ability Outcome",
+                "measurable": true,
+                "assessment_ready": true,
+                "concept_name": "Fractions and the rationals",
+                "topic_id": 25370,
+                "topic_name": "Introduction: Why Rational Numbers"
+            }
+        ],
+        "assessment_blueprint": [
+            {
+                "assessment_type": "Numerical",
+                "bloom_level": "Apply",
+                "dok_level": "2",
+                "difficulty": "Medium",
+                "marks": 2,
+                "recommended_question": "Solve 5x + 7 = 0 and state why its solution cannot be an integer.",
+                "concept_name": "Fractions and the rationals",
+                "topic_id": 25370,
+                "topic_name": "Introduction: Why Rational Numbers"
+            },
+            {
+                "assessment_type": "MCQ",
+                "bloom_level": "Understand",
+                "dok_level": "2",
+                "difficulty": "Easy",
+                "marks": 1,
+                "recommended_question": "Which equation has no solution within the integers, x + 18 = 5 or 2x = 3?",
+                "concept_name": "Fractions and the rationals",
+                "topic_id": 25370,
+                "topic_name": "Introduction: Why Rational Numbers"
+            }
+        ]
+    },
+    {
+        "concept": {
+            "concept_type": "Concept",
+            "definition": "With the operations on rational numbers already known, the chapter turns from asking what can be solved to asking how those operations themselves behave.",
+            "importance": "Important",
+            "difficulty": "Medium",
+            "confidence": 0.9,
+            "concept_name": "From solving to exploring",
+            "concept_id": "C451-5"
+        },
+        "topic_id": 25370,
+        "topic_name": "Introduction: Why Rational Numbers",
+        "knowledge_items": [
+            {
+                "knowledge": "Shift of question",
+                "statement": "Once the rational numbers are reached the chapter stops extending the system and begins examining the properties of operations across every system met so far.",
+                "knowledge_type": "Principle",
+                "confidence": 0.9,
+                "concept_name": "From solving to exploring",
+                "topic_id": 25370,
+                "topic_name": "Introduction: Why Rational Numbers"
+            }
+        ],
+        "abilities": [
+            {
+                "ability": "State what the rest of the chapter investigates",
+                "verb": "Describe",
+                "description": "Explain that the remaining sections test properties of operations instead of solving further equations.",
+                "knowledge_refs": [
+                    "Shift of question"
+                ],
+                "concept_name": "From solving to exploring",
+                "topic_id": 25370,
+                "topic_name": "Introduction: Why Rational Numbers"
+            }
+        ],
+        "skills": [
+            {
+                "skill": "Orientating oneself within a mathematical argument",
+                "ability_refs": [
+                    "State what the rest of the chapter investigates"
+                ],
+                "concept_name": "From solving to exploring",
+                "topic_id": 25370,
+                "topic_name": "Introduction: Why Rational Numbers"
+            }
+        ],
+        "competencies": [
+            {
+                "competency": "Mathematical purpose",
+                "statement": "Recognises when mathematics turns from calculating answers to studying structure.",
+                "knowledge_refs": [
+                    "Shift of question"
+                ],
+                "ability_refs": [
+                    "State what the rest of the chapter investigates"
+                ],
+                "skill_refs": [
+                    "Orientating oneself within a mathematical argument"
+                ],
+                "concept_name": "From solving to exploring",
+                "topic_id": 25370,
+                "topic_name": "Introduction: Why Rational Numbers"
+            }
+        ],
+        "blooms": [
+            {
+                "level": "Understand",
+                "coverage_score": 70,
+                "concept_name": "From solving to exploring",
+                "topic_id": 25370,
+                "topic_name": "Introduction: Why Rational Numbers"
+            },
+            {
+                "level": "Analyze",
+                "coverage_score": 30,
+                "concept_name": "From solving to exploring",
+                "topic_id": 25370,
+                "topic_name": "Introduction: Why Rational Numbers"
+            }
+        ],
+        "dok": [
+            {
+                "level": "2",
+                "description": "Skills and Concepts",
+                "concept_name": "From solving to exploring",
+                "topic_id": 25370,
+                "topic_name": "Introduction: Why Rational Numbers"
+            }
+        ],
+        "prerequisites": [
+            {
+                "concept_name": "Fractions and the rationals",
+                "prerequisite_type": "Concept",
+                "necessity": "Recommended",
+                "_parent_concept": "From solving to exploring",
+                "topic_id": 25370,
+                "topic_name": "Introduction: Why Rational Numbers"
+            }
+        ],
+        "misconceptions": [
+            {
+                "misconception": "Properties are extra rules to memorise",
+                "statement": "Learners treat closure, commutativity and associativity as a vocabulary list rather than as questions to be tested.",
+                "root_cause": "The property names arrive before any example has been worked, so they feel arbitrary and unmotivated.",
+                "correction": "Test each property on whole numbers, integers and rationals in turn so that the name records a finding.",
+                "concept_name": "From solving to exploring",
+                "topic_id": 25370,
+                "topic_name": "Introduction: Why Rational Numbers"
+            }
+        ],
+        "real_world_applications": [
+            {
+                "application_type": "Research",
+                "example": "Mathematicians classify an unfamiliar system by asking which of the usual operation properties survive in it.",
+                "relevance": "Medium",
+                "concept_name": "From solving to exploring",
+                "topic_id": 25370,
+                "topic_name": "Introduction: Why Rational Numbers"
+            }
+        ],
+        "pedagogy_recommendations": [
+            {
+                "strategy": "Flipped Classroom Teaching",
+                "why_effective": "Learners can meet the four property names beforehand and spend the whole lesson testing them instead.",
+                "concept_characteristics": [
+                    "structural thinking",
+                    "chapter orientation"
+                ],
+                "concept_name": "From solving to exploring",
+                "topic_id": 25370,
+                "topic_name": "Introduction: Why Rational Numbers"
+            }
+        ],
+        "learning_objectives": [
+            {
+                "objective": "Describe the change of question that separates the opening of the chapter from the rest of it.",
+                "objective_type": "Knowledge",
+                "priority": "Medium",
+                "concept_name": "From solving to exploring",
+                "topic_id": 25370,
+                "topic_name": "Introduction: Why Rational Numbers"
+            }
+        ],
+        "learning_outcomes": [
+            {
+                "outcome": "States that the chapter moves from extending number systems to investigating how operations behave.",
+                "outcome_type": "Knowledge Outcome",
+                "measurable": true,
+                "assessment_ready": true,
+                "concept_name": "From solving to exploring",
+                "topic_id": 25370,
+                "topic_name": "Introduction: Why Rational Numbers"
+            }
+        ],
+        "assessment_blueprint": [
+            {
+                "assessment_type": "Short Answer",
+                "bloom_level": "Understand",
+                "dok_level": "2",
+                "difficulty": "Medium",
+                "marks": 2,
+                "recommended_question": "What question does the chapter begin to ask once the rational numbers have been introduced?",
+                "concept_name": "From solving to exploring",
+                "topic_id": 25370,
+                "topic_name": "Introduction: Why Rational Numbers"
+            },
+            {
+                "assessment_type": "HOTS",
+                "bloom_level": "Analyze",
+                "dok_level": "3",
+                "difficulty": "Medium",
+                "marks": 3,
+                "recommended_question": "Why is it useful to test a property on whole numbers and integers before testing it on rational numbers?",
+                "concept_name": "From solving to exploring",
+                "topic_id": 25370,
+                "topic_name": "Introduction: Why Rational Numbers"
+            }
+        ]
+    },
+    {
+        "concept": {
+            "concept_type": "Definition",
+            "definition": "A rational number is any number that can be written as p/q where p and q are integers and q is not zero.",
+            "importance": "Core",
+            "difficulty": "Easy",
+            "confidence": 0.98,
+            "concept_name": "What a rational number is",
+            "concept_id": "C451-6"
+        },
+        "topic_id": 25371,
+        "topic_name": "Closure",
+        "knowledge_items": [
+            {
+                "knowledge": "The p over q form",
+                "statement": "A rational number is one expressible as p/q with both p and q integers and the denominator q not equal to zero.",
+                "knowledge_type": "Definition",
+                "confidence": 0.98,
+                "concept_name": "What a rational number is",
+                "topic_id": 25371,
+                "topic_name": "Closure"
+            },
+            {
+                "knowledge": "Integers are rational",
+                "statement": "Because 0, -2 and 4 can each be written in the p over q form, every integer is a rational number as well.",
+                "knowledge_type": "Relationship",
+                "confidence": 0.96,
+                "concept_name": "What a rational number is",
+                "topic_id": 25371,
+                "topic_name": "Closure"
+            }
+        ],
+        "abilities": [
+            {
+                "ability": "Write a given number in p over q form",
+                "verb": "Express",
+                "description": "Convert integers and fractions into p over q form and check that the denominator is not zero.",
+                "knowledge_refs": [
+                    "The p over q form",
+                    "Integers are rational"
+                ],
+                "concept_name": "What a rational number is",
+                "topic_id": 25371,
+                "topic_name": "Closure"
+            }
+        ],
+        "skills": [
+            {
+                "skill": "Classifying numbers by the form they can take",
+                "ability_refs": [
+                    "Write a given number in p over q form"
+                ],
+                "concept_name": "What a rational number is",
+                "topic_id": 25371,
+                "topic_name": "Closure"
+            }
+        ],
+        "competencies": [
+            {
+                "competency": "Rational number recognition",
+                "statement": "Decides whether a given number is rational by attempting to write it as p over q.",
+                "knowledge_refs": [
+                    "The p over q form",
+                    "Integers are rational"
+                ],
+                "ability_refs": [
+                    "Write a given number in p over q form"
+                ],
+                "skill_refs": [
+                    "Classifying numbers by the form they can take"
+                ],
+                "concept_name": "What a rational number is",
+                "topic_id": 25371,
+                "topic_name": "Closure"
+            }
+        ],
+        "blooms": [
+            {
+                "level": "Remember",
+                "coverage_score": 40,
+                "concept_name": "What a rational number is",
+                "topic_id": 25371,
+                "topic_name": "Closure"
+            },
+            {
+                "level": "Understand",
+                "coverage_score": 60,
+                "concept_name": "What a rational number is",
+                "topic_id": 25371,
+                "topic_name": "Closure"
+            }
+        ],
+        "dok": [
+            {
+                "level": "1",
+                "description": "Recall and Reproduction",
+                "concept_name": "What a rational number is",
+                "topic_id": 25371,
+                "topic_name": "Closure"
+            }
+        ],
+        "prerequisites": [
+            {
+                "concept_name": "Fractions and the rationals",
+                "prerequisite_type": "Concept",
+                "necessity": "Mandatory",
+                "_parent_concept": "What a rational number is",
+                "topic_id": 25371,
+                "topic_name": "Closure"
+            }
+        ],
+        "misconceptions": [
+            {
+                "misconception": "Only fractions are rational",
+                "statement": "Learners exclude integers such as -2 and 4 from the rational numbers because they carry no visible denominator.",
+                "root_cause": "The word rational is learnt as a synonym for fraction, and a whole number simply does not look like one.",
+                "correction": "Write -2 as -2/1 and 4 as 4/1 to show that the p over q form is open to every integer.",
+                "concept_name": "What a rational number is",
+                "topic_id": 25371,
+                "topic_name": "Closure"
+            }
+        ],
+        "real_world_applications": [
+            {
+                "application_type": "Technology",
+                "example": "Computer algebra software stores an exact ratio as a numerator and denominator pair to avoid rounding drift.",
+                "relevance": "Medium",
+                "concept_name": "What a rational number is",
+                "topic_id": 25371,
+                "topic_name": "Closure"
+            }
+        ],
+        "pedagogy_recommendations": [
+            {
+                "strategy": "Flashcard Based / Spaced Repetition Teaching",
+                "why_effective": "Rapid sorting of numbers into rational or not fixes the p over q test firmly in memory.",
+                "concept_characteristics": [
+                    "definition",
+                    "classification"
+                ],
+                "concept_name": "What a rational number is",
+                "topic_id": 25371,
+                "topic_name": "Closure"
+            }
+        ],
+        "learning_objectives": [
+            {
+                "objective": "Define a rational number as p/q with p and q integers and q not zero.",
+                "objective_type": "Knowledge",
+                "priority": "High",
+                "concept_name": "What a rational number is",
+                "topic_id": 25371,
+                "topic_name": "Closure"
+            }
+        ],
+        "learning_outcomes": [
+            {
+                "outcome": "Writes any given integer or fraction in p over q form and justifies calling it rational.",
+                "outcome_type": "Knowledge Outcome",
+                "measurable": true,
+                "assessment_ready": true,
+                "concept_name": "What a rational number is",
+                "topic_id": 25371,
+                "topic_name": "Closure"
+            }
+        ],
+        "assessment_blueprint": [
+            {
+                "assessment_type": "MCQ",
+                "bloom_level": "Remember",
+                "dok_level": "1",
+                "difficulty": "Easy",
+                "marks": 1,
+                "recommended_question": "In the form p/q for a rational number, which condition must the denominator q satisfy?",
+                "concept_name": "What a rational number is",
+                "topic_id": 25371,
+                "topic_name": "Closure"
+            },
+            {
+                "assessment_type": "Short Answer",
+                "bloom_level": "Understand",
+                "dok_level": "2",
+                "difficulty": "Easy",
+                "marks": 2,
+                "recommended_question": "Show that -2 and 4 are rational numbers by writing each of them in the form p/q.",
+                "concept_name": "What a rational number is",
+                "topic_id": 25371,
+                "topic_name": "Closure"
+            }
+        ]
+    },
+    {
+        "concept": {
+            "concept_type": "Fact",
+            "definition": "Whole numbers are closed under addition and multiplication but not subtraction or division, while integers are closed under addition, subtraction and multiplication but not division.",
+            "importance": "Core",
+            "difficulty": "Medium",
+            "confidence": 0.95,
+            "concept_name": "Whole numbers and integers compared",
+            "concept_id": "C451-7"
+        },
+        "topic_id": 25371,
+        "topic_name": "Closure",
+        "knowledge_items": [
+            {
+                "knowledge": "Whole number closure",
+                "statement": "The whole numbers are closed under addition and multiplication but fail closure under both subtraction and division.",
+                "knowledge_type": "Fact",
+                "confidence": 0.95,
+                "concept_name": "Whole numbers and integers compared",
+                "topic_id": 25371,
+                "topic_name": "Closure"
+            },
+            {
+                "knowledge": "Integer closure",
+                "statement": "The integers are closed under addition, subtraction and multiplication, so division alone remains the gap for them.",
+                "knowledge_type": "Fact",
+                "confidence": 0.95,
+                "concept_name": "Whole numbers and integers compared",
+                "topic_id": 25371,
+                "topic_name": "Closure"
+            }
+        ],
+        "abilities": [
+            {
+                "ability": "Compare closure across two systems",
+                "verb": "Compare",
+                "description": "Set the closure record of the whole numbers beside that of the integers and name the gap each one closes.",
+                "knowledge_refs": [
+                    "Whole number closure",
+                    "Integer closure"
+                ],
+                "concept_name": "Whole numbers and integers compared",
+                "topic_id": 25371,
+                "topic_name": "Closure"
+            }
+        ],
+        "skills": [
+            {
+                "skill": "Building a comparison table of properties",
+                "ability_refs": [
+                    "Compare closure across two systems"
+                ],
+                "concept_name": "Whole numbers and integers compared",
+                "topic_id": 25371,
+                "topic_name": "Closure"
+            }
+        ],
+        "competencies": [
+            {
+                "competency": "Closure auditing",
+                "statement": "Audits an operation on a number system and reports whether that system is closed under it.",
+                "knowledge_refs": [
+                    "Whole number closure",
+                    "Integer closure"
+                ],
+                "ability_refs": [
+                    "Compare closure across two systems"
+                ],
+                "skill_refs": [
+                    "Building a comparison table of properties"
+                ],
+                "concept_name": "Whole numbers and integers compared",
+                "topic_id": 25371,
+                "topic_name": "Closure"
+            }
+        ],
+        "blooms": [
+            {
+                "level": "Understand",
+                "coverage_score": 50,
+                "concept_name": "Whole numbers and integers compared",
+                "topic_id": 25371,
+                "topic_name": "Closure"
+            },
+            {
+                "level": "Analyze",
+                "coverage_score": 50,
+                "concept_name": "Whole numbers and integers compared",
+                "topic_id": 25371,
+                "topic_name": "Closure"
+            }
+        ],
+        "dok": [
+            {
+                "level": "2",
+                "description": "Skills and Concepts",
+                "concept_name": "Whole numbers and integers compared",
+                "topic_id": 25371,
+                "topic_name": "Closure"
+            }
+        ],
+        "prerequisites": [
+            {
+                "concept_name": "What a rational number is",
+                "prerequisite_type": "Concept",
+                "necessity": "Recommended",
+                "_parent_concept": "Whole numbers and integers compared",
+                "topic_id": 25371,
+                "topic_name": "Closure"
+            }
+        ],
+        "misconceptions": [
+            {
+                "misconception": "One failing case is not enough",
+                "statement": "Learners think closure still holds when most pairs give an answer inside the set and only a few do not.",
+                "root_cause": "Closure is read as a tendency of the operation rather than as a claim about every possible pair.",
+                "correction": "Show that 5 minus 7 leaving the whole numbers settles the question on its own, however many pairs succeed.",
+                "concept_name": "Whole numbers and integers compared",
+                "topic_id": 25371,
+                "topic_name": "Closure"
+            }
+        ],
+        "real_world_applications": [
+            {
+                "application_type": "Technology",
+                "example": "Integer variables in programming truncate on division precisely because integer division can leave the set.",
+                "relevance": "Medium",
+                "concept_name": "Whole numbers and integers compared",
+                "topic_id": 25371,
+                "topic_name": "Closure"
+            }
+        ],
+        "pedagogy_recommendations": [
+            {
+                "strategy": "Activity Based Teaching",
+                "why_effective": "Filling a yes and no grid operation by operation turns an abstract property into a visible pattern.",
+                "concept_characteristics": [
+                    "comparison",
+                    "property table"
+                ],
+                "concept_name": "Whole numbers and integers compared",
+                "topic_id": 25371,
+                "topic_name": "Closure"
+            }
+        ],
+        "learning_objectives": [
+            {
+                "objective": "Compare the closure properties of whole numbers and integers operation by operation.",
+                "objective_type": "Ability",
+                "priority": "High",
+                "concept_name": "Whole numbers and integers compared",
+                "topic_id": 25371,
+                "topic_name": "Closure"
+            }
+        ],
+        "learning_outcomes": [
+            {
+                "outcome": "Completes a closure table for whole numbers and integers and names division as the remaining gap.",
+                "outcome_type": "Ability Outcome",
+                "measurable": true,
+                "assessment_ready": true,
+                "concept_name": "Whole numbers and integers compared",
+                "topic_id": 25371,
+                "topic_name": "Closure"
+            }
+        ],
+        "assessment_blueprint": [
+            {
+                "assessment_type": "Short Answer",
+                "bloom_level": "Analyze",
+                "dok_level": "3",
+                "difficulty": "Medium",
+                "marks": 3,
+                "recommended_question": "Give one subtraction of whole numbers whose answer is not a whole number, and say what that single case proves.",
+                "concept_name": "Whole numbers and integers compared",
+                "topic_id": 25371,
+                "topic_name": "Closure"
+            },
+            {
+                "assessment_type": "MCQ",
+                "bloom_level": "Understand",
+                "dok_level": "2",
+                "difficulty": "Easy",
+                "marks": 1,
+                "recommended_question": "Under which single operation are the integers not closed?",
+                "concept_name": "Whole numbers and integers compared",
+                "topic_id": 25371,
+                "topic_name": "Closure"
+            }
+        ]
+    },
+    {
+        "concept": {
+            "concept_type": "Principle",
+            "definition": "The sum of any two rational numbers a and b is again a rational number, shown on several chosen pairs before being stated in general.",
+            "importance": "Core",
+            "difficulty": "Medium",
+            "confidence": 0.95,
+            "concept_name": "Rational numbers are closed under addition",
+            "concept_id": "C451-8"
+        },
+        "topic_id": 25371,
+        "topic_name": "Closure",
+        "knowledge_items": [
+            {
+                "knowledge": "Additive closure of rationals",
+                "statement": "For any two rational numbers a and b the sum a + b is itself a rational number, so the set is closed under addition.",
+                "knowledge_type": "Principle",
+                "confidence": 0.95,
+                "concept_name": "Rational numbers are closed under addition",
+                "topic_id": 25371,
+                "topic_name": "Closure"
+            }
+        ],
+        "abilities": [
+            {
+                "ability": "Test additive closure on chosen pairs",
+                "verb": "Test",
+                "description": "Add several pairs of rational numbers and confirm that each sum can be written in p over q form.",
+                "knowledge_refs": [
+                    "Additive closure of rationals"
+                ],
+                "concept_name": "Rational numbers are closed under addition",
+                "topic_id": 25371,
+                "topic_name": "Closure"
+            }
+        ],
+        "skills": [
+            {
+                "skill": "Moving from worked examples to a general statement",
+                "ability_refs": [
+                    "Test additive closure on chosen pairs"
+                ],
+                "concept_name": "Rational numbers are closed under addition",
+                "topic_id": 25371,
+                "topic_name": "Closure"
+            }
+        ],
+        "competencies": [
+            {
+                "competency": "Generalisation from examples",
+                "statement": "Uses several confirming cases as grounds for stating a property in general terms.",
+                "knowledge_refs": [
+                    "Additive closure of rationals"
+                ],
+                "ability_refs": [
+                    "Test additive closure on chosen pairs"
+                ],
+                "skill_refs": [
+                    "Moving from worked examples to a general statement"
+                ],
+                "concept_name": "Rational numbers are closed under addition",
+                "topic_id": 25371,
+                "topic_name": "Closure"
+            }
+        ],
+        "blooms": [
+            {
+                "level": "Understand",
+                "coverage_score": 50,
+                "concept_name": "Rational numbers are closed under addition",
+                "topic_id": 25371,
+                "topic_name": "Closure"
+            },
+            {
+                "level": "Apply",
+                "coverage_score": 50,
+                "concept_name": "Rational numbers are closed under addition",
+                "topic_id": 25371,
+                "topic_name": "Closure"
+            }
+        ],
+        "dok": [
+            {
+                "level": "2",
+                "description": "Skills and Concepts",
+                "concept_name": "Rational numbers are closed under addition",
+                "topic_id": 25371,
+                "topic_name": "Closure"
+            }
+        ],
+        "prerequisites": [
+            {
+                "concept_name": "What a rational number is",
+                "prerequisite_type": "Concept",
+                "necessity": "Mandatory",
+                "_parent_concept": "Rational numbers are closed under addition",
+                "topic_id": 25371,
+                "topic_name": "Closure"
+            }
+        ],
+        "misconceptions": [
+            {
+                "misconception": "Three examples prove the general rule",
+                "statement": "Learners believe that checking closure on three pairs establishes it for every pair of rational numbers.",
+                "root_cause": "The chapter demonstrates on particular pairs before generalising, so the examples look like the proof itself.",
+                "correction": "Point out that adding p/q and r/s gives one fraction with integer parts, and that argument is what settles it.",
+                "concept_name": "Rational numbers are closed under addition",
+                "topic_id": 25371,
+                "topic_name": "Closure"
+            }
+        ],
+        "real_world_applications": [
+            {
+                "application_type": "Industry",
+                "example": "Adding fractional stock quantities in an inventory system always yields another exact fractional quantity.",
+                "relevance": "Medium",
+                "concept_name": "Rational numbers are closed under addition",
+                "topic_id": 25371,
+                "topic_name": "Closure"
+            }
+        ],
+        "pedagogy_recommendations": [
+            {
+                "strategy": "Inquiry Based Teaching",
+                "why_effective": "Challenging learners to find two rationals whose sum is not rational makes the closure claim memorable.",
+                "concept_characteristics": [
+                    "generalisation",
+                    "property testing"
+                ],
+                "concept_name": "Rational numbers are closed under addition",
+                "topic_id": 25371,
+                "topic_name": "Closure"
+            }
+        ],
+        "learning_objectives": [
+            {
+                "objective": "Demonstrate on chosen pairs that the sum of two rational numbers is itself rational.",
+                "objective_type": "Ability",
+                "priority": "High",
+                "concept_name": "Rational numbers are closed under addition",
+                "topic_id": 25371,
+                "topic_name": "Closure"
+            }
+        ],
+        "learning_outcomes": [
+            {
+                "outcome": "Adds given pairs of rational numbers and states the general closure property for addition.",
+                "outcome_type": "Ability Outcome",
+                "measurable": true,
+                "assessment_ready": true,
+                "concept_name": "Rational numbers are closed under addition",
+                "topic_id": 25371,
+                "topic_name": "Closure"
+            }
+        ],
+        "assessment_blueprint": [
+            {
+                "assessment_type": "Numerical",
+                "bloom_level": "Apply",
+                "dok_level": "2",
+                "difficulty": "Easy",
+                "marks": 2,
+                "recommended_question": "Add -5/7 and 2/3, and show that the sum is again a rational number.",
+                "concept_name": "Rational numbers are closed under addition",
+                "topic_id": 25371,
+                "topic_name": "Closure"
+            },
+            {
+                "assessment_type": "Short Answer",
+                "bloom_level": "Understand",
+                "dok_level": "2",
+                "difficulty": "Medium",
+                "marks": 2,
+                "recommended_question": "State the closure property of rational numbers under addition in your own words.",
+                "concept_name": "Rational numbers are closed under addition",
+                "topic_id": 25371,
+                "topic_name": "Closure"
+            }
+        ]
+    },
+    {
+        "concept": {
+            "concept_type": "Principle",
+            "definition": "For any two rational numbers a and b, both the difference and the product are again rational numbers, which is where the rationals go beyond the integers.",
+            "importance": "Core",
+            "difficulty": "Medium",
+            "confidence": 0.95,
+            "concept_name": "Closed under subtraction and multiplication too",
+            "concept_id": "C451-9"
+        },
+        "topic_id": 25371,
+        "topic_name": "Closure",
+        "knowledge_items": [
+            {
+                "knowledge": "Subtractive and multiplicative closure",
+                "statement": "For any two rational numbers a and b, both the difference a minus b and the product a times b are rational numbers.",
+                "knowledge_type": "Principle",
+                "confidence": 0.95,
+                "concept_name": "Closed under subtraction and multiplication too",
+                "topic_id": 25371,
+                "topic_name": "Closure"
+            }
+        ],
+        "abilities": [
+            {
+                "ability": "Confirm closure for two operations at once",
+                "verb": "Confirm",
+                "description": "Subtract and multiply the same chosen rational pair and check that both results remain rational.",
+                "knowledge_refs": [
+                    "Subtractive and multiplicative closure"
+                ],
+                "concept_name": "Closed under subtraction and multiplication too",
+                "topic_id": 25371,
+                "topic_name": "Closure"
+            }
+        ],
+        "skills": [
+            {
+                "skill": "Applying one test across several operations",
+                "ability_refs": [
+                    "Confirm closure for two operations at once"
+                ],
+                "concept_name": "Closed under subtraction and multiplication too",
+                "topic_id": 25371,
+                "topic_name": "Closure"
+            }
+        ],
+        "competencies": [
+            {
+                "competency": "Operation property testing",
+                "statement": "Applies the same closure test to more than one operation and records the outcome separately for each.",
+                "knowledge_refs": [
+                    "Subtractive and multiplicative closure"
+                ],
+                "ability_refs": [
+                    "Confirm closure for two operations at once"
+                ],
+                "skill_refs": [
+                    "Applying one test across several operations"
+                ],
+                "concept_name": "Closed under subtraction and multiplication too",
+                "topic_id": 25371,
+                "topic_name": "Closure"
+            }
+        ],
+        "blooms": [
+            {
+                "level": "Apply",
+                "coverage_score": 60,
+                "concept_name": "Closed under subtraction and multiplication too",
+                "topic_id": 25371,
+                "topic_name": "Closure"
+            },
+            {
+                "level": "Analyze",
+                "coverage_score": 40,
+                "concept_name": "Closed under subtraction and multiplication too",
+                "topic_id": 25371,
+                "topic_name": "Closure"
+            }
+        ],
+        "dok": [
+            {
+                "level": "2",
+                "description": "Skills and Concepts",
+                "concept_name": "Closed under subtraction and multiplication too",
+                "topic_id": 25371,
+                "topic_name": "Closure"
+            }
+        ],
+        "prerequisites": [
+            {
+                "concept_name": "Rational numbers are closed under addition",
+                "prerequisite_type": "Concept",
+                "necessity": "Mandatory",
+                "_parent_concept": "Closed under subtraction and multiplication too",
+                "topic_id": 25371,
+                "topic_name": "Closure"
+            }
+        ],
+        "misconceptions": [
+            {
+                "misconception": "Subtraction should fail here too",
+                "statement": "Learners expect subtraction to break closure for rationals because it breaks closure for whole numbers.",
+                "root_cause": "The earlier failure of whole number subtraction is remembered as a property of subtraction itself.",
+                "correction": "Show that the negatives are already inside the rationals, so a difference has nowhere outside the set to land.",
+                "concept_name": "Closed under subtraction and multiplication too",
+                "topic_id": 25371,
+                "topic_name": "Closure"
+            }
+        ],
+        "real_world_applications": [
+            {
+                "application_type": "Career",
+                "example": "An accountant subtracting fractional shares of a partnership always arrives at another exact share.",
+                "relevance": "Medium",
+                "concept_name": "Closed under subtraction and multiplication too",
+                "topic_id": 25371,
+                "topic_name": "Closure"
+            }
+        ],
+        "pedagogy_recommendations": [
+            {
+                "strategy": "Activity Based Teaching",
+                "why_effective": "Running both operations on the same pair shows that closure is a question asked separately of each one.",
+                "concept_characteristics": [
+                    "property testing",
+                    "multiple operations"
+                ],
+                "concept_name": "Closed under subtraction and multiplication too",
+                "topic_id": 25371,
+                "topic_name": "Closure"
+            }
+        ],
+        "learning_objectives": [
+            {
+                "objective": "Show that both the difference and the product of two rational numbers are rational.",
+                "objective_type": "Ability",
+                "priority": "High",
+                "concept_name": "Closed under subtraction and multiplication too",
+                "topic_id": 25371,
+                "topic_name": "Closure"
+            }
+        ],
+        "learning_outcomes": [
+            {
+                "outcome": "Computes a difference and a product of given rationals and confirms that both lie in the set.",
+                "outcome_type": "Ability Outcome",
+                "measurable": true,
+                "assessment_ready": true,
+                "concept_name": "Closed under subtraction and multiplication too",
+                "topic_id": 25371,
+                "topic_name": "Closure"
+            }
+        ],
+        "assessment_blueprint": [
+            {
+                "assessment_type": "Numerical",
+                "bloom_level": "Apply",
+                "dok_level": "2",
+                "difficulty": "Medium",
+                "marks": 2,
+                "recommended_question": "Work out 3/8 minus 5/6 and 3/8 times 5/6, then say which number system both answers lie in.",
+                "concept_name": "Closed under subtraction and multiplication too",
+                "topic_id": 25371,
+                "topic_name": "Closure"
+            },
+            {
+                "assessment_type": "Assertion Reason",
+                "bloom_level": "Analyze",
+                "dok_level": "3",
+                "difficulty": "Medium",
+                "marks": 1,
+                "recommended_question": "Assertion: rational numbers are closed under subtraction. Reason: integers are closed under subtraction. Judge both.",
+                "concept_name": "Closed under subtraction and multiplication too",
+                "topic_id": 25371,
+                "topic_name": "Closure"
+            }
+        ]
+    },
+    {
+        "concept": {
+            "concept_type": "Rule",
+            "definition": "Division by zero is not defined for any rational number, so the rational numbers are not closed under division; one excluded case breaks closure for the whole operation.",
+            "importance": "Core",
+            "difficulty": "Medium",
+            "confidence": 0.96,
+            "concept_name": "Division is the exception",
+            "concept_id": "C451-10"
+        },
+        "topic_id": 25371,
+        "topic_name": "Closure",
+        "knowledge_items": [
+            {
+                "knowledge": "Division by zero undefined",
+                "statement": "No rational number results from dividing by zero, so that single excluded divisor denies the set closure under division.",
+                "knowledge_type": "Rule",
+                "confidence": 0.97,
+                "concept_name": "Division is the exception",
+                "topic_id": 25371,
+                "topic_name": "Closure"
+            }
+        ],
+        "abilities": [
+            {
+                "ability": "Explain the one case that breaks closure",
+                "verb": "Explain",
+                "description": "Name zero as the divisor with no rational quotient and draw the closure conclusion from it.",
+                "knowledge_refs": [
+                    "Division by zero undefined"
+                ],
+                "concept_name": "Division is the exception",
+                "topic_id": 25371,
+                "topic_name": "Closure"
+            }
+        ],
+        "skills": [
+            {
+                "skill": "Reasoning from a single excluded case",
+                "ability_refs": [
+                    "Explain the one case that breaks closure"
+                ],
+                "concept_name": "Division is the exception",
+                "topic_id": 25371,
+                "topic_name": "Closure"
+            }
+        ],
+        "competencies": [
+            {
+                "competency": "Counterexample reasoning",
+                "statement": "Uses one excluded case to overturn a universal claim made about an operation.",
+                "knowledge_refs": [
+                    "Division by zero undefined"
+                ],
+                "ability_refs": [
+                    "Explain the one case that breaks closure"
+                ],
+                "skill_refs": [
+                    "Reasoning from a single excluded case"
+                ],
+                "concept_name": "Division is the exception",
+                "topic_id": 25371,
+                "topic_name": "Closure"
+            }
+        ],
+        "blooms": [
+            {
+                "level": "Understand",
+                "coverage_score": 40,
+                "concept_name": "Division is the exception",
+                "topic_id": 25371,
+                "topic_name": "Closure"
+            },
+            {
+                "level": "Evaluate",
+                "coverage_score": 60,
+                "concept_name": "Division is the exception",
+                "topic_id": 25371,
+                "topic_name": "Closure"
+            }
+        ],
+        "dok": [
+            {
+                "level": "3",
+                "description": "Strategic Thinking",
+                "concept_name": "Division is the exception",
+                "topic_id": 25371,
+                "topic_name": "Closure"
+            }
+        ],
+        "prerequisites": [
+            {
+                "concept_name": "Closed under subtraction and multiplication too",
+                "prerequisite_type": "Concept",
+                "necessity": "Mandatory",
+                "_parent_concept": "Division is the exception",
+                "topic_id": 25371,
+                "topic_name": "Closure"
+            }
+        ],
+        "misconceptions": [
+            {
+                "misconception": "Dividing by zero gives zero",
+                "statement": "Learners answer that any number divided by zero is zero, or sometimes that it is infinity.",
+                "root_cause": "Zero is associated with nothing, so the quotient is guessed to be nothing as well rather than undefined.",
+                "correction": "Ask which number multiplied by zero would return the dividend, and show that no such number exists.",
+                "concept_name": "Division is the exception",
+                "topic_id": 25371,
+                "topic_name": "Closure"
+            }
+        ],
+        "real_world_applications": [
+            {
+                "application_type": "Technology",
+                "example": "A spreadsheet returns a division error rather than a value when the denominator cell holds zero.",
+                "relevance": "High",
+                "concept_name": "Division is the exception",
+                "topic_id": 25371,
+                "topic_name": "Closure"
+            }
+        ],
+        "pedagogy_recommendations": [
+            {
+                "strategy": "Scenario Based Teaching",
+                "why_effective": "A calculator or spreadsheet error message gives learners a concrete encounter with the undefined case.",
+                "concept_characteristics": [
+                    "counterexample",
+                    "undefined operation"
+                ],
+                "concept_name": "Division is the exception",
+                "topic_id": 25371,
+                "topic_name": "Closure"
+            }
+        ],
+        "learning_objectives": [
+            {
+                "objective": "Explain why the rationals fail closure under division despite closure under the other three operations.",
+                "objective_type": "Skill",
+                "priority": "High",
+                "concept_name": "Division is the exception",
+                "topic_id": 25371,
+                "topic_name": "Closure"
+            }
+        ],
+        "learning_outcomes": [
+            {
+                "outcome": "Identifies division by zero as the case denying closure and justifies that conclusion.",
+                "outcome_type": "Skill Outcome",
+                "measurable": true,
+                "assessment_ready": true,
+                "concept_name": "Division is the exception",
+                "topic_id": 25371,
+                "topic_name": "Closure"
+            }
+        ],
+        "assessment_blueprint": [
+            {
+                "assessment_type": "Short Answer",
+                "bloom_level": "Evaluate",
+                "dok_level": "3",
+                "difficulty": "Medium",
+                "marks": 3,
+                "recommended_question": "Rational numbers are closed under addition, subtraction and multiplication. Explain why division is different.",
+                "concept_name": "Division is the exception",
+                "topic_id": 25371,
+                "topic_name": "Closure"
+            },
+            {
+                "assessment_type": "MCQ",
+                "bloom_level": "Understand",
+                "dok_level": "2",
+                "difficulty": "Easy",
+                "marks": 1,
+                "recommended_question": "Which divisor makes the division of one rational number by another undefined?",
+                "concept_name": "Division is the exception",
+                "topic_id": 25371,
+                "topic_name": "Closure"
+            }
+        ]
+    },
+    {
+        "concept": {
+            "concept_type": "Principle",
+            "definition": "Two rational numbers can be added in either order and give the same sum, so a + b equals b + a for any rational a and b.",
+            "importance": "Core",
+            "difficulty": "Easy",
+            "confidence": 0.97,
+            "concept_name": "Addition is commutative",
+            "concept_id": "C451-11"
+        },
+        "topic_id": 25372,
+        "topic_name": "Commutativity",
+        "knowledge_items": [
+            {
+                "knowledge": "Commutative law for addition",
+                "statement": "For any two rational numbers a and b the sums a + b and b + a are equal, so order has no effect on addition.",
+                "knowledge_type": "Law",
+                "confidence": 0.97,
+                "concept_name": "Addition is commutative",
+                "topic_id": 25372,
+                "topic_name": "Commutativity"
+            }
+        ],
+        "abilities": [
+            {
+                "ability": "Verify commutativity on a chosen pair",
+                "verb": "Verify",
+                "description": "Add one pair of rationals in both orders and compare the two results obtained.",
+                "knowledge_refs": [
+                    "Commutative law for addition"
+                ],
+                "concept_name": "Addition is commutative",
+                "topic_id": 25372,
+                "topic_name": "Commutativity"
+            }
+        ],
+        "skills": [
+            {
+                "skill": "Checking an order property by computing both ways",
+                "ability_refs": [
+                    "Verify commutativity on a chosen pair"
+                ],
+                "concept_name": "Addition is commutative",
+                "topic_id": 25372,
+                "topic_name": "Commutativity"
+            }
+        ],
+        "competencies": [
+            {
+                "competency": "Order independence",
+                "statement": "Knows which operations allow their inputs to be swapped without altering the result.",
+                "knowledge_refs": [
+                    "Commutative law for addition"
+                ],
+                "ability_refs": [
+                    "Verify commutativity on a chosen pair"
+                ],
+                "skill_refs": [
+                    "Checking an order property by computing both ways"
+                ],
+                "concept_name": "Addition is commutative",
+                "topic_id": 25372,
+                "topic_name": "Commutativity"
+            }
+        ],
+        "blooms": [
+            {
+                "level": "Remember",
+                "coverage_score": 30,
+                "concept_name": "Addition is commutative",
+                "topic_id": 25372,
+                "topic_name": "Commutativity"
+            },
+            {
+                "level": "Apply",
+                "coverage_score": 70,
+                "concept_name": "Addition is commutative",
+                "topic_id": 25372,
+                "topic_name": "Commutativity"
+            }
+        ],
+        "dok": [
+            {
+                "level": "1",
+                "description": "Recall and Reproduction",
+                "concept_name": "Addition is commutative",
+                "topic_id": 25372,
+                "topic_name": "Commutativity"
+            }
+        ],
+        "prerequisites": [
+            {
+                "concept_name": "Rational numbers are closed under addition",
+                "prerequisite_type": "Concept",
+                "necessity": "Recommended",
+                "_parent_concept": "Addition is commutative",
+                "topic_id": 25372,
+                "topic_name": "Commutativity"
+            }
+        ],
+        "misconceptions": [
+            {
+                "misconception": "Commutativity holds for everything",
+                "statement": "Learners assume that if addition can be reordered then every other operation can be reordered too.",
+                "root_cause": "Addition is met first and used most often, so its behaviour is generalised silently to the others.",
+                "correction": "Reorder a subtraction of the same two rationals and show that the two answers are different.",
+                "concept_name": "Addition is commutative",
+                "topic_id": 25372,
+                "topic_name": "Commutativity"
+            }
+        ],
+        "real_world_applications": [
+            {
+                "application_type": "Daily Life",
+                "example": "Totalling a shopping bill gives the same amount whatever order the item prices are added in.",
+                "relevance": "High",
+                "concept_name": "Addition is commutative",
+                "topic_id": 25372,
+                "topic_name": "Commutativity"
+            }
+        ],
+        "pedagogy_recommendations": [
+            {
+                "strategy": "Game Based Teaching",
+                "why_effective": "A card game where players reorder the same addends and race to match totals rewards noticing the invariance.",
+                "concept_characteristics": [
+                    "order property",
+                    "rapid practice"
+                ],
+                "concept_name": "Addition is commutative",
+                "topic_id": 25372,
+                "topic_name": "Commutativity"
+            }
+        ],
+        "learning_objectives": [
+            {
+                "objective": "Verify on rational pairs that addition gives the same sum in either order.",
+                "objective_type": "Ability",
+                "priority": "Medium",
+                "concept_name": "Addition is commutative",
+                "topic_id": 25372,
+                "topic_name": "Commutativity"
+            }
+        ],
+        "learning_outcomes": [
+            {
+                "outcome": "Adds a given pair of rationals both ways and states the commutative property of addition.",
+                "outcome_type": "Ability Outcome",
+                "measurable": true,
+                "assessment_ready": true,
+                "concept_name": "Addition is commutative",
+                "topic_id": 25372,
+                "topic_name": "Commutativity"
+            }
+        ],
+        "assessment_blueprint": [
+            {
+                "assessment_type": "Numerical",
+                "bloom_level": "Apply",
+                "dok_level": "2",
+                "difficulty": "Easy",
+                "marks": 2,
+                "recommended_question": "Show that -2/3 added to 5/7 gives the same result as 5/7 added to -2/3.",
+                "concept_name": "Addition is commutative",
+                "topic_id": 25372,
+                "topic_name": "Commutativity"
+            },
+            {
+                "assessment_type": "MCQ",
+                "bloom_level": "Remember",
+                "dok_level": "1",
+                "difficulty": "Easy",
+                "marks": 1,
+                "recommended_question": "Which property states that a + b equals b + a for all rational numbers?",
+                "concept_name": "Addition is commutative",
+                "topic_id": 25372,
+                "topic_name": "Commutativity"
+            }
+        ]
+    },
+    {
+        "concept": {
+            "concept_type": "Fact",
+            "definition": "Working both orders of a subtraction of rational numbers gives different answers, and a single counterexample is enough to settle the matter.",
+            "importance": "Core",
+            "difficulty": "Easy",
+            "confidence": 0.96,
+            "concept_name": "Subtraction is not commutative",
+            "concept_id": "C451-12"
+        },
+        "topic_id": 25372,
+        "topic_name": "Commutativity",
+        "knowledge_items": [
+            {
+                "knowledge": "Subtraction fails commutativity",
+                "statement": "For rational numbers a and b the differences a minus b and b minus a are generally unequal, so subtraction is not commutative.",
+                "knowledge_type": "Fact",
+                "confidence": 0.96,
+                "concept_name": "Subtraction is not commutative",
+                "topic_id": 25372,
+                "topic_name": "Commutativity"
+            }
+        ],
+        "abilities": [
+            {
+                "ability": "Produce a counterexample for subtraction",
+                "verb": "Construct",
+                "description": "Choose two rationals, subtract them in both orders and display the two unequal results.",
+                "knowledge_refs": [
+                    "Subtraction fails commutativity"
+                ],
+                "concept_name": "Subtraction is not commutative",
+                "topic_id": 25372,
+                "topic_name": "Commutativity"
+            }
+        ],
+        "skills": [
+            {
+                "skill": "Disproving a claim with one worked case",
+                "ability_refs": [
+                    "Produce a counterexample for subtraction"
+                ],
+                "concept_name": "Subtraction is not commutative",
+                "topic_id": 25372,
+                "topic_name": "Commutativity"
+            }
+        ],
+        "competencies": [
+            {
+                "competency": "Disproof by counterexample",
+                "statement": "Settles a general claim as false by exhibiting one case that violates it.",
+                "knowledge_refs": [
+                    "Subtraction fails commutativity"
+                ],
+                "ability_refs": [
+                    "Produce a counterexample for subtraction"
+                ],
+                "skill_refs": [
+                    "Disproving a claim with one worked case"
+                ],
+                "concept_name": "Subtraction is not commutative",
+                "topic_id": 25372,
+                "topic_name": "Commutativity"
+            }
+        ],
+        "blooms": [
+            {
+                "level": "Apply",
+                "coverage_score": 60,
+                "concept_name": "Subtraction is not commutative",
+                "topic_id": 25372,
+                "topic_name": "Commutativity"
+            },
+            {
+                "level": "Evaluate",
+                "coverage_score": 40,
+                "concept_name": "Subtraction is not commutative",
+                "topic_id": 25372,
+                "topic_name": "Commutativity"
+            }
+        ],
+        "dok": [
+            {
+                "level": "2",
+                "description": "Skills and Concepts",
+                "concept_name": "Subtraction is not commutative",
+                "topic_id": 25372,
+                "topic_name": "Commutativity"
+            }
+        ],
+        "prerequisites": [
+            {
+                "concept_name": "Addition is commutative",
+                "prerequisite_type": "Concept",
+                "necessity": "Mandatory",
+                "_parent_concept": "Subtraction is not commutative",
+                "topic_id": 25372,
+                "topic_name": "Commutativity"
+            }
+        ],
+        "misconceptions": [
+            {
+                "misconception": "Only the sign changes so it is the same",
+                "statement": "Learners argue that because the two answers differ only in sign, subtraction is effectively commutative anyway.",
+                "root_cause": "The digits look identical in both answers and only the sign moves, so the difference seems merely cosmetic.",
+                "correction": "Point out that 2/3 and -2/3 are two different rational numbers, so the two orders give different answers.",
+                "concept_name": "Subtraction is not commutative",
+                "topic_id": 25372,
+                "topic_name": "Commutativity"
+            }
+        ],
+        "real_world_applications": [
+            {
+                "application_type": "Daily Life",
+                "example": "Taking 200 rupees from a 500 rupee balance is not the same transaction as taking 500 from 200.",
+                "relevance": "High",
+                "concept_name": "Subtraction is not commutative",
+                "topic_id": 25372,
+                "topic_name": "Commutativity"
+            }
+        ],
+        "pedagogy_recommendations": [
+            {
+                "strategy": "Inquiry Based Teaching",
+                "why_effective": "Asking learners to hunt for a pair where both orders agree exposes that only equal values ever work.",
+                "concept_characteristics": [
+                    "counterexample",
+                    "order property"
+                ],
+                "concept_name": "Subtraction is not commutative",
+                "topic_id": 25372,
+                "topic_name": "Commutativity"
+            }
+        ],
+        "learning_objectives": [
+            {
+                "objective": "Construct a counterexample showing that subtraction of rationals is not commutative.",
+                "objective_type": "Ability",
+                "priority": "High",
+                "concept_name": "Subtraction is not commutative",
+                "topic_id": 25372,
+                "topic_name": "Commutativity"
+            }
+        ],
+        "learning_outcomes": [
+            {
+                "outcome": "Gives two rationals whose subtraction in reverse order yields a different answer.",
+                "outcome_type": "Ability Outcome",
+                "measurable": true,
+                "assessment_ready": true,
+                "concept_name": "Subtraction is not commutative",
+                "topic_id": 25372,
+                "topic_name": "Commutativity"
+            }
+        ],
+        "assessment_blueprint": [
+            {
+                "assessment_type": "Numerical",
+                "bloom_level": "Apply",
+                "dok_level": "2",
+                "difficulty": "Easy",
+                "marks": 2,
+                "recommended_question": "Work out 5/9 minus 2/7 and then 2/7 minus 5/9, and comment on the two results.",
+                "concept_name": "Subtraction is not commutative",
+                "topic_id": 25372,
+                "topic_name": "Commutativity"
+            },
+            {
+                "assessment_type": "HOTS",
+                "bloom_level": "Evaluate",
+                "dok_level": "3",
+                "difficulty": "Medium",
+                "marks": 3,
+                "recommended_question": "Is there any pair of rational numbers for which subtraction is commutative? Justify your answer fully.",
+                "concept_name": "Subtraction is not commutative",
+                "topic_id": 25372,
+                "topic_name": "Commutativity"
+            }
+        ]
+    },
+    {
+        "concept": {
+            "concept_type": "Principle",
+            "definition": "Subtraction is not commutative for integers, and every integer is also a rational number, so a property that fails on a subset must fail on the whole set.",
+            "importance": "Important",
+            "difficulty": "Hard",
+            "confidence": 0.92,
+            "concept_name": "Why the failure carries over",
+            "concept_id": "C451-13"
+        },
+        "topic_id": 25372,
+        "topic_name": "Commutativity",
+        "knowledge_items": [
+            {
+                "knowledge": "Failure on a subset",
+                "statement": "If a property fails for the integers, and every integer is a rational number, then that property must fail for the rationals too.",
+                "knowledge_type": "Principle",
+                "confidence": 0.93,
+                "concept_name": "Why the failure carries over",
+                "topic_id": 25372,
+                "topic_name": "Commutativity"
+            }
+        ],
+        "abilities": [
+            {
+                "ability": "Transfer a counterexample upward",
+                "verb": "Deduce",
+                "description": "Use an integer counterexample to conclude that the same property fails for the rational numbers.",
+                "knowledge_refs": [
+                    "Failure on a subset"
+                ],
+                "concept_name": "Why the failure carries over",
+                "topic_id": 25372,
+                "topic_name": "Commutativity"
+            }
+        ],
+        "skills": [
+            {
+                "skill": "Arguing from a subset to the containing set",
+                "ability_refs": [
+                    "Transfer a counterexample upward"
+                ],
+                "concept_name": "Why the failure carries over",
+                "topic_id": 25372,
+                "topic_name": "Commutativity"
+            }
+        ],
+        "competencies": [
+            {
+                "competency": "Set inclusion reasoning",
+                "statement": "Uses the containment of one number system inside another to carry a conclusion between them.",
+                "knowledge_refs": [
+                    "Failure on a subset"
+                ],
+                "ability_refs": [
+                    "Transfer a counterexample upward"
+                ],
+                "skill_refs": [
+                    "Arguing from a subset to the containing set"
+                ],
+                "concept_name": "Why the failure carries over",
+                "topic_id": 25372,
+                "topic_name": "Commutativity"
+            }
+        ],
+        "blooms": [
+            {
+                "level": "Analyze",
+                "coverage_score": 60,
+                "concept_name": "Why the failure carries over",
+                "topic_id": 25372,
+                "topic_name": "Commutativity"
+            },
+            {
+                "level": "Evaluate",
+                "coverage_score": 40,
+                "concept_name": "Why the failure carries over",
+                "topic_id": 25372,
+                "topic_name": "Commutativity"
+            }
+        ],
+        "dok": [
+            {
+                "level": "3",
+                "description": "Strategic Thinking",
+                "concept_name": "Why the failure carries over",
+                "topic_id": 25372,
+                "topic_name": "Commutativity"
+            }
+        ],
+        "prerequisites": [
+            {
+                "concept_name": "Subtraction is not commutative",
+                "prerequisite_type": "Concept",
+                "necessity": "Mandatory",
+                "_parent_concept": "Why the failure carries over",
+                "topic_id": 25372,
+                "topic_name": "Commutativity"
+            }
+        ],
+        "misconceptions": [
+            {
+                "misconception": "A bigger set can rescue a property",
+                "statement": "Learners expect that adding more numbers to a set might repair a property that failed on the smaller one.",
+                "root_cause": "Extending the system fixed closure earlier in this very chapter, so extension is read as a general remedy.",
+                "correction": "Note that the old counterexample is still sitting inside the larger set, so it still disproves the claim.",
+                "concept_name": "Why the failure carries over",
+                "topic_id": 25372,
+                "topic_name": "Commutativity"
+            }
+        ],
+        "real_world_applications": [
+            {
+                "application_type": "Research",
+                "example": "A mathematician disproves a claim about a large structure by finding the fault in a familiar part of it.",
+                "relevance": "Medium",
+                "concept_name": "Why the failure carries over",
+                "topic_id": 25372,
+                "topic_name": "Commutativity"
+            }
+        ],
+        "pedagogy_recommendations": [
+            {
+                "strategy": "Art Integrated Teaching",
+                "why_effective": "Drawing nested circles for the four number systems makes the containment argument visible at a glance.",
+                "concept_characteristics": [
+                    "set inclusion",
+                    "visual reasoning"
+                ],
+                "concept_name": "Why the failure carries over",
+                "topic_id": 25372,
+                "topic_name": "Commutativity"
+            }
+        ],
+        "learning_objectives": [
+            {
+                "objective": "Deduce that subtraction cannot be commutative for rationals from its failure for integers.",
+                "objective_type": "Skill",
+                "priority": "Medium",
+                "concept_name": "Why the failure carries over",
+                "topic_id": 25372,
+                "topic_name": "Commutativity"
+            }
+        ],
+        "learning_outcomes": [
+            {
+                "outcome": "Explains, using the containment of integers in the rationals, why the counterexample carries over.",
+                "outcome_type": "Skill Outcome",
+                "measurable": true,
+                "assessment_ready": true,
+                "concept_name": "Why the failure carries over",
+                "topic_id": 25372,
+                "topic_name": "Commutativity"
+            }
+        ],
+        "assessment_blueprint": [
+            {
+                "assessment_type": "Assertion Reason",
+                "bloom_level": "Analyze",
+                "dok_level": "3",
+                "difficulty": "Hard",
+                "marks": 1,
+                "recommended_question": "Assertion: subtraction is not commutative for rationals. Reason: it is not commutative for integers, which are rational.",
+                "concept_name": "Why the failure carries over",
+                "topic_id": 25372,
+                "topic_name": "Commutativity"
+            },
+            {
+                "assessment_type": "Long Answer",
+                "bloom_level": "Evaluate",
+                "dok_level": "3",
+                "difficulty": "Hard",
+                "marks": 4,
+                "recommended_question": "Explain why a property failing for the integers must also fail for the rationals, illustrating with subtraction.",
+                "concept_name": "Why the failure carries over",
+                "topic_id": 25372,
+                "topic_name": "Commutativity"
+            }
+        ]
+    },
+    {
+        "concept": {
+            "concept_type": "Procedure",
+            "definition": "The chapter asks learners to check commutativity operation by operation rather than assume it, building the same table for whole numbers, integers and rationals.",
+            "importance": "Important",
+            "difficulty": "Medium",
+            "confidence": 0.92,
+            "concept_name": "Testing each operation in turn",
+            "concept_id": "C451-14"
+        },
+        "topic_id": 25372,
+        "topic_name": "Commutativity",
+        "knowledge_items": [
+            {
+                "knowledge": "Operation by operation method",
+                "statement": "Each property is settled by testing it separately on addition, subtraction, multiplication and division for every number system in turn.",
+                "knowledge_type": "Process",
+                "confidence": 0.92,
+                "concept_name": "Testing each operation in turn",
+                "topic_id": 25372,
+                "topic_name": "Commutativity"
+            }
+        ],
+        "abilities": [
+            {
+                "ability": "Build a property table",
+                "verb": "Organise",
+                "description": "Fill a yes or no grid of operations against number systems for the property currently under test.",
+                "knowledge_refs": [
+                    "Operation by operation method"
+                ],
+                "concept_name": "Testing each operation in turn",
+                "topic_id": 25372,
+                "topic_name": "Commutativity"
+            }
+        ],
+        "skills": [
+            {
+                "skill": "Systematic investigation of a mathematical property",
+                "ability_refs": [
+                    "Build a property table"
+                ],
+                "concept_name": "Testing each operation in turn",
+                "topic_id": 25372,
+                "topic_name": "Commutativity"
+            }
+        ],
+        "competencies": [
+            {
+                "competency": "Methodical enquiry",
+                "statement": "Tests a claim on every case rather than generalising from the first case that works.",
+                "knowledge_refs": [
+                    "Operation by operation method"
+                ],
+                "ability_refs": [
+                    "Build a property table"
+                ],
+                "skill_refs": [
+                    "Systematic investigation of a mathematical property"
+                ],
+                "concept_name": "Testing each operation in turn",
+                "topic_id": 25372,
+                "topic_name": "Commutativity"
+            }
+        ],
+        "blooms": [
+            {
+                "level": "Apply",
+                "coverage_score": 50,
+                "concept_name": "Testing each operation in turn",
+                "topic_id": 25372,
+                "topic_name": "Commutativity"
+            },
+            {
+                "level": "Analyze",
+                "coverage_score": 50,
+                "concept_name": "Testing each operation in turn",
+                "topic_id": 25372,
+                "topic_name": "Commutativity"
+            }
+        ],
+        "dok": [
+            {
+                "level": "3",
+                "description": "Strategic Thinking",
+                "concept_name": "Testing each operation in turn",
+                "topic_id": 25372,
+                "topic_name": "Commutativity"
+            }
+        ],
+        "prerequisites": [
+            {
+                "concept_name": "Why the failure carries over",
+                "prerequisite_type": "Skill",
+                "necessity": "Recommended",
+                "_parent_concept": "Testing each operation in turn",
+                "topic_id": 25372,
+                "topic_name": "Commutativity"
+            }
+        ],
+        "misconceptions": [
+            {
+                "misconception": "The answer transfers between operations",
+                "statement": "Learners fill a property table by copying the addition answer straight across the other three operations.",
+                "root_cause": "Addition and multiplication do behave alike, so the pattern looks safe to extend to subtraction and division.",
+                "correction": "Have them test division separately and find that it breaks exactly where addition did not.",
+                "concept_name": "Testing each operation in turn",
+                "topic_id": 25372,
+                "topic_name": "Commutativity"
+            }
+        ],
+        "real_world_applications": [
+            {
+                "application_type": "Research",
+                "example": "A laboratory varies one factor at a time rather than assuming one result covers all the rest.",
+                "relevance": "Medium",
+                "concept_name": "Testing each operation in turn",
+                "topic_id": 25372,
+                "topic_name": "Commutativity"
+            }
+        ],
+        "pedagogy_recommendations": [
+            {
+                "strategy": "Project Based Teaching",
+                "why_effective": "Producing one completed property grid for the whole chapter gives the investigation a single visible product.",
+                "concept_characteristics": [
+                    "systematic method",
+                    "organised recording"
+                ],
+                "concept_name": "Testing each operation in turn",
+                "topic_id": 25372,
+                "topic_name": "Commutativity"
+            }
+        ],
+        "learning_objectives": [
+            {
+                "objective": "Organise the commutativity results for four operations across three number systems into one table.",
+                "objective_type": "Skill",
+                "priority": "Medium",
+                "concept_name": "Testing each operation in turn",
+                "topic_id": 25372,
+                "topic_name": "Commutativity"
+            }
+        ],
+        "learning_outcomes": [
+            {
+                "outcome": "Produces a completed commutativity table and reads off which operations behave well.",
+                "outcome_type": "Skill Outcome",
+                "measurable": true,
+                "assessment_ready": true,
+                "concept_name": "Testing each operation in turn",
+                "topic_id": 25372,
+                "topic_name": "Commutativity"
+            }
+        ],
+        "assessment_blueprint": [
+            {
+                "assessment_type": "Project",
+                "bloom_level": "Apply",
+                "dok_level": "3",
+                "difficulty": "Medium",
+                "marks": 5,
+                "recommended_question": "Build a commutativity table for the four operations across whole numbers, integers and rational numbers.",
+                "concept_name": "Testing each operation in turn",
+                "topic_id": 25372,
+                "topic_name": "Commutativity"
+            },
+            {
+                "assessment_type": "Short Answer",
+                "bloom_level": "Analyze",
+                "dok_level": "3",
+                "difficulty": "Medium",
+                "marks": 3,
+                "recommended_question": "Which two operations behave the same way on commutativity for every number system in your table?",
+                "concept_name": "Testing each operation in turn",
+                "topic_id": 25372,
+                "topic_name": "Commutativity"
+            }
+        ]
+    },
+    {
+        "concept": {
+            "concept_type": "Principle",
+            "definition": "Adding three rational numbers grouped either way gives the same sum, checked on several triples before being generalised to all rationals a, b and c.",
+            "importance": "Core",
+            "difficulty": "Medium",
+            "confidence": 0.96,
+            "concept_name": "Addition is associative",
+            "concept_id": "C451-15"
+        },
+        "topic_id": 25373,
+        "topic_name": "Associativity",
+        "knowledge_items": [
+            {
+                "knowledge": "Associative law for addition",
+                "statement": "For any three rational numbers a, b and c the sum is unchanged whether b is grouped with a or grouped with c.",
+                "knowledge_type": "Law",
+                "confidence": 0.96,
+                "concept_name": "Addition is associative",
+                "topic_id": 25373,
+                "topic_name": "Associativity"
+            }
+        ],
+        "abilities": [
+            {
+                "ability": "Check associativity on a triple",
+                "verb": "Evaluate",
+                "description": "Compute both groupings of a sum of three rationals and compare the two results.",
+                "knowledge_refs": [
+                    "Associative law for addition"
+                ],
+                "concept_name": "Addition is associative",
+                "topic_id": 25373,
+                "topic_name": "Associativity"
+            }
+        ],
+        "skills": [
+            {
+                "skill": "Regrouping terms without changing a value",
+                "ability_refs": [
+                    "Check associativity on a triple"
+                ],
+                "concept_name": "Addition is associative",
+                "topic_id": 25373,
+                "topic_name": "Associativity"
+            }
+        ],
+        "competencies": [
+            {
+                "competency": "Grouping independence",
+                "statement": "Knows which operations permit their terms to be regrouped freely during a calculation.",
+                "knowledge_refs": [
+                    "Associative law for addition"
+                ],
+                "ability_refs": [
+                    "Check associativity on a triple"
+                ],
+                "skill_refs": [
+                    "Regrouping terms without changing a value"
+                ],
+                "concept_name": "Addition is associative",
+                "topic_id": 25373,
+                "topic_name": "Associativity"
+            }
+        ],
+        "blooms": [
+            {
+                "level": "Understand",
+                "coverage_score": 30,
+                "concept_name": "Addition is associative",
+                "topic_id": 25373,
+                "topic_name": "Associativity"
+            },
+            {
+                "level": "Apply",
+                "coverage_score": 70,
+                "concept_name": "Addition is associative",
+                "topic_id": 25373,
+                "topic_name": "Associativity"
+            }
+        ],
+        "dok": [
+            {
+                "level": "2",
+                "description": "Skills and Concepts",
+                "concept_name": "Addition is associative",
+                "topic_id": 25373,
+                "topic_name": "Associativity"
+            }
+        ],
+        "prerequisites": [
+            {
+                "concept_name": "Addition is commutative",
+                "prerequisite_type": "Concept",
+                "necessity": "Mandatory",
+                "_parent_concept": "Addition is associative",
+                "topic_id": 25373,
+                "topic_name": "Associativity"
+            }
+        ],
+        "misconceptions": [
+            {
+                "misconception": "Brackets always change the answer",
+                "statement": "Learners assume that moving a bracket must alter a result because brackets signal what comes first.",
+                "root_cause": "Order of operations teaching stresses that brackets take priority, so they appear to be always decisive.",
+                "correction": "Compute both groupings of the same three rationals and find that the sums are identical.",
+                "concept_name": "Addition is associative",
+                "topic_id": 25373,
+                "topic_name": "Associativity"
+            }
+        ],
+        "real_world_applications": [
+            {
+                "application_type": "Daily Life",
+                "example": "Splitting a long bill into two part totals and adding those gives the same amount as one long addition.",
+                "relevance": "Medium",
+                "concept_name": "Addition is associative",
+                "topic_id": 25373,
+                "topic_name": "Associativity"
+            }
+        ],
+        "pedagogy_recommendations": [
+            {
+                "strategy": "Activity Based Teaching",
+                "why_effective": "Physically bracketing counters into two different groupings and recounting gives an immediate check.",
+                "concept_characteristics": [
+                    "grouping",
+                    "hands on verification"
+                ],
+                "concept_name": "Addition is associative",
+                "topic_id": 25373,
+                "topic_name": "Associativity"
+            }
+        ],
+        "learning_objectives": [
+            {
+                "objective": "Evaluate both groupings of a sum of three rational numbers and compare them.",
+                "objective_type": "Ability",
+                "priority": "High",
+                "concept_name": "Addition is associative",
+                "topic_id": 25373,
+                "topic_name": "Associativity"
+            }
+        ],
+        "learning_outcomes": [
+            {
+                "outcome": "Shows for a given triple of rationals that both groupings of the sum agree.",
+                "outcome_type": "Ability Outcome",
+                "measurable": true,
+                "assessment_ready": true,
+                "concept_name": "Addition is associative",
+                "topic_id": 25373,
+                "topic_name": "Associativity"
+            }
+        ],
+        "assessment_blueprint": [
+            {
+                "assessment_type": "Numerical",
+                "bloom_level": "Apply",
+                "dok_level": "2",
+                "difficulty": "Medium",
+                "marks": 2,
+                "recommended_question": "Verify that -2/3, 3/5 and 1/6 give the same total under both groupings of the addition.",
+                "concept_name": "Addition is associative",
+                "topic_id": 25373,
+                "topic_name": "Associativity"
+            },
+            {
+                "assessment_type": "MCQ",
+                "bloom_level": "Understand",
+                "dok_level": "2",
+                "difficulty": "Easy",
+                "marks": 1,
+                "recommended_question": "Which property allows the brackets in a sum of three rational numbers to be moved?",
+                "concept_name": "Addition is associative",
+                "topic_id": 25373,
+                "topic_name": "Associativity"
+            }
+        ]
+    },
+    {
+        "concept": {
+            "concept_type": "Fact",
+            "definition": "Regrouping a subtraction of three rational numbers changes the answer, so subtraction is not associative for the rationals.",
+            "importance": "Core",
+            "difficulty": "Medium",
+            "confidence": 0.95,
+            "concept_name": "Subtraction is not associative",
+            "concept_id": "C451-16"
+        },
+        "topic_id": 25373,
+        "topic_name": "Associativity",
+        "knowledge_items": [
+            {
+                "knowledge": "Subtraction fails associativity",
+                "statement": "The two groupings of a three term subtraction of rationals give different results, so associativity does not hold for it.",
+                "knowledge_type": "Fact",
+                "confidence": 0.95,
+                "concept_name": "Subtraction is not associative",
+                "topic_id": 25373,
+                "topic_name": "Associativity"
+            }
+        ],
+        "abilities": [
+            {
+                "ability": "Show regrouping changes a difference",
+                "verb": "Demonstrate",
+                "description": "Work both groupings of a three term subtraction of rationals and display the unequal answers.",
+                "knowledge_refs": [
+                    "Subtraction fails associativity"
+                ],
+                "concept_name": "Subtraction is not associative",
+                "topic_id": 25373,
+                "topic_name": "Associativity"
+            }
+        ],
+        "skills": [
+            {
+                "skill": "Testing whether brackets matter in an expression",
+                "ability_refs": [
+                    "Show regrouping changes a difference"
+                ],
+                "concept_name": "Subtraction is not associative",
+                "topic_id": 25373,
+                "topic_name": "Associativity"
+            }
+        ],
+        "competencies": [
+            {
+                "competency": "Bracket sensitivity",
+                "statement": "Recognises expressions whose value depends on where the brackets have been placed.",
+                "knowledge_refs": [
+                    "Subtraction fails associativity"
+                ],
+                "ability_refs": [
+                    "Show regrouping changes a difference"
+                ],
+                "skill_refs": [
+                    "Testing whether brackets matter in an expression"
+                ],
+                "concept_name": "Subtraction is not associative",
+                "topic_id": 25373,
+                "topic_name": "Associativity"
+            }
+        ],
+        "blooms": [
+            {
+                "level": "Apply",
+                "coverage_score": 60,
+                "concept_name": "Subtraction is not associative",
+                "topic_id": 25373,
+                "topic_name": "Associativity"
+            },
+            {
+                "level": "Evaluate",
+                "coverage_score": 40,
+                "concept_name": "Subtraction is not associative",
+                "topic_id": 25373,
+                "topic_name": "Associativity"
+            }
+        ],
+        "dok": [
+            {
+                "level": "2",
+                "description": "Skills and Concepts",
+                "concept_name": "Subtraction is not associative",
+                "topic_id": 25373,
+                "topic_name": "Associativity"
+            }
+        ],
+        "prerequisites": [
+            {
+                "concept_name": "Addition is associative",
+                "prerequisite_type": "Concept",
+                "necessity": "Mandatory",
+                "_parent_concept": "Subtraction is not associative",
+                "topic_id": 25373,
+                "topic_name": "Associativity"
+            }
+        ],
+        "misconceptions": [
+            {
+                "misconception": "Left to right is the only rule needed",
+                "statement": "Learners believe that working from left to right makes bracket placement irrelevant in a subtraction.",
+                "root_cause": "Subtraction chains are almost always written and worked left to right, so the other grouping is never seen.",
+                "correction": "Work the right hand grouping explicitly and set it beside the left to right answer.",
+                "concept_name": "Subtraction is not associative",
+                "topic_id": 25373,
+                "topic_name": "Associativity"
+            }
+        ],
+        "real_world_applications": [
+            {
+                "application_type": "Career",
+                "example": "A payroll deduction sequence produces a different net figure if the deductions are grouped wrongly.",
+                "relevance": "Medium",
+                "concept_name": "Subtraction is not associative",
+                "topic_id": 25373,
+                "topic_name": "Associativity"
+            }
+        ],
+        "pedagogy_recommendations": [
+            {
+                "strategy": "Scenario Based Teaching",
+                "why_effective": "A budgeting scenario where regrouping the deductions changes the balance makes the failure consequential.",
+                "concept_characteristics": [
+                    "counterexample",
+                    "grouping"
+                ],
+                "concept_name": "Subtraction is not associative",
+                "topic_id": 25373,
+                "topic_name": "Associativity"
+            }
+        ],
+        "learning_objectives": [
+            {
+                "objective": "Demonstrate with a worked triple that subtraction of rationals is not associative.",
+                "objective_type": "Ability",
+                "priority": "High",
+                "concept_name": "Subtraction is not associative",
+                "topic_id": 25373,
+                "topic_name": "Associativity"
+            }
+        ],
+        "learning_outcomes": [
+            {
+                "outcome": "Produces two unequal answers from the same three rationals by regrouping the subtraction.",
+                "outcome_type": "Ability Outcome",
+                "measurable": true,
+                "assessment_ready": true,
+                "concept_name": "Subtraction is not associative",
+                "topic_id": 25373,
+                "topic_name": "Associativity"
+            }
+        ],
+        "assessment_blueprint": [
+            {
+                "assessment_type": "Numerical",
+                "bloom_level": "Apply",
+                "dok_level": "2",
+                "difficulty": "Medium",
+                "marks": 3,
+                "recommended_question": "Compute both groupings of 1/2 minus 1/3 minus 1/4 and state whether subtraction is associative.",
+                "concept_name": "Subtraction is not associative",
+                "topic_id": 25373,
+                "topic_name": "Associativity"
+            },
+            {
+                "assessment_type": "Short Answer",
+                "bloom_level": "Evaluate",
+                "dok_level": "3",
+                "difficulty": "Medium",
+                "marks": 2,
+                "recommended_question": "Explain what your two unequal answers prove about the associativity of subtraction.",
+                "concept_name": "Subtraction is not associative",
+                "topic_id": 25373,
+                "topic_name": "Associativity"
+            }
+        ]
+    },
+    {
+        "concept": {
+            "concept_type": "Principle",
+            "definition": "For any three rational numbers a, b and c, multiplying a by the product of b and c gives the same value as multiplying the product of a and b by c.",
+            "importance": "Core",
+            "difficulty": "Medium",
+            "confidence": 0.96,
+            "concept_name": "Multiplication is associative",
+            "concept_id": "C451-17"
+        },
+        "topic_id": 25373,
+        "topic_name": "Associativity",
+        "knowledge_items": [
+            {
+                "knowledge": "Associative law for multiplication",
+                "statement": "Multiplying three rational numbers gives the same product whichever pair among them is multiplied first.",
+                "knowledge_type": "Law",
+                "confidence": 0.96,
+                "concept_name": "Multiplication is associative",
+                "topic_id": 25373,
+                "topic_name": "Associativity"
+            }
+        ],
+        "abilities": [
+            {
+                "ability": "Verify associativity of a product",
+                "verb": "Verify",
+                "description": "Multiply three rationals under both groupings and compare the two products obtained.",
+                "knowledge_refs": [
+                    "Associative law for multiplication"
+                ],
+                "concept_name": "Multiplication is associative",
+                "topic_id": 25373,
+                "topic_name": "Associativity"
+            }
+        ],
+        "skills": [
+            {
+                "skill": "Choosing a convenient grouping for a product",
+                "ability_refs": [
+                    "Verify associativity of a product"
+                ],
+                "concept_name": "Multiplication is associative",
+                "topic_id": 25373,
+                "topic_name": "Associativity"
+            }
+        ],
+        "competencies": [
+            {
+                "competency": "Efficient computation",
+                "statement": "Regroups a product to make the arithmetic easier without altering its value.",
+                "knowledge_refs": [
+                    "Associative law for multiplication"
+                ],
+                "ability_refs": [
+                    "Verify associativity of a product"
+                ],
+                "skill_refs": [
+                    "Choosing a convenient grouping for a product"
+                ],
+                "concept_name": "Multiplication is associative",
+                "topic_id": 25373,
+                "topic_name": "Associativity"
+            }
+        ],
+        "blooms": [
+            {
+                "level": "Apply",
+                "coverage_score": 70,
+                "concept_name": "Multiplication is associative",
+                "topic_id": 25373,
+                "topic_name": "Associativity"
+            },
+            {
+                "level": "Analyze",
+                "coverage_score": 30,
+                "concept_name": "Multiplication is associative",
+                "topic_id": 25373,
+                "topic_name": "Associativity"
+            }
+        ],
+        "dok": [
+            {
+                "level": "2",
+                "description": "Skills and Concepts",
+                "concept_name": "Multiplication is associative",
+                "topic_id": 25373,
+                "topic_name": "Associativity"
+            }
+        ],
+        "prerequisites": [
+            {
+                "concept_name": "Addition is associative",
+                "prerequisite_type": "Concept",
+                "necessity": "Recommended",
+                "_parent_concept": "Multiplication is associative",
+                "topic_id": 25373,
+                "topic_name": "Associativity"
+            }
+        ],
+        "misconceptions": [
+            {
+                "misconception": "Multiplication behaves like division",
+                "statement": "Learners assume that because multiplication and division are inverse operations, both must be associative.",
+                "root_cause": "Inverse operations are taught as a matched pair, so their structural properties are expected to match too.",
+                "correction": "Work both groupings of a three term division and find them unequal while the triple product agrees.",
+                "concept_name": "Multiplication is associative",
+                "topic_id": 25373,
+                "topic_name": "Associativity"
+            }
+        ],
+        "real_world_applications": [
+            {
+                "application_type": "Industry",
+                "example": "Scaling a recipe by three separate fractional factors gives the same batch size in any grouping.",
+                "relevance": "Medium",
+                "concept_name": "Multiplication is associative",
+                "topic_id": 25373,
+                "topic_name": "Associativity"
+            }
+        ],
+        "pedagogy_recommendations": [
+            {
+                "strategy": "Activity Based Teaching",
+                "why_effective": "Rearranging a tile array into different groupings keeps the total count visible and plainly unchanged.",
+                "concept_characteristics": [
+                    "grouping",
+                    "array model"
+                ],
+                "concept_name": "Multiplication is associative",
+                "topic_id": 25373,
+                "topic_name": "Associativity"
+            }
+        ],
+        "learning_objectives": [
+            {
+                "objective": "Verify that a product of three rational numbers is unchanged by regrouping.",
+                "objective_type": "Ability",
+                "priority": "High",
+                "concept_name": "Multiplication is associative",
+                "topic_id": 25373,
+                "topic_name": "Associativity"
+            }
+        ],
+        "learning_outcomes": [
+            {
+                "outcome": "Computes both groupings of a triple product of rationals and confirms that they agree.",
+                "outcome_type": "Ability Outcome",
+                "measurable": true,
+                "assessment_ready": true,
+                "concept_name": "Multiplication is associative",
+                "topic_id": 25373,
+                "topic_name": "Associativity"
+            }
+        ],
+        "assessment_blueprint": [
+            {
+                "assessment_type": "Numerical",
+                "bloom_level": "Apply",
+                "dok_level": "2",
+                "difficulty": "Medium",
+                "marks": 2,
+                "recommended_question": "Show that -2/5, 3/4 and 5/6 give the same product under both groupings of the multiplication.",
+                "concept_name": "Multiplication is associative",
+                "topic_id": 25373,
+                "topic_name": "Associativity"
+            },
+            {
+                "assessment_type": "MCQ",
+                "bloom_level": "Remember",
+                "dok_level": "1",
+                "difficulty": "Easy",
+                "marks": 1,
+                "recommended_question": "Which two of the four operations on rational numbers are associative?",
+                "concept_name": "Multiplication is associative",
+                "topic_id": 25373,
+                "topic_name": "Associativity"
+            }
+        ]
+    },
+    {
+        "concept": {
+            "concept_type": "Fact",
+            "definition": "Division is not associative for integers, and working out both groupings of a division of three rational numbers shows the two sides are unequal.",
+            "importance": "Core",
+            "difficulty": "Medium",
+            "confidence": 0.95,
+            "concept_name": "Division is not",
+            "concept_id": "C451-18"
+        },
+        "topic_id": 25373,
+        "topic_name": "Associativity",
+        "knowledge_items": [
+            {
+                "knowledge": "Division fails associativity",
+                "statement": "The two groupings of a three term division of rational numbers give unequal values, so division is not associative.",
+                "knowledge_type": "Fact",
+                "confidence": 0.95,
+                "concept_name": "Division is not",
+                "topic_id": 25373,
+                "topic_name": "Associativity"
+            },
+            {
+                "knowledge": "Consistent pattern",
+                "statement": "Addition and multiplication satisfy closure, commutativity and associativity for rationals while subtraction and division do not.",
+                "knowledge_type": "Relationship",
+                "confidence": 0.93,
+                "concept_name": "Division is not",
+                "topic_id": 25373,
+                "topic_name": "Associativity"
+            }
+        ],
+        "abilities": [
+            {
+                "ability": "Summarise which operations behave well",
+                "verb": "Summarise",
+                "description": "State the consistent pattern of which two operations satisfy every property tested in the chapter.",
+                "knowledge_refs": [
+                    "Division fails associativity",
+                    "Consistent pattern"
+                ],
+                "concept_name": "Division is not",
+                "topic_id": 25373,
+                "topic_name": "Associativity"
+            }
+        ],
+        "skills": [
+            {
+                "skill": "Drawing a pattern out of several separate findings",
+                "ability_refs": [
+                    "Summarise which operations behave well"
+                ],
+                "concept_name": "Division is not",
+                "topic_id": 25373,
+                "topic_name": "Associativity"
+            }
+        ],
+        "competencies": [
+            {
+                "competency": "Pattern synthesis",
+                "statement": "Draws one general statement out of four separately tested properties.",
+                "knowledge_refs": [
+                    "Division fails associativity",
+                    "Consistent pattern"
+                ],
+                "ability_refs": [
+                    "Summarise which operations behave well"
+                ],
+                "skill_refs": [
+                    "Drawing a pattern out of several separate findings"
+                ],
+                "concept_name": "Division is not",
+                "topic_id": 25373,
+                "topic_name": "Associativity"
+            }
+        ],
+        "blooms": [
+            {
+                "level": "Analyze",
+                "coverage_score": 60,
+                "concept_name": "Division is not",
+                "topic_id": 25373,
+                "topic_name": "Associativity"
+            },
+            {
+                "level": "Evaluate",
+                "coverage_score": 40,
+                "concept_name": "Division is not",
+                "topic_id": 25373,
+                "topic_name": "Associativity"
+            }
+        ],
+        "dok": [
+            {
+                "level": "3",
+                "description": "Strategic Thinking",
+                "concept_name": "Division is not",
+                "topic_id": 25373,
+                "topic_name": "Associativity"
+            }
+        ],
+        "prerequisites": [
+            {
+                "concept_name": "Multiplication is associative",
+                "prerequisite_type": "Concept",
+                "necessity": "Mandatory",
+                "_parent_concept": "Division is not",
+                "topic_id": 25373,
+                "topic_name": "Associativity"
+            }
+        ],
+        "misconceptions": [
+            {
+                "misconception": "Division inherits the properties of multiplication",
+                "statement": "Learners expect division to be associative simply because multiplication has just been shown to be.",
+                "root_cause": "Division is introduced as the undoing of multiplication, so its properties are assumed to be carried across.",
+                "correction": "Compute both groupings of a three term division and show that the two values genuinely differ.",
+                "concept_name": "Division is not",
+                "topic_id": 25373,
+                "topic_name": "Associativity"
+            }
+        ],
+        "real_world_applications": [
+            {
+                "application_type": "Technology",
+                "example": "A calculator applies a fixed left to right rule to a division chain precisely because grouping changes the answer.",
+                "relevance": "Medium",
+                "concept_name": "Division is not",
+                "topic_id": 25373,
+                "topic_name": "Associativity"
+            }
+        ],
+        "pedagogy_recommendations": [
+            {
+                "strategy": "Flipped Classroom Teaching",
+                "why_effective": "Learners can compute the two groupings beforehand and spend the lesson explaining the pattern across all four operations.",
+                "concept_characteristics": [
+                    "pattern recognition",
+                    "synthesis"
+                ],
+                "concept_name": "Division is not",
+                "topic_id": 25373,
+                "topic_name": "Associativity"
+            }
+        ],
+        "learning_objectives": [
+            {
+                "objective": "Summarise which operations on rationals satisfy closure, commutativity and associativity.",
+                "objective_type": "Skill",
+                "priority": "High",
+                "concept_name": "Division is not",
+                "topic_id": 25373,
+                "topic_name": "Associativity"
+            }
+        ],
+        "learning_outcomes": [
+            {
+                "outcome": "States that addition and multiplication satisfy all three properties while subtraction and division do not.",
+                "outcome_type": "Skill Outcome",
+                "measurable": true,
+                "assessment_ready": true,
+                "concept_name": "Division is not",
+                "topic_id": 25373,
+                "topic_name": "Associativity"
+            }
+        ],
+        "assessment_blueprint": [
+            {
+                "assessment_type": "Long Answer",
+                "bloom_level": "Analyze",
+                "dok_level": "3",
+                "difficulty": "Medium",
+                "marks": 4,
+                "recommended_question": "Summarise which of the four operations on rationals are closed, commutative and associative, with a counterexample for each failure.",
+                "concept_name": "Division is not",
+                "topic_id": 25373,
+                "topic_name": "Associativity"
+            },
+            {
+                "assessment_type": "Numerical",
+                "bloom_level": "Apply",
+                "dok_level": "2",
+                "difficulty": "Medium",
+                "marks": 2,
+                "recommended_question": "Compute both groupings of 1/2 divided by 1/3 divided by 1/4 and compare the two values.",
+                "concept_name": "Division is not",
+                "topic_id": 25373,
+                "topic_name": "Associativity"
+            }
+        ]
+    },
+    {
+        "concept": {
+            "concept_type": "Law",
+            "definition": "Adding zero leaves a whole number, an integer or a rational number unchanged, so a + 0 = 0 + a = a and zero is called the additive identity.",
+            "importance": "Core",
+            "difficulty": "Easy",
+            "confidence": 0.98,
+            "concept_name": "Zero is the additive identity",
+            "concept_id": "C451-19"
+        },
+        "topic_id": 25374,
+        "topic_name": "The Role of Zero and One",
+        "knowledge_items": [
+            {
+                "knowledge": "Additive identity",
+                "statement": "Zero added to any rational number returns that number unchanged from either side, which is what makes it the identity for addition.",
+                "knowledge_type": "Law",
+                "confidence": 0.98,
+                "concept_name": "Zero is the additive identity",
+                "topic_id": 25374,
+                "topic_name": "The Role of Zero and One"
+            }
+        ],
+        "abilities": [
+            {
+                "ability": "Recognise the additive identity in use",
+                "verb": "Identify",
+                "description": "Spot where adding zero has left an expression unchanged and name zero as the additive identity.",
+                "knowledge_refs": [
+                    "Additive identity"
+                ],
+                "concept_name": "Zero is the additive identity",
+                "topic_id": 25374,
+                "topic_name": "The Role of Zero and One"
+            }
+        ],
+        "skills": [
+            {
+                "skill": "Using identity elements to simplify expressions",
+                "ability_refs": [
+                    "Recognise the additive identity in use"
+                ],
+                "concept_name": "Zero is the additive identity",
+                "topic_id": 25374,
+                "topic_name": "The Role of Zero and One"
+            }
+        ],
+        "competencies": [
+            {
+                "competency": "Identity element awareness",
+                "statement": "Names the element that leaves every member of a system unchanged under a given operation.",
+                "knowledge_refs": [
+                    "Additive identity"
+                ],
+                "ability_refs": [
+                    "Recognise the additive identity in use"
+                ],
+                "skill_refs": [
+                    "Using identity elements to simplify expressions"
+                ],
+                "concept_name": "Zero is the additive identity",
+                "topic_id": 25374,
+                "topic_name": "The Role of Zero and One"
+            }
+        ],
+        "blooms": [
+            {
+                "level": "Remember",
+                "coverage_score": 40,
+                "concept_name": "Zero is the additive identity",
+                "topic_id": 25374,
+                "topic_name": "The Role of Zero and One"
+            },
+            {
+                "level": "Understand",
+                "coverage_score": 60,
+                "concept_name": "Zero is the additive identity",
+                "topic_id": 25374,
+                "topic_name": "The Role of Zero and One"
+            }
+        ],
+        "dok": [
+            {
+                "level": "1",
+                "description": "Recall and Reproduction",
+                "concept_name": "Zero is the additive identity",
+                "topic_id": 25374,
+                "topic_name": "The Role of Zero and One"
+            }
+        ],
+        "prerequisites": [
+            {
+                "concept_name": "Rational numbers are closed under addition",
+                "prerequisite_type": "Concept",
+                "necessity": "Recommended",
+                "_parent_concept": "Zero is the additive identity",
+                "topic_id": 25374,
+                "topic_name": "The Role of Zero and One"
+            }
+        ],
+        "misconceptions": [
+            {
+                "misconception": "Zero is the identity for every operation",
+                "statement": "Learners apply zero as the identity element for multiplication as well as for addition.",
+                "root_cause": "Zero is the first special number met and its additive role is generalised without ever being tested.",
+                "correction": "Multiply any rational number by zero and show the result is zero rather than the original number.",
+                "concept_name": "Zero is the additive identity",
+                "topic_id": 25374,
+                "topic_name": "The Role of Zero and One"
+            }
+        ],
+        "real_world_applications": [
+            {
+                "application_type": "Daily Life",
+                "example": "A day with no spending leaves the running total of a household budget exactly where it was.",
+                "relevance": "Medium",
+                "concept_name": "Zero is the additive identity",
+                "topic_id": 25374,
+                "topic_name": "The Role of Zero and One"
+            }
+        ],
+        "pedagogy_recommendations": [
+            {
+                "strategy": "Flashcard Based / Spaced Repetition Teaching",
+                "why_effective": "Short repeated drills separating the additive and multiplicative identities stop the two being confused.",
+                "concept_characteristics": [
+                    "identity element",
+                    "recall"
+                ],
+                "concept_name": "Zero is the additive identity",
+                "topic_id": 25374,
+                "topic_name": "The Role of Zero and One"
+            }
+        ],
+        "learning_objectives": [
+            {
+                "objective": "State that zero is the additive identity for whole numbers, integers and rational numbers.",
+                "objective_type": "Knowledge",
+                "priority": "High",
+                "concept_name": "Zero is the additive identity",
+                "topic_id": 25374,
+                "topic_name": "The Role of Zero and One"
+            }
+        ],
+        "learning_outcomes": [
+            {
+                "outcome": "Identifies zero as the additive identity and shows that a + 0 equals a for a chosen rational.",
+                "outcome_type": "Knowledge Outcome",
+                "measurable": true,
+                "assessment_ready": true,
+                "concept_name": "Zero is the additive identity",
+                "topic_id": 25374,
+                "topic_name": "The Role of Zero and One"
+            }
+        ],
+        "assessment_blueprint": [
+            {
+                "assessment_type": "MCQ",
+                "bloom_level": "Remember",
+                "dok_level": "1",
+                "difficulty": "Easy",
+                "marks": 1,
+                "recommended_question": "Which rational number leaves every other rational number unchanged when it is added to it?",
+                "concept_name": "Zero is the additive identity",
+                "topic_id": 25374,
+                "topic_name": "The Role of Zero and One"
+            },
+            {
+                "assessment_type": "Short Answer",
+                "bloom_level": "Understand",
+                "dok_level": "2",
+                "difficulty": "Easy",
+                "marks": 2,
+                "recommended_question": "Show with one example that zero is the additive identity for rationals, and say whether it is one for integers.",
+                "concept_name": "Zero is the additive identity",
+                "topic_id": 25374,
+                "topic_name": "The Role of Zero and One"
+            }
+        ]
+    },
+    {
+        "concept": {
+            "concept_type": "Law",
+            "definition": "Multiplying by one leaves any rational number unchanged, so one is the multiplicative identity for the rational numbers.",
+            "importance": "Core",
+            "difficulty": "Easy",
+            "confidence": 0.98,
+            "concept_name": "One is the multiplicative identity",
+            "concept_id": "C451-20"
+        },
+        "topic_id": 25374,
+        "topic_name": "The Role of Zero and One",
+        "knowledge_items": [
+            {
+                "knowledge": "Multiplicative identity",
+                "statement": "One multiplied by any rational number returns that number unchanged, which makes one the identity element for multiplication.",
+                "knowledge_type": "Law",
+                "confidence": 0.98,
+                "concept_name": "One is the multiplicative identity",
+                "topic_id": 25374,
+                "topic_name": "The Role of Zero and One"
+            }
+        ],
+        "abilities": [
+            {
+                "ability": "Test the identity across number systems",
+                "verb": "Examine",
+                "description": "Check whether one plays the same identity role for integers and whole numbers as it does for rationals.",
+                "knowledge_refs": [
+                    "Multiplicative identity"
+                ],
+                "concept_name": "One is the multiplicative identity",
+                "topic_id": 25374,
+                "topic_name": "The Role of Zero and One"
+            }
+        ],
+        "skills": [
+            {
+                "skill": "Extending a property check to related systems",
+                "ability_refs": [
+                    "Test the identity across number systems"
+                ],
+                "concept_name": "One is the multiplicative identity",
+                "topic_id": 25374,
+                "topic_name": "The Role of Zero and One"
+            }
+        ],
+        "competencies": [
+            {
+                "competency": "Cross system verification",
+                "statement": "Checks whether a property established in one number system also holds in its subsets.",
+                "knowledge_refs": [
+                    "Multiplicative identity"
+                ],
+                "ability_refs": [
+                    "Test the identity across number systems"
+                ],
+                "skill_refs": [
+                    "Extending a property check to related systems"
+                ],
+                "concept_name": "One is the multiplicative identity",
+                "topic_id": 25374,
+                "topic_name": "The Role of Zero and One"
+            }
+        ],
+        "blooms": [
+            {
+                "level": "Understand",
+                "coverage_score": 50,
+                "concept_name": "One is the multiplicative identity",
+                "topic_id": 25374,
+                "topic_name": "The Role of Zero and One"
+            },
+            {
+                "level": "Apply",
+                "coverage_score": 50,
+                "concept_name": "One is the multiplicative identity",
+                "topic_id": 25374,
+                "topic_name": "The Role of Zero and One"
+            }
+        ],
+        "dok": [
+            {
+                "level": "2",
+                "description": "Skills and Concepts",
+                "concept_name": "One is the multiplicative identity",
+                "topic_id": 25374,
+                "topic_name": "The Role of Zero and One"
+            }
+        ],
+        "prerequisites": [
+            {
+                "concept_name": "Zero is the additive identity",
+                "prerequisite_type": "Concept",
+                "necessity": "Mandatory",
+                "_parent_concept": "One is the multiplicative identity",
+                "topic_id": 25374,
+                "topic_name": "The Role of Zero and One"
+            }
+        ],
+        "misconceptions": [
+            {
+                "misconception": "One is the identity for addition too",
+                "statement": "Learners add one to a number and expect the value to stay the same, mirroring what multiplication does.",
+                "root_cause": "The two identity elements are taught together and the operation attached to each gets swapped.",
+                "correction": "Add one to a rational and show the value moves, then multiply by one and show that it does not.",
+                "concept_name": "One is the multiplicative identity",
+                "topic_id": 25374,
+                "topic_name": "The Role of Zero and One"
+            }
+        ],
+        "real_world_applications": [
+            {
+                "application_type": "Industry",
+                "example": "Converting a measurement by a unit ratio equal to one changes the units but never the quantity.",
+                "relevance": "High",
+                "concept_name": "One is the multiplicative identity",
+                "topic_id": 25374,
+                "topic_name": "The Role of Zero and One"
+            }
+        ],
+        "pedagogy_recommendations": [
+            {
+                "strategy": "Skill / Competency Based Teaching",
+                "why_effective": "Practising identity recognition inside longer simplifications builds the habit of spotting redundant factors.",
+                "concept_characteristics": [
+                    "identity element",
+                    "simplification"
+                ],
+                "concept_name": "One is the multiplicative identity",
+                "topic_id": 25374,
+                "topic_name": "The Role of Zero and One"
+            }
+        ],
+        "learning_objectives": [
+            {
+                "objective": "Examine whether one is the multiplicative identity for rationals, integers and whole numbers.",
+                "objective_type": "Ability",
+                "priority": "High",
+                "concept_name": "One is the multiplicative identity",
+                "topic_id": 25374,
+                "topic_name": "The Role of Zero and One"
+            }
+        ],
+        "learning_outcomes": [
+            {
+                "outcome": "States that one is the multiplicative identity and confirms it for an integer and for a rational.",
+                "outcome_type": "Ability Outcome",
+                "measurable": true,
+                "assessment_ready": true,
+                "concept_name": "One is the multiplicative identity",
+                "topic_id": 25374,
+                "topic_name": "The Role of Zero and One"
+            }
+        ],
+        "assessment_blueprint": [
+            {
+                "assessment_type": "MCQ",
+                "bloom_level": "Remember",
+                "dok_level": "1",
+                "difficulty": "Easy",
+                "marks": 1,
+                "recommended_question": "Which number is the multiplicative identity for the rational numbers?",
+                "concept_name": "One is the multiplicative identity",
+                "topic_id": 25374,
+                "topic_name": "The Role of Zero and One"
+            },
+            {
+                "assessment_type": "Short Answer",
+                "bloom_level": "Apply",
+                "dok_level": "2",
+                "difficulty": "Easy",
+                "marks": 2,
+                "recommended_question": "Show that multiplying -7/9 by one leaves it unchanged, then test whether the same holds for the integer -7.",
+                "concept_name": "One is the multiplicative identity",
+                "topic_id": 25374,
+                "topic_name": "The Role of Zero and One"
+            }
+        ]
+    },
+    {
+        "concept": {
+            "concept_type": "Formula",
+            "definition": "For all rational numbers a, b and c the product of a with the sum of b and c equals ab plus ac, and the same distribution holds over subtraction.",
+            "importance": "Core",
+            "difficulty": "Medium",
+            "confidence": 0.96,
+            "concept_name": "The rule",
+            "concept_id": "C451-21"
+        },
+        "topic_id": 25375,
+        "topic_name": "Distributivity",
+        "knowledge_items": [
+            {
+                "knowledge": "Distributive law",
+                "statement": "Multiplication distributes over both addition and subtraction for rational numbers, giving ab plus ac and ab minus ac respectively.",
+                "knowledge_type": "Law",
+                "confidence": 0.96,
+                "concept_name": "The rule",
+                "topic_id": 25375,
+                "topic_name": "Distributivity"
+            },
+            {
+                "knowledge": "Worked verification",
+                "statement": "The chapter checks the law by computing each side separately on -3/4, 2/3 and -5/6 and finding the two sides equal.",
+                "knowledge_type": "Process",
+                "confidence": 0.94,
+                "concept_name": "The rule",
+                "topic_id": 25375,
+                "topic_name": "Distributivity"
+            }
+        ],
+        "abilities": [
+            {
+                "ability": "Verify distributivity on given rationals",
+                "verb": "Compute",
+                "description": "Evaluate both sides of the distributive identity on -3/4, 2/3 and -5/6 and compare them.",
+                "knowledge_refs": [
+                    "Distributive law",
+                    "Worked verification"
+                ],
+                "concept_name": "The rule",
+                "topic_id": 25375,
+                "topic_name": "Distributivity"
+            }
+        ],
+        "skills": [
+            {
+                "skill": "Confirming an identity by evaluating both sides",
+                "ability_refs": [
+                    "Verify distributivity on given rationals"
+                ],
+                "concept_name": "The rule",
+                "topic_id": 25375,
+                "topic_name": "Distributivity"
+            }
+        ],
+        "competencies": [
+            {
+                "competency": "Identity verification",
+                "statement": "Establishes an algebraic identity on given values by evaluating each side independently.",
+                "knowledge_refs": [
+                    "Distributive law",
+                    "Worked verification"
+                ],
+                "ability_refs": [
+                    "Verify distributivity on given rationals"
+                ],
+                "skill_refs": [
+                    "Confirming an identity by evaluating both sides"
+                ],
+                "concept_name": "The rule",
+                "topic_id": 25375,
+                "topic_name": "Distributivity"
+            }
+        ],
+        "blooms": [
+            {
+                "level": "Understand",
+                "coverage_score": 40,
+                "concept_name": "The rule",
+                "topic_id": 25375,
+                "topic_name": "Distributivity"
+            },
+            {
+                "level": "Apply",
+                "coverage_score": 60,
+                "concept_name": "The rule",
+                "topic_id": 25375,
+                "topic_name": "Distributivity"
+            }
+        ],
+        "dok": [
+            {
+                "level": "2",
+                "description": "Skills and Concepts",
+                "concept_name": "The rule",
+                "topic_id": 25375,
+                "topic_name": "Distributivity"
+            }
+        ],
+        "prerequisites": [
+            {
+                "concept_name": "Multiplication is associative",
+                "prerequisite_type": "Concept",
+                "necessity": "Mandatory",
+                "_parent_concept": "The rule",
+                "topic_id": 25375,
+                "topic_name": "Distributivity"
+            }
+        ],
+        "misconceptions": [
+            {
+                "misconception": "Distribution reaches only the first term",
+                "statement": "Learners multiply the outside factor by the first term inside the bracket and leave the second term untouched.",
+                "root_cause": "The written layout places the factor next to the first term only, so the second looks unconnected to it.",
+                "correction": "Draw an arrow from the outside factor to every term inside the bracket before any multiplying begins.",
+                "concept_name": "The rule",
+                "topic_id": 25375,
+                "topic_name": "Distributivity"
+            }
+        ],
+        "real_world_applications": [
+            {
+                "application_type": "Daily Life",
+                "example": "Finding the cost of six items priced as a sum of two parts by multiplying each part and then adding.",
+                "relevance": "High",
+                "concept_name": "The rule",
+                "topic_id": 25375,
+                "topic_name": "Distributivity"
+            }
+        ],
+        "pedagogy_recommendations": [
+            {
+                "strategy": "Art Integrated Teaching",
+                "why_effective": "An area diagram split into two rectangles shows the two separate products adding to the whole.",
+                "concept_characteristics": [
+                    "area model",
+                    "algebraic identity"
+                ],
+                "concept_name": "The rule",
+                "topic_id": 25375,
+                "topic_name": "Distributivity"
+            }
+        ],
+        "learning_objectives": [
+            {
+                "objective": "Compute both sides of the distributive identity on -3/4, 2/3 and -5/6 and show they agree.",
+                "objective_type": "Ability",
+                "priority": "High",
+                "concept_name": "The rule",
+                "topic_id": 25375,
+                "topic_name": "Distributivity"
+            }
+        ],
+        "learning_outcomes": [
+            {
+                "outcome": "Evaluates both sides of a distributive statement over addition and reports them as equal.",
+                "outcome_type": "Ability Outcome",
+                "measurable": true,
+                "assessment_ready": true,
+                "concept_name": "The rule",
+                "topic_id": 25375,
+                "topic_name": "Distributivity"
+            }
+        ],
+        "assessment_blueprint": [
+            {
+                "assessment_type": "Numerical",
+                "bloom_level": "Apply",
+                "dok_level": "2",
+                "difficulty": "Medium",
+                "marks": 3,
+                "recommended_question": "Verify that -3/4 times the sum of 2/3 and -5/6 equals the sum of the two separate products.",
+                "concept_name": "The rule",
+                "topic_id": 25375,
+                "topic_name": "Distributivity"
+            },
+            {
+                "assessment_type": "MCQ",
+                "bloom_level": "Understand",
+                "dok_level": "2",
+                "difficulty": "Easy",
+                "marks": 1,
+                "recommended_question": "Over which two operations does multiplication distribute for the rational numbers?",
+                "concept_name": "The rule",
+                "topic_id": 25375,
+                "topic_name": "Distributivity"
+            }
+        ]
+    },
+    {
+        "concept": {
+            "concept_type": "Procedure",
+            "definition": "The exercises ask for answers found by distributivity rather than by direct calculation, turning a proved identity into a tool that saves work.",
+            "importance": "Important",
+            "difficulty": "Medium",
+            "confidence": 0.93,
+            "concept_name": "Using it to simplify",
+            "concept_id": "C451-22"
+        },
+        "topic_id": 25375,
+        "topic_name": "Distributivity",
+        "knowledge_items": [
+            {
+                "knowledge": "Distributivity as a tool",
+                "statement": "A property once proved can be used in reverse to gather a common factor and shorten the calculation that follows.",
+                "knowledge_type": "Principle",
+                "confidence": 0.93,
+                "concept_name": "Using it to simplify",
+                "topic_id": 25375,
+                "topic_name": "Distributivity"
+            }
+        ],
+        "abilities": [
+            {
+                "ability": "Simplify by taking out a common factor",
+                "verb": "Simplify",
+                "description": "Spot a repeated factor across two products and rewrite the expression as a single bracketed multiplication.",
+                "knowledge_refs": [
+                    "Distributivity as a tool"
+                ],
+                "concept_name": "Using it to simplify",
+                "topic_id": 25375,
+                "topic_name": "Distributivity"
+            }
+        ],
+        "skills": [
+            {
+                "skill": "Choosing the efficient route through a calculation",
+                "ability_refs": [
+                    "Simplify by taking out a common factor"
+                ],
+                "concept_name": "Using it to simplify",
+                "topic_id": 25375,
+                "topic_name": "Distributivity"
+            }
+        ],
+        "competencies": [
+            {
+                "competency": "Strategic calculation",
+                "statement": "Selects a proved property instead of brute arithmetic whenever it shortens the work.",
+                "knowledge_refs": [
+                    "Distributivity as a tool"
+                ],
+                "ability_refs": [
+                    "Simplify by taking out a common factor"
+                ],
+                "skill_refs": [
+                    "Choosing the efficient route through a calculation"
+                ],
+                "concept_name": "Using it to simplify",
+                "topic_id": 25375,
+                "topic_name": "Distributivity"
+            }
+        ],
+        "blooms": [
+            {
+                "level": "Apply",
+                "coverage_score": 60,
+                "concept_name": "Using it to simplify",
+                "topic_id": 25375,
+                "topic_name": "Distributivity"
+            },
+            {
+                "level": "Evaluate",
+                "coverage_score": 40,
+                "concept_name": "Using it to simplify",
+                "topic_id": 25375,
+                "topic_name": "Distributivity"
+            }
+        ],
+        "dok": [
+            {
+                "level": "3",
+                "description": "Strategic Thinking",
+                "concept_name": "Using it to simplify",
+                "topic_id": 25375,
+                "topic_name": "Distributivity"
+            }
+        ],
+        "prerequisites": [
+            {
+                "concept_name": "The rule",
+                "prerequisite_type": "Concept",
+                "necessity": "Mandatory",
+                "_parent_concept": "Using it to simplify",
+                "topic_id": 25375,
+                "topic_name": "Distributivity"
+            }
+        ],
+        "misconceptions": [
+            {
+                "misconception": "Distributivity only ever expands",
+                "statement": "Learners use the identity to open brackets but never to collect a common factor back in.",
+                "root_cause": "Practice almost always runs in the expanding direction, so the reverse move is never rehearsed.",
+                "correction": "Set exercises where gathering the common factor first makes the arithmetic markedly shorter.",
+                "concept_name": "Using it to simplify",
+                "topic_id": 25375,
+                "topic_name": "Distributivity"
+            }
+        ],
+        "real_world_applications": [
+            {
+                "application_type": "Career",
+                "example": "A shopkeeper totals a repeated fractional discount once for the whole order rather than item by item.",
+                "relevance": "Medium",
+                "concept_name": "Using it to simplify",
+                "topic_id": 25375,
+                "topic_name": "Distributivity"
+            }
+        ],
+        "pedagogy_recommendations": [
+            {
+                "strategy": "Game Based Teaching",
+                "why_effective": "A timed race between the direct route and the distributive route makes the saving in effort obvious.",
+                "concept_characteristics": [
+                    "efficiency",
+                    "strategy choice"
+                ],
+                "concept_name": "Using it to simplify",
+                "topic_id": 25375,
+                "topic_name": "Distributivity"
+            }
+        ],
+        "learning_objectives": [
+            {
+                "objective": "Simplify a given rational expression by applying distributivity rather than direct calculation.",
+                "objective_type": "Skill",
+                "priority": "High",
+                "concept_name": "Using it to simplify",
+                "topic_id": 25375,
+                "topic_name": "Distributivity"
+            }
+        ],
+        "learning_outcomes": [
+            {
+                "outcome": "Rewrites a sum of two products sharing a factor as one bracketed product and evaluates it.",
+                "outcome_type": "Skill Outcome",
+                "measurable": true,
+                "assessment_ready": true,
+                "concept_name": "Using it to simplify",
+                "topic_id": 25375,
+                "topic_name": "Distributivity"
+            }
+        ],
+        "assessment_blueprint": [
+            {
+                "assessment_type": "Numerical",
+                "bloom_level": "Apply",
+                "dok_level": "3",
+                "difficulty": "Medium",
+                "marks": 3,
+                "recommended_question": "Use distributivity to find the value of 2/5 times 3/7 plus 2/5 times 4/7 without multiplying twice.",
+                "concept_name": "Using it to simplify",
+                "topic_id": 25375,
+                "topic_name": "Distributivity"
+            },
+            {
+                "assessment_type": "HOTS",
+                "bloom_level": "Evaluate",
+                "dok_level": "3",
+                "difficulty": "Hard",
+                "marks": 3,
+                "recommended_question": "When is using distributivity quicker than direct calculation? Illustrate with an example from this chapter.",
+                "concept_name": "Using it to simplify",
+                "topic_id": 25375,
+                "topic_name": "Distributivity"
+            }
+        ]
+    }
+]

@@ -1,0 +1,394 @@
+{
+  "concept_ids": [
+    7187,
+    7188,
+    7189,
+    7190
+  ],
+  "interaction": {
+    "kind": "scenario",
+    "template": "story_branching_scenario",
+    "reason": "FIXTURE: a hand-written story act used to test the player and validators.",
+    "mission": {
+      "title": "Predict the shot",
+      "body": "Help the school team decide whether a hit would clear the boundary by building a simple model of the shot, and decide what the model should and should not include."
+    },
+    "situation": "Your school cricket team needs to know whether a shot would clear the boundary.",
+    "start": "s1",
+    "nodes": [
+      {
+        "id": "s1",
+        "kind": "scene",
+        "title": "The match is tomorrow",
+        "concept_ids": [
+          7187
+        ],
+        "prompt": "",
+        "image": {
+          "type": "diagram",
+          "role": "diagram",
+          "url": "study-deck-image:10",
+          "alt": "Diagram: Models across the sciences. A scientific model connected to a car as a point, atoms as spheres, cells as diagrams and the Earth as a smooth sphere.",
+          "caption": "Notice that each model keeps only a few features of the real thing.",
+          "width": 1280,
+          "height": 720,
+          "licence": null,
+          "source_url": null,
+          "creator": null,
+          "attribution": "",
+          "attribution_required": false
+        },
+        "extra_images": [
+          {
+            "type": "diagram",
+            "role": "close_up",
+            "url": "study-deck-image:9",
+            "alt": "Diagram: Will the ball cross the boundary? Include: mass of the ball, speed it was hit, direction it was hit. Ignore: brand of the bat, colour of the ball, grass on the field.",
+            "caption": null,
+            "width": 1280,
+            "height": 720,
+            "licence": null,
+            "source_url": null,
+            "creator": null,
+            "attribution": "",
+            "attribution_required": false
+          }
+        ],
+        "body": "Your school cricket team has a problem. The captain wants to know whether a hit like the one in the nets would clear the boundary rope, and the match is tomorrow. Kiran has a notebook, Maya the teacher has a measuring tape, and nobody can test every shot. You suggest building a model: a simplified picture of the real situation that the team can reason about before the match.",
+        "explain": {
+          "title": "What a model is",
+          "body": "A model is a simplified representation of a real system. It does not copy everything about the shot. It keeps the details that help answer the question and leaves the rest out, which is what makes it quick to use and easy to think with."
+        },
+        "choices": [
+          {
+            "id": "s1-1",
+            "text": "Continue",
+            "outcome": "",
+            "why": "",
+            "sound": true,
+            "next": "d1"
+          }
+        ]
+      },
+      {
+        "id": "d1",
+        "kind": "decision",
+        "title": "Your first model",
+        "concept_ids": [
+          7189
+        ],
+        "body": "",
+        "image": {
+          "type": "diagram",
+          "role": "diagram",
+          "url": "study-deck-image:9",
+          "alt": "Diagram: Will the ball cross the boundary? Include: mass of the ball, speed it was hit, direction it was hit. Ignore: brand of the bat, colour of the ball, grass on the field.",
+          "caption": null,
+          "width": 1280,
+          "height": 720,
+          "licence": null,
+          "source_url": null,
+          "creator": null,
+          "attribution": "",
+          "attribution_required": false
+        },
+        "prompt": "What should your first model of the shot include?",
+        "choices": [
+          {
+            "id": "d1-a",
+            "text": "Only the ball's mass, how fast it was hit and its direction",
+            "outcome": "Within minutes the team has a clear prediction: with this speed and direction the ball lands just inside the rope.",
+            "why": "The question you asked decides which details are relevant. Mass, speed and direction help answer it, so a model built on them stays small and useful.",
+            "sound": true,
+            "next": "s2a"
+          },
+          {
+            "id": "d1-b",
+            "text": "Those three details and also the bat's brand and the colour of the ball",
+            "outcome": "The notes grow quickly, but Kiran still gets a prediction from the first three details, a little later than hoped.",
+            "why": "Extra details cost effort and add nothing to this question, but the model still works because the important details are in it.",
+            "sound": false,
+            "next": "s2b"
+          },
+          {
+            "id": "d1-c",
+            "text": "Only the speed of the hit, because it is the easiest thing to measure",
+            "outcome": "The prediction comes quickly, but Maya points out that two shots at the same speed can land in very different places.",
+            "why": "A model that leaves out a detail that matters, such as direction, is quick to build but gives a less reliable answer.",
+            "sound": false,
+            "next": "s2c"
+          }
+        ]
+      },
+      {
+        "id": "s2a",
+        "kind": "scene",
+        "title": "A model you can use",
+        "concept_ids": [
+          7189,
+          7188
+        ],
+        "body": "Because the model is small, the team can use it straight away. Kiran reads out the three details, Maya checks the direction on the field, and the captain nods at the prediction. Nobody misses the colour of the ball or the brand of the bat, because those details do not change where the ball lands. The team spends the saved time practising instead.",
+        "explain": {
+          "title": "Leaving details out on purpose",
+          "body": "Ignoring a detail that does not affect the answer is not a mistake. Choosing what to ignore is part of building the model, and the question being asked decides which details count as relevant."
+        },
+        "choices": [
+          {
+            "id": "s2a-1",
+            "text": "Continue",
+            "outcome": "",
+            "why": "",
+            "sound": true,
+            "next": "s3"
+          }
+        ]
+      },
+      {
+        "id": "s2b",
+        "kind": "scene",
+        "title": "Too much in the notes",
+        "concept_ids": [
+          7188,
+          7189
+        ],
+        "body": "Kiran fills two pages with details about the bat, the ball and the grass, and then Maya asks which of them could change where the ball lands. The team crosses out the brand and the colour one by one and keeps the three that matter. It takes longer, but the notes now look like a model instead of a diary of the afternoon.",
+        "explain": {
+          "title": "Why some details are set aside",
+          "body": "A model becomes useful when details that do not matter to the question are set aside. Every extra detail makes the model harder to use without making the answer any better."
+        },
+        "choices": [
+          {
+            "id": "s2b-1",
+            "text": "Continue",
+            "outcome": "",
+            "why": "",
+            "sound": true,
+            "next": "s3"
+          }
+        ]
+      },
+      {
+        "id": "s2c",
+        "kind": "scene",
+        "title": "A missing detail",
+        "concept_ids": [
+          7188,
+          7189
+        ],
+        "body": "The team predicts the landing spot from speed alone, and the first test shot goes in a different direction from the one they expected. Maya asks the team what they left out. Kiran realises that the direction of the hit changes everything, so the model needs one more detail before it can answer the captain's question.",
+        "explain": {
+          "title": "Keeping what matters",
+          "body": "Simplifying too far is also a problem. A model has to keep every detail that really affects the answer, so deciding what to include depends on the question and on what is known about the system."
+        },
+        "choices": [
+          {
+            "id": "s2c-1",
+            "text": "Continue",
+            "outcome": "",
+            "why": "",
+            "sound": true,
+            "next": "s3"
+          }
+        ]
+      },
+      {
+        "id": "s3",
+        "kind": "scene",
+        "title": "The prediction is slightly short",
+        "concept_ids": [
+          7187
+        ],
+        "body": "Whichever way the team got here, they now have a simple model and a prediction. In the next match the ball lands a little beyond it. Maya reminds them that a model is a simplified representation, so a small gap is expected. The question now is whether adding a detail would bring the prediction closer to what really happens.",
+        "explain": {
+          "title": "Models and accuracy",
+          "body": "A model gains accuracy when details that matter to the question are added, but it also becomes more complicated to use. Model builders balance the two, and they stop when the model is good enough for the question."
+        },
+        "variants": [
+          {
+            "after": "s2a",
+            "body": "The team arrives with a clean, quick model and a prediction that took very little time, so they have energy left to ask what the model might be missing."
+          },
+          {
+            "after": "s2b",
+            "body": "The team arrives with a prediction that took longer than it should have, and with crossed-out notes that remind them that extra details cost effort."
+          },
+          {
+            "after": "s2c",
+            "body": "The team arrives with a prediction built on a model that first left out the direction, so they already know that a missing detail can send a prediction the wrong way."
+          }
+        ],
+        "choices": [
+          {
+            "id": "s3-1",
+            "text": "Continue",
+            "outcome": "",
+            "why": "",
+            "sound": true,
+            "next": "d2"
+          }
+        ]
+      },
+      {
+        "id": "d2",
+        "kind": "decision",
+        "title": "Improving the model",
+        "concept_ids": [
+          7190
+        ],
+        "body": "",
+        "prompt": "Which approach should the team take to make the prediction more accurate?",
+        "choices": [
+          {
+            "id": "d2-a",
+            "text": "Add the air pushing back on the ball as it flies",
+            "outcome": "With air resistance added, the prediction moves closer to where the ball really lands, though the model is now harder to work with.",
+            "why": "Adding a detail that really affects the motion makes a model more accurate, but it also makes it more complicated to use.",
+            "sound": true,
+            "next": "s4a"
+          },
+          {
+            "id": "d2-b",
+            "text": "Repeat the measurements of the hit more carefully before changing the model",
+            "outcome": "The measurements are tidier and the prediction barely moves, so the team learns that the gap does not come from careless measuring.",
+            "why": "Better measurements help only when they are the weak point; here the model itself leaves out something that matters, so the gap remains.",
+            "sound": false,
+            "next": "s4b"
+          },
+          {
+            "id": "d2-c",
+            "text": "Add the brand of the bat, since it is part of the real shot",
+            "outcome": "The prediction does not change at all, and the model is now longer and slower to use for no gain.",
+            "why": "A detail that does not affect where the ball lands adds effort and gives no accuracy; accuracy comes from details that matter.",
+            "sound": false,
+            "next": "s4c"
+          }
+        ]
+      },
+      {
+        "id": "s4a",
+        "kind": "scene",
+        "title": "A closer match",
+        "concept_ids": [
+          7190
+        ],
+        "image": {
+          "type": "diagram",
+          "role": "diagram",
+          "url": "study-deck-image:5",
+          "alt": "Diagram: Refining the cricket model. Steps in order: mass, speed and direction; add air resistance; add spin of the ball; add stitching of the seam.",
+          "caption": "Notice that each added detail makes the model more accurate and more complicated.",
+          "width": 1280,
+          "height": 720,
+          "licence": null,
+          "source_url": null,
+          "creator": null,
+          "attribution": "",
+          "attribution_required": false,
+          "focus": {
+            "x": 18,
+            "y": 30,
+            "w": 62,
+            "h": 38
+          }
+        },
+        "body": "The team adds the air pushing back on the ball and compares again. The prediction is closer. They could keep adding the spin of the ball and the stitching of the seam, each time becoming a little more accurate and a lot more complicated. At some point Maya asks whether the model is already good enough for the captain's question.",
+        "explain": {
+          "title": "How much detail is enough",
+          "body": "Adding detail makes a model more accurate but harder to use. The right amount of detail depends on the question, so builders stop adding when the model answers it well enough."
+        },
+        "choices": [
+          {
+            "id": "s4a-1",
+            "text": "Continue",
+            "outcome": "",
+            "why": "",
+            "sound": true,
+            "next": "e1"
+          }
+        ]
+      },
+      {
+        "id": "s4b",
+        "kind": "scene",
+        "title": "Careful but no closer",
+        "concept_ids": [
+          7190,
+          7188
+        ],
+        "body": "Kiran repeats every measurement with the tape and the stopwatch and writes them neatly. The prediction stays almost where it was. Maya smiles: the care was not wasted, because it ruled out one cause, but it also shows that the gap lives in what the model leaves out and not in how the team measured.",
+        "explain": {
+          "title": "Where the gap comes from",
+          "body": "A gap between a model and the real system can come from the measurements or from the model. When careful measurements do not close the gap, the model probably leaves out a detail that matters."
+        },
+        "choices": [
+          {
+            "id": "s4b-1",
+            "text": "Continue",
+            "outcome": "",
+            "why": "",
+            "sound": true,
+            "next": "e2"
+          }
+        ]
+      },
+      {
+        "id": "s4c",
+        "kind": "scene",
+        "title": "No better than before",
+        "concept_ids": [
+          7190,
+          7188
+        ],
+        "body": "The team adds the bat's brand and runs the prediction again. Nothing moves. The model is longer but not better, and Kiran groans at the extra page. Maya asks which detail could change the flight of the ball, because only details like that can improve the answer, and the team removes the brand again.",
+        "explain": {
+          "title": "Details that do not matter",
+          "body": "Adding a detail that does not affect the outcome costs effort and gains no accuracy. Asking which details could really change the result is how model builders decide what to keep."
+        },
+        "choices": [
+          {
+            "id": "s4c-1",
+            "text": "Continue",
+            "outcome": "",
+            "why": "",
+            "sound": true,
+            "next": "e2"
+          }
+        ]
+      },
+      {
+        "id": "e1",
+        "kind": "ending",
+        "title": "The captain gets her answer",
+        "concept_ids": [
+          7190
+        ],
+        "choices": [],
+        "prompt": "",
+        "body": "The team tells the captain that the ball would just clear the rope and explains how they built that answer: a simple model, details chosen by the question, and one more detail added because it truly affects the flight. She trusts the prediction because she can see what it leaves out, and the team feels ready for tomorrow."
+      },
+      {
+        "id": "e2",
+        "kind": "ending",
+        "title": "A model worth revisiting",
+        "concept_ids": [
+          7190
+        ],
+        "choices": [],
+        "prompt": "",
+        "body": "The model works and the captain still gets a useful prediction, but the team spent time on something that did not help. They agree on a habit for next time: ask first which details could change the answer, then test the simplest model, then add detail only when it is needed. Kiran writes the habit on the first page of the notebook.",
+        "variants": [
+          {
+            "after": "s4b",
+            "body": "The team ends the day knowing that careful measuring was not the problem, which narrows down where to look next time."
+          },
+          {
+            "after": "s4c",
+            "body": "The team ends the day knowing that an extra detail can cost time and change nothing, which is the lesson they write at the top of the page."
+          }
+        ]
+      }
+    ],
+    "conclusion": "A model keeps what matters to the question and leaves out the rest; adding a detail helps only if it truly affects the outcome."
+  }
+}

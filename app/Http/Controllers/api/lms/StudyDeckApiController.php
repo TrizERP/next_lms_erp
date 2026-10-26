@@ -270,6 +270,19 @@ class StudyDeckApiController extends Controller
                 ? $q->where('sub_institute_id', 1)->orWhere('sub_institute_id', $tenant)
                 : $q->where('sub_institute_id', $tenant));
 
+        // A story lesson (its own file name and the Interactive category). It is found only by its content id: the chapter's
+        // default deck, asked for without one, remains the Classroom Presentation.
+        $story = fn () => DB::table('content_master')
+            ->where('chapter_id', $chapterId)
+            ->where('source', config('claude.source_label', 'Claude AI'))
+            ->where('content_category', \App\Services\StudyDeck\Story\StoryTemplate::CATEGORY)
+            ->where('file_type', 'pptx')
+            ->where('filename', 'like', 'study\_story\_%')
+            ->where(fn ($q) => $q->whereNull('show_hide')->orWhere('show_hide', '<>', 0))
+            ->where(fn ($q) => $isLms === 'Y'
+                ? $q->where('sub_institute_id', 1)->orWhere('sub_institute_id', $tenant)
+                : $q->where('sub_institute_id', $tenant));
+
         // The rows of this chapter that are study DOCUMENTS (revision notes, remedial class, classroom activities): the same
         // school rule, a PDF as the primary file, and the name the publisher writes. Found only by their content id.
         $documents = fn () => DB::table('content_master')
@@ -286,8 +299,10 @@ class StudyDeckApiController extends Controller
         // A content item the learner chose is exactly that deck, never "the latest one".
         $contentId = (int) $request->input('content_id', 0);
         $row = $contentId > 0
-            ? $visible()->where('id', $contentId)->first(['id', 'filename', 'sub_institute_id'])
-            : $visible()->orderByDesc('id')->get(['id', 'filename', 'sub_institute_id'])->first(fn ($r) => $this->hasDeck((string) $r->filename));
+            ? ($visible()->where('id', $contentId)->first(['id', 'filename', 'sub_institute_id']) ?? $story()->where('id', $contentId)->first(['id', 'filename', 'sub_institute_id']))
+            // Asked for without a content id, the chapter's default deck is the one stored WITHOUT a teaching method: a deck made for
+            // a method is opened by its own id and is never picked as "the latest".
+            : $visible()->orderByDesc('id')->get(['id', 'filename', 'sub_institute_id'])->first(fn ($r) => \App\Services\StudyDeck\StudyDeckPublisher::variantOf((string) $r->filename) === null && $this->hasDeck((string) $r->filename));
 
         $kind = null;
         if (!$row && $contentId > 0) {

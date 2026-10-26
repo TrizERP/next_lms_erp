@@ -62,6 +62,12 @@ class DiagramRenderer
         ['solid' => [190, 24, 93], 'tint' => [252, 231, 243]],
     ];
 
+    /** Steps that are not the one being looked at are drawn in these quiet greys, so the step in focus stands out. */
+    private const QUIET = ['solid' => [148, 163, 184], 'tint' => [241, 245, 249]];
+
+    /** The ring drawn round the step in focus. */
+    private const RING = [245, 158, 11];
+
     /** @return array<int,string> problems with a spec; empty when it can be drawn */
     public static function problems(array $spec): array
     {
@@ -72,6 +78,13 @@ class DiagramRenderer
         }
         if (trim((string) ($spec['title'] ?? '')) === '') {
             $out[] = 'a diagram needs a title';
+        }
+        // `focus` (flow only): the zero-based step to emphasise, for a sequence shown once for each of its steps.
+        if (array_key_exists('focus', $spec) && $spec['focus'] !== null) {
+            $count = count(array_filter(array_map(fn ($x) => trim((string) (is_array($x) ? ($x['text'] ?? '') : $x)), (array) ($spec['nodes'] ?? []))));
+            if ($layout !== 'flow' || !is_int($spec['focus']) || $spec['focus'] < 0 || $spec['focus'] >= $count) {
+                $out[] = 'focus must be the number of one step of a flow diagram';
+            }
         }
 
         $labels = static fn (array $xs) => array_values(array_filter(array_map(fn ($x) => trim((string) (is_array($x) ? ($x['text'] ?? '') : $x)), $xs)));
@@ -131,7 +144,8 @@ class DiagramRenderer
         $nodes = array_map(fn ($n) => trim((string) (is_array($n) ? ($n['text'] ?? '') : $n)), (array) ($spec['nodes'] ?? []));
 
         return match ($spec['layout']) {
-            'flow' => "Diagram: $title. Steps in order: " . implode(', then ', $nodes) . '.',
+            'flow' => "Diagram: $title. Steps in order: " . implode(', then ', $nodes) . '.'
+                . (isset($spec['focus'], $nodes[$spec['focus']]) ? ' The step in focus is ' . $nodes[$spec['focus']] . '.' : ''),
             'hub' => "Diagram: $title. '" . trim((string) $spec['center']) . "' connected to " . implode(', ', $nodes) . '.',
             'compare' => "Diagram: $title. " . trim((string) $spec['left']['heading']) . ': ' . implode('; ', array_map('trim', (array) $spec['left']['items']))
                 . '. ' . trim((string) $spec['right']['heading']) . ': ' . implode('; ', array_map('trim', (array) $spec['right']['items'])) . '.',
@@ -162,7 +176,7 @@ class DiagramRenderer
 
         $nodes = fn () => array_map(fn ($n) => is_array($n) ? $n['text'] : $n, (array) $spec['nodes']);
         match ($spec['layout']) {
-            'flow' => $this->flow($im, $bold, $nodes()),
+            'flow' => $this->flow($im, $bold, $nodes(), isset($spec['focus']) ? (int) $spec['focus'] : null),
             'hub' => $this->hub($im, $bold, (string) $spec['center'], $nodes()),
             'compare' => $this->compare($im, $font, $bold, $spec),
         };
@@ -176,6 +190,64 @@ class DiagramRenderer
         imagedestroy($out);
 
         return ['bytes' => $bytes, 'mime' => 'image/png', 'width' => self::W, 'height' => self::H];
+    }
+
+    /**
+     * A plainly labelled stand-in picture for a scene no picture could be found for: the scene's topic and the ideas it teaches, and a visible
+     * stamp saying it is a placeholder. It is a real PNG like any drawn diagram. Not a layout a model can ask for (it is not in LAYOUTS): only
+     * the picture step calls it, as the last rung of the fallback ladder.
+     *
+     * @param array<int,string> $ideas up to three concept names
+     * @return array{bytes:string,mime:string,width:int,height:int,texts:array<int,string>}
+     */
+    public function placeholder(string $topic, array $ideas, string $stamp): array
+    {
+        $topic = trim((string) preg_replace('/\s+/u', ' ', $topic)) ?: 'Science';
+        $ideas = array_slice(array_values(array_filter(array_map(fn ($t) => trim((string) preg_replace('/\s+/u', ' ', (string) $t)), $ideas))), 0, 3);
+        $font = $this->font();
+        $bold = $this->boldFont();
+
+        $im = imagecreatetruecolor(self::W * self::SS, self::H * self::SS);
+        imagealphablending($im, true);
+        imageantialias($im, true);
+        $this->backdrop($im);
+
+        $this->text($im, $bold, 22, self::MUTED, 60, 70, 'SCENE TOPIC', self::W - 120);
+        [$titleSize, $titleLines] = $this->fit($bold, $topic, self::W - 120, 190, [54, 46, 40, 34, 28], 1.4);
+        foreach ($titleLines as $i => $line) {
+            $this->ttf($im, $bold, $titleSize, self::INK, 60, 150 + (int) round($titleSize * 1.4) * $i, $line);
+        }
+        foreach ([self::TONES[0], self::TONES[1], self::TONES[2]] as $k => $tone) {
+            $this->rect($im, 60 + $k * 44, 160 + (int) round($titleSize * 1.4) * count($titleLines), 44, 6, $tone['solid']);
+        }
+
+        if ($ideas !== []) {
+            $count = count($ideas);
+            $gap = 28;
+            $w = intdiv(self::W - 120 - $gap * ($count - 1), $count);
+            foreach ($ideas as $i => $idea) {
+                $this->box($im, $bold, 60 + $i * ($w + $gap), 400, $w, 130, $idea, false, self::TONES[$i % 3]);
+            }
+        }
+
+        // The stamp: a bar across the foot of the picture that says what this is.
+        $this->rrect($im, 60, 590, self::W - 120, 80, 18, self::INK);
+        $this->circle($im, 112, 630, 18, self::RING, 0);
+        [$stampSize, $stampLines] = $this->fit($bold, $stamp, self::W - 270, 64, [26, 24, 22, 20, 18], 1.5);
+        $startY = 630 + (int) round($stampSize * 0.36) - (int) round((count($stampLines) - 1) * $stampSize * 1.5 / 2);
+        foreach ($stampLines as $i => $line) {
+            $this->ttf($im, $bold, $stampSize, self::WHITE, 150, $startY + (int) round($stampSize * 1.5) * $i, $line);
+        }
+
+        $out = imagecreatetruecolor(self::W, self::H);
+        imagecopyresampled($out, $im, 0, 0, 0, 0, self::W, self::H, self::W * self::SS, self::H * self::SS);
+        imagedestroy($im);
+        ob_start();
+        imagepng($out);
+        $bytes = (string) ob_get_clean();
+        imagedestroy($out);
+
+        return ['bytes' => $bytes, 'mime' => 'image/png', 'width' => self::W, 'height' => self::H, 'texts' => array_merge(['Scene topic', $topic], $ideas, [$stamp])];
     }
 
     /** A pale vertical wash and a few faint cells in the top-right corner: calm, and never behind a label. */
@@ -195,7 +267,7 @@ class DiagramRenderer
         $this->circle($im, 40, 700, 96, self::TONES[1]['solid'], 112);
     }
 
-    private function flow($im, string $bold, array $nodes): void
+    private function flow($im, string $bold, array $nodes, ?int $focus = null): void
     {
         $nodes = array_values(array_map('trim', $nodes));
         ['perRow' => $perRow, 'bw' => $bw, 'bh' => $bh, 'gap' => $gap, 'place' => $place] = self::flowGeometry(count($nodes));
@@ -208,7 +280,7 @@ class DiagramRenderer
                 continue;
             }
             $mid = $y + intdiv($bh, 2);
-            $tone = self::TONES[$i % count(self::TONES)];
+            $tone = $focus === null ? self::TONES[$i % count(self::TONES)] : self::QUIET;
             if ($col < $perRow - 1) {
                 // Within a row: right on even rows, left on odd rows.
                 if ($row % 2 === 0) {
@@ -222,7 +294,15 @@ class DiagramRenderer
         }
         foreach ($nodes as $i => $label) {
             [$x, $y] = $place($i);
-            $this->box($im, $bold, $x, $y, $bw, $bh, $label, $i === 0 || $i === $last, self::TONES[$i % count(self::TONES)]);
+            if ($focus === null) {
+                $this->box($im, $bold, $x, $y, $bw, $bh, $label, $i === 0 || $i === $last, self::TONES[$i % count(self::TONES)]);
+                continue;
+            }
+            // One step in focus: a ring and its own colour; the others recede.
+            if ($i === $focus) {
+                $this->rrect($im, $x - 9, $y - 9, $bw + 18, $bh + 18, 30, self::RING);
+            }
+            $this->box($im, $bold, $x, $y, $bw, $bh, $label, $i === $focus, $i === $focus ? self::TONES[$i % count(self::TONES)] : self::QUIET);
         }
     }
 

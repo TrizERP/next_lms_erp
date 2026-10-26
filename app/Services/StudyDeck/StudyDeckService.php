@@ -5,6 +5,8 @@ namespace App\Services\StudyDeck;
 use App\Services\PAL\Integration\ConceptImageSearchService;
 use App\Services\QuestionGeneration\DragDrop\Contracts\DiagramImageStore;
 use App\Services\StudyDeck\Contracts\Completer;
+use App\Services\StudyDeck\Story\StoryLessonGenerator;
+use App\Services\StudyDeck\Story\StoryTemplate;
 
 /**
  * Orchestrates the chapter -> classroom study deck pipeline:
@@ -37,13 +39,16 @@ class StudyDeckService
         private readonly DeckValidator $validator,
         private readonly ActivityPlanner $activityPlanner = new ActivityPlanner(),
         private readonly ?InteractionPlanner $interactionPlanner = null,
+        private readonly ?StoryLessonGenerator $story = null,
     ) {
     }
 
     public static function make(Completer $completer, DiagramImageStore $images, ?ConceptImageSearchService $search = null): self
     {
         $patterns = new H5pPatternSelector();
-        $imagePlanner = new ImagePlanner($search ?? app(ConceptImageSearchService::class), $images, null, 2.0, new ImageRelevanceJudge($completer));
+        // Generation waits for the picture search (the anonymous API takes 9-17 s); the Learn page keeps its short timeout.
+        $search = ($search ?? app(ConceptImageSearchService::class))->forBatch();
+        $imagePlanner = new ImagePlanner($search, $images, null, 2.0, new ImageRelevanceJudge($completer));
 
         return new self(
             new ConceptContextBuilder(),
@@ -56,6 +61,13 @@ class StudyDeckService
             new DeckValidator(images: $imagePlanner),
             new ActivityPlanner($patterns),
             new InteractionPlanner($completer),
+            // A story's scene pictures are also looked at (by the estate's Gemini client) before they are kept; ordinary decks are not.
+            new StoryLessonGenerator($completer, (new ImagePlanner($search, $images, null, 1.0, new ImageRelevanceJudge($completer)))
+                ->withPixelJudge(new Story\StoryPixelJudge(app(\App\Domain\AI\Support\GeminiClient::class)))
+                ->withProviders([
+                    'nasa' => fn (string $q, int $n): array => app(\App\Services\PAL\Integration\NasaImageSearch::class)->search($q, $n),
+                    'pexels' => fn (string $q, int $n): array => app(\App\Services\PAL\Integration\PexelsImageSearch::class)->search($q, $n),
+                ])),
         );
     }
 
@@ -104,32 +116,152 @@ class StudyDeckService
     {
         $say = $progress ?? fn () => null;
 
+        // The story template (Study Deck V3): the same pipeline stages, with the story planner and writer in place of the slide planner.
+        if (($options['template'] ?? null) === StoryTemplate::KEY) {
+            return $this->fromRawStory($raw, $options, $say);
+        }
+
         [$context, $selection, $eligible, $map] = $this->prepare($raw, $options, $say);
 
-        $say('plan', 'Stage 1: planning slides with Claude');
+        $say('plan', 'Stage 1: planning slides with the model');
         try {
             $plan = $this->planner->plan($context, $map, $eligible);
         } catch (\RuntimeException $e) {
-            $dir = storage_path('app/study-deck/chapter-' . (int) $raw['chapter']['id']);
+            $dir = (string) ($options['rejected_replies_dir'] ?? storage_path('app/study-deck/chapter-' . (int) $raw['chapter']['id']));
             @mkdir($dir, 0775, true);
             file_put_contents($dir . '/rejected-plan-replies.json', json_encode($this->planner->replies, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
 
             throw new \RuntimeException($e->getMessage() . "\n(raw replies saved to $dir/rejected-plan-replies.json)", 0, $e);
         }
+        // The method the deck was planned for travels with the plan, so the later stages and the saved bundle know it.
+        if (!empty($map['teaching_method'])) {
+            $plan['teaching_method'] = $map['teaching_method'];
+        }
         $say('plan', count($plan['slides']) . ' slides planned');
 
-        $say('content', 'Stage 2: writing slide content with Claude');
+        $say('content', 'Stage 2: writing slide content with the model');
         $content = $this->contentGenerator->generate($context, $map, $plan, fn ($done, $total) => $say('content', "$done/$total slides written"));
 
         $say('images', 'Finding openly licensed images');
         $images = $this->imagePlanner->plan($plan['slides'], $content, function ($n, $r) use ($say) {
             $say('images', isset($r['missing']) ? "slide $n: none ({$r['missing']})" : "slide $n: " . (($r['type'] ?? 'photo') === 'diagram' ? 'drawn diagram' : $r['licence']));
         });
+        if (!empty($map['limits']['require_every_slide_image'])) {
+            $images = $this->imagePlanner->fillMissingWithDiagrams($plan['slides'], $map, $images, function ($n) use ($say) {
+                $say('images', "slide $n: generated fallback diagram");
+            });
+        }
 
         $say('interact', 'Stage 3: deciding which slides earn an interaction');
         $interactions = $this->interactionPlanner?->plan($context, $map, $plan, $content, $images, fn ($found, $total) => $say('interact', "$found interaction(s) so far")) ?? [];
 
         return $this->finish($context, $selection, $eligible, $map, $plan, $content, $images, $interactions, $say);
+    }
+
+    /**
+     * A story lesson: a story bible, then for every act a CHECKED skeleton and its written, illustrated story (see Story\StoryLessonGenerator),
+     * assembled into the plan, slide content and interactions the existing renderer takes, and judged by the existing validator in its story
+     * mode. Nothing is stored: the caller (the artisan command, then the store workflow) decides that after review.
+     *
+     * @param array<string,mixed> $raw ConceptContextBuilder::load()
+     * @param array<string,mixed> $options as generate(), plus story_config (StoryTemplate::resolve()['config'], default: the school's)
+     * @return array<string,mixed> as fromRaw(), plus `story` (the bible, the notes and the checked skeletons)
+     */
+    private function fromRawStory(array $raw, array $options, callable $say): array
+    {
+        if ($this->story === null) {
+            throw new \RuntimeException('This service was built without a story generator.');
+        }
+        // A story is not practice: no bank question is offered, and the teaching method shapes the story rather than a slide sequence.
+        $options['per_concept'] = 0;
+        [$context, $selection, $eligible, $map] = $this->prepare($raw, $options, $say);
+        $method = $map['teaching_method'] ?? null;
+        unset($map['teaching_method']);
+        $config = $options['story_config'] ?? StoryTemplate::resolve((int) ($raw['chapter']['sub_institute_id'] ?? $options['tenant'] ?? 1))['config'];
+
+        // Picture coverage (a run that asks for it): every scene and ending ends with a picture of its own, by the ladder in StoryPictureCover.
+        $cover = null;
+        $pictureDeadline = null;
+        if (!empty($options['image_coverage'])) {
+            $config['image_coverage'] = true;
+            $config['images'] = [0, max(60, (int) ($config['images'][1] ?? 10))];   // a main picture per scene and ending, and room for supporting ones
+            $pictureDeadline = microtime(true) + max(1, (float) ($options['story_picture_seconds'] ?? 120));
+            $this->story->writer->setDeadline($pictureDeadline);
+            $cover = $this->story->enableCoverage(
+                new Story\StoryImageLibrary($options['image_library'] ?? null),
+                !empty($options['ai_scene_art']) ? new Story\SceneIllustrator(null, (int) ($options['ai_scene_max'] ?? 60), 'gemini image model', 90, $options['tenant'] ?? null) : null,
+                !empty($options['allow_placeholder'])
+            );
+            // Preload optional topic-matched pictures. An empty pool must not block the scene-specific related/topic search ladder below;
+            // Gemini illustrations remain available as a later checked fallback.
+            if ($cover !== null) {
+                $chapterRow = (array) ($context['chapter'] ?? []);
+                $chapterName = (string) ($chapterRow['chapter_name'] ?? $chapterRow['name'] ?? '');
+                $topicQueries = array_map(fn ($topic) => (string) ($topic['name'] ?? ''), (array) ($context['topics'] ?? []));
+                $conceptQueries = array_map(fn ($concept) => (string) ($concept['name'] ?? ''), array_slice((array) ($context['concepts'] ?? []), 0, 8));
+                $generic = $cover->prepareGenericPool([
+                    'chapter' => $chapterName,
+                    'subject' => (string) ($chapterRow['subject_name'] ?? ''),
+                    'generic_queries' => array_values(array_unique(array_filter(array_merge($topicQueries, [$chapterName], $conceptQueries)))),
+                ], 4, $pictureDeadline);
+                $say('pictures', 'Generic educational pictures ready: ' . $generic);
+            }
+            $say('pictures', 'Picture coverage on: exact, related, chapter-topic, textbook, reused, AI-generated when enabled, topic-matched fallback and an explicitly enabled placeholder');
+        }
+        $methodKey = is_string($method) ? $method : (isset($method['key']) ? (string) $method['key'] : null);
+        if (isset($options['story_prebuilt'])) {
+            // A finished story handed in (a bundle from an earlier run): its text is not written again.
+            $story = StoryLessonGenerator::prebuilt($map, $config, $options['story_prebuilt']);
+            $say('story', 'Using the finished story of an earlier run (' . count($story['acts']) . ' acts); no text is rewritten');
+        } else {
+            $story = $this->story->generate($context, $map, $config, $methodKey, $say, $options['story_checkpoint_dir'] ?? null);
+        }
+        $pictureReport = null;
+        if ((float) ($options['picture_seconds'] ?? 0) > 0) {
+            // The picture pass: the best relevant pictures for the scenes that have none, within a time budget, without touching any text.
+            $pass = $this->story->repicture($context, $map, $config, $methodKey, $story, (float) $options['picture_seconds'], $say, ['plan' => $options['picture_plan'] ?? [], 'misses' => $options['picture_misses'] ?? [], 'curated' => $options['picture_curated'] ?? [], 'curated_only' => (bool) ($options['picture_curated_only'] ?? false)]);
+            $story = $pass['story'];
+            $story['notes'] = array_merge($story['notes'] ?? [], array_map(fn ($n) => 'Pictures: ' . $n, $pass['notes']));
+            $pictureReport = ['report' => $pass['report'], 'plan' => $pass['plan'], 'misses' => $pass['misses']];
+        }
+        if ($cover !== null) {
+            // Whichever way the acts were built (written now, kept from an earlier run, handed in), none leaves here with a bare scene.
+            $this->story->writer->useMap($map);
+            foreach ($story['acts'] as $ai => $a) {
+                $coverNotes = [];
+                $story['acts'][$ai]['interaction'] = $this->story->writer->coverInteraction($a['interaction'], $context, $a['act'], $config, $coverNotes, $pictureDeadline);
+                $story['notes'] = array_merge($story['notes'] ?? [], array_map(fn ($n) => 'Pictures: ' . $n, $coverNotes));
+            }
+            $cover->library()->save();
+        }
+        $this->story->writer->setDeadline(null);
+        ['plan' => $plan, 'content' => $content, 'images' => $images, 'interactions' => $interactions] = StoryLessonGenerator::assemble($context, $map, $story);
+        $say('plan', count($plan['slides']) . ' slides assembled (' . count($story['acts']) . ' story acts)');
+
+        $map['story_mode'] = true;
+        $map['story_config'] = $config;
+        $map['target_slides'] = ['min' => 3, 'max' => count($plan['slides']) + 4];
+        $result = $this->finish($context, $selection, [], $map, $plan, $content, $images, $interactions, $say);
+        if ($method !== null) {
+            $key = is_string($method) ? $method : (string) ($method['key'] ?? '');
+            $result['report']['teaching_method'] = ['key' => $key, 'followed' => true, 'errors' => [], 'applied_to' => 'the story'];
+        }
+        if ($pictureReport !== null) {
+            $result['pictures'] = $pictureReport;
+        }
+        if ($cover !== null) {
+            $ai = $cover->illustrator();
+            $result['picture_coverage'] = [
+                'given_by_the_ladder' => $cover->given, 'searches_made' => $cover->searches, 'search_failures' => $cover->searchFailures, 'problems' => $cover->problems, 'log' => $cover->log,
+                'ai_scene_art' => $ai === null ? ['enabled' => false] : ['enabled' => true, 'made' => $ai->made, 'failed' => $ai->failed, 'unavailable' => $ai->unavailable, 'last_error' => $ai->lastError],
+                'library_pictures' => $cover->library()->count(),
+                'summary' => Story\StoryPictureCover::summarise(array_map(fn ($a) => $a['interaction'], $story['acts'])),
+            ];
+        }
+        $result['story'] = ['template' => StoryTemplate::KEY, 'version' => (int) $config['version'], 'bible' => $story['bible'], 'notes' => $story['notes'],
+            'acts' => array_map(fn ($a) => ['key' => $a['act']['key'], 'title' => $a['act']['title'], 'kind' => $a['act']['kind'], 'required_concept_ids' => $a['act']['required_ids'], 'skeleton' => $a['skeleton']], $story['acts'])];
+
+        return $result;
     }
 
     /**
@@ -172,7 +304,9 @@ class StudyDeckService
             );
         }
 
-        return $this->finish($context, $selection, $eligible, $map, $plan, $saved['content'], $images, $interactions, $say);
+        $content = $this->contentGenerator->finalize($map, $plan, $saved['content']);
+
+        return $this->finish($context, $selection, $eligible, $map, $plan, $content, $images, $interactions, $say);
     }
 
     /**
@@ -183,6 +317,10 @@ class StudyDeckService
     private function prepare(array $raw, array $options, callable $say): array
     {
         $context = $this->contextBuilder->assemble($raw);
+        // The chapter's own textbook pictures, a fallback AFTER the web search found nothing suitable (none configured: nothing changes).
+        $textbook = TextbookImages::fromConfig();
+        $this->imagePlanner->withTextbookImages($textbook, (int) ($raw['chapter']['id'] ?? 0));
+        $this->story?->withTextbookImages($textbook, (int) ($raw['chapter']['id'] ?? 0));
         $say('context', sprintf('%d topics, %d concepts, %d without intelligence', count($context['topics']), count($context['concepts']), count($context['unmatched_concepts'])));
 
         $selection = $this->questionSelector->select(
@@ -193,7 +331,10 @@ class StudyDeckService
         $eligible = $selection['eligible'];
         $say('questions', sprintf('%d questions considered, %d excluded as not self-contained or unusable', count((array) $raw['questions']), count($selection['excluded'])));
 
-        $map = $this->learningPlan->build($context, $eligible, (int) ($options['min_slides'] ?? 30), (int) ($options['max_slides'] ?? 35), (array) ($options['limits'] ?? []));
+        $map = $this->learningPlan->build($context, $eligible, (int) ($options['min_slides'] ?? 30), (int) ($options['max_slides'] ?? 35), (array) ($options['limits'] ?? []), $options['teaching_method'] ?? null);
+        if (!empty($options['require_every_slide_image'])) {
+            $map['limits']['require_every_slide_image'] = 1;
+        }
         $say('map', 'Learning map built' . ($map['warnings'] ? ' (' . count($map['warnings']) . ' warning(s))' : ''));
 
         return [$context, $selection, $eligible, $map];
@@ -213,6 +354,22 @@ class StudyDeckService
 
         $rendered = $this->renderer->render($context, $map, $plan, $content, $images, $eligible, $activities, $interactions);
         $report = $this->validator->validate($context, $map, $eligible, $rendered, $selection['flagged'] ?? []);
+        // A deck made for a teaching method must still follow it after every later stage.
+        if (!empty($map['teaching_method'])) {
+            $methodErrors = TeachingMethodProfile::planErrors($map['teaching_method'], $plan['slides']);
+            // ...and what was actually WRITTEN must show the method's sequence (predictions and evidence; materials, steps and recording), not only the slide types.
+            $texts = [];
+            foreach ($plan['slides'] as $i => $s) {
+                $n = $s['n'] ?? ($i + 1);
+                $texts[] = (string) json_encode([$content[$n] ?? ($content[$i] ?? null), $interactions[$n] ?? ($interactions[$i] ?? null)], JSON_UNESCAPED_UNICODE);
+            }
+            $methodErrors = array_merge($methodErrors, TeachingMethodProfile::contentErrors($map['teaching_method'], $texts));
+            $report['teaching_method'] = ['key' => $map['teaching_method'], 'followed' => $methodErrors === [], 'errors' => $methodErrors];
+            if ($methodErrors) {
+                $report['ok'] = false;
+                $report['errors'] = array_merge($report['errors'], $methodErrors);
+            }
+        }
         $say('validate', $report['ok'] ? 'Validation passed' : count($report['errors']) . ' validation error(s)');
 
         return [

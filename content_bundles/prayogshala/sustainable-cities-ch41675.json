@@ -1,0 +1,120 @@
+[
+  {
+    "topic_id": 26316,
+    "title": "Sustainable Cities",
+    "activity_type": "activity",
+    "description": "Think More: What lessons from ancient civilizations can you include in your sustainable city’s water plan to make it more sustainable? Imagine you are planning the water supply for a new city. Chapter 1 shows that civilisations which protected their water sources thrived, while those that ignored water problems struggled or disappeared. Choose the lessons from the past that belong in your city’s water plan, then write your own answer to the question.",
+    "objective": "Apply lessons about water management from ancient civilisations to the water plan of a sustainable city.",
+    "materials_required": [
+      "Virtual lab: six ideas for a city water plan",
+      "Chapter 1 textbook, section 1.4",
+      "Notebook or the reflection box on screen"
+    ],
+    "procedure_steps": [
+      "Read the question: What lessons from ancient civilizations can you include in your sustainable city’s water plan to make it more sustainable?",
+      "Predict which idea should not go into the plan.",
+      "Tick the ideas that belong in your city’s water plan.",
+      "Switch to the second question and tick the choices a sustainable plan should avoid.",
+      "Write your own answer to the Think More question in the reflection box."
+    ],
+    "observation": "Note which ideas you put in the plan, and which ones you left out because they caused problems for civilisations in the past.",
+    "result": "A sustainable water plan protects water sources, uses water wisely and reduces waste, and uses practices such as rainwater harvesting and smart irrigation. Over-irrigation and ignoring water problems are choices to avoid.",
+    "safety_instructions": "No equipment is used. This is a thinking and planning activity.",
+    "teacher_instructions": "Let learners argue for their choices before the lab shows what the chapter supports. For the open answer, ask each learner to name one lesson from the past and say how it would work in their city. Link back to section 1.4 and to the Mesopotamia example in section 1.2.",
+    "student_instructions": "There is more than one good answer to the Think More question. Say which lesson you would use and why.",
+    "estimated_minutes": 20,
+    "lab_config": {
+      "version": 1,
+      "simulation": {
+        "type": "relevance",
+        "params": {
+          "subject": "A new city’s water plan",
+          "details": [
+            { "id": "rain_harvest", "label": "Collect rainwater (rainwater harvesting)" },
+            { "id": "smart_irrig", "label": "Water crops with smart irrigation" },
+            { "id": "protect_src", "label": "Protect water sources and keep them clean" },
+            { "id": "use_wisely", "label": "Use water wisely and reduce waste" },
+            { "id": "over_irrig", "label": "Over-irrigate the fields" },
+            { "id": "ignore_prob", "label": "Ignore water problems until they get worse" }
+          ],
+          "questions": [
+            {
+              "id": "plan",
+              "text": "What lessons from ancient civilizations can you include in your sustainable city’s water plan to make it more sustainable?",
+              "relevant": ["rain_harvest", "smart_irrig", "protect_src", "use_wisely"]
+            },
+            {
+              "id": "avoid",
+              "text": "Which choices from the past should a sustainable water plan avoid?",
+              "relevant": ["over_irrig", "ignore_prob"]
+            }
+          ],
+          "default_question": "plan",
+          "observation_template": "Question: {question}. Your plan keeps {kept} of 6 ideas. It is missing {missed} idea(s) the question needs and keeps {extra} it does not."
+        }
+      },
+      "steps": {
+        "mission": {
+          "scenario": "You are planning the water supply for a new, sustainable city. Chapter 1 explains that civilisations which protected their water sources thrived, while others that ignored water problems struggled or disappeared. In Mesopotamia, over-irrigation caused salt to build up in the soil and crops grew less well.",
+          "task": "Choose the lessons from the past that belong in your city’s water plan, and the choices it should avoid.",
+          "tags": ["Learning from the past", "Sustainable water plan"]
+        },
+        "predict": {
+          "question": "Before you start: which one of these should NOT go into your sustainable city’s water plan?",
+          "scenario": { "question": "plan", "kept": [] },
+          "options": [
+            { "id": "a", "label": "Collect rainwater (rainwater harvesting)", "when": "rel_rain_harvest==0" },
+            { "id": "b", "label": "Over-irrigate the fields", "when": "rel_over_irrig==0" },
+            { "id": "c", "label": "Protect water sources and keep them clean", "when": "rel_protect_src==0" },
+            { "id": "d", "label": "Water crops with smart irrigation", "when": "rel_smart_irrig==0" }
+          ]
+        },
+        "do": {
+          "instructions": [
+            "Read the question about the city’s water plan.",
+            "Tick the ideas that belong in the plan. Untick the ones you would leave out.",
+            "Then switch to the second question and tick the choices a sustainable plan should avoid."
+          ],
+          "materials": ["Virtual lab: six ideas for a city water plan"],
+          "safety": "Nothing physical is handled. This is a planning activity."
+        },
+        "observe": { "prompt": "Look at the counts: which ideas are missing from your plan, and which ones are extra?" },
+        "explain": {
+          "text": "A sustainable water plan keeps the practices that protect water and leaves out the choices that harmed water in the past.",
+          "cases": [
+            { "when": "complete==1", "text": "Your choices match what Chapter 1 says. You kept the lessons that help a city look after its water and left out the ones that did harm." },
+            { "when": "missed>0 && extra>0", "text": "Your plan is missing some lessons and also keeps some choices that caused problems. Check each idea against section 1.4." },
+            { "when": "missed>0", "text": "Your plan leaves out an idea that belongs for this question. Read section 1.4 again for practices to learn from." },
+            { "when": "extra>0", "text": "Your plan keeps a choice that does not belong for this question. Think about what happened to civilisations that made that choice." }
+          ]
+        },
+        "concept": {
+          "text": "History shows that water management can decide whether a civilisation succeeds or fails. We can learn from ancient practices such as rainwater harvesting and smart irrigation.",
+          "points": [
+            "Those who protected their water sources thrived. Those who ignored water problems struggled or disappeared.",
+            "In Mesopotamia, over-irrigation caused salt buildup in the soil and reduced crop productivity.",
+            "Individuals help by using water wisely, reducing waste and keeping water sources clean."
+          ]
+        },
+        "apply": {
+          "question": "In a city’s farms, too much water is used and salt starts to build up in the soil, as it did in Mesopotamia. Which lesson from the past would you add to the plan?",
+          "options": [
+            { "id": "a", "label": "Use smart irrigation so crops get only the water they need", "correct": true, "feedback": "Yes. Chapter 1 names smart irrigation as a practice to learn from, and over-irrigation is what harmed the soil in Mesopotamia." },
+            { "id": "b", "label": "Add even more water to the fields", "correct": false, "feedback": "More water is what caused the salt to build up in Mesopotamia." },
+            { "id": "c", "label": "Wait and see before doing anything", "correct": false, "feedback": "Civilisations that ignored water problems struggled or disappeared." }
+          ]
+        },
+        "reflect": {
+          "prompts": [
+            "What lessons from ancient civilizations can you include in your sustainable city’s water plan to make it more sustainable?",
+            "Which one lesson would you put first in your plan, and why?"
+          ]
+        }
+      },
+      "outcomes": [
+        "Name lessons from ancient civilisations that help a city manage water well.",
+        "Explain why choices such as over-irrigation or ignoring water problems harm a water supply."
+      ]
+    }
+  }
+]

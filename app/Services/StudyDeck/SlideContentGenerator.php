@@ -100,6 +100,72 @@ class SlideContentGenerator
             }
         }
 
+        return $this->finalize($map, $plan, $content);
+    }
+
+    /**
+     * Apply safe, plan-backed repairs after generation or replay, without asking the model to invent content.
+     *
+     * @param array<string,mixed> $map
+     * @param array<string,mixed> $plan
+     * @param array<int,array<string,mixed>> $content
+     * @return array<int,array<string,mixed>>
+     */
+    public function finalize(array $map, array $plan, array $content): array
+    {
+        $bySlide = [];
+        foreach ($plan['slides'] as $slide) {
+            $bySlide[(int) $slide['n']] = $slide;
+        }
+
+        $titles = [];
+        $duplicateTitle = false;
+        foreach ($content as $n => $slide) {
+            $title = mb_strtolower(trim((string) ($slide['title'] ?? '')));
+            if ($title !== '' && isset($titles[$title])) {
+                $duplicateTitle = true;
+                break;
+            }
+            if ($title !== '') {
+                $titles[$title] = (int) $n;
+            }
+        }
+        if ($duplicateTitle) {
+            foreach ($bySlide as $n => $slide) {
+                $content[$n]['title'] = (string) $slide['title'];
+            }
+        }
+
+        foreach ($bySlide as $n => $slide) {
+            if (($slide['slide_type'] ?? null) === 'cover' || !empty($slide['question_ids']) || !empty($content[$n]['check'])) {
+                continue;
+            }
+
+            $conceptId = (int) (($slide['taught_concept_ids'][0] ?? null) ?: ($slide['concept_ids'][0] ?? 0));
+            $explanations = (array) ($content[$n]['explanations'] ?? []);
+            $explanation = null;
+            foreach ($explanations as $entry) {
+                if (is_array($entry) && ($conceptId === 0 || (int) ($entry['concept_id'] ?? 0) === $conceptId)) {
+                    $explanation = trim((string) ($entry['text'] ?? ''));
+                    if ($explanation !== '') {
+                        break;
+                    }
+                }
+            }
+            $answer = $explanation
+                ?: trim((string) ($content[$n]['key_idea'] ?? ''))
+                ?: trim((string) ($content[$n]['body'] ?? ''));
+            if ($answer === '') {
+                continue;
+            }
+
+            $concept = trim((string) ($map['concepts'][$conceptId]['name'] ?? ''));
+            $question = $concept !== ''
+                ? "How would you explain $concept using this slide?"
+                : 'What is the main idea on this slide?';
+            $content[$n]['check'] = ['question' => $question, 'answer' => $answer];
+        }
+
         ksort($content);
 
         return $content;
@@ -116,6 +182,19 @@ class SlideContentGenerator
     public function problems(array $planSlides, array $content): array
     {
         $out = [];
+        $titles = [];
+        foreach ($content as $n => $c) {
+            if (($planSlides[$n]['slide_type'] ?? null) === 'cover') {
+                continue;
+            }
+            $title = mb_strtolower(trim((string) ($c['title'] ?? '')));
+            if ($title !== '' && isset($titles[$title])) {
+                $out[$n][] = "Its title repeats slide {$titles[$title]}. Give it a distinct title.";
+            } elseif ($title !== '') {
+                $titles[$title] = (int) $n;
+            }
+        }
+
         foreach ($content as $n => $c) {
             $plan = $planSlides[$n] ?? null;
             if (!$plan || $plan['slide_type'] === 'cover') {
@@ -287,6 +366,7 @@ class SlideContentGenerator
         $outlineText = implode("\n", $outline);
         $words = self::EXPLANATION_WORDS;
         $min = self::MIN_EXPLANATION_WORDS;
+        $methodRule = TeachingMethodProfile::contentRule($plan['teaching_method'] ?? null);
 
         return <<<PROMPT
 Write the slide text for the slides listed under SLIDES TO WRITE. The whole deck is outlined first so you keep the flow; write only the listed slides.
@@ -304,7 +384,7 @@ Rules
 - Do not write alt text or captions; pictures are described after they are chosen.
 - "bloom" is one of remember, understand, apply, analyze, evaluate, create. "dok" is 1 to 4. "minutes" is whole minutes.
 - The cover slide has no question: set its check to null.
-- Cover and hook slides: "body" is the one-line promise to the learner. Objectives slides: bullets are the objectives in "you will" form, and they must be things this deck teaches.
+- Cover and hook slides: "body" is the one-line promise to the learner. Objectives slides: bullets are the objectives in "you will" form, and they must be things this deck teaches.{$methodRule}
 
 Reply with:
 {"slides": [{"n": 1, "title": "", "body": "", "explanations": [{"concept_id": 0, "text": ""}], "bullets": [], "example": null, "misconception": null, "relationship_note": null, "key_idea": null, "check": null, "bloom": "understand", "dok": 2, "minutes": 2}]}

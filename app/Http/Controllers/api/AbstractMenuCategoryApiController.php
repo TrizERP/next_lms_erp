@@ -41,6 +41,9 @@ abstract class AbstractMenuCategoryApiController extends Controller
      */
     abstract protected function resolveModuleName(Request $request): string;
 
+    /** @var array<string,list<int>> */
+    private array $permittedMenuIdsMemo = [];
+
     public function index(Request $request): JsonResponse
     {
         $subInstituteId = (string) $request->input('sub_institute_id', '');
@@ -351,7 +354,7 @@ abstract class AbstractMenuCategoryApiController extends Controller
      *                                      category the bar actually has.
      * @return array<string,list<array{id:int,label:string,link:string}>>
      */
-    private function visibleItemsByCategory(
+    protected function visibleItemsByCategory(
         string $moduleName,
         string $subInstituteId,
         string $userId,
@@ -600,6 +603,18 @@ abstract class AbstractMenuCategoryApiController extends Controller
      * @return list<int>
      */
     private function permittedMenuIds(string $subInstituteId, string $userId, string $userProfileName): array
+    {
+        // One answer per user per request: the registry asks once per module.
+        $memoKey = $subInstituteId.'|'.$userId.'|'.strtolower(trim($userProfileName));
+        if (isset($this->permittedMenuIdsMemo[$memoKey])) {
+            return $this->permittedMenuIdsMemo[$memoKey];
+        }
+
+        return $this->permittedMenuIdsMemo[$memoKey] = $this->loadPermittedMenuIds($subInstituteId, $userId, $userProfileName);
+    }
+
+    /** @return list<int> */
+    private function loadPermittedMenuIds(string $subInstituteId, string $userId, string $userProfileName): array
     {
         $isStudent = strtolower(trim($userProfileName)) === 'student';
         $userTable = $isStudent ? 'tblstudent' : 'tbluser';

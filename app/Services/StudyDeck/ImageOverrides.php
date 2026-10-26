@@ -71,6 +71,18 @@ final class ImageOverrides
                     $images[$n] = $this->planner->adopt($p, $query, $purpose);
                     $role = $visual['role'] ?? 'object';
                     $say('images', "slide $n: photograph adopted (" . $images[$n]['licence'] . ')');
+                } elseif (isset($entry['diagram'])) {
+                    $p = (array) $entry['diagram'];
+                    $spec = (array) ($p['spec'] ?? []);
+                    if (($problems = \App\Services\StudyDeck\DiagramRenderer::problems($spec)) !== []) {
+                        throw new \InvalidArgumentException('the diagram spec is invalid: ' . implode('; ', $problems));
+                    }
+                    $purpose = trim((string) ($p['purpose'] ?? $visual['purpose'] ?? 'A teacher-selected educational diagram.'));
+                    $images[$n] = $this->planner->diagram($spec) + ['purpose' => $purpose, 'source_kind' => 'teacher_selected_diagram'];
+                    $role = 'diagram';
+                    $query = trim((string) ($visual['query'] ?? $spec['title']));
+                    $interactions = $this->moveHotspots($n, $interactions, (array) ($p['anchors'] ?? []), $images[$n]['texts']);
+                    $say('images', "slide $n: educational diagram updated");
                 } elseif (isset($entry['illustration'])) {
                     $p = (array) $entry['illustration'];
                     $purpose = trim((string) ($p['purpose'] ?? $visual['purpose'] ?? ''));

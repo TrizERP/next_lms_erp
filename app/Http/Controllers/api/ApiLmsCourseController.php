@@ -12,6 +12,9 @@ use App\Models\lms\topicModel;
 use App\Models\student\tblstudentEnrollmentModel;
 use App\Services\lms\Content\ContentOwnershipDecorator;
 use App\Services\lms\Content\H5PContentAdapter;
+use App\Services\lms\Content\ClassroomActivityDocument;
+use App\Services\lms\Content\VideoGroup;
+use App\Services\lms\Content\VocabularyClassDeck;
 use App\Services\QuestionGeneration\QuestionEnvelope;
 use App\Services\QuestionGeneration\QuestionFormResolver;
 use Illuminate\Http\JsonResponse;
@@ -645,13 +648,51 @@ class ApiLmsCourseController extends Controller
             ->get()
             ->toArray();
 
+        // A Vocabulary Class is ONE row for a whole book, stored against its first chapter; it is also listed for the
+        // other chapters its topics name (same school rule, standard and subject). Adds rows only, never changes one.
+        $content_data = array_merge($content_data, array_map(
+            fn (array $row) => (object) $row,
+            VocabularyClassDeck::siblingRows(
+                (int) $chapter_id,
+                (int) $subject_id,
+                (int) $standard_id,
+                $getIsLms == 'Y' ? [1, (int) $sub_institute_id] : [(int) $sub_institute_id]
+            )
+        ));
+
         $assets = [];
         foreach ($content_data as $content) {
             $contentArray = (array)$content;
             $contentArray['url'] = $this->resolveContentUrl($contentArray);
+            // A vocabulary deck is a document, not a file: it opens in the flashcard player of the chapter being viewed.
+            if (VocabularyClassDeck::isVocabularyFilename($contentArray['filename'] ?? null) && !empty($contentArray['id'])) {
+                $contentArray['deep_link'] = VocabularyClassDeck::deepLink((int) $chapter_id, (int) $contentArray['id']);
+                $contentArray['url'] = $contentArray['deep_link'];
+            }
+            // An interactive classroom activity is a document too: it opens in the activity player of this chapter and says
+            // its code and step count, so the card can show them. Adds fields only; the PDF task cards are untouched.
+            if (ClassroomActivityDocument::isActivityFilename($contentArray['filename'] ?? null)) {
+                $contentArray = array_merge($contentArray, ClassroomActivityDocument::listingFields($contentArray, (int) $chapter_id));
+            }
+            // The Videos-tab section a video is filed under (a 'vgrp:' tag in meta_tags), or null. Adds a field only.
+            $contentArray['video_group'] = VideoGroup::fromMetaTags($contentArray['meta_tags'] ?? null);
             // A study deck is an ordinary presentation row that opens in the interactive player. Adds a field only.
             if ($deepLink = \App\Services\ContentGenerationService::studyDeckDeepLink($contentArray)) {
                 $contentArray['deep_link'] = $deepLink;
+            }
+            // What the deck was made as, from its own file name and the run that stored it. A value that is not known
+            // is null, so the card says so instead of guessing. Adds fields only.
+            if ($resource = \App\Services\ContentGenerationService::studyDeckResource($contentArray)) {
+                $method = $resource['teaching_method'];
+                $contentArray['content_id'] = (int) $contentArray['id'];
+                $contentArray['teaching_method'] = $method;
+                $contentArray['teaching_method_label'] = $method !== null ? config('course_presentation_pilot.pedagogies.' . $method) : null;
+                $contentArray['teaching_method_short'] = $method !== null ? config('course_presentation_pilot.pedagogy_short.' . $method) : null;
+                $contentArray['content_format'] = $resource['content_format'];
+                $contentArray['content_format_label'] = config('course_presentation_pilot.formats.' . $resource['content_format'] . '.label');
+                $contentArray['generation_status'] = 'stored';
+                $contentArray['generation_run_id'] = app(\App\Services\CoursePresentation\GenerationRun::class)
+                    ->runStoring((int) $chapter_id, (int) $sub_institute_id, (int) $contentArray['id']);
             }
             // Its classroom PDF (a second file of the same item), offered only when it is really stored.
             if ($pdfUrl = \App\Services\ContentGenerationService::studyDeckPdfUrl($contentArray)) {
@@ -714,8 +755,12 @@ class ApiLmsCourseController extends Controller
         // Reversible without a deploy via config lms_content.h5p.surface_in_content_list.
         $h5pAssets = app(H5PContentAdapter::class)->forChapter($chapter_id, $sub_institute_id);
         if ($h5pAssets !== []) {
-            $content_by_category[H5PContentAdapter::CATEGORY] = app(ContentOwnershipDecorator::class)
-                ->apply($h5pAssets, $sub_institute_id, 'h5p');
+            // Added to the category, not assigned over it: a stored 'Interactive' content_master row (a story lesson, a
+            // vocabulary class) would otherwise vanish from the list as soon as the chapter also had an H5P item.
+            $content_by_category[H5PContentAdapter::CATEGORY] = array_merge(
+                $content_by_category[H5PContentAdapter::CATEGORY] ?? [],
+                app(ContentOwnershipDecorator::class)->apply($h5pAssets, $sub_institute_id, 'h5p')
+            );
         }
 
         // Prayogshala: practical / experiment activities, merged in exactly like H5P above
@@ -1801,7 +1846,7 @@ $restrict_date = $request->input('restrict_date');
     {
         $chapterId = $request->input('chapter_id');
         $topicId = $request->input('topic_id');
-        $questionType = $request->input('question_type');
+        $questionType = $request->input('question_type') ?? $request->input('question_type_code');
         $category = $request->input('category');
 
         // New filters — the enriched bank page can query by subject/standard
@@ -1886,10 +1931,7 @@ $restrict_date = $request->input('restrict_date');
                     . '  LIMIT 1'
                     . '), question_type_master.question_type) as question_type'
                 ),
-                // The grading engine's own spelling, kept separately: the
-                // COALESCE above is a DISPLAY label, and classifying MCQ from
-                // it silently turns a "True / False" item into a Narrative one
-                // -- which then loses its options on the next save.
+                'question_type_catalog.label as catalog_label',
                 'question_type_master.question_type as lms_question_type',
                 'lms_question_extraction.question_type_code as question_type_code',
                 'lms_question_master.g_qtype_code as derived_type_code',
@@ -1932,12 +1974,8 @@ $restrict_date = $request->input('restrict_date');
             $query->where('lms_question_master.concept_id', (int) $conceptId);
         }
 
-        if ($questionType) {
-            if (is_numeric($questionType)) {
-                $query->where('lms_question_master.question_type_id', (int) $questionType);
-            } else {
-                $query->where('question_type_master.question_type', trim($questionType));
-            }
+        if ($questionType && strtolower(trim((string) $questionType)) !== 'all') {
+            QuestionFormResolver::applyTypeFilter($query, $questionType, 'lms_question_master');
         }
 
         if ($category && strtolower(trim($category)) !== 'all') {
@@ -2040,12 +2078,20 @@ $restrict_date = $request->input('restrict_date');
             // The shared ladder (QuestionFormResolver) so this endpoint, the
             // facet counts and PAL agree. Null still means "no catalogue form is
             // recorded", which keeps the MCQ|Narrative label fallback below.
-            $resolvedTypeCode = QuestionFormResolver::resolve(
-                $question['question_type_code'] ?? null,
+            $displayLabel = QuestionFormResolver::resolveDisplayLabel(
                 $question['format_code'] ?? null,
                 $question['model_answer'] ?? null,
+                $question['lms_question_type'] ?? null,
+                $question['catalog_label'] ?? ($question['question_type'] ?? null),
+                $question['question_type_code'] ?? null
+            );
+
+            $resolvedTypeCode = QuestionFormResolver::resolveFormatCode(
+                $question['format_code'] ?? null,
+                $question['model_answer'] ?? null,
+                $question['question_type_code'] ?? null,
                 $question['derived_type_code'] ?? null,
-                null
+                $questionTypeLabel === 'MCQ' ? 'mcq' : 'narrative'
             );
 
             $data[] = [
@@ -2064,16 +2110,9 @@ $restrict_date = $request->input('restrict_date');
                 'category' => $question['category'] !== null ? (string) $question['category'] : null,
                 'question' => (string) ($question['question_title'] ?? ''),
                 'question_type' => $questionTypeLabel,
-                // Display label from question_type_catalog, e.g. "Assertion &
-                // Reason". A row with no catalog entry (anything the generator
-                // made, which has no extraction sidecar) falls back to the
-                // normalised MCQ|Narrative label rather than to
-                // question_type_master's own spelling -- otherwise the bank's
-                // type dropdown lists "multiple" and "narrative" next to
-                // "Multiple Choice" and "Assertion & Reason".
-                'question_type_raw' => $resolvedTypeCode !== null
-                    ? trim((string) ($question['question_type'] ?? ''))
-                    : $questionTypeLabel,
+                // Display label for the Question Type dropdown & pill, e.g. "Multiple Choice Question (MCQ)",
+                // "Single Choice Set", "True / False", "Flash Cards", "Drag and Drop", etc.
+                'question_type_raw' => $displayLabel,
                 // Stable machine code to filter on. A label can be reworded;
                 // this cannot.
                 'question_type_code' => $resolvedTypeCode,
@@ -2688,10 +2727,23 @@ $restrict_date = $request->input('restrict_date');
         }
 
         $envelope = $this->decodeAnswerEnvelope((string) $value);
-        $modelAnswer = $envelope['model_answer'] ?? null;
+        if ($envelope !== null) {
+            $expected = $envelope['expected_response'] ?? null;
+            if (is_string($expected) && trim($expected) !== '') {
+                return trim($expected);
+            }
 
-        if (is_string($modelAnswer) && trim($modelAnswer) !== '') {
-            return $modelAnswer;
+            $modelAnswer = $envelope['model_answer'] ?? null;
+            if (is_string($modelAnswer) && trim($modelAnswer) !== '') {
+                return trim($modelAnswer);
+            }
+
+            $ans = $envelope['answer'] ?? null;
+            if (is_string($ans) && trim($ans) !== '') {
+                return trim($ans);
+            }
+
+            return null;
         }
 
         return (string) $value;

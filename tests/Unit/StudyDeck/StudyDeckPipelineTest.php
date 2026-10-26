@@ -157,6 +157,48 @@ class StudyDeckPipelineTest extends TestCase
         $this->assertStringContainsString('was rejected', $c->prompts[1]);
     }
 
+    public function test_a_plan_below_the_minimum_is_told_to_add_distinct_teaching_slides(): void
+    {
+        $short = $this->plan();
+        $short['slides'] = array_slice($short['slides'], 0, 5);
+        $c = $this->completer([json_encode($short), json_encode($short), json_encode($short)]);
+        $context = (new ConceptContextBuilder())->assemble($this->raw());
+        $sel = (new QuestionSelector())->select($this->raw()['questions']);
+        $map = (new LearningPlanBuilder())->build($context, $sel['eligible'], 6, 8);
+
+        try {
+            (new SlidePlanner($c))->plan($context, $map, $sel['eligible']);
+            $this->fail('An undersized plan was accepted.');
+        } catch (\RuntimeException $e) {
+            $this->assertStringContainsString('Plan has 5 slides', $e->getMessage());
+        }
+
+        $this->assertStringContainsString('has 5 slides, below the minimum 6', $c->prompts[1]);
+        $this->assertStringContainsString('add at least 1 distinct, useful teaching slide', $c->prompts[1]);
+        $this->assertStringContainsString('do not add filler', $c->prompts[1]);
+    }
+
+    public function test_plan_repairs_get_explicit_guidance_for_overfull_slides_and_missing_method_scenarios(): void
+    {
+        $invalid = $this->plan();
+        $invalid['slides'][1]['concept_ids'] = [1, 2, 3, 4];
+        $c = $this->completer([json_encode($invalid), json_encode($invalid)]);
+        $context = (new ConceptContextBuilder())->assemble($this->raw());
+        $sel = (new QuestionSelector())->select($this->raw()['questions']);
+        $map = (new LearningPlanBuilder())->build($context, $sel['eligible'], 6, 8, ['repair_rounds' => 1], 'experiential');
+
+        try {
+            (new SlidePlanner($c))->plan($context, $map, $sel['eligible']);
+            $this->fail('An invalid plan was accepted.');
+        } catch (\RuntimeException $e) {
+            $this->assertStringContainsString('carries more than 3 concepts', $e->getMessage());
+            $this->assertStringContainsString('needs at least 1 "scenario" slide(s)', $e->getMessage());
+        }
+
+        $this->assertStringContainsString('Split slide 2 into distinct slides', $c->prompts[1]);
+        $this->assertStringContainsString('Add enough distinct slides with slide_type exactly "scenario"', $c->prompts[1]);
+    }
+
     public function test_numbers_inside_a_bank_question_table_are_not_mistaken_for_invented_ones(): void
     {
         // "<td>40</td><td>10</td>" stripped of tags is "4010"; a check that reads that hides both numbers.
@@ -319,6 +361,76 @@ class StudyDeckPipelineTest extends TestCase
         $this->assertStringContainsString('a diagram needs a visual alongside it', $errors($p));
     }
 
+    public function test_repeated_concept_visual_and_intro_titles_get_distinct_plan_backed_headings(): void
+    {
+        $raw = $this->raw();
+        $context = (new ConceptContextBuilder())->assemble($raw);
+        $selection = (new QuestionSelector())->select($raw['questions']);
+        $map = (new LearningPlanBuilder())->build($context, $selection['eligible'], 6, 8);
+        $plan = $this->plan();
+        $plan['slides'][4]['title'] = $plan['slides'][3]['title'];
+
+        $result = (new SlidePlanner($this->completer([json_encode($plan)])))
+            ->plan($context, $map, $selection['eligible']);
+
+        $this->assertSame('Understand: Laws', $result['slides'][3]['title']);
+        $this->assertSame('Connect: Theories', $result['slides'][4]['title']);
+        $titles = array_map(fn ($slide) => mb_strtolower(trim($slide['title'])), $result['slides']);
+        $this->assertCount(count($result['slides']), array_unique($titles));
+    }
+
+    public function test_inquiry_plan_repairs_phase_order_and_excess_concept_references(): void
+    {
+        $raw = $this->raw();
+        $context = (new ConceptContextBuilder())->assemble($raw);
+        $selection = (new QuestionSelector())->select($raw['questions']);
+        $map = (new LearningPlanBuilder())->build($context, $selection['eligible'], 6, 8, [], 'inquiry_based');
+        $plan = $this->plan();
+        $visual = $plan['slides'][1];
+        $visual['slide_type'] = 'concept_visual';
+        $visual['title'] = 'Look at a model';
+        $visual['question_ids'] = [];
+        $intro = $plan['slides'][1];
+        $scenario = $plan['slides'][2];
+        $scenario['slide_type'] = 'scenario';
+        $scenario['title'] = 'Investigate what a model leaves out';
+        $scenario['concept_ids'] = [2];
+        $scenario['taught_concept_ids'] = [2];
+        $scenario['question_ids'] = [];
+        $scenario['relationship'] = null;
+        $misconception = $plan['slides'][3];
+        $misconception['slide_type'] = 'misconception';
+        $misconception['title'] = 'Test ideas about laws';
+        $misconception['question_ids'] = [];
+        $lawIntro = $plan['slides'][3];
+        $lawIntro['title'] = 'Understand a law';
+        $relationship = $plan['slides'][4];
+        $relationship['concept_ids'] = [3, 4, 1, 2];
+        $plan['slides'] = [
+            $plan['slides'][0],
+            $intro,
+            $visual,
+            $scenario,
+            $lawIntro,
+            $misconception,
+            $relationship,
+            $plan['slides'][5],
+        ];
+
+        $result = (new SlidePlanner($this->completer([json_encode($plan)])))
+            ->plan($context, $map, $selection['eligible']);
+
+        $positions = [];
+        foreach ($result['slides'] as $i => $slide) {
+            $positions[$slide['slide_type'] . ':' . ($slide['concept_ids'][0] ?? '')] ??= $i;
+        }
+        $this->assertLessThan($positions['concept_intro:1'], $positions['concept_visual:1']);
+        $this->assertLessThan($positions['concept_intro:3'], $positions['misconception:3']);
+        $relation = array_values(array_filter($result['slides'], fn ($slide) => $slide['slide_type'] === 'relationship'))[0];
+        $this->assertCount(SlidePlanner::MAX_CONCEPTS_PER_SLIDE, $relation['concept_ids']);
+        $this->assertContains(4, $relation['concept_ids']);
+    }
+
     public function test_a_run_can_raise_the_practice_per_slide_and_picture_limits_and_the_defaults_stay(): void
     {
         $defaults = ['max_practice' => 10, 'questions_per_slide' => 1, 'max_visuals' => 10, 'max_scenarios' => 3];
@@ -444,6 +556,31 @@ class StudyDeckPipelineTest extends TestCase
         $this->assertStringContainsString('not in the chapter text: 400', implode(' ', $check('<p>Ten times forty gives 400 times.</p>', $context)));
     }
 
+    public function test_unsplash_licence_is_accepted_for_a_teacher_selected_image(): void
+    {
+        $planner = new ImagePlanner($this->imageSearch($this->goodImage()), $this->memoryStore());
+        $this->assertTrue($planner->licenceAccepted(ImagePlanner::UNSPLASH_LICENCE));
+        $this->assertFalse($planner->licenceAccepted('Unsplash License - unknown terms'));
+    }
+
+    public function test_slide_and_step_navigation_numbers_are_ignored_but_unverified_percentages_are_not(): void
+    {
+        $context = [
+            'ground_truth' => 'Water covers about 71 percent of Earth. About 97 percent is salt water.',
+            'concepts' => [],
+            'chapter' => ['chapter_name' => 'Water', 'subject_name' => 'Science', 'standard_name' => '4'],
+        ];
+        $check = function (string $html) use ($context) {
+            $errors = [];
+            $warnings = [];
+            (new DeckValidator())->groundingCheck($html, '', $context, [], $errors, $warnings);
+            return $errors;
+        };
+
+        $this->assertSame([], $check('<p>Move to slide 29, then follow step 29.</p>'));
+        $this->assertStringContainsString('not in the chapter text: 29', implode(' ', $check('<p>Land covers about 29 percent of Earth.</p>')));
+    }
+
     public function test_the_chapters_practical_activities_reach_the_planner_as_context(): void
     {
         $raw = $this->raw();
@@ -503,9 +640,41 @@ class StudyDeckPipelineTest extends TestCase
         $content[4]['check'] = null;
         $this->assertStringContainsString('no discussion prompt', implode(' ', $gen->problems($planSlides, $content)[4]));
 
+        $content[6]['title'] = $content[5]['title'];
+        $this->assertStringContainsString('title repeats slide 5', implode(' ', $gen->problems($planSlides, $content)[6]));
+
         $content[4]['check'] = ['question' => 'q', 'answer' => 'a'];
         $content[4]['bullets'] = [str_repeat('word ', 60)];
         $this->assertStringContainsString('words of body text', implode(' ', $gen->problems($planSlides, $content)[4]));
+    }
+
+    public function test_content_finalization_restores_unique_plan_titles_and_grounded_discussion_checks(): void
+    {
+        $plan = $this->plan();
+        $planSlides = [];
+        foreach ($plan['slides'] as $i => &$slide) {
+            $slide['n'] = $i + 1;
+            $planSlides[$i + 1] = $slide;
+        }
+        unset($slide);
+        $content = [];
+        foreach ($this->slideText()['slides'] as $slide) {
+            $content[$slide['n']] = $slide;
+        }
+        $content[4]['check'] = null;
+        $content[5]['title'] = $content[6]['title'] = 'Repeated title';
+
+        $result = (new SlideContentGenerator($this->completer([])))->finalize(
+            ['concepts' => [3 => ['name' => 'Laws']]],
+            ['slides' => $planSlides],
+            $content
+        );
+
+        $this->assertSame('What a law is', $result[4]['title']);
+        $this->assertSame('Laws and theories together', $result[5]['title']);
+        $this->assertSame('How the ideas connect', $result[6]['title']);
+        $this->assertSame('How would you explain Laws using this slide?', $result[4]['check']['question']);
+        $this->assertSame('A law describes a repeated pattern.', $result[4]['check']['answer']);
     }
 
     public function test_validator_rejects_unsupported_numbers_missing_checks_and_long_slides(): void
@@ -519,8 +688,23 @@ class StudyDeckPipelineTest extends TestCase
 
         $this->assertFalse($r['report']['ok']);
         $this->assertStringContainsString('Numbers in slide text that are not in the chapter text: 73', $joined);
-        $this->assertStringContainsString('has no check block', $joined);
+        $this->assertStringNotContainsString('has no check block', $joined);
+        $this->assertStringContainsString('How would you explain Laws using this slide?', $r['html']);
         $this->assertStringContainsString('words of body text', $joined);
+    }
+
+    public function test_validator_allows_decorative_creator_symbols_but_still_rejects_emoji(): void
+    {
+        $r = $this->deck();
+        $validator = new DeckValidator();
+
+        $errors = [];
+        $validator->markup($r['html'] . '<p>Tatters ✾ HydrAid®</p>', $r['map'], $r['deck'], $errors);
+        $this->assertNotContains('Contains emoji.', $errors);
+
+        $errors = [];
+        $validator->markup($r['html'] . '<p>😀 ©️</p>', $r['map'], $r['deck'], $errors);
+        $this->assertContains('Contains emoji.', $errors);
     }
 
     public function test_validator_requires_concepts_to_be_taught_not_named(): void
