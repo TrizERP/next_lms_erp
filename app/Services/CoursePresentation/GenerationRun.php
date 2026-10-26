@@ -112,6 +112,21 @@ class GenerationRun
         return $runs;
     }
 
+    /**
+     * The run whose approval stored this content item, or null (a deck stored by hand, or before runs existed, has none).
+     * Read from the runs' own status files, so the link is the one recorded when the item was stored.
+     */
+    public function runStoring(int $chapterId, int $tenant, int $contentId): ?string
+    {
+        foreach ($this->runs($chapterId, $tenant) as $run) {
+            if (($run['state'] ?? '') === 'stored' && (int) ($run['stored']['content_id'] ?? 0) === $contentId) {
+                return (string) $run['run'];
+            }
+        }
+
+        return null;
+    }
+
     /** A worker that stopped updating a run must not leave it blocking this chapter forever. */
     private function failIfStale(array $status): array
     {

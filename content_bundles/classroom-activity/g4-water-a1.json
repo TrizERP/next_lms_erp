@@ -1,0 +1,85 @@
+{
+  "type": "classroom_activity",
+  "version": 1,
+  "key": "g4-water-a1",
+  "code": "A1",
+  "title": "Heat up and cool down: comparing land and water",
+  "scope": { "sub_institute_id": 341, "standard_id": 4258, "subject_id": 48385, "chapter_id": 41675 },
+  "links": {
+    "topic_id": null,
+    "concept_id": null,
+    "note": "Verified 2026-10-26: chapter 41675 (textbook extraction 858, page 3) lists A1 with task card G4_WATER_EO_STC_1. No stored concept or learning outcome of this chapter mentions heating, cooling or breezes, so no concept is linked."
+  },
+  "references": { "task_card": "G4_WATER_EO_STC_1", "observation_sheet": "G4_WATER_EO_OBS_1" },
+  "intro": {
+    "purpose": "Observe how different surfaces (soil, sand, grass and water) heat up and cool down at different speeds. Use thermometers to compare how their temperatures change under a lamp or in sunlight.",
+    "objectives": [
+      { "text": "Compare how fast soil, sand, grass and water heat up and cool down.", "origin": "textbook" },
+      { "text": "Understand how sea and land breezes occur and why coastal areas have milder weather than inland regions.", "origin": "textbook" }
+    ],
+    "materials": [
+      { "text": "4 trays for each group", "origin": "task_card" },
+      { "text": "Soil, sand, grass and water, one for each tray", "origin": "task_card" },
+      { "text": "Thermometers", "origin": "textbook" },
+      { "text": "A lamp, or a sunny place", "origin": "task_card" },
+      { "text": "A shaded place", "origin": "task_card" }
+    ],
+    "safety": [
+      { "text": "Do this activity with your teacher.", "origin": "platform" },
+      { "text": "A lamp gets hot. Do not touch the bulb, and keep water away from the lamp and its plug.", "origin": "platform" },
+      { "text": "Wash your hands after touching soil, sand and grass.", "origin": "platform" }
+    ],
+    "duration": { "minutes": null, "note": "The task card has two waits of 15 minutes each (steps 4 and 7)." }
+  },
+  "steps": [
+    { "n": 1, "id": "s1", "text": "Each group will be given 4 trays." },
+    { "n": 2, "id": "s2", "text": "Fill each tray with soil, sand, grass, and water, respectively." },
+    { "n": 3, "id": "s3", "text": "Check the initial temperature of all the materials.", "uses": [{ "block": "temps", "columns": ["initial"] }] },
+    { "n": 4, "id": "s4", "text": "Put the trays under a lamp or in sunlight for 15 minutes.", "timer": { "seconds": 900, "label": "15 minutes" } },
+    { "n": 5, "id": "s5", "text": "After heating, record the temperature of each surface.", "uses": [{ "block": "temps", "columns": ["heated"] }] },
+    { "n": 6, "id": "s6", "text": "Now, remove the trays from the heat and place them in the shade." },
+    { "n": 7, "id": "s7", "text": "Wait for another 15 minutes and measure the new temperature of each tray.", "timer": { "seconds": 900, "label": "15 minutes" }, "uses": [{ "block": "temps", "columns": ["cooled"] }] },
+    { "n": 8, "id": "s8", "text": "Write your observations on the sheet", "uses": [{ "block": "temps", "columns": ["initial", "heated", "cooled"] }, { "block": "observations" }] },
+    { "n": 9, "id": "s9", "text": "Discuss how these temperature changes help explain sea breezes and land breezes, and why places near the sea have milder weather." }
+  ],
+  "blocks": [
+    {
+      "id": "temps",
+      "kind": "table",
+      "title": "Temperature record",
+      "unit": "°C",
+      "row_heading": "Surface",
+      "rows": [
+        { "id": "soil", "label": "Soil" },
+        { "id": "sand", "label": "Sand" },
+        { "id": "grass", "label": "Grass" },
+        { "id": "water", "label": "Water" }
+      ],
+      "columns": [
+        { "id": "initial", "label": "Initial temperature", "step": 3 },
+        { "id": "heated", "label": "After heating (15 minutes)", "step": 5 },
+        { "id": "cooled", "label": "After 15 minutes in the shade", "step": 7 }
+      ],
+      "derived": [
+        { "id": "rise", "label": "Change while heating", "of": "heated", "minus": "initial" },
+        { "id": "fall", "label": "Change while cooling", "of": "cooled", "minus": "heated" }
+      ]
+    },
+    {
+      "id": "observations",
+      "kind": "notes",
+      "label": "Your observations",
+      "hint": "Write what you saw when you compared the four trays."
+    }
+  ],
+  "reflection": [
+    { "id": "r1", "step": 9, "prompt": "Discuss how these temperature changes help explain sea breezes and land breezes, and why places near the sea have milder weather.", "origin": "task_card" }
+  ],
+  "expected": {
+    "step": 8,
+    "requires": "observations",
+    "heading": "What the textbook says to notice",
+    "text": "Sand and soil heat up and cool down quickly, while grass and water change temperature more slowly. Compare this with your own numbers."
+  },
+  "source": { "file": "STC_EO_WATER_G4.pdf", "pages": "1-2", "textbook": "Chapter 1, page 3" }
+}

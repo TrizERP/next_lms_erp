@@ -290,7 +290,7 @@ return [
         ],
         'classroom' => [
             'label' => 'Classroom resources',
-            'categories' => ['classroom activity', 'remedial class', 'virtual link'],
+            'categories' => ['classroom activity', 'remedial class', 'virtual link', 'educational posters', 'educational poster'],
         ],
         'other' => [
             'label' => 'More material',

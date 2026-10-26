@@ -50,6 +50,20 @@ return [
         'gamified' => 'Gamified learning',
     ],
 
+    // Short names for card titles ("Global Water Resources — Inquiry-Based PPT"). A method without one is shown by its full label.
+    'pedagogy_short' => [
+        'explicit_instruction' => 'Direct Instruction',
+        'inquiry_based' => 'Inquiry-Based',
+        'problem_based' => 'Problem-Based',
+        'project_based' => 'Project-Based',
+        'experiential' => 'Experiential',
+        'collaborative' => 'Collaborative',
+        'socratic' => 'Socratic',
+        'flipped_classroom' => 'Flipped Classroom',
+        'differentiated_mastery' => 'Mastery-Based',
+        'gamified' => 'Gamified',
+    ],
+
     'pedagogy_support' => [
         'applied_by_generator' => false,
         'message' => 'The generators do not take a teaching method as an input yet, so this choice would be recorded with the request but would not change what is generated.',

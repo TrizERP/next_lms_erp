@@ -12,6 +12,7 @@ use App\Models\lms\topicModel;
 use App\Models\student\tblstudentEnrollmentModel;
 use App\Services\lms\Content\ContentOwnershipDecorator;
 use App\Services\lms\Content\H5PContentAdapter;
+use App\Services\lms\Content\ClassroomActivityDocument;
 use App\Services\lms\Content\VocabularyClassDeck;
 use App\Services\QuestionGeneration\QuestionEnvelope;
 use App\Services\QuestionGeneration\QuestionFormResolver;
@@ -667,9 +668,28 @@ class ApiLmsCourseController extends Controller
                 $contentArray['deep_link'] = VocabularyClassDeck::deepLink((int) $chapter_id, (int) $contentArray['id']);
                 $contentArray['url'] = $contentArray['deep_link'];
             }
+            // An interactive classroom activity is a document too: it opens in the activity player of this chapter and says
+            // its code and step count, so the card can show them. Adds fields only; the PDF task cards are untouched.
+            if (ClassroomActivityDocument::isActivityFilename($contentArray['filename'] ?? null)) {
+                $contentArray = array_merge($contentArray, ClassroomActivityDocument::listingFields($contentArray, (int) $chapter_id));
+            }
             // A study deck is an ordinary presentation row that opens in the interactive player. Adds a field only.
             if ($deepLink = \App\Services\ContentGenerationService::studyDeckDeepLink($contentArray)) {
                 $contentArray['deep_link'] = $deepLink;
+            }
+            // What the deck was made as, from its own file name and the run that stored it. A value that is not known
+            // is null, so the card says so instead of guessing. Adds fields only.
+            if ($resource = \App\Services\ContentGenerationService::studyDeckResource($contentArray)) {
+                $method = $resource['teaching_method'];
+                $contentArray['content_id'] = (int) $contentArray['id'];
+                $contentArray['teaching_method'] = $method;
+                $contentArray['teaching_method_label'] = $method !== null ? config('course_presentation_pilot.pedagogies.' . $method) : null;
+                $contentArray['teaching_method_short'] = $method !== null ? config('course_presentation_pilot.pedagogy_short.' . $method) : null;
+                $contentArray['content_format'] = $resource['content_format'];
+                $contentArray['content_format_label'] = config('course_presentation_pilot.formats.' . $resource['content_format'] . '.label');
+                $contentArray['generation_status'] = 'stored';
+                $contentArray['generation_run_id'] = app(\App\Services\CoursePresentation\GenerationRun::class)
+                    ->runStoring((int) $chapter_id, (int) $sub_institute_id, (int) $contentArray['id']);
             }
             // Its classroom PDF (a second file of the same item), offered only when it is really stored.
             if ($pdfUrl = \App\Services\ContentGenerationService::studyDeckPdfUrl($contentArray)) {
