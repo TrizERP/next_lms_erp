@@ -13,6 +13,7 @@ use App\Models\student\tblstudentEnrollmentModel;
 use App\Services\lms\Content\ContentOwnershipDecorator;
 use App\Services\lms\Content\H5PContentAdapter;
 use App\Services\lms\Content\ClassroomActivityDocument;
+use App\Services\lms\Content\VideoGroup;
 use App\Services\lms\Content\VocabularyClassDeck;
 use App\Services\QuestionGeneration\QuestionEnvelope;
 use App\Services\QuestionGeneration\QuestionFormResolver;
@@ -673,6 +674,8 @@ class ApiLmsCourseController extends Controller
             if (ClassroomActivityDocument::isActivityFilename($contentArray['filename'] ?? null)) {
                 $contentArray = array_merge($contentArray, ClassroomActivityDocument::listingFields($contentArray, (int) $chapter_id));
             }
+            // The Videos-tab section a video is filed under (a 'vgrp:' tag in meta_tags), or null. Adds a field only.
+            $contentArray['video_group'] = VideoGroup::fromMetaTags($contentArray['meta_tags'] ?? null);
             // A study deck is an ordinary presentation row that opens in the interactive player. Adds a field only.
             if ($deepLink = \App\Services\ContentGenerationService::studyDeckDeepLink($contentArray)) {
                 $contentArray['deep_link'] = $deepLink;
