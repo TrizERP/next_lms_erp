@@ -57,6 +57,9 @@ final class RuleModules
         'hr' => 'hr',
         'inventory' => 'inventory',
         'library' => 'library',
+        // Career evidence is a student-record concern; the platform registry has
+        // no module of its own for it.
+        'career' => 'students',
         // The result rules are the Examination module's: marks, results and the
         // classes behind them.
         'result' => 'examination',
