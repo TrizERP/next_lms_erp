@@ -27,7 +27,7 @@ class NotificationSender
      * @param  array<int,array{channel?:string,recipient:string}>|array<int,string>  $recipients  email addresses, or ['channel'=>..., 'recipient'=>...] to target one channel
      * @return array<int,array<string,mixed>> the log rows written
      */
-    public function dispatch(int $tenantId, string $eventKey, array $recipients, string $subject, string $body, bool $isSample = false): array
+    public function dispatch(int $tenantId, string $eventKey, array $recipients, string $subject, string $body, bool $isSample = false, ?string $stamp = null): array
     {
         $channels = $this->channelsFor($tenantId, $eventKey);
         $written = [];
@@ -43,7 +43,7 @@ class NotificationSender
                 if ($only !== null && $only !== $channel) {
                     continue;
                 }
-                $written[] = $this->deliver($tenantId, $eventKey, $channel, $target, $subject, $body, $on, $isSample);
+                $written[] = $this->deliver($tenantId, $eventKey, $channel, $target, $subject, $body, $on, $isSample, $stamp);
             }
         }
 
@@ -87,7 +87,7 @@ class NotificationSender
     }
 
     /** @return array<string,mixed> */
-    private function deliver(int $tenantId, string $eventKey, string $channel, string $recipient, string $subject, string $body, string $on, bool $isSample): array
+    private function deliver(int $tenantId, string $eventKey, string $channel, string $recipient, string $subject, string $body, string $on, bool $isSample, ?string $stamp = null): array
     {
         $now = now();
         $id = DB::table('platform_notification_log')->insertGetId([
@@ -108,6 +108,11 @@ class NotificationSender
             $this->settle($id, 0, 'skipped', 'Switched off for this school (channel or event setting).', null);
         } else {
             [$status, $error, $ref] = $this->send($tenantId, $channel, $recipient, $subject, $body);
+            // A caller-supplied stamp (e.g. a scheduler finding fingerprint) replaces the provider ref of a sent web row so it can be
+            // compared later to avoid repeat notices.
+            if ($stamp !== null && $channel === 'web' && $status === 'sent') {
+                $ref = mb_substr($stamp, 0, 190);
+            }
             $this->settle($id, 1, $status, $error, $ref);
         }
 

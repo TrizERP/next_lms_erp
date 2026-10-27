@@ -43,7 +43,7 @@ class MyNotificationsController extends PlatformController
 
         $rows = $isStudent
             ? array_merge($this->appNotices($tenant, $userId), $this->palNotices($userId))
-            : $this->brainNotices($tenant, $userId);
+            : array_merge($this->brainNotices($tenant, $userId), $this->platformNotices($tenant, $userId));
 
         usort($rows, fn (array $a, array $b) => strcmp($b['created_at'], $a['created_at']));
 
@@ -95,6 +95,25 @@ class MyNotificationsController extends PlatformController
             ->orderByDesc('created_date')->limit(self::PER_SOURCE)
             ->get(['id', 'title', 'body', 'read_date', 'created_date'])
             ->map(fn ($r) => $this->row('brain:' . $r->id, 'brain', (string) $r->title, (string) $r->body, (string) $r->created_date, $r->read_date !== null))
+            ->all();
+    }
+
+    /**
+     * Notices the platform sent to this person (scheduler findings and the like): web rows addressed
+     * to `user:<id>` in the notification log. Staff only; students never receive these.
+     */
+    private function platformNotices(int $tenant, int $userId): array
+    {
+        if (! Schema::hasTable('platform_notification_log')) {
+            return [];
+        }
+
+        return DB::table('platform_notification_log')
+            ->where('sub_institute_id', $tenant)->where('recipient', 'user:' . $userId)
+            ->where('channel', 'web')->where('status', 'sent')
+            ->orderByDesc('id')->limit(self::PER_SOURCE)
+            ->get(['id', 'subject', 'body', 'created_at'])
+            ->map(fn ($r) => $this->row('platform:' . $r->id, 'platform', (string) $r->subject, (string) $r->body, (string) $r->created_at, null))
             ->all();
     }
 

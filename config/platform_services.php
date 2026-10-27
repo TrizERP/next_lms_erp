@@ -838,7 +838,7 @@ return [
         ],
         'library.circulation.overdue_scan' => [
             'label' => 'Scan for overdue books',
-            'description' => 'Marks loans overdue and notifies the borrower.',
+            'description' => 'Counts overdue loans and notifies the librarian.',
             'schedule' => ['minute' => '0', 'hour' => '6', 'day' => '*', 'month' => '*', 'day_of_week' => '*'],
         ],
         'library.fine.accrue' => [
@@ -914,6 +914,24 @@ return [
             'schedule' => ['minute' => '0', 'hour' => '3', 'day' => '1', 'month' => '*', 'day_of_week' => '*'],
             'disabled_by_default' => true,
         ],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Scheduler audiences
+    |--------------------------------------------------------------------------
+    |
+    | Who is told when a scheduled job finds something: task key => profile NAMES
+    | (tbluserprofilemaster.name, matched case-insensitively, within the task's school,
+    | active users only). role_key is empty on every profile so it is not used.
+    | STAFF ONLY: parents and students are never listed here and SchedulerNotifier
+    | drops those names even if added. Only tasks listed here send anything.
+    |
+    */
+    'scheduler_audiences' => [
+        'library.circulation.overdue_scan' => ['Librarian', 'School admin'],
+        'attendance.student.unmarked_check' => ['School admin', 'Principal', 'Vice Principal'],
+        'fees.defaulter.overdue_scan' => ['School admin'],
     ],
 
     /*
