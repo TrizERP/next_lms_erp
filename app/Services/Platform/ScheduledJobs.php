@@ -32,7 +32,7 @@ class ScheduledJobs
         // Jobs for the other modules live beside this file, grouped by area, so
         // each can be read on its own. A group that is absent simply adds nothing.
         $groups = [];
-        foreach ([ScheduledJobsAcademic::class, ScheduledJobsOperations::class, ScheduledJobsFinance::class] as $group) {
+        foreach ([ScheduledJobsAcademic::class, ScheduledJobsOperations::class, ScheduledJobsFinance::class, ScheduledJobsPending::class] as $group) {
             if (class_exists($group)) {
                 $groups[] = $group::registry();
             }
