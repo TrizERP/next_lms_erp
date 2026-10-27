@@ -37,6 +37,33 @@ Route::prefix('api/pal/eso')->middleware('pal.auth')->group(function () {
     Route::get('/decision-log/{learnerId}/{conceptId}', [EsoEngineController::class, 'decisionLog'])
         ->where(['learnerId' => '[0-9]+', 'conceptId' => '[0-9]+']);
 
+    // Teacher-scoped siblings of knowledgeMap()/conceptMasteryDetails() below
+    // — those two stay behind eso.student (see that middleware's own
+    // docblock: a deliberate hard boundary, never to be loosened or
+    // bypassed). These call the exact same EsoPolicyService logic but are
+    // registered here, outside eso.student, so PalApiAuth's ordinary
+    // {learnerId} check (resolveTargetLearner()/authorizeLearner()) applies
+    // instead — the same mechanism decision-log above already relies on for
+    // its own {learnerId}: student=self, staff=teacher-of-student,
+    // admin=institute. A student viewing their own data still works (self is
+    // always allowed); a staff/admin caller outside their institute/class
+    // scope is still rejected, same as every other {learnerId} route in this
+    // group. No bespoke authorization is written in the controller.
+    Route::get('/teacher/knowledge-map/{learnerId}/{conceptId}', [EsoEngineController::class, 'knowledgeMapForTeacher'])
+        ->where(['learnerId' => '[0-9]+', 'conceptId' => '[0-9]+']);
+
+    Route::get('/teacher/concept-mastery-details/{learnerId}/{conceptId}', [EsoEngineController::class, 'conceptMasteryDetailsForTeacher'])
+        ->where(['learnerId' => '[0-9]+', 'conceptId' => '[0-9]+']);
+
+    // Context Graph Inspector's single read — composes conceptMasteryDetails(),
+    // chapterKnowledgeMap() and the persisted decision-log rows in one round
+    // trip. Same ordinary institute/class scoping as every route in this
+    // block; see EsoEngineController::contextInspector()'s own docblock for
+    // why `live_next_action` is still restricted to the student themselves
+    // even though the rest of this read is teacher/admin-readable.
+    Route::get('/context-inspector/{learnerId}/{conceptId}', [EsoEngineController::class, 'contextInspector'])
+        ->where(['learnerId' => '[0-9]+', 'conceptId' => '[0-9]+']);
+
     Route::get('/pilot/metrics', [PilotMetricsController::class, 'summary']);
 
     // Curriculum Coverage and Student Attainment — a cohort report, so it
@@ -75,6 +102,16 @@ Route::prefix('api/pal/eso')->middleware('pal.auth')->group(function () {
 
     Route::get('/reports/activity/class/download', [StudentActivityReportController::class, 'classReportDownload'])
         ->name('pal.eso.reports.activity_class_download');
+
+    // The named-student counterpart to classReport() (which is aggregate-only
+    // by design — see that method's own docblock: "aggregated, never
+    // itemised per learner"). One row per student in the cohort, bucketed
+    // mastered/learning/stuck/declining/not_started. Same cohort resolution
+    // (cohortStudentIds()) and the same staff/teacher-of-class scoping
+    // (requireClassScope()) as classReport() — nothing new invented, and the
+    // same query params (standard_id/syear/section_id/subject_id/from/to).
+    Route::get('/reports/activity/class/roster', [StudentActivityReportController::class, 'classRoster'])
+        ->name('pal.eso.reports.activity_class_roster');
 
     Route::get('/reports/activity/{learnerId}', [StudentActivityReportController::class, 'studentReport'])
         ->where('learnerId', '[0-9]+')
