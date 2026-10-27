@@ -139,11 +139,31 @@ class LmsCourseCatalogService
             ];
         })->all();
 
-        return [
+        $response = [
             'count' => count($courses),
             'limit' => $limit,
             'courses' => $courses,
         ];
+
+        $validator = app(\App\Services\Lms\CourseCatalogueHierarchyValidator::class);
+
+        if (!empty($filters['validate_hierarchy'])) {
+            $force = !empty($filters['force']);
+            $response['hierarchy_validation'] = $validator->validate($context->selectedInstituteId, $force);
+        } else {
+            $latest = $validator->getLatestRun($context->selectedInstituteId);
+            if ($latest) {
+                $response['latest_hierarchy_validation'] = [
+                    'status' => $latest['status'],
+                    'last_run_time' => $latest['last_run_time'],
+                    'next_scheduled_run' => $latest['next_scheduled_run'],
+                    'counts' => $latest['counts'],
+                    'summary' => $latest['summary'],
+                ];
+            }
+        }
+
+        return $response;
     }
 
     /**

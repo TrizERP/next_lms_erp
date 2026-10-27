@@ -108,6 +108,7 @@ use App\Mcp\Tools\TasksOverdueTool;
 use App\Mcp\Tools\TasksProjectsTool;
 use App\Mcp\Tools\TeachersDailyReportTool;
 use App\Mcp\Tools\TeachersDirectoryTool;
+use App\Mcp\Tools\TeachLearnContentModelCoverageTool;
 use App\Mcp\Tools\TeachLearnCoursesTool;
 use App\Mcp\Tools\TimetableConflictsTool;
 use App\Mcp\Tools\TimetableScheduleTool;
@@ -166,6 +167,7 @@ class McpServiceProvider extends ServiceProvider
         LmsCoursesTool::class,
         LmsCourseSummaryTool::class,
         TeachLearnCoursesTool::class,
+        TeachLearnContentModelCoverageTool::class,
         ExamsListTool::class,
         ExamsResultsTool::class,
 

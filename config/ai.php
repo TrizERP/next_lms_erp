@@ -631,6 +631,7 @@ return [
                     'lms.courses',
                     'lms.course_summary',
                     'lms.activities',
+                    'teach_learn.content_model_coverage',
                     'academics.structure',
                     'academics.subjects',
                     'ai.templates.list',

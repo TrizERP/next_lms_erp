@@ -25,6 +25,19 @@ class Kernel extends ConsoleKernel
         // run that dies cannot hold the lock for the default 24 hours.
         $schedule->command('platform:schedule-run')->everyMinute()->withoutOverlapping(5);
 
+        // Course Catalogue Reader Agent: Continuous 5-tier content hierarchy validation
+        // Validates: Standard -> Subject -> Chapter -> Topic -> Intelligence
+        $schedule->command('lms:validate-catalogue-hierarchy --institute=1')
+            ->everyThirtyMinutes()
+            ->withoutOverlapping(10)
+            ->name('course-catalogue-hierarchy-validator');
+
+        // Automatic restart recovery & persistent scheduler tick for Course Catalogue Reader Agent
+        $schedule->call(function () {
+            app(\App\Services\Lms\CourseCatalogueHierarchyValidator::class)->tickActiveAgents();
+        })->everyMinute()->name('course-catalogue-agent-tick')->withoutOverlapping();
+
+
         // MariaDB -> Neo4j outbox. Controllers flush inline so a change is
         // visible immediately; this is the safety net that catches anything the
         // inline flush could not deliver (Neo4j restart, bolt timeout) and, more

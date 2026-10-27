@@ -57,6 +57,16 @@ class LmsCoursesTool extends AbstractMcpTool
                     'description' => 'Set false for a shorter answer when only the course list is needed.',
                 ],
                 'limit' => ['type' => 'integer', 'minimum' => 1, 'maximum' => 200, 'default' => 50],
+                'validate_hierarchy' => [
+                    'type' => 'boolean',
+                    'default' => false,
+                    'description' => 'When true, validates the complete 5-tier content hierarchy (Standard -> Subject -> Chapter -> Topic -> Intelligence) and returns health metrics and detected gaps.',
+                ],
+                'force' => [
+                    'type' => 'boolean',
+                    'default' => false,
+                    'description' => 'Force revalidation even if content fingerprint is unchanged.',
+                ],
             ],
             'additionalProperties' => false,
         ];
