@@ -58,6 +58,7 @@ class ModuleIntegrationService
             'talent' => $this->getTalentIntegrations($tenantId, $syear),
             'capability' => $this->getCapabilityIntegrations($tenantId, $syear),
             'lms-activity' => $this->getLmsActivityIntegrations($tenantId, $syear),
+            'career' => $this->getCareerIntegrations($tenantId, $syear),
             'petty-cash' => $this->getPettyCashIntegrations($tenantId, $syear),
             'document-templates' => $this->getDocumentTemplateIntegrations($tenantId, $syear),
             'ptm' => $this->getPtmIntegrations($tenantId, $syear),
@@ -124,6 +125,7 @@ class ModuleIntegrationService
             'talent' => 'Talent Management',
             'capability' => 'Capability & Skills',
             'lms-activity' => 'LMS Activity',
+            'career' => 'Career Intelligence',
             'petty-cash' => 'Petty Cash',
             'document-templates' => 'Document Templates',
             'ptm' => 'Parent-Teacher Meetings',
@@ -1273,6 +1275,82 @@ class ModuleIntegrationService
                 'shared_entities' => ['department_id', 'jobrole_id'],
                 'route' => '/modules/organization-management/intelligence',
                 'reason' => $departments === 0 ? 'No job role names a department for this institute.' : null,
+            ],
+        ];
+    }
+
+    /**
+     * Career Intelligence — how the career evidence ledger meets the rest of the
+     * system. Counts come from CareerIntelligence, which scopes the ledger to
+     * this institute through student enrolment (evidence_events has no tenant
+     * column); a failure to read them reports zero rather than aborting the tab.
+     */
+    private function getCareerIntegrations(int $tenantId, ?string $syear): array
+    {
+        $cohort = $evidenced = $aspirants = 0;
+        $bySource = [];
+
+        try {
+            $analytics = new CareerIntelligence((string) $tenantId, $syear);
+            $position = $analytics->position();
+            if ($position !== null) {
+                $cohort = $position['cohort'];
+                $evidenced = $position['evidenced'];
+                $aspirants = $position['aspirants'];
+                foreach ($analytics->bySource() as $s) {
+                    $bySource[$s['key']] = $s['events'];
+                }
+            }
+        } catch (\Throwable) {
+        }
+
+        $assessment = $bySource['assessment'] ?? 0;
+        $pal = $bySource['pal'] ?? 0;
+        $year = $syear ?? 'selected';
+
+        return [
+            [
+                'id' => 'career-students',
+                'target_module' => 'student',
+                'target_label' => 'Student Enrollment',
+                'relationship' => 'The Grade 9-10 cohort career evidence is measured against',
+                'why_it_matters' => 'The ledger has no institute column, so a student\'s enrolment is the only thing that places evidence at this institute, and the cohort is the denominator for coverage.',
+                'status' => $cohort > 0 ? 'available' : 'unavailable',
+                'record_count' => $cohort,
+                'metrics' => [
+                    ['label' => 'Grade 9-10 students on the roll', 'value' => (string) $cohort],
+                    ['label' => 'With career evidence', 'value' => (string) $evidenced],
+                    ['label' => 'With a stated aspiration', 'value' => (string) $aspirants],
+                ],
+                'shared_entities' => ['student_id', 'standard_id', 'syear'],
+                'route' => '/students/intelligence',
+                'reason' => $cohort === 0 ? "No Grade 9 or 10 students are enrolled for academic year {$year}." : null,
+            ],
+            [
+                'id' => 'career-assessment',
+                'target_module' => 'result',
+                'target_label' => 'Online Exams & Assessment',
+                'relationship' => 'Evidence written from submitted online exams',
+                'why_it_matters' => 'Assessment evidence enters the ledger when a student submits an online exam, so exam activity decides how much career evidence exists.',
+                'status' => $assessment > 0 ? 'available' : 'unavailable',
+                'record_count' => $assessment,
+                'metrics' => [['label' => 'Assessment evidence rows', 'value' => (string) $assessment]],
+                'shared_entities' => ['student_id', 'competency_id', 'assessment_id'],
+                'route' => '/result/intelligence',
+                'reason' => $assessment === 0 ? "No assessment evidence has been recorded for this institute's Grade 9-10 students." : null,
+            ],
+            [
+                'id' => 'career-pal',
+                'target_module' => 'teach-learn',
+                'target_label' => 'Personalised Adaptive Learning',
+                'relationship' => 'Evidence written from adaptive-learning concept outcomes',
+                'why_it_matters' => 'PAL concept outcomes are the second evidence source; a student who works in PAL but not in online exams is only visible to career guidance through this link.',
+                'status' => $pal > 0 ? 'available' : 'unavailable',
+                'record_count' => $pal,
+                'metrics' => [['label' => 'PAL evidence rows', 'value' => (string) $pal]],
+                'shared_entities' => ['student_id', 'competency_id', 'source_id'],
+                'route' => '/teach-learn',
+                'reason' => $pal === 0 ? "No PAL evidence has been recorded for this institute's Grade 9-10 students." : null,
             ],
         ];
     }

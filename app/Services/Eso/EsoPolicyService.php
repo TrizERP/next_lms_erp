@@ -6,6 +6,7 @@ use App\Domain\Eso\Flow\EsoFlowContext;
 use App\Domain\Eso\Flow\EsoFlowPipeline;
 use App\Domain\Eso\Flow\EsoFlowPlan;
 use App\Domain\Eso\Flow\EsoFlowPort;
+use App\Events\Pal\ConceptOutcomeRecorded;
 use App\Models\Eso\DecisionLog;
 use App\Models\Eso\LearnerNodeState;
 use App\Models\Eso\ResponseLog;
@@ -2884,6 +2885,9 @@ class EsoPolicyService implements EsoFlowPort
                     EsoEvidenceBridge::OUTCOME_MASTERED,
                     ['knowledge_mastery' => $kMastery, 'application_mastery' => $aMastery, 'rule' => 'D4']
                 );
+
+                // Career Intelligence picks this up as adaptive-practice evidence (queued, never blocks the answer).
+                event(new ConceptOutcomeRecorded($studentId, $conceptId, ConceptOutcomeRecorded::MASTERED));
             }
         }
 
@@ -3505,6 +3509,7 @@ class EsoPolicyService implements EsoFlowPort
         // row exists, for the same reason as the D4 path above.
         if ($allCorrect) {
             $this->awardGamification($studentId);
+            event(new ConceptOutcomeRecorded($studentId, $conceptId, ConceptOutcomeRecorded::RETAINED));
         }
 
         $this->evidenceBridge->recordOutcome(

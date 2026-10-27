@@ -168,6 +168,14 @@ final class ModuleSignalBridge
             StaffAttendanceSignalRules::class,
             'vivek_erp.hrms_attendances',
         ],
+        // Career evidence readiness — a read-only view of the career evidence
+        // ledger, scoped to the tenant through student enrolment because
+        // evidence_events carries no institute column of its own.
+        'career' => [
+            CareerIntelligence::class,
+            CareerSignalRules::class,
+            'vivek_erp.evidence_events',
+        ],
         'lms-activity' => [
             LmsActivityIntelligence::class,
             LmsActivitySignalRules::class,

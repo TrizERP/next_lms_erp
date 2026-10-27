@@ -33,6 +33,10 @@ class VerifyCsrfToken extends Middleware
         // Level-3): same stateless JWT-bearer reasoning as studentAspiration.
         'studentAmbition',
         'studentOriginality',
+        // Career mentor crosswalk (HR mapping page): same stateless JWT-bearer
+        // reasoning; identity and role are enforced in CareerMentorController.
+        'careerMentorCrosswalk',
+        'careerMentorCrosswalk/*',
         // PAL student flow: stateless JWT-bearer endpoints the Next.js SPA
         // posts to directly, exactly like api/* above. The client never holds a
         // Laravel session cookie/XSRF token pair to present.

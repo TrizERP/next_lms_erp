@@ -19,6 +19,7 @@ Route::middleware('lms.auth')->group(function () {
         ->middleware('perm:platform.workflow,update');
 
     Route::get('/notifications/log', [EngineController::class, 'notificationLog']);
+    Route::get('/notifications/inbox', [EngineController::class, 'notificationInbox'])->middleware('perm:platform.notification,update');
     Route::post('/notifications/test-send', [EngineController::class, 'sendTest'])->middleware('perm:platform.notification,update');
 
     Route::post('/scheduler/run-now', [EngineController::class, 'runTaskNow'])

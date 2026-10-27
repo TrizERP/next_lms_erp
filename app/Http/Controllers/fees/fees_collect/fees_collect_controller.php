@@ -955,8 +955,34 @@ uksort($other_bk_off_month_head_wise, function($a, $b) {
         // send sms to parent after fees paid
             $res['sms_sent'] = $this->send_sms_to_parents($res);
         }
-        
+
+        $this->notifyAdminPaymentReceived((int) $sub_institute_id, $stu_arr[0], $fees_data);
+
         return $res;
+    }
+
+    /** Puts a "payment received" line in the admin's header bell. A notification failure must never break a payment. */
+    private function notifyAdminPaymentReceived(int $subInstituteId, $studentId, array $feesData): void
+    {
+        try {
+            $amount = 0;
+            array_walk_recursive($feesData, function ($v) use (&$amount) {
+                $amount += is_numeric($v) ? (float) $v : 0;
+            });
+
+            $student = DB::table('tblstudent')->where('id', $studentId)->first(['first_name', 'last_name']);
+            $name = $student ? trim($student->first_name . ' ' . $student->last_name) : 'A student';
+
+            app(\App\Services\Platform\NotificationSender::class)->dispatch(
+                $subInstituteId,
+                'fees.collection.payment_received',
+                [['channel' => 'web', 'recipient' => 'admin']],
+                'Fees payment received',
+                $name . ' paid fees of ' . number_format($amount, 2) . '.'
+            );
+        } catch (\Throwable $e) {
+            \Log::warning('fees payment notification failed: ' . $e->getMessage());
+        }
     }
 
 
