@@ -6,6 +6,7 @@ use App\Models\Platform\PlatformScheduledTask;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use InvalidArgumentException;
 use Throwable;
 
@@ -24,7 +25,7 @@ use Throwable;
  */
 class SchedulerDispatcher
 {
-    /** @return array<string,callable(PlatformScheduledTask):string> task_key => handler returning a summary */
+    /** @return array<string,callable(PlatformScheduledTask):(string|array)> task_key => handler returning a summary string, or {summary, findings} */
     private function handlers(): array
     {
         return array_merge(ScheduledJobs::registry(), [
@@ -135,11 +136,15 @@ class SchedulerDispatcher
         }
 
         try {
-            $message = $handler($task);
+            ['summary' => $message, 'findings' => $findings] = self::normalise($handler($task));
             $task->forceFill(['last_run_at' => $now, 'last_run_status' => 'ok'])->save();
             AuditTrail::record((int) $task->sub_institute_id, (string) $task->module, (string) $task->component, 'task_run', [
                 'entity_type' => 'scheduled_task', 'entity_id' => $task->task_key, 'after' => ['status' => 'ok', 'message' => $message],
             ]);
+
+            // After the run is recorded, so a notification problem can never fail or block it. Covers run-now too,
+            // because EngineController::runTaskNow goes through this method; the notifier's fingerprint check stops repeats.
+            $this->notifyFindings($task, $findings);
 
             return ['status' => 'ok', 'message' => $message];
         } catch (Throwable $e) {
@@ -148,6 +153,49 @@ class SchedulerDispatcher
             return ['status' => 'failed', 'message' => mb_substr($e->getMessage(), 0, 300)];
         } finally {
             $lock->release();
+        }
+    }
+
+    /**
+     * A job may return a string (no findings) or {summary:string, findings:list}. Anything else is stringified.
+     *
+     * @return array{summary:string,findings:list<array{key:string,count:int,severity:string,fingerprint:string,message:string}>}
+     */
+    public static function normalise(mixed $result): array
+    {
+        if (! is_array($result)) {
+            return ['summary' => (string) $result, 'findings' => []];
+        }
+
+        $findings = [];
+        foreach ((array) ($result['findings'] ?? []) as $f) {
+            if (! is_array($f) || ! isset($f['key'])) {
+                continue;
+            }
+            $severity = in_array($f['severity'] ?? null, ['info', 'warning', 'critical'], true) ? $f['severity'] : 'info';
+            $count = max(0, (int) ($f['count'] ?? 0));
+            $findings[] = [
+                'key' => (string) $f['key'], 'count' => $count, 'severity' => $severity,
+                'fingerprint' => (string) ($f['fingerprint'] ?? $count), 'message' => (string) ($f['message'] ?? ''),
+            ];
+        }
+
+        return ['summary' => (string) ($result['summary'] ?? ''), 'findings' => $findings];
+    }
+
+    /** Sends staff notices for a run's findings. Never throws. */
+    public function notifyFindings(PlatformScheduledTask $task, array $findings): int
+    {
+        if ($findings === []) {
+            return 0;
+        }
+
+        try {
+            return app(SchedulerNotifier::class)->notify($task, $findings);
+        } catch (Throwable $e) {
+            Log::warning('Scheduler notification failed for '.$task->task_key.': '.$e->getMessage());
+
+            return 0;
         }
     }
 
