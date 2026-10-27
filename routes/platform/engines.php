@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\api\Platform\EngineController;
+use App\Http\Controllers\api\Platform\MyNotificationsController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -20,6 +21,7 @@ Route::middleware('lms.auth')->group(function () {
 
     Route::get('/notifications/log', [EngineController::class, 'notificationLog']);
     Route::get('/notifications/inbox', [EngineController::class, 'notificationInbox'])->middleware('perm:platform.notification,update');
+    Route::get('/notifications/mine', [MyNotificationsController::class, 'index']);
     Route::post('/notifications/test-send', [EngineController::class, 'sendTest'])->middleware('perm:platform.notification,update');
 
     Route::post('/scheduler/run-now', [EngineController::class, 'runTaskNow'])
