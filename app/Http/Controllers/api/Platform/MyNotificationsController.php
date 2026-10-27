@@ -34,7 +34,7 @@ class MyNotificationsController extends PlatformController
     {
         $tenant = $this->tenantId($request);
         $auth = $this->auth($request);
-        $userId = (int) ($auth['id'] ?? 0);
+        $userId = (int) ($auth['user_id'] ?? 0);
         if ($tenant === null || $userId <= 0) {
             return $this->unauthenticated($request);
         }
