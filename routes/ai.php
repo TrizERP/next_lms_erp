@@ -304,6 +304,21 @@ Route::prefix(config('ai.route_prefix', 'api/ai'))
             Route::post('/agents/{agent}/run', [AgentController::class, 'run'])->where('agent', '[a-z0-9_\-]+');
 
             /*
+            | Teach/Learn Course Catalogue Reader Agent - Web Interface Management
+            | Start, stop, interval configuration, and continuous loop state without CLI.
+            */
+            Route::prefix('teach-learn/catalogue-agent')->group(function () {
+                Route::get('state', [\App\Http\Controllers\AI\TeachLearnCatalogueAgentController::class, 'state']);
+                Route::get('content-tasks', [\App\Http\Controllers\AI\TeachLearnCatalogueAgentController::class, 'contentTasks']);
+                Route::post('start', [\App\Http\Controllers\AI\TeachLearnCatalogueAgentController::class, 'start']);
+                Route::post('stop', [\App\Http\Controllers\AI\TeachLearnCatalogueAgentController::class, 'stop']);
+                Route::post('run-now', [\App\Http\Controllers\AI\TeachLearnCatalogueAgentController::class, 'runNow']);
+                Route::post('interval', [\App\Http\Controllers\AI\TeachLearnCatalogueAgentController::class, 'setInterval']);
+                Route::post('auto-generate/toggle', [\App\Http\Controllers\AI\TeachLearnCatalogueAgentController::class, 'toggleAutoGenerate']);
+                Route::post('auto-generate/batch', [\App\Http\Controllers\AI\TeachLearnCatalogueAgentController::class, 'runContentBatch']);
+            });
+
+            /*
             | Workflows. Note there is no "run this step" route: a run advances only
             | through the engine or by resolving an approval.
             */

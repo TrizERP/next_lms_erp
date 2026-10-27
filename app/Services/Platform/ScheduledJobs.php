@@ -38,6 +38,7 @@ class ScheduledJobs
             'library.circulation.overdue_scan' => [self::class, 'libraryOverdue'],
             'attendance.student.unmarked_check' => [self::class, 'attendanceUnmarked'],
             'lms.assignment.overdue_scan' => [self::class, 'lmsAssignmentsOverdue'],
+            'lms.course.hierarchy_validation' => [self::class, 'courseCatalogueHierarchyValidation'],
             'reports.export.cleanup' => [self::class, 'reportExportCleanup'],
         ];
 
@@ -134,5 +135,29 @@ class ScheduledJobs
             ->update(['deleted_at' => now(), 'updated_at' => now()]);
 
         return "Removed {$n} scheduled report files older than 30 days.";
+    }
+
+    /**
+     * Course Catalogue Reader Agent - Continuous 5-tier content hierarchy validation.
+     * Evaluates: Standard -> Subject -> Chapter -> Topic -> Intelligence.
+     */
+    public static function courseCatalogueHierarchyValidation(PlatformScheduledTask $task): string
+    {
+        $tenant = (int) $task->sub_institute_id;
+        $validator = app(\App\Services\Lms\CourseCatalogueHierarchyValidator::class);
+        $res = $validator->validate($tenant, false);
+        $counts = $res['counts'] ?? [];
+
+        return sprintf(
+            'Course Catalogue Reader: %d standards, %d subjects, %d chapters, %d topics, %d intel configs checked (%d complete 5-tier chains, %d issues detected). Status: %s.',
+            $counts['standards_checked'] ?? 0,
+            $counts['subjects_checked'] ?? 0,
+            $counts['chapters_checked'] ?? 0,
+            $counts['topics_checked'] ?? 0,
+            $counts['intelligence_configs_checked'] ?? 0,
+            $counts['complete_hierarchies_validated'] ?? 0,
+            $counts['total_issues_detected'] ?? 0,
+            $res['status'] ?? 'ok'
+        );
     }
 }

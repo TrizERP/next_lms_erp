@@ -160,6 +160,144 @@ class ContentModelCoverageService
         ];
     }
 
+    /**
+     * Analyzes content model coverage across institute chapters, identifying
+     * covered and missing content mappings to support curriculum and content planning.
+     *
+     * @param  int|null  $tenant  Institute ID
+     * @param  array<string, mixed>  $filters  Filters: standard, standard_id, subject, subject_id, limit
+     * @return array<string, mixed>
+     */
+    public function coverageAnalysis(?int $tenant, array $filters = []): array
+    {
+        $estate = $this->estate($tenant);
+        $chapters = $this->source->listChapters($tenant, $filters);
+        $limit = min(max((int) ($filters['limit'] ?? 50), 1), 200);
+
+        $ids = array_map(fn ($c) => (int) $c['id'], $chapters);
+        $sectionCounts = $this->sectionCounts($ids, $tenant);
+
+        $chapterAnalysis = [];
+        $fullyCovered = 0;
+        $partiallyCovered = 0;
+        $missingCounts = [
+            'concept_learning' => 0,
+            'practice_ladder' => 0,
+            'misconceptions' => 0,
+            'assessment_bank' => 0,
+            'real_world_applications' => 0,
+            'pedagogy' => 0,
+        ];
+
+        foreach ($chapters as $ch) {
+            $id = (int) $ch['id'];
+            $counts = $sectionCounts[$id] ?? [];
+
+            $covered = [];
+            $missing = [];
+
+            // Type 1: Concept Learning
+            if (($ch['total_concepts'] ?? 0) > 0) {
+                $covered[] = 'concept_learning';
+            } else {
+                $missing[] = 'concept_learning';
+                $missingCounts['concept_learning']++;
+            }
+
+            // Type 2: Practice Ladder (assessment_blueprint)
+            if (($counts['assessment_blueprint'] ?? 0) > 0) {
+                $covered[] = 'practice_ladder';
+            } else {
+                $missing[] = 'practice_ladder';
+                $missingCounts['practice_ladder']++;
+            }
+
+            // Type 3: Misconceptions
+            if (($counts['misconceptions'] ?? 0) > 0) {
+                $covered[] = 'misconceptions';
+            } else {
+                $missing[] = 'misconceptions';
+                $missingCounts['misconceptions']++;
+            }
+
+            // Type 4: Assessment Bank (assessment_rubrics)
+            if (($counts['assessment_rubrics'] ?? 0) > 0) {
+                $covered[] = 'assessment_bank';
+            } else {
+                $missing[] = 'assessment_bank';
+                $missingCounts['assessment_bank']++;
+            }
+
+            // Additional pedagogical mappings
+            if (($counts['real_world_applications'] ?? 0) > 0) {
+                $covered[] = 'real_world_applications';
+            } else {
+                $missingCounts['real_world_applications']++;
+            }
+            if (($counts['pedagogy'] ?? 0) > 0) {
+                $covered[] = 'pedagogy';
+            } else {
+                $missingCounts['pedagogy']++;
+            }
+
+            $isComplete = in_array('concept_learning', $covered, true)
+                && in_array('practice_ladder', $covered, true)
+                && in_array('misconceptions', $covered, true)
+                && in_array('assessment_bank', $covered, true);
+
+            if ($isComplete) {
+                $fullyCovered++;
+            } else {
+                $partiallyCovered++;
+            }
+
+            $chapterAnalysis[] = [
+                'semantic_id' => $id,
+                'chapter_id' => $ch['chapter_id'],
+                'chapter_name' => $ch['chapter_name'] ?? ('Chapter ' . ($ch['chapter_number'] ?? '')),
+                'subject_name' => $ch['subject_name'] ?? '',
+                'standard' => $ch['standard'] ?? null,
+                'total_concepts' => (int) ($ch['total_concepts'] ?? 0),
+                'is_fully_covered' => $isComplete,
+                'covered_mappings' => $covered,
+                'missing_mappings' => $missing,
+                'blueprint_items' => $counts['assessment_blueprint'] ?? 0,
+                'misconception_items' => $counts['misconceptions'] ?? 0,
+                'rubric_items' => $counts['assessment_rubrics'] ?? 0,
+            ];
+        }
+
+        $totalChapters = count($chapters);
+        $slicedChapters = array_slice($chapterAnalysis, 0, $limit);
+
+        return [
+            'sub_institute_id' => $tenant,
+            'estate_summary' => [
+                'total_chapters' => $totalChapters,
+                'total_concepts' => (int) ($estate['chapters']['concepts'] ?? 0),
+                'fully_covered_chapters' => $fullyCovered,
+                'partially_covered_chapters' => $partiallyCovered,
+                'four_type_coverage' => $estate['four_type_model'] ?? [],
+                'missing_mappings_count' => $missingCounts,
+            ],
+            'curriculum_planning_insights' => [
+                'assessment_bank_gap' => sprintf(
+                    '%d of %d chapters lack calibrated assessment rubrics and need question bank authoring.',
+                    $missingCounts['assessment_bank'],
+                    $totalChapters
+                ),
+                'readiness_for_teaching' => sprintf(
+                    '%d chapters have active concept definitions and practice ladders ready for curriculum delivery.',
+                    $totalChapters - max($missingCounts['concept_learning'], $missingCounts['practice_ladder'])
+                ),
+            ],
+            'count' => count($slicedChapters),
+            'limit' => $limit,
+            'chapters' => $slicedChapters,
+            'note' => 'Content model coverage analysis across institute chapters. Identifies covered and missing mappings to support curriculum planning. Read-only; changes nothing.',
+        ];
+    }
+
     // ══════════════════════════════════════════════════════════════════════
     // Chapter level
     // ══════════════════════════════════════════════════════════════════════

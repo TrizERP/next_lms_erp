@@ -769,6 +769,11 @@ return [
             'description' => 'Re-indexes learning content so search reflects new material.',
             'schedule' => ['minute' => '0', 'hour' => '3', 'day' => '*', 'month' => '*', 'day_of_week' => '0'],
         ],
+        'lms.course.hierarchy_validation' => [
+            'label' => 'Course catalogue hierarchy validation',
+            'description' => 'Continuously validates the 5-tier learning content hierarchy (Standard -> Subject -> Chapter -> Topic -> Intelligence) for Course Catalogue Reader Agent.',
+            'schedule' => ['minute' => '*/30', 'hour' => '*', 'day' => '*', 'month' => '*', 'day_of_week' => '*'],
+        ],
 
         // Fees
         'fees.defaulter.overdue_scan' => [
