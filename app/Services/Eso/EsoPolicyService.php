@@ -3549,11 +3549,12 @@ class EsoPolicyService implements EsoFlowPort
     {
         $orderedReadyChapterIds = $this->orderedReadyChapterIds($studentId, $subInstituteId, $syear);
 
-        if ($orderedReadyChapterIds === null || $orderedReadyChapterIds === []) {
-            $defaultChapterId = (int) (DB::table('pal_concept_nodes as pcn')
-                ->join('lms_concept as lc', 'lc.id', '=', 'pcn.concept_id')
-                ->value('lc.chapter_id') ?: 1014);
-            return $this->chapterDashboard($studentId, $defaultChapterId, $subInstituteId);
+        if ($orderedReadyChapterIds === null) {
+            return null;
+        }
+
+        if ($orderedReadyChapterIds === []) {
+            return ['no_content' => true];
         }
 
         $fallback = null;
@@ -3570,7 +3571,7 @@ class EsoPolicyService implements EsoFlowPort
             }
         }
 
-        return $fallback ?? $this->chapterDashboard($studentId, 1014, $subInstituteId);
+        return $fallback ?? ['no_content' => true];
     }
 
     /**
@@ -3607,7 +3608,7 @@ class EsoPolicyService implements EsoFlowPort
         }
 
         if ($standardId === null) {
-            return [1014];
+            return null;
         }
 
         $subjectIds = DB::table('sub_std_map')
@@ -3618,7 +3619,7 @@ class EsoPolicyService implements EsoFlowPort
             ->all();
 
         if ($subjectIds === []) {
-            return [1014];
+            return [];
         }
 
         $chapterIds = DB::table('chapter_master')
@@ -3631,16 +3632,14 @@ class EsoPolicyService implements EsoFlowPort
             ->all();
 
         if ($chapterIds === []) {
-            return [1014];
+            return [];
         }
 
         $readyChapterIds = array_flip(
             $this->esoReadyConceptsForChapters($chapterIds, $subInstituteId)->pluck('chapter_id')->unique()->all()
         );
 
-        $filtered = array_values(array_filter($chapterIds, fn ($id) => isset($readyChapterIds[$id])));
-
-        return $filtered !== [] ? $filtered : [1014];
+        return array_values(array_filter($chapterIds, fn ($id) => isset($readyChapterIds[$id])));
     }
 
     // ── Learning path — PAL loop step 4, the Personal Learning Plan ──────────

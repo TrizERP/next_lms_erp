@@ -255,6 +255,65 @@ class EsoEngineController extends Controller
     }
 
     /**
+     * GET /api/pal/eso/teacher/knowledge-map/{learnerId}/{conceptId}
+     *
+     * Teacher-scoped sibling of knowledgeMap() — identical EsoPolicyService
+     * call and response shape (see that method's docblock), but reachable
+     * by a teacher/admin viewing a student in their own scope. knowledgeMap()
+     * itself stays behind eso.student, which blocks every non-student
+     * session on principle (see that middleware's docblock: a deliberate
+     * hard boundary this action does not touch or bypass).
+     *
+     * This action is registered in routes/pal_eso_api.php OUTSIDE the
+     * eso.student group, directly under pal.auth, so
+     * PalApiAuth::resolveTargetLearner()/authorizeLearner() already enforce
+     * "student=self, staff=teacher-of-student, admin=institute" for this
+     * {learnerId} route — the same mechanism decisionLog() above and
+     * StudentActivityReportController's {learnerId} actions already rely on
+     * (see that controller's class docblock: "Nothing here re-implements
+     * it."). No bespoke authorization check is written here.
+     */
+    public function knowledgeMapForTeacher(Request $request, int $learnerId, int $conceptId): JsonResponse
+    {
+        $subInstituteId = $this->subInstituteId($learnerId);
+        if ($subInstituteId === null) {
+            return $this->fail('Unknown learner.', 404);
+        }
+
+        $map = $this->policy->chapterKnowledgeMap($learnerId, $conceptId, $subInstituteId);
+        if ($map === null) {
+            return $this->fail('Unknown concept.', 404);
+        }
+
+        return $this->ok($map);
+    }
+
+    /**
+     * GET /api/pal/eso/teacher/concept-mastery-details/{learnerId}/{conceptId}
+     *
+     * Teacher-scoped sibling of conceptMasteryDetails() — identical
+     * EsoPolicyService call and response shape. See
+     * knowledgeMapForTeacher()'s docblock immediately above for why no
+     * additional authorization check is written in this action: placement
+     * outside eso.student, under plain pal.auth, is what gives it
+     * PalApiAuth's automatic per-learner ownership/scope check.
+     */
+    public function conceptMasteryDetailsForTeacher(Request $request, int $learnerId, int $conceptId): JsonResponse
+    {
+        $subInstituteId = $this->subInstituteId($learnerId);
+        if ($subInstituteId === null) {
+            return $this->fail('Unknown learner.', 404);
+        }
+
+        $details = $this->policy->conceptMasteryDetails($learnerId, $conceptId, $subInstituteId);
+        if ($details === null) {
+            return $this->fail('Unknown concept.', 404);
+        }
+
+        return $this->ok($details);
+    }
+
+    /**
      * POST /api/pal/eso/practice/{learnerId}/{nodeId}/attempt
      * body: { concept_id, answer_master_id, hint_used?, mode? }
      *
@@ -405,7 +464,7 @@ class EsoEngineController extends Controller
 
         $dashboard = $this->policy->studentDashboard($learnerId, $subInstituteId, (string) $syear);
         if ($dashboard === null) {
-            $dashboard = $this->policy->chapterDashboard($learnerId, 1014, $subInstituteId);
+            $dashboard = ['no_content' => true];
         }
 
         return $this->ok($dashboard);
@@ -428,9 +487,6 @@ class EsoEngineController extends Controller
         $subInstituteId = $this->subInstituteId($learnerId) ?? 1;
 
         $path = $this->policy->learningPath($learnerId, $subInstituteId, (string) $syear);
-        if ($path === null) {
-            $path = $this->policy->learningPath($learnerId, $subInstituteId, '2022');
-        }
 
         return $this->ok($path);
     }
@@ -473,6 +529,64 @@ class EsoEngineController extends Controller
             ->get(['id', 'node_id', 'rule_fired', 'action', 'llm_instruction', 'state_snapshot', 'created_at']);
 
         return $this->ok($rows);
+    }
+
+    /**
+     * GET /api/pal/eso/context-inspector/{learnerId}/{conceptId}
+     *
+     * The Context Graph Inspector's single read: everything needed to show
+     * how one decision was assembled, in one round trip rather than four.
+     * Composes only existing reads — conceptMasteryDetails(), the same
+     * chapterKnowledgeMap() the Knowledge Graph Explorer uses, and the last
+     * 10 decision-log rows (persisted fact, same source decisionLog() above
+     * serves). `latest_decision` is the most recent of those rows, never a
+     * fresh call to nextAction() — nextAction() writes a new decision-log
+     * row on every call (see its own docblock), so a teacher or admin
+     * merely inspecting a past decision must not be able to trigger a new
+     * one by looking. `live_next_action` is populated only when the caller
+     * is the enrolled student themselves, viewing their own concept — the
+     * same "teacher may read, only the student may act" boundary
+     * EsoStudentOnlyAuth draws for session-advancing routes, re-asserted
+     * here for this one read-mostly field rather than by placing this whole
+     * route behind that middleware (every other field here is legitimate
+     * teacher/admin reporting, same as decision-log and chapter-concepts
+     * above).
+     */
+    public function contextInspector(Request $request, int $learnerId, int $conceptId): JsonResponse
+    {
+        $subInstituteId = $this->subInstituteId($learnerId);
+        if ($subInstituteId === null) {
+            return $this->fail('Unknown learner.', 404);
+        }
+
+        $concept = DB::table('lms_concept')
+            ->where('id', $conceptId)
+            ->first(['id', 'name', 'chapter_id']);
+        if ($concept === null) {
+            return $this->fail('Unknown concept.', 404);
+        }
+
+        $decisionRows = DecisionLog::forStudent($learnerId)
+            ->forConcept($conceptId)
+            ->orderByDesc('created_at')
+            ->limit(10)
+            ->get(['id', 'node_id', 'rule_fired', 'action', 'llm_instruction', 'state_snapshot', 'created_at']);
+
+        $auth = $request->attributes->get('pal_auth');
+        $isSelf = is_array($auth) && ($auth['role'] ?? null) === 'student' && (int) ($auth['user_id'] ?? 0) === $learnerId;
+
+        return $this->ok([
+            'concept' => [
+                'id' => (int) $concept->id,
+                'name' => $concept->name,
+                'chapter_id' => (int) $concept->chapter_id,
+            ],
+            'mastery_details' => $this->policy->conceptMasteryDetails($learnerId, $conceptId, $subInstituteId),
+            'knowledge_map' => $this->policy->chapterKnowledgeMap($learnerId, $conceptId, $subInstituteId),
+            'decision_log' => $decisionRows,
+            'latest_decision' => $decisionRows->first(),
+            'live_next_action' => $isSelf ? $this->policy->nextAction($learnerId, $conceptId, $subInstituteId) : null,
+        ]);
     }
 
     /**

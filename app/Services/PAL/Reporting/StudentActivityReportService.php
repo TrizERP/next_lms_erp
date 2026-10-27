@@ -197,6 +197,140 @@ class StudentActivityReportService
         ];
     }
 
+    /**
+     * A whole class's roster, one row per student — the named-list
+     * counterpart to buildClassReport(), which is aggregate-only by design
+     * (see that method's own docblock). Each student gets exactly one
+     * bucket:
+     *   - not_started: zero learner_node_state rows in this scope at all
+     *   - mastered:    at least one node, and every node mastered/retained
+     *   - declining:   LearningVelocityEngine::detectRegression() flags
+     *                  is_regressing (checked before stuck — a regression is
+     *                  the more urgent signal of the two)
+     *   - stuck:       LearningVelocityEngine::detectPlateau() flags
+     *                  is_plateau
+     *   - learning:    some progress, none of the above red flags
+     *
+     * Mastery is read with ONE bulk learner_node_state query for the whole
+     * cohort (masteryTallyByStudent(), grouped in PHP) — the same
+     * bulk-whereIn-then-group-in-PHP shape as masteryOverview() above
+     * (grouped by chapter) and AttainmentReportService::masteredCountsByConcept()
+     * (grouped by concept), never one query per student. Only the plateau/
+     * regression engine calls run per student — both are plain PHP/DB
+     * reads (see LearningVelocityEngine; no AI/LLM call in either), the same
+     * calls buildStudentReport()'s buildIntelligence() already makes for a
+     * single learner, reused unchanged here via safeEngineCall() so one
+     * student's engine failure degrades only that student's row.
+     *
+     * @return list<array{student_id:int, name:?string, mastered_pct:?float, bucket:string}>
+     */
+    public function buildCohortRoster(
+        int $subInstituteId,
+        string $standardId,
+        string $syear,
+        ?string $sectionId = null,
+        ?string $subjectId = null
+    ): array {
+        $standardIdInt = (int) $standardId;
+        $sectionIdInt = $this->nullableInt($sectionId);
+        $subjectIdInt = $this->nullableInt($subjectId);
+
+        $studentIds = $this->cohortStudentIds($subInstituteId, $standardIdInt, $syear, $sectionIdInt);
+        if ($studentIds === []) {
+            return [];
+        }
+
+        [$nodeToChapter, ] = $this->chapterMaps($subInstituteId, $subjectIdInt);
+        $nodeIdsFilter = $subjectIdInt !== null ? array_keys($nodeToChapter) : null;
+
+        $tally = $this->masteryTallyByStudent($studentIds, $nodeIdsFilter);
+        $names = $this->studentNames($studentIds);
+
+        $roster = [];
+        foreach ($studentIds as $studentId) {
+            $nodesTotal = $tally[$studentId]['nodes_total'] ?? 0;
+            $mastered = $tally[$studentId]['mastered'] ?? 0;
+
+            if ($nodesTotal === 0) {
+                $bucket = 'not_started';
+            } elseif ($mastered === $nodesTotal) {
+                $bucket = 'mastered';
+            } else {
+                $regression = $this->safeEngineCall('roster.regression', fn () => $this->velocityEngine->detectRegression($studentId));
+                if (($regression['is_regressing'] ?? false) === true) {
+                    $bucket = 'declining';
+                } else {
+                    $plateau = $this->safeEngineCall('roster.plateau', fn () => $this->velocityEngine->detectPlateau($studentId));
+                    $bucket = (($plateau['is_plateau'] ?? false) === true) ? 'stuck' : 'learning';
+                }
+            }
+
+            $roster[] = [
+                'student_id' => $studentId,
+                'name' => $names[$studentId] ?? null,
+                'mastered_pct' => $nodesTotal > 0 ? round($mastered / $nodesTotal * 100, 1) : null,
+                'bucket' => $bucket,
+            ];
+        }
+
+        return $roster;
+    }
+
+    /**
+     * Bulk mastered/total node tally per student — one learner_node_state
+     * whereIn query for the whole cohort, grouped in PHP. Same pattern as
+     * masteryOverview() above (grouped by chapter instead of by student) and
+     * AttainmentReportService::masteredCountsByConcept() (grouped by
+     * concept): a single round trip, never N per-student queries.
+     *
+     * @param  array<int,int>  $studentIds
+     * @param  array<int,int>|null  $nodeIdsFilter
+     * @return array<int, array{nodes_total:int, mastered:int}>
+     */
+    private function masteryTallyByStudent(array $studentIds, ?array $nodeIdsFilter): array
+    {
+        $query = LearnerNodeState::query()->whereIn('student_id', $studentIds);
+        if ($nodeIdsFilter !== null) {
+            $query->whereIn('node_id', $nodeIdsFilter);
+        }
+        $states = $query->get(['student_id', 'status']);
+
+        $masteredStatuses = [LearnerNodeState::STATUS_MASTERED, LearnerNodeState::STATUS_RETAINED];
+        $grouped = $states->groupBy(fn ($s) => (int) $s->student_id);
+
+        $tally = [];
+        foreach ($studentIds as $studentId) {
+            $rows = $grouped->get($studentId, collect());
+            $tally[$studentId] = [
+                'nodes_total' => $rows->count(),
+                'mastered' => $rows->filter(fn ($s) => in_array($s->status, $masteredStatuses, true))->count(),
+            ];
+        }
+
+        return $tally;
+    }
+
+    /**
+     * Display names for a bulk list of students, one query — same
+     * first/middle/last concatenation buildStudentReport() already uses for
+     * a single learner, applied here to many at once.
+     *
+     * @param  array<int,int>  $studentIds
+     * @return array<int, string|null>
+     */
+    private function studentNames(array $studentIds): array
+    {
+        return DB::table('tblstudent')
+            ->whereIn('id', $studentIds)
+            ->get(['id', 'first_name', 'middle_name', 'last_name'])
+            ->mapWithKeys(function ($row) {
+                $name = trim(preg_replace('/\s+/', ' ', trim(($row->first_name ?? '') . ' ' . ($row->middle_name ?? '') . ' ' . ($row->last_name ?? ''))) ?? '');
+
+                return [(int) $row->id => $name !== '' ? $name : null];
+            })
+            ->all();
+    }
+
     // -------------------------------------------------------------------
     // Shared scope resolution
     // -------------------------------------------------------------------
