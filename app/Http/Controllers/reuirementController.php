@@ -27,7 +27,7 @@ class reuirementController extends Controller
     public function store(Request $request){
         // return $request->all();exit;
         $type=$request->type;
-        $sub_institute_id = $request->sub_institute_id;
+        $sub_institute_id = $this->requirementSchool($request);
         $editorVal = $request->requirements;
         $user_id = session()->get('user_id');
         $user_name = session()->get('name');
@@ -87,7 +87,7 @@ class reuirementController extends Controller
     }
     public function update(Request $request,$id){
         $type=$request->type;
-        $sub_institute_id = $request->sub_institute_id;
+        $sub_institute_id = $this->requirementSchool($request);
         $editorVal = $request->requirements;
         $user_id = session()->get('user_id');
         $user_name = session()->get('name');
@@ -132,4 +132,22 @@ class reuirementController extends Controller
         // echo "<pre>";print_r($res);exit;
         return is_mobile($type, "requirements.report", $res, 'view');
     }
+
+    /**
+     * Which school a saved requirement belongs to. Platform-wide process documents are stored under
+     * school 0 and only a Super Admin may write those; everyone else writes to their own school, never to
+     * whatever value the form sends.
+     */
+    private function requirementSchool(Request $request)
+    {
+        if ((string) $request->sub_institute_id === '0') {
+            $isSuperAdmin = strtolower((string) session()->get('user_profile_name')) === 'super admin';
+            abort_unless($isSuperAdmin, 403, 'Only a Super Admin can change platform-wide process documents.');
+
+            return 0;
+        }
+
+        return session()->get('sub_institute_id');
+    }
+
 }

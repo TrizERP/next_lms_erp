@@ -78,3 +78,51 @@ php artisan ai:encrypt-keys --decrypt
 ExamEvaluation `GeminiDocumentClientTest` / `QueueAndGeminiConfigTest`, AI `ModuleModelBindingIsolationTest`,
 `AiConfigIntegrityTest`, `GeminiDailyQuotaFallbackTest`, Eso (4), CoursePresentation (14), and most of `tests/Unit`
 (missing test-support classes).
+
+## 7. Round 2 (after PR #966)
+
+- `requirements` CRUD and `/task` now need a login; the school comes from the session. Platform-wide process
+  documents (school 0, used by the add-process screen) can only be written by a Super Admin. The all-schools report
+  `customers_requirement` is Super Admin only.
+- Uploaded SVG files are cleaned in `BlockExecutableUploads` (scripts, event handlers, `javascript:` links,
+  foreignObject, animation elements, DOCTYPE/entities removed); an SVG that cannot be parsed is refused with 422.
+  HTML uploads are still allowed (LMS and H5P content needs them).
+- Found with `php artisan routes:unmapped-writes` plus a read of the controller source: write routes with neither
+  a declared guard nor any auth in the controller. Now login-gated: the `ai/*` generators and `generate-gamma-pdf`,
+  `lms/api/teacher_resource/*`, `lms_chat`, `preview_distribution`, `get_search_url`, `lms/track-content-view`,
+  `lms/update-forgetting-curve`, `neo4j/assessment`, blog create/update/delete (blog reading stays public),
+  `map_student/bulk-delete`, and the Next.js `student/api/{student_certificate,student_icard,teacher_icard}/*`
+  routes (staff only, bearer token). The public sign-up / onboarding posts (`signup`, `NewLMS_*`, `add-institute`,
+  `preload-institute`, `admission_enquiry/payment_proof`) stay open on purpose and are limited to 20 per minute.
+- `php artisan routes:unmapped-writes [--json] [--only=web|api]` is read only. It lists every write route whose name
+  has no `tblmenumaster` row, grouped by what protects it. Map those routes, then make `checkPermission` fail closed
+  (E4). Its "no login and no rights check" group reads route middleware only, so `api/*` entries there are usually
+  covered by the `api` group guard or by the controller.
+- **E4 switch**: `PERM_FAIL_CLOSED=true` (default `false`, `config/permissions.php`) makes `checkPermission` refuse a write
+  route that has no menu row. Name deliberate exceptions in `PERM_UNMAPPED_ALLOW` (comma separated route names). Map
+  the routes from `php artisan routes:unmapped-writes` first, watch `perm: write route has no menu row` in the daily
+  log, then turn it on. Super Admin and all reads are unaffected.
+- **Dependencies** (`composer audit` / `npm audit`): phpspreadsheet 1.30.7 and league/commonmark 2.10.4 (patch upgrades);
+  Next.js app: `next` 16.4.3 (critical unauthenticated RCE advisories in 16.0-16.4.0) and isomorphic-dompurify 4.6.0
+  (dompurify 3.4.17). Still reported: firebase/php-jwt (low, needs v7), and in the Next.js app a few high ones in
+  dev-adjacent packages that need a major upgrade (shadcn/zod) or just `npm audit fix` (body-parser, undici,
+  source-map-js, @modelcontextprotocol/sdk); in the React Native app `expo` and `node-forge` (high).
+
+## 8. Final status and what was deliberately left
+
+Closed in code: B13 `/logout` ignores a request whose Origin/Referer is another site (bookmark, same-site and mobile
+requests with no header still log out).
+
+Left on purpose, each with the reason:
+
+| Item | Why it is not changed in code |
+|---|---|
+| **B2** stored passwords | The sidebar sends the stored password in the URL to the external Library, LMS and dailyLMS apps, which have no SSO token. Add SSO there first; then hash the column and drop `plain_password`. |
+| **G2** web token in `localStorage` | The web app deliberately has no idle timeout and no 401-then-sign-in flow. Shortening the token life now would fail mid-work. Needs that flow (or an httpOnly cookie) first. |
+| **G6** enforced CSP | Report-only is on. Enforce `script-src` once `/api/csp-report` shows what real pages load. |
+| **B10** CORS | Auth is a bearer token, not cookies, so a foreign origin cannot ride a session. The real control is setting `CORS_ALLOWED_ORIGINS` in production (it defaults to `*`). Ops. |
+| **B7** same email in several schools | Login now requires the password to match, so only the owner of both accounts is affected. Needs a school picker in the login UI. |
+| **E22** exam help ignores open/close dates | Matches how the exam screen itself behaves (it opens a paper whatever its dates say). Product decision. |
+| **H3** certificate pinning | Needs the production certificate fingerprint and a rotation plan; a wrong pin locks every user out. |
+| **H4** dev host as default | Failing a build that lacks `--dart-define` would also break any Shorebird/EAS patch built the same way. Check the release scripts instead. |
+| React Native / Expo | The three remaining high advisories need an Expo major upgrade. |
