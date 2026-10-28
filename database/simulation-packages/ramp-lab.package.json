@@ -1,0 +1,144 @@
+{
+    "format": "k12.sim-package/1",
+    "slug": "ramp-lab",
+    "title": "Ramp Lab",
+    "subtitle": "A baseball on a plank",
+    "summary": "Tilt a plank, change how much it grips, and see how long a baseball takes to knock over the cone.",
+    "category": "Mechanics",
+    "tags": "ramp,rolling,rigid body",
+    "audience": "Secondary school physics",
+    "minutes": 8,
+    "difficulty": "intro",
+    "missions": 1,
+    "cover": "simulations/covers/ramp-lab.webp",
+    "spec_json": "{\"schema\":\"g2g.sim/2\",\"engine\":\"rigid\",\"id\":\"ramp-lab\",\"version\":2,\"title\":\"Ramp Lab\",\"subtitle\":\"A baseball on a plank\",\"summary\":\"Tilt a plank, change how much it grips, and see how long a baseball takes to knock over the cone.\",\"meta\":{\"minutes\":8,\"audience\":\"Secondary school physics\",\"category\":\"Mechanics\",\"tags\":[\"ramp\",\"rolling\",\"rigid body\"],\"difficulty\":\"intro\"},\"knobs\":[{\"id\":\"angle\",\"label\":\"Ramp angle\",\"kind\":\"number\",\"unit\":\"deg\",\"min\":24,\"max\":45,\"step\":1,\"default\":30,\"help\":\"How steeply the plank is tilted. It rests on the rim of the drum.\"},{\"id\":\"grip\",\"label\":\"Grip\",\"kind\":\"number\",\"min\":0,\"max\":1,\"step\":0.05,\"default\":0.6,\"help\":\"Friction between the ball and the plank: 0 is ice, 1 is rubber.\"}],\"model\":{\"constants\":{\"g\":9.81,\"mass\":0.145,\"radius\":0.0373,\"k\":7,\"len\":2.4157,\"thick\":0.0896,\"drum\":0.9305,\"rdrum\":0.317,\"s0\":0.3,\"halfw\":0.4837,\"gap\":1.2},\"derived\":[{\"id\":\"th\",\"expr\":\"rad(angle)\"},{\"id\":\"cs\",\"expr\":\"cos(th)\"},{\"id\":\"sn\",\"expr\":\"sin(th)\"},{\"id\":\"cont\",\"expr\":\"len / 2 - drum / sn\"},{\"id\":\"rampx\",\"expr\":\"-cont * cs\"},{\"id\":\"rampy\",\"expr\":\"len / 2 * sn\"},{\"id\":\"a0\",\"expr\":\"s0 - len / 2\"},{\"id\":\"startx\",\"expr\":\"rampx + a0 * cs + (thick + radius + 0.001) * sn\"},{\"id\":\"starty\",\"expr\":\"rampy - a0 * sn + (thick + radius + 0.001) * cs\"},{\"id\":\"endx\",\"expr\":\"rampx + len / 2 * cs\"},{\"id\":\"coneAt\",\"expr\":\"endx + gap\"}],\"aux\":[{\"id\":\"ke\",\"label\":\"Kinetic energy\",\"unit\":\"J\",\"expr\":\"0.5 * mass * ball_speed * ball_speed\"}],\"dt\":0.002,\"tMax\":8,\"sampleEvery\":5,\"stop\":{\"when\":\"hit.count >= 1\"},\"outputs\":[{\"id\":\"reached\",\"label\":\"Cone hit\",\"fmt\":\"int\",\"expr\":\"hit.count\"},{\"id\":\"time\",\"label\":\"Time to the cone\",\"unit\":\"s\",\"fmt\":\"s\",\"digits\":2,\"expr\":\"hit.1.t\"},{\"id\":\"topspeed\",\"label\":\"Top speed\",\"unit\":\"m/s\",\"fmt\":\"num\",\"digits\":2,\"expr\":\"max.ball_speed\"},{\"id\":\"turns\",\"label\":\"Turns made\",\"fmt\":\"num\",\"digits\":1,\"expr\":\"abs(end.ball_rz - start.ball_rz) / 360\"}]},\"world\":{\"gravity\":[\"0\",\"-g\",\"0\"],\"materials\":{\"wood\":{\"friction\":\"grip\",\"restitution\":\"0.2\"},\"ball\":{\"friction\":\"grip\",\"restitution\":\"0.35\"},\"floor\":{\"friction\":\"0.7\",\"restitution\":\"0.1\"},\"rubber\":{\"friction\":\"0.6\",\"restitution\":\"0.2\"}},\"bodies\":[{\"id\":\"floor\",\"type\":\"fixed\",\"shape\":{\"kind\":\"box\",\"half\":[\"30\",\"0.1\",\"8\"]},\"position\":[\"5\",\"-0.1\",\"0\"],\"material\":\"floor\"},{\"id\":\"support\",\"type\":\"fixed\",\"shape\":{\"kind\":\"cylinder\",\"halfHeight\":\"drum / 2\",\"radius\":\"rdrum\"},\"position\":[\"-rdrum\",\"drum / 2\",\"0\"],\"material\":\"wood\"},{\"id\":\"ramp\",\"type\":\"fixed\",\"shape\":{\"kind\":\"box\",\"half\":[\"len / 2\",\"thick / 2\",\"halfw\"]},\"position\":[\"rampx + thick / 2 * sn\",\"rampy + thick / 2 * cs\",\"0\"],\"rotation\":[\"0\",\"0\",\"-angle\"],\"material\":\"wood\"},{\"id\":\"ball\",\"type\":\"dynamic\",\"mass\":\"mass\",\"shape\":{\"kind\":\"ball\",\"radius\":\"radius\"},\"position\":[\"startx\",\"starty\",\"0\"],\"material\":\"ball\",\"ccd\":true},{\"id\":\"cone\",\"type\":\"dynamic\",\"mass\":\"0.4\",\"shape\":{\"kind\":\"hull\",\"asset\":\"cone\"},\"position\":[\"coneAt\",\"0.001\",\"0\"],\"material\":\"rubber\"},{\"id\":\"chest\",\"type\":\"fixed\",\"shape\":{\"kind\":\"hull\",\"asset\":\"chest\"},\"position\":[\"-1.9\",\"0.001\",\"1.1\"],\"rotation\":[\"0\",\"20\",\"0\"],\"material\":\"wood\"}],\"events\":[{\"id\":\"hit\",\"kind\":\"contact\",\"a\":\"ball\",\"b\":\"cone\",\"max\":1}]},\"assets\":{\"models\":[{\"id\":\"plank\",\"name\":\"Wooden plank\",\"kind\":\"model\",\"sha256\":\"02fa3d6d42892bc2a7e0759404193fd1b5ca4be42b96e897d620514c3baea9c1\"},{\"id\":\"ball\",\"name\":\"Baseball\",\"kind\":\"model\",\"sha256\":\"9ee0ed682932a0969f21c266aa8b7bafc7c8a35b75a397423612198377617d7f\"},{\"id\":\"chest\",\"name\":\"Wooden chest\",\"kind\":\"model\",\"sha256\":\"150f3330d4488f3ec93e1953b0f33bacc52c52a7c26def975321b2216bfe0950\"},{\"id\":\"barrel\",\"name\":\"Steel drum\",\"kind\":\"model\",\"sha256\":\"5f3b7dcdd220c83edb8f39363e189b2672cd1cfed672ef3be89f81e80ec1b6d5\"},{\"id\":\"cone\",\"name\":\"Traffic cone\",\"kind\":\"model\",\"sha256\":\"2e83dcbd8ea20e60b3206f4750957152e7dd57a649c99a13b003eb5509bdda4f\"},{\"id\":\"floor\",\"name\":\"Concrete floor\",\"kind\":\"image\",\"sha256\":\"d23eb223f2e727ac7fb0d31319e1bfb719e562305c1be2680d037564df1e668d\"},{\"id\":\"floor-n\",\"name\":\"Concrete floor, bumps\",\"kind\":\"image\",\"sha256\":\"e193ebd87c7e88b43f378a97321f3df67f5998d4c6fab4f1272cb24b8e018603\"},{\"id\":\"floor-r\",\"name\":\"Concrete floor, shininess\",\"kind\":\"image\",\"sha256\":\"ab77f3a8ef13fb7f55ccea34127b1c01e9b5c8da23120f3a378a14aa7dc94f55\"},{\"id\":\"floor-ao\",\"name\":\"Concrete floor, crevices\",\"kind\":\"image\",\"sha256\":\"98cb538739a85ebcf761d037a7db3d2efc385d1114636dd8a7dc12ca3826eb6c\"},{\"id\":\"sky-day\",\"name\":\"Clear sky\",\"kind\":\"image\",\"sha256\":\"39e9a066375364b746745a8cac9db5255ec5f849dbebfd7288f8c3e26b3e3d27\"},{\"id\":\"sky-hdr\",\"name\":\"Clear sky light (HDR)\",\"kind\":\"hdr\",\"sha256\":\"de7ba9d0b070470dbb70d0144294c8708068df353537b26ab59c394707e84377\"}]},\"charts\":[{\"id\":\"speed\",\"title\":\"Speed\",\"x\":{\"var\":\"t\",\"label\":\"time\",\"unit\":\"s\"},\"series\":[{\"var\":\"ball_speed\",\"label\":\"speed\",\"unit\":\"m/s\"}],\"yLabel\":\"speed\",\"yUnit\":\"m/s\"},{\"id\":\"energy\",\"title\":\"Kinetic energy\",\"x\":{\"var\":\"t\",\"label\":\"time\",\"unit\":\"s\"},\"series\":[{\"var\":\"ke\",\"label\":\"energy\",\"unit\":\"J\",\"colour\":\"warn\"}],\"yLabel\":\"energy\",\"yUnit\":\"J\"}],\"views\":[{\"kind\":\"scene3d\",\"background\":\"light\",\"cameras\":[{\"id\":\"side\",\"label\":\"Side\",\"position\":[1.5,1.75,7.7],\"target\":[1.3,0.45,0],\"fov\":38},{\"id\":\"cone\",\"label\":\"The cone\",\"position\":[5,0.75,3],\"target\":[3.6,0.25,0],\"fov\":40},{\"id\":\"follow\",\"label\":\"Follow the ball\",\"position\":[0.4,0.22,1.4],\"target\":[0,0,0],\"fov\":42,\"follow\":\"ball\"}],\"scenes\":[{\"theme\":\"lab\",\"label\":\"Yard\",\"ground\":{\"texture\":\"floor\",\"normal\":\"floor-n\",\"rough\":\"floor-r\",\"ao\":\"floor-ao\",\"tile\":2.5,\"roughness\":1,\"normalScale\":1,\"grid\":false},\"sky\":\"sky-day\",\"light\":{\"tone\":\"neutral\",\"exposure\":0.95,\"sun\":7,\"ambient\":0.1,\"environment\":1,\"azimuth\":-35,\"ao\":0.9},\"environment\":\"sky-hdr\"}],\"objects\":[{\"id\":\"ramp\",\"label\":\"Plank\",\"asset\":\"plank\",\"body\":\"ramp\",\"scale\":\"k\",\"offset\":{\"x\":\"0\",\"y\":\"-0.0651\",\"z\":\"0\"}},{\"id\":\"support\",\"label\":\"Drum\",\"asset\":\"barrel\",\"body\":\"support\",\"offset\":{\"x\":\"0\",\"y\":\"-drum / 2\",\"z\":\"0\"}},{\"id\":\"ball\",\"label\":\"Baseball\",\"asset\":\"ball\",\"body\":\"ball\",\"scale\":\"radius / 0.0377\"},{\"id\":\"cone\",\"label\":\"Cone\",\"asset\":\"cone\",\"body\":\"cone\"},{\"id\":\"chest\",\"label\":\"Chest\",\"asset\":\"chest\",\"body\":\"chest\"}],\"trails\":[{\"id\":\"path\",\"label\":\"Where the ball has been\",\"colour\":\"primary\",\"width\":2,\"x\":\"ball_x\",\"y\":\"ball_y\",\"z\":\"ball_z\"}],\"parts\":[{\"id\":\"plank\",\"label\":\"Plank\",\"text\":\"A solid wooden plank, resting on the rim of the drum with its low end on the floor. Tilting it changes how much of gravity pulls the ball along it.\",\"match\":\"wood_plank\"},{\"id\":\"ball\",\"label\":\"Baseball\",\"text\":\"A solid ball: about 0.145 kg. On a slope it rolls, and part of its energy goes into spinning.\",\"match\":\"ball_baseball\"},{\"id\":\"cone\",\"label\":\"Cone\",\"text\":\"The target. It is light enough that a fast ball knocks it over.\",\"match\":\"cone_road\"}],\"markers\":[{\"id\":\"goal\",\"label\":\"Target\",\"at\":{\"x\":\"coneAt\",\"y\":\"0.55\",\"z\":\"0\"},\"colour\":\"ok\",\"shape\":\"ring\"}]},{\"kind\":\"trajectory\",\"scenes\":[{\"theme\":\"lab\",\"label\":\"Lab\"}],\"body\":{\"x\":\"ball_x\",\"y\":\"ball_y\",\"label\":\"Ball\",\"radius\":0.037},\"xLabel\":\"distance\",\"yLabel\":\"height\",\"unit\":\"m\"}],\"flow\":{\"steps\":[{\"type\":\"intro\",\"id\":\"intro\",\"text\":\"A baseball sits near the top of a wooden plank. Tilt the plank, change how much it grips, and see how quickly the ball runs down, drops to the floor and knocks over the cone.\"},{\"type\":\"info\",\"id\":\"about-rolling\",\"title\":\"Sliding and rolling\",\"text\":\"On a slope with no grip a ball slides: it speeds up at g times the sine of the angle.\\n\\nWith grip it rolls, and part of the energy goes into spinning it, so it speeds up less: five sevenths as fast for a solid ball.\",\"cta\":\"Try it\"},{\"type\":\"play\",\"id\":\"play\",\"title\":\"Play first\",\"text\":\"Change the angle and the grip and press Launch. Nothing is marked. Then try dragging the ball with the mouse.\",\"tips\":[\"Make the plank steeper.\",\"Take away all the grip.\"],\"start\":{},\"cta\":\"Start the mission\"},{\"type\":\"mission\",\"id\":\"race\",\"kind\":\"explore\",\"title\":\"Beat the clock\",\"brief\":\"Knock over the cone in 1.3 seconds or less. Only the angle of the plank may change.\",\"scenario\":\"A bowling alley trains the staff to reset pins fast: the ball must reach the cone quickly.\",\"start\":{\"angle\":26,\"grip\":0.6},\"locked\":[\"grip\"],\"markers\":[],\"goals\":[{\"id\":\"arrive\",\"label\":\"Hit the cone\",\"value\":\"reached\",\"fmt\":\"int\",\"pass\":\"reached >= 1\"},{\"id\":\"fast\",\"label\":\"In 1.3 seconds or less\",\"value\":\"time\",\"unit\":\"s\",\"fmt\":\"s\",\"digits\":2,\"pass\":\"reached >= 1 && time <= 1.3\"}],\"starLaunches\":[2,5],\"lesson\":\"A steeper ramp pulls the ball along faster: its speed grows by about five sevenths of g times the sine of the angle every second.\",\"reference\":{\"angle\":40},\"hints\":[\"A steeper plank pulls the ball down faster.\",\"Try {ref.angle} degrees.\"]},{\"type\":\"quiz\",\"id\":\"check\",\"title\":\"Check yourself\",\"lead\":\"One question about what you saw.\",\"questions\":[{\"id\":\"q1\",\"text\":\"Why does a rolling ball speed up less than a sliding one on the same slope?\",\"options\":[{\"id\":\"a\",\"text\":\"Part of its energy goes into spinning\"},{\"id\":\"b\",\"text\":\"It is heavier\"},{\"id\":\"c\",\"text\":\"Gravity is weaker for a rolling ball\"}],\"correct\":\"a\",\"why\":\"A rolling ball turns as well as moves, so the same drop in height gives it less speed.\"}]}]}}",
+    "spec_sha256": "23c79c8f73a4c7309e1dbaaa785ddb448bb4da5a10b67fafb1989513cac32055",
+    "assets": [
+        {
+            "sha256": "02fa3d6d42892bc2a7e0759404193fd1b5ca4be42b96e897d620514c3baea9c1",
+            "kind": "model",
+            "mime": "model/gltf-binary",
+            "bytes": 118100,
+            "name": "Wooden plank",
+            "licence": "CC BY 3.0",
+            "credit": "Wooden plank by Justin Randall, CC BY 3.0, https://poly.pizza/m/990Ml-tDxFU (source: Wooden plank)",
+            "source_url": "https://poly.pizza/m/990Ml-tDxFU",
+            "source_key": "sim_assets/platform/02fa3d6d42892bc2a7e0759404193fd1b5ca4be42b96e897d620514c3baea9c1.glb"
+        },
+        {
+            "sha256": "9ee0ed682932a0969f21c266aa8b7bafc7c8a35b75a397423612198377617d7f",
+            "kind": "model",
+            "mime": "model/gltf-binary",
+            "bytes": 1203420,
+            "name": "Baseball",
+            "licence": "CC0 1.0 Universal",
+            "credit": "Baseball by Rico Cilliers, CC0 1.0 (Poly Haven licence), https://polyhaven.com/a/baseball_01 (source: Baseball 01)",
+            "source_url": "https://polyhaven.com/a/baseball_01",
+            "source_key": "sim_assets/platform/9ee0ed682932a0969f21c266aa8b7bafc7c8a35b75a397423612198377617d7f.glb"
+        },
+        {
+            "sha256": "150f3330d4488f3ec93e1953b0f33bacc52c52a7c26def975321b2216bfe0950",
+            "kind": "model",
+            "mime": "model/gltf-binary",
+            "bytes": 837992,
+            "name": "Wooden chest",
+            "licence": "CC0 1.0 Universal",
+            "credit": "Wooden crate 01 by James Ray Cock, CC0 1.0 (Poly Haven licence), https://polyhaven.com/a/wooden_crate_01 (source: Wooden Crate 01)",
+            "source_url": "https://polyhaven.com/a/wooden_crate_01",
+            "source_key": "sim_assets/platform/150f3330d4488f3ec93e1953b0f33bacc52c52a7c26def975321b2216bfe0950.glb"
+        },
+        {
+            "sha256": "5f3b7dcdd220c83edb8f39363e189b2672cd1cfed672ef3be89f81e80ec1b6d5",
+            "kind": "model",
+            "mime": "model/gltf-binary",
+            "bytes": 709980,
+            "name": "Steel drum",
+            "licence": "CC0 1.0 Universal",
+            "credit": "Painted blue barrel by Serhii Khromov, CC0 1.0 (Poly Haven licence), https://polyhaven.com/a/barrel_03 (source: Barrel 03)",
+            "source_url": "https://polyhaven.com/a/barrel_03",
+            "source_key": "sim_assets/platform/5f3b7dcdd220c83edb8f39363e189b2672cd1cfed672ef3be89f81e80ec1b6d5.glb"
+        },
+        {
+            "sha256": "2e83dcbd8ea20e60b3206f4750957152e7dd57a649c99a13b003eb5509bdda4f",
+            "kind": "model",
+            "mime": "model/gltf-binary",
+            "bytes": 31140,
+            "name": "Traffic cone",
+            "licence": "CC0 1.0 Universal",
+            "credit": "Road cone by smallbigsquare, CC0 1.0 Universal, https://poly.pizza/m/ZPhinXAGtY (source: Road Cone)",
+            "source_url": "https://poly.pizza/m/ZPhinXAGtY",
+            "source_key": "sim_assets/platform/2e83dcbd8ea20e60b3206f4750957152e7dd57a649c99a13b003eb5509bdda4f.glb"
+        },
+        {
+            "sha256": "d23eb223f2e727ac7fb0d31319e1bfb719e562305c1be2680d037564df1e668d",
+            "kind": "image",
+            "mime": "image/jpeg",
+            "bytes": 1569046,
+            "name": "Concrete floor",
+            "licence": "CC0 1.0 Universal",
+            "credit": "Concrete floor (clean, fine grain) by Rob Tuytel, CC0 1.0, https://polyhaven.com/a/concrete_floor_02 (Poly Haven)",
+            "source_url": "https://polyhaven.com/a/concrete_floor_02",
+            "source_key": "sim_assets/platform/d23eb223f2e727ac7fb0d31319e1bfb719e562305c1be2680d037564df1e668d.jpg"
+        },
+        {
+            "sha256": "e193ebd87c7e88b43f378a97321f3df67f5998d4c6fab4f1272cb24b8e018603",
+            "kind": "image",
+            "mime": "image/jpeg",
+            "bytes": 1108200,
+            "name": "Concrete floor, bumps",
+            "licence": "CC0 1.0 Universal",
+            "credit": "Concrete floor (clean, fine grain) by Rob Tuytel, CC0 1.0, https://polyhaven.com/a/concrete_floor_02 (Poly Haven)",
+            "source_url": "https://polyhaven.com/a/concrete_floor_02",
+            "source_key": "sim_assets/platform/e193ebd87c7e88b43f378a97321f3df67f5998d4c6fab4f1272cb24b8e018603.jpg"
+        },
+        {
+            "sha256": "ab77f3a8ef13fb7f55ccea34127b1c01e9b5c8da23120f3a378a14aa7dc94f55",
+            "kind": "image",
+            "mime": "image/jpeg",
+            "bytes": 174412,
+            "name": "Concrete floor, shininess",
+            "licence": "CC0 1.0 Universal",
+            "credit": "Concrete floor (clean, fine grain) by Rob Tuytel, CC0 1.0, https://polyhaven.com/a/concrete_floor_02 (Poly Haven)",
+            "source_url": "https://polyhaven.com/a/concrete_floor_02",
+            "source_key": "sim_assets/platform/ab77f3a8ef13fb7f55ccea34127b1c01e9b5c8da23120f3a378a14aa7dc94f55.jpg"
+        },
+        {
+            "sha256": "98cb538739a85ebcf761d037a7db3d2efc385d1114636dd8a7dc12ca3826eb6c",
+            "kind": "image",
+            "mime": "image/jpeg",
+            "bytes": 211075,
+            "name": "Concrete floor, crevices",
+            "licence": "CC0 1.0 Universal",
+            "credit": "Concrete floor (clean, fine grain) by Rob Tuytel, CC0 1.0, https://polyhaven.com/a/concrete_floor_02 (Poly Haven)",
+            "source_url": "https://polyhaven.com/a/concrete_floor_02",
+            "source_key": "sim_assets/platform/98cb538739a85ebcf761d037a7db3d2efc385d1114636dd8a7dc12ca3826eb6c.jpg"
+        },
+        {
+            "sha256": "39e9a066375364b746745a8cac9db5255ec5f849dbebfd7288f8c3e26b3e3d27",
+            "kind": "image",
+            "mime": "image/jpeg",
+            "bytes": 122867,
+            "name": "Clear sky",
+            "licence": "CC0 1.0 Universal",
+            "credit": "Daylight HDRI \"Kloofendal 43d Clear (Pure Sky)\" by Greg Zaal, CC0 1.0, https://polyhaven.com/a/kloofendal_43d_clear_puresky (Poly Haven)",
+            "source_url": "https://polyhaven.com/a/kloofendal_43d_clear_puresky",
+            "source_key": "sim_assets/platform/39e9a066375364b746745a8cac9db5255ec5f849dbebfd7288f8c3e26b3e3d27.jpg"
+        },
+        {
+            "sha256": "de7ba9d0b070470dbb70d0144294c8708068df353537b26ab59c394707e84377",
+            "kind": "hdr",
+            "mime": "image/vnd.radiance",
+            "bytes": 1184531,
+            "name": "Clear sky light (HDR)",
+            "licence": "CC0 1.0 Universal",
+            "credit": "Daylight HDRI \"Kloofendal 43d Clear (Pure Sky)\" by Greg Zaal, CC0 1.0, https://polyhaven.com/a/kloofendal_43d_clear_puresky (Poly Haven)",
+            "source_url": "https://polyhaven.com/a/kloofendal_43d_clear_puresky",
+            "source_key": "sim_assets/platform/de7ba9d0b070470dbb70d0144294c8708068df353537b26ab59c394707e84377.hdr"
+        }
+    ],
+    "source": {
+        "host": "dev",
+        "simulation_id": 12,
+        "version": 4
+    }
+}

@@ -1,0 +1,61 @@
+{
+  "schema": "g2g.sim/1",
+  "id": "tiny-api",
+  "version": 1,
+  "title": "Tiny API",
+  "subtitle": "A first simulation",
+  "summary": "The smallest complete simulation: servers and a database, one traffic spike, one mission. Copy it as a starting point.",
+  "family": "network",
+  "meta": { "minutes": 5, "audience": "Anyone new to capacity planning", "authors": ["G2G simulation team"] },
+  "knobs": [
+    { "id": "servers", "label": "API servers", "kind": "number", "min": 1, "max": 8, "step": 1, "default": 1, "help": "Each server handles 2 requests at a time.",
+      "hint": { "nudge": "The servers reached {peak.api}% busy while the database was at {peak.db}%.", "idea": "A server is busy for the whole request, including the time it waits for the database.", "lever": "Work out how many requests per second the servers can take, then how many you need for the peak.", "step": "One request keeps a server for about {= round(hold.api)} ms, so one server takes about {= round(2000 / hold.api)} requests per second; the peak is {peakRps}. Try {to} servers." } },
+    { "id": "connections", "label": "Database connections", "kind": "number", "min": 1, "max": 20, "step": 1, "default": 2, "help": "Queries run in parallel up to this number.",
+      "hint": { "nudge": "The database was at {peak.db}% busy at the peak. What is every request waiting for?", "idea": "When all connections are busy, queries wait in line and the servers wait with them.", "lever": "Compare the queries per second at the peak with how many one connection can run.", "step": "One query takes about 20 ms, so one connection runs 50 per second; the peak sends {peakRps}. Try {to} connections." } }
+  ],
+  "model": {
+    "keyspace": { "keys": 100, "zipf": 1 },
+    "pools": [
+      { "id": "api", "label": "API servers", "noun": "servers", "servers": "servers * 2", "queueLimit": 200 },
+      { "id": "db", "label": "Database", "noun": "connections", "servers": "connections" }
+    ],
+    "caches": [],
+    "classes": [
+      { "id": "request", "label": "Request", "share": 1, "at": "api", "program": [
+        { "do": "work", "ms": 20, "slot": 0 },
+        { "do": "call", "pool": "db", "ms": 20, "slot": 1 }
+      ] }
+    ],
+    "timeoutMs": 1000,
+    "cost": "servers * 0.5 + connections * 0.05 + 0.5",
+    "costUnit": "$",
+    "draws": 2
+  },
+  "scenarios": [
+    { "id": "spike", "title": "A traffic spike", "blurb": "Traffic triples for 20 seconds.", "durationSec": 60,
+      "segments": [{ "from": 0, "to": 15, "rps0": 30 }, { "from": 15, "to": 35, "rps0": 90 }, { "from": 35, "to": 60, "rps0": 30 }], "peak": [15, 35] }
+  ],
+  "targets": [
+    { "id": "p95", "label": "95% of requests finish within", "metric": "p95", "op": "<=", "unit": "ms", "fmt": "ms" },
+    { "id": "errors", "label": "Requests that fail, at most", "metric": "errorRate", "op": "<=", "fmt": "pct" },
+    { "id": "cost", "label": "Cost per hour, at most", "metric": "cost", "op": "<=", "fmt": "money" }
+  ],
+  "lesson": {
+    "intro": "A small service answers requests. When traffic jumps, something runs out. Find what, and fix it without overspending.",
+    "missions": [
+      { "id": "m1", "kind": "explore", "title": "Survive the spike", "brief": "The service runs on one server and two database connections. Traffic is about to triple. Keep it quick and keep failures rare, inside the budget.",
+        "scenario": "spike", "start": { "servers": 1, "connections": 2 }, "limits": { "p95": 200, "errors": 0.02, "cost": 3.5 }, "starCosts": [3.0, 2.8],
+        "lesson": "Every request holds a server while it waits for the database, so both have to be sized for the peak, and neither alone is enough.",
+        "reference": { "servers": 3, "connections": 5 } }
+    ]
+  },
+  "scene": {
+    "board": { "at": { "u": 0, "v": 0 }, "w": 18, "d": 9 },
+    "nodes": [
+      { "ref": "edge", "model": "satellite-dish", "at": { "u": -7, "v": 0 }, "scale": 1.1, "rotate": 45 },
+      { "ref": "pool:api", "model": "server-rack", "count": "servers", "perRow": 4, "spacing": [1.1, 2.4], "at": { "u": -1, "v": 0 }, "align": "center", "indicator": "lamp" },
+      { "ref": "pool:db", "model": "tank-large", "at": { "u": 6, "v": 0 }, "scale": 0.9, "rotate": 45, "indicator": "gauge" }
+    ]
+  },
+  "run": { "bucketSec": 1, "drainSec": 15, "traceEvery": 8 }
+}

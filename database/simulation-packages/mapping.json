@@ -1,0 +1,182 @@
+[
+    {
+        "slug": "eye-lab",
+        "links": [
+            {
+                "standard": "10",
+                "subject": "Science",
+                "chapter": "The Human Eye and the Colourful World",
+                "topic": null,
+                "concept": "Human Eye Structure",
+                "role": "primary",
+                "citation": "NCERT Class 10 Science, chapter 'The Human Eye and the Colourful World' (section to be confirmed by the reviewing teacher)",
+                "reason": "'Take the eye apart' shows the parts and layers of the eye in 3D."
+            },
+            {
+                "standard": "10",
+                "subject": "Science",
+                "chapter": "The Human Eye and the Colourful World",
+                "topic": null,
+                "concept": "Power of Accommodation",
+                "role": "primary",
+                "citation": "NCERT Class 10 Science, chapter 'The Human Eye and the Colourful World' (section to be confirmed by the reviewing teacher)",
+                "reason": "The 'Focusing' control makes the lens rounder for near objects; the learner sees accommodation working."
+            },
+            {
+                "standard": "10",
+                "subject": "Science",
+                "chapter": "The Human Eye and the Colourful World",
+                "topic": null,
+                "concept": "Near and Far Points",
+                "role": "primary",
+                "citation": "NCERT Class 10 Science, chapter 'The Human Eye and the Colourful World' (section to be confirmed by the reviewing teacher)",
+                "reason": "'Distance to the object' lets the learner find the nearest and farthest distance at which the picture stays sharp."
+            },
+            {
+                "standard": "10",
+                "subject": "Science",
+                "chapter": "The Human Eye and the Colourful World",
+                "topic": null,
+                "concept": "Myopia (Nearsightedness)",
+                "role": "primary",
+                "citation": "NCERT Class 10 Science, chapter 'The Human Eye and the Colourful World' (section to be confirmed by the reviewing teacher)",
+                "reason": "'Eyeball length' (longer) and 'Glasses' show a far object focusing in front of the retina and the concave lens that corrects it."
+            },
+            {
+                "standard": "10",
+                "subject": "Science",
+                "chapter": "The Human Eye and the Colourful World",
+                "topic": null,
+                "concept": "Hypermetropia (Farsightedness)",
+                "role": "primary",
+                "citation": "NCERT Class 10 Science, chapter 'The Human Eye and the Colourful World' (section to be confirmed by the reviewing teacher)",
+                "reason": "'Eyeball length' (shorter) and 'Glasses' show focus falling behind the retina and the convex lens that corrects it."
+            },
+            {
+                "standard": "10",
+                "subject": "Science",
+                "chapter": "The Human Eye and the Colourful World",
+                "topic": null,
+                "concept": "Presbyopia",
+                "role": "supporting",
+                "citation": "NCERT Class 10 Science, chapter 'The Human Eye and the Colourful World' (section to be confirmed by the reviewing teacher)",
+                "reason": "The 'Age' control changes how far the lens can focus. Teacher to confirm this matches the textbook's presbyopia."
+            }
+        ]
+    },
+    {
+        "slug": "pendulum-lab",
+        "links": [
+            {
+                "standard": "7",
+                "subject": "Science",
+                "chapter": "Measurement of Time and Motion",
+                "topic": "The Simple Pendulum",
+                "concept": "What a simple pendulum is",
+                "role": "primary",
+                "citation": "NCERT Class 7 Science, chapter 'Measurement of Time and Motion', topic 'The Simple Pendulum' (page to be confirmed by the reviewing teacher)",
+                "reason": "The learner swings a pendulum (bob on a string) and watches it."
+            },
+            {
+                "standard": "7",
+                "subject": "Science",
+                "chapter": "Measurement of Time and Motion",
+                "topic": "The Simple Pendulum",
+                "concept": "Time period of a pendulum",
+                "role": "primary",
+                "citation": "NCERT Class 7 Science, chapter 'Measurement of Time and Motion', topic 'The Simple Pendulum' (page to be confirmed by the reviewing teacher)",
+                "reason": "Timing one full swing gives the time period."
+            },
+            {
+                "standard": "7",
+                "subject": "Science",
+                "chapter": "Measurement of Time and Motion",
+                "topic": "The Simple Pendulum",
+                "concept": "Time period depends on length",
+                "role": "primary",
+                "citation": "NCERT Class 7 Science, chapter 'Measurement of Time and Motion', topic 'The Simple Pendulum' (page to be confirmed by the reviewing teacher)",
+                "reason": "'String length' changes the time period. NOTE: this concept is rated 'flagged' in K12; the lab also varies 'Where' (Earth/Moon/Mars), which goes beyond Class 7."
+            }
+        ]
+    },
+    {
+        "slug": "ramp-lab",
+        "links": [
+            {
+                "standard": "8",
+                "subject": "Science",
+                "chapter": "Friction",
+                "topic": "Force of Friction",
+                "concept": "Friction opposes the applied force",
+                "role": "primary",
+                "citation": "NCERT Class 8 Science, chapter 'Friction' (section to be confirmed by the reviewing teacher)",
+                "reason": "'Grip' sets how strongly the surface resists the sliding ball and plank."
+            },
+            {
+                "standard": "8",
+                "subject": "Science",
+                "chapter": "Friction",
+                "topic": "Factors Affecting Friction",
+                "concept": "Rougher surfaces, more friction",
+                "role": "primary",
+                "citation": "NCERT Class 8 Science, chapter 'Friction' (section to be confirmed by the reviewing teacher)",
+                "reason": "Raising 'Grip' (a rougher surface) changes how long the ball takes to reach the cone."
+            },
+            {
+                "standard": "8",
+                "subject": "Science",
+                "chapter": "Friction",
+                "topic": "Factors Affecting Friction",
+                "concept": "Static and sliding friction",
+                "role": "supporting",
+                "citation": "NCERT Class 8 Science, chapter 'Friction' (section to be confirmed by the reviewing teacher)",
+                "reason": "The plank's tilt and grip show when an object starts moving and how it then slides."
+            },
+            {
+                "standard": "9",
+                "subject": "Science",
+                "chapter": "How Forces Affect Motion",
+                "topic": "Newton’s Second Law of Motion",
+                "concept": "Newton’s second law (F = ma)",
+                "role": "supporting",
+                "citation": "NCERT Class 9 Science, chapter 'How Forces Affect Motion' (section to be confirmed by the reviewing teacher)",
+                "reason": "Ramp angle and grip change the net force, so the acceleration changes (F = ma)."
+            },
+            {
+                "standard": "9",
+                "subject": "Science",
+                "chapter": "How Forces Affect Motion",
+                "topic": "Newton’s Second Law of Motion",
+                "concept": "Net force from opposing forces",
+                "role": "supporting",
+                "citation": "NCERT Class 9 Science, chapter 'How Forces Affect Motion' (section to be confirmed by the reviewing teacher)",
+                "reason": "Down-slope pull and friction act in opposite directions; the learner sees the net effect."
+            }
+        ]
+    },
+    {
+        "slug": "projectile-lab",
+        "links": [
+            {
+                "standard": "9",
+                "subject": "Science",
+                "chapter": "Describing Motion Around Us",
+                "topic": "Average Acceleration",
+                "concept": "Gravitational acceleration in free fall",
+                "role": "supporting",
+                "citation": "NCERT Class 9 Science, chapter 'Describing Motion Around Us' (section to be confirmed by the reviewing teacher)",
+                "reason": "PARTIAL MATCH: the lab's vertical motion is free fall, and 'Where' shows g on Earth vs the Moon. Projectile motion in a plane is a Class 11 Physics topic and tenant 1 has no Std 11/12 Physics chapters. Teacher may reject."
+            },
+            {
+                "standard": "9",
+                "subject": "Science",
+                "chapter": "Describing Motion Around Us",
+                "topic": "Kinematic Equations for Constant Acceleration",
+                "concept": "Kinematic equations set",
+                "role": "supporting",
+                "citation": "NCERT Class 9 Science, chapter 'Describing Motion Around Us' (section to be confirmed by the reviewing teacher)",
+                "reason": "PARTIAL MATCH: the constant-acceleration equations describe the vertical and horizontal parts of the flight. Teacher may reject."
+            }
+        ]
+    }
+]

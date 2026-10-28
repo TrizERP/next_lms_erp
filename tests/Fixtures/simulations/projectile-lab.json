@@ -1,0 +1,758 @@
+{
+  "schema": "g2g.sim/1",
+  "id": "projectile-lab",
+  "version": 1,
+  "title": "Projectile Lab",
+  "subtitle": "Motion under gravity",
+  "summary": "Hit a cricket ball into a landing zone, then take the same shot to the Moon and through real air, and find out why the best angle is not always 45 degrees.",
+  "family": "explorer",
+  "meta": {
+    "minutes": 20,
+    "audience": "Students of physics, class 9 to 12",
+    "authors": [
+      "G2G simulation team"
+    ],
+    "category": "Science",
+    "tags": [
+      "physics",
+      "motion",
+      "gravity",
+      "projectile"
+    ],
+    "difficulty": "intermediate"
+  },
+  "knobs": [
+    {
+      "id": "speed",
+      "label": "Launch speed",
+      "kind": "number",
+      "unit": "m/s",
+      "min": 5,
+      "max": 50,
+      "step": 0.1,
+      "default": 28,
+      "help": "How fast the ball leaves the bat. 28 m/s is about 100 km/h."
+    },
+    {
+      "id": "angle",
+      "label": "Launch angle",
+      "kind": "number",
+      "unit": "deg",
+      "min": 5,
+      "max": 85,
+      "step": 1,
+      "default": 45,
+      "help": "0 would be flat along the ground, 90 straight up."
+    },
+    {
+      "id": "height",
+      "label": "Launch height",
+      "kind": "number",
+      "unit": "m",
+      "min": 0,
+      "max": 3,
+      "step": 0.1,
+      "default": 1,
+      "help": "How high above the ground the ball starts."
+    },
+    {
+      "id": "planet",
+      "label": "Where",
+      "kind": "choice",
+      "default": 0,
+      "choices": [
+        {
+          "value": 0,
+          "label": "Earth"
+        },
+        {
+          "value": 1,
+          "label": "Moon"
+        },
+        {
+          "value": 2,
+          "label": "Mars"
+        }
+      ],
+      "help": "Gravity and the thickness of the air change from place to place."
+    },
+    {
+      "id": "air",
+      "label": "Air resistance",
+      "kind": "toggle",
+      "default": 0,
+      "labels": [
+        "Off",
+        "On"
+      ],
+      "help": "On: the air pushes back on the ball. The Moon has no air, Mars has very little."
+    }
+  ],
+  "model": {
+    "constants": {
+      "mass": 0.16,
+      "radius": 0.0357,
+      "cd": 0.4
+    },
+    "derived": [
+      {
+        "id": "g",
+        "expr": "planet == 0 ? 9.81 : (planet == 1 ? 1.62 : 3.71)"
+      },
+      {
+        "id": "rho",
+        "expr": "planet == 0 ? 1.2 : (planet == 1 ? 0 : 0.02)"
+      },
+      {
+        "id": "k",
+        "expr": "air * 0.5 * rho * cd * pi * radius * radius / mass"
+      }
+    ],
+    "state": [
+      {
+        "id": "x",
+        "label": "Distance",
+        "unit": "m",
+        "init": "0"
+      },
+      {
+        "id": "y",
+        "label": "Height",
+        "unit": "m",
+        "init": "height"
+      },
+      {
+        "id": "vx",
+        "label": "Horizontal speed",
+        "unit": "m/s",
+        "init": "speed * cos(rad(angle))"
+      },
+      {
+        "id": "vy",
+        "label": "Vertical speed",
+        "unit": "m/s",
+        "init": "speed * sin(rad(angle))"
+      }
+    ],
+    "ode": {
+      "x": "vx",
+      "y": "vy",
+      "vx": "-k * spd * vx",
+      "vy": "-g - k * spd * vy"
+    },
+    "aux": [
+      {
+        "id": "spd",
+        "label": "Speed",
+        "unit": "m/s",
+        "expr": "sqrt(vx * vx + vy * vy)"
+      },
+      {
+        "id": "ke",
+        "label": "Movement energy",
+        "unit": "J",
+        "expr": "0.5 * mass * spd * spd"
+      },
+      {
+        "id": "pe",
+        "label": "Height energy",
+        "unit": "J",
+        "expr": "mass * g * y"
+      },
+      {
+        "id": "total",
+        "label": "Total energy",
+        "unit": "J",
+        "expr": "ke + pe"
+      }
+    ],
+    "dt": 0.004,
+    "tMax": 100,
+    "stop": {
+      "when": "y < 0",
+      "crossing": "y"
+    },
+    "sampleEvery": 5,
+    "outputs": [
+      {
+        "id": "range",
+        "label": "Distance",
+        "unit": "m",
+        "fmt": "m",
+        "expr": "end.x"
+      },
+      {
+        "id": "apex",
+        "label": "Highest point",
+        "unit": "m",
+        "fmt": "m",
+        "expr": "max.y"
+      },
+      {
+        "id": "flight",
+        "label": "Time in the air",
+        "unit": "s",
+        "fmt": "s",
+        "expr": "T"
+      },
+      {
+        "id": "impact",
+        "label": "Landing speed",
+        "unit": "m/s",
+        "fmt": "num",
+        "digits": 1,
+        "expr": "end.spd"
+      },
+      {
+        "id": "landAngle",
+        "label": "Landing angle",
+        "unit": "deg",
+        "fmt": "deg",
+        "expr": "deg(atan2(-end.vy, end.vx))"
+      },
+      {
+        "id": "lost",
+        "label": "Energy lost to air",
+        "unit": "J",
+        "fmt": "j",
+        "expr": "start.total - end.total"
+      }
+    ]
+  },
+  "references": [
+    {
+      "id": "vacuum",
+      "label": "Without air",
+      "set": {
+        "air": 0
+      },
+      "style": "dashed"
+    }
+  ],
+  "lesson": {
+    "intro": "A cricket ball is hit from the middle of a field. Where it lands depends on how fast, and at what angle, it leaves the bat. You will find out how, with no air first, and then on the Moon and in real air.",
+    "predict": {
+      "mission": "m1-zone",
+      "setup": "The ball is hit at 28 m/s (about 100 km/h) on Earth, in empty space with no air. The only thing you can choose is the launch angle.",
+      "question": "Which launch angle sends the ball furthest?",
+      "options": [
+        {
+          "id": "a30",
+          "text": "30 degrees, a low flat shot"
+        },
+        {
+          "id": "a45",
+          "text": "45 degrees, halfway between flat and straight up"
+        },
+        {
+          "id": "a60",
+          "text": "60 degrees, a high lob"
+        },
+        {
+          "id": "same",
+          "text": "All three go about the same distance"
+        }
+      ],
+      "correct": "a45",
+      "follow": "Now see three real shots. 45 degrees wins, but look closely at 30 and 60: they land in almost the same place.",
+      "reveal": [
+        {
+          "id": "r30",
+          "label": "30 degrees",
+          "set": {
+            "angle": 30
+          }
+        },
+        {
+          "id": "r45",
+          "label": "45 degrees",
+          "set": {
+            "angle": 45
+          }
+        },
+        {
+          "id": "r60",
+          "label": "60 degrees",
+          "set": {
+            "angle": 60
+          }
+        }
+      ],
+      "cta": "Start the first mission"
+    },
+    "missions": [
+      {
+        "id": "m1-zone",
+        "kind": "explore",
+        "title": "Land it in the zone",
+        "brief": "The fielding side needs a shot that lands in the green zone, between 70 m and 76 m. The batter always hits at 28 m/s, on Earth, with no air. Only the angle is yours to choose.",
+        "start": {
+          "speed": 28,
+          "angle": 45,
+          "height": 1,
+          "planet": 0,
+          "air": 0
+        },
+        "locked": [
+          "speed",
+          "height",
+          "planet",
+          "air"
+        ],
+        "markers": [
+          {
+            "id": "zone",
+            "kind": "zone",
+            "from": 70,
+            "to": 76,
+            "label": "Landing zone"
+          }
+        ],
+        "goals": [
+          {
+            "id": "zone",
+            "label": "Land between 70 m and 76 m",
+            "value": "range",
+            "unit": "m",
+            "fmt": "m",
+            "pass": "range >= 70 && range <= 76"
+          }
+        ],
+        "starLaunches": [
+          3,
+          6
+        ],
+        "lesson": "Two different angles can reach the same spot: a low, fast shot and a high, slow lob. The low one crosses the ground quickly but is in the air briefly; the high one crosses it slowly but stays up longer. The two effects can cancel.",
+        "reference": {
+          "angle": 33
+        },
+        "hints": [
+          "Change only the angle and launch again. Look at where the ball lands: too far, or too short?",
+          "At 45 degrees the ball goes too far for this zone. You can go lower, or higher, than 45 degrees: both can work.",
+          "An angle of about {= ref.angle} degrees lands in the zone."
+        ]
+      },
+      {
+        "id": "m2-lob",
+        "kind": "explore",
+        "title": "The other angle",
+        "brief": "The same zone, the same speed, the same field. This time the batter must hit a high lob: your angle has to be above 50 degrees. Is there a high angle that lands in the zone?",
+        "start": {
+          "speed": 28,
+          "angle": 45,
+          "height": 1,
+          "planet": 0,
+          "air": 0
+        },
+        "locked": [
+          "speed",
+          "height",
+          "planet",
+          "air"
+        ],
+        "markers": [
+          {
+            "id": "zone",
+            "kind": "zone",
+            "from": 70,
+            "to": 76,
+            "label": "Landing zone"
+          }
+        ],
+        "goals": [
+          {
+            "id": "zone",
+            "label": "Land between 70 m and 76 m",
+            "value": "range",
+            "unit": "m",
+            "fmt": "m",
+            "pass": "range >= 70 && range <= 76"
+          },
+          {
+            "id": "lob",
+            "label": "Use an angle above 50 degrees",
+            "value": "angle",
+            "unit": "deg",
+            "fmt": "deg",
+            "pass": "angle > 50"
+          }
+        ],
+        "starLaunches": [
+          3,
+          6
+        ],
+        "lesson": "Your two angles from the last two missions add up to about 90 degrees. That is no accident: the horizontal speed is v times the cosine of the angle and the time in the air grows with v times the sine, and swapping an angle for 90 minus that angle swaps those two factors.",
+        "reference": {
+          "angle": 57
+        },
+        "hints": [
+          "You found a low angle that works. Think about the other side of 45 degrees.",
+          "Try an angle that adds up with your first one to about 90 degrees.",
+          "An angle of about {= ref.angle} degrees lands in the zone as a lob."
+        ]
+      },
+      {
+        "id": "m3-moon",
+        "kind": "explore",
+        "title": "A shot on the Moon",
+        "brief": "The match moves to the Moon. Gravity there is only one sixth of Earth's, and there is no air. The angle is fixed at 45 degrees; you choose the speed. Land the ball in the same zone, 70 m to 76 m.",
+        "start": {
+          "speed": 28,
+          "angle": 45,
+          "height": 1,
+          "planet": 1,
+          "air": 0
+        },
+        "locked": [
+          "angle",
+          "height",
+          "planet",
+          "air"
+        ],
+        "markers": [
+          {
+            "id": "zone",
+            "kind": "zone",
+            "from": 70,
+            "to": 76,
+            "label": "Landing zone"
+          }
+        ],
+        "goals": [
+          {
+            "id": "zone",
+            "label": "Land between 70 m and 76 m",
+            "value": "range",
+            "unit": "m",
+            "fmt": "m",
+            "pass": "range >= 70 && range <= 76"
+          }
+        ],
+        "starLaunches": [
+          3,
+          6
+        ],
+        "lesson": "With weaker gravity the ball falls more slowly, so it stays in the air longer and travels further. The distance depends on speed squared divided by gravity, so one sixth of the gravity needs only about 40% of the speed for the same distance.",
+        "reference": {
+          "speed": 11
+        },
+        "hints": [
+          "At 28 m/s on the Moon the ball flies far past the zone. Does it need more speed or less?",
+          "The distance grows with the square of the speed, so a small change in speed makes a big change in distance.",
+          "A speed of about {= ref.speed} m/s lands in the zone."
+        ]
+      },
+      {
+        "id": "m4-air",
+        "kind": "explore",
+        "title": "Through real air",
+        "brief": "Back on Earth, now with air resistance on. The batter hits a high lob, 60 degrees at 38 m/s, and it falls short. You need at least 88 m. The dashed line shows the same shot without air. Find an angle that goes far enough.",
+        "start": {
+          "speed": 38,
+          "angle": 60,
+          "height": 1,
+          "planet": 0,
+          "air": 1
+        },
+        "locked": [
+          "speed",
+          "height",
+          "planet",
+          "air"
+        ],
+        "markers": [
+          {
+            "id": "far",
+            "kind": "line",
+            "from": 88,
+            "label": "88 m"
+          }
+        ],
+        "goals": [
+          {
+            "id": "far",
+            "label": "Go at least 88 m",
+            "value": "range",
+            "unit": "m",
+            "fmt": "m",
+            "pass": "range >= 88"
+          }
+        ],
+        "starLaunches": [
+          4,
+          8
+        ],
+        "lesson": "Air slows the ball all the time it flies, so a high lob, which stays up longest, loses the most. With no air, 30 and 60 degrees go the same distance; with air the flatter shot wins by about 10 m, and the best angle moves below 45 degrees, to about 41.",
+        "reference": {
+          "angle": 40
+        },
+        "hints": [
+          "Look at the dashed line: with no air this lob would go much further. What does air do to a ball that stays up a long time?",
+          "A flatter shot spends less time in the air. Try lowering the angle.",
+          "An angle of about {= ref.angle} degrees reaches about {= refout.range} m."
+        ]
+      },
+      {
+        "id": "m5-mars",
+        "kind": "transfer",
+        "title": "Mars, flat and fast",
+        "brief": "A new situation. On Mars (gravity about 38% of Earth's, almost no air), the ball must land in the zone 150 m to 160 m away, but it may not rise higher than 10 m. You choose both the speed and the angle.",
+        "start": {
+          "speed": 28,
+          "angle": 45,
+          "height": 1,
+          "planet": 2,
+          "air": 1
+        },
+        "locked": [
+          "height",
+          "planet",
+          "air"
+        ],
+        "markers": [
+          {
+            "id": "zone",
+            "kind": "zone",
+            "from": 150,
+            "to": 160,
+            "label": "Landing zone"
+          }
+        ],
+        "goals": [
+          {
+            "id": "zone",
+            "label": "Land between 150 m and 160 m",
+            "value": "range",
+            "unit": "m",
+            "fmt": "m",
+            "pass": "range >= 150 && range <= 160"
+          },
+          {
+            "id": "low",
+            "label": "Stay below 10 m high",
+            "value": "apex",
+            "unit": "m",
+            "fmt": "m",
+            "pass": "apex < 10"
+          }
+        ],
+        "starLaunches": [
+          4,
+          8
+        ],
+        "lesson": "A long, flat shot needs a lot of speed and a small angle: the speed buys the distance and the small angle keeps the ball low. You used what you learned: distance grows with speed squared over gravity, and a flat shot keeps it low.",
+        "reference": {
+          "speed": 41,
+          "angle": 10
+        },
+        "hints": [
+          "Two goals pull against each other: distance wants a big speed, height wants a small angle.",
+          "Keep the angle small to stay low, then raise the speed until the ball reaches the zone.",
+          "A speed of about {= ref.speed} m/s at about {= ref.angle} degrees does both."
+        ]
+      }
+    ],
+    "explain": {
+      "lead": "Now say why it works. Three quick questions.",
+      "cta": "Finish",
+      "questions": [
+        {
+          "id": "q-pair",
+          "text": "Why can 30 degrees and 60 degrees land in the same place?",
+          "options": [
+            {
+              "id": "a",
+              "text": "The low shot moves faster along the ground but is in the air briefly; the high shot is slower across the ground but in the air longer."
+            },
+            {
+              "id": "b",
+              "text": "Gravity pulls differently at different angles."
+            },
+            {
+              "id": "c",
+              "text": "It is a coincidence of the numbers used."
+            }
+          ],
+          "correct": "a",
+          "why": "Distance is horizontal speed times time in the air. Swapping an angle for 90 degrees minus that angle swaps the sizes of those two factors, so their product stays the same."
+        },
+        {
+          "id": "q-air",
+          "text": "With real air, the angle that goes furthest is...",
+          "options": [
+            {
+              "id": "a",
+              "text": "still exactly 45 degrees."
+            },
+            {
+              "id": "b",
+              "text": "lower than 45 degrees."
+            },
+            {
+              "id": "c",
+              "text": "higher than 45 degrees."
+            }
+          ],
+          "correct": "b",
+          "why": "Air slows the ball throughout its flight. A flatter shot is in the air for less time, so it loses less speed, and that is worth more than the extra height."
+        },
+        {
+          "id": "q-moon",
+          "text": "The same hit goes much further on the Moon because...",
+          "options": [
+            {
+              "id": "a",
+              "text": "gravity is weaker, so the ball stays up longer."
+            },
+            {
+              "id": "b",
+              "text": "the Moon has thicker air."
+            },
+            {
+              "id": "c",
+              "text": "the ball weighs less there."
+            }
+          ],
+          "correct": "a",
+          "why": "Weaker gravity pulls the ball down more slowly, so there is more time to travel sideways. The distance is proportional to 1 over gravity."
+        }
+      ]
+    }
+  },
+  "view": {
+    "scenes": [
+      {
+        "when": "planet == 1",
+        "theme": "moon",
+        "label": "Moon"
+      },
+      {
+        "when": "planet == 2",
+        "theme": "mars",
+        "label": "Mars"
+      },
+      {
+        "theme": "earth",
+        "label": "Earth"
+      }
+    ],
+    "body": {
+      "x": "x",
+      "y": "y",
+      "label": "Ball",
+      "radius": 0.5
+    },
+    "launcher": {
+      "x": "0",
+      "y": "height",
+      "angle": "angle",
+      "length": 2
+    },
+    "vectors": [
+      {
+        "id": "velocity",
+        "label": "Velocity",
+        "dx": "vx",
+        "dy": "vy",
+        "scale": 0.25,
+        "colour": "primary"
+      },
+      {
+        "id": "gravity",
+        "label": "Gravity",
+        "dx": "0",
+        "dy": "-g",
+        "scale": 0.5,
+        "colour": "bad"
+      }
+    ],
+    "dotEverySec": 0.5,
+    "xLabel": "Distance",
+    "yLabel": "Height",
+    "unit": "m",
+    "pad": 0.08
+  },
+  "charts": [
+    {
+      "id": "height",
+      "title": "Height over time",
+      "x": {
+        "var": "t",
+        "label": "Time",
+        "unit": "s"
+      },
+      "series": [
+        {
+          "var": "y",
+          "label": "Height",
+          "unit": "m",
+          "colour": "primary"
+        }
+      ],
+      "yLabel": "Height",
+      "yUnit": "m"
+    },
+    {
+      "id": "speed",
+      "title": "Speed over time",
+      "x": {
+        "var": "t",
+        "label": "Time",
+        "unit": "s"
+      },
+      "series": [
+        {
+          "var": "spd",
+          "label": "Speed",
+          "unit": "m/s",
+          "colour": "primary"
+        },
+        {
+          "var": "vx",
+          "label": "Sideways",
+          "unit": "m/s",
+          "colour": "ok"
+        },
+        {
+          "var": "vy",
+          "label": "Up and down",
+          "unit": "m/s",
+          "colour": "warn"
+        }
+      ],
+      "yLabel": "Speed",
+      "yUnit": "m/s"
+    },
+    {
+      "id": "energy",
+      "title": "Energy over time",
+      "x": {
+        "var": "t",
+        "label": "Time",
+        "unit": "s"
+      },
+      "series": [
+        {
+          "var": "ke",
+          "label": "Movement",
+          "unit": "J",
+          "colour": "warn"
+        },
+        {
+          "var": "pe",
+          "label": "Height",
+          "unit": "J",
+          "colour": "ok"
+        },
+        {
+          "var": "total",
+          "label": "Total",
+          "unit": "J",
+          "colour": "primary"
+        }
+      ],
+      "yLabel": "Energy",
+      "yUnit": "J"
+    }
+  ]
+}
