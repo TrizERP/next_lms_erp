@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Services\Lms;
+namespace App\Services\lms;
 
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Cache;
@@ -863,4 +863,8 @@ class CourseCatalogueHierarchyValidator
             'content_stats' => $this->getContentAgent()->getContentStats($subInstituteId),
         ];
     }
+}
+
+if (!class_exists('App\\Services\\Lms\\CourseCatalogueHierarchyValidator', false)) {
+    class_alias(CourseCatalogueHierarchyValidator::class, 'App\\Services\\Lms\\CourseCatalogueHierarchyValidator');
 }

@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Services\Lms;
+namespace App\Services\lms;
 
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -482,4 +482,8 @@ HTML;
             ->where('sub_institute_id', $subInstituteId)
             ->increment('content_tasks_completed', $newGenerated + $newVerified);
     }
+}
+
+if (!class_exists('App\\Services\\Lms\\ContentAgentService', false)) {
+    class_alias(ContentAgentService::class, 'App\\Services\\Lms\\ContentAgentService');
 }

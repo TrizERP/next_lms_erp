@@ -144,7 +144,7 @@ class ScheduledJobs
     public static function courseCatalogueHierarchyValidation(PlatformScheduledTask $task): string
     {
         $tenant = (int) $task->sub_institute_id;
-        $validator = app(\App\Services\Lms\CourseCatalogueHierarchyValidator::class);
+        $validator = app(\App\Services\lms\CourseCatalogueHierarchyValidator::class);
         $res = $validator->validate($tenant, false);
         $counts = $res['counts'] ?? [];
 

@@ -4,7 +4,7 @@ namespace App\Agents\TeachLearn;
 
 use App\Domain\AI\Agents\Agent;
 use App\Domain\AI\Agents\AgentContext;
-use App\Services\Lms\CourseCatalogueHierarchyValidator;
+use App\Services\lms\CourseCatalogueHierarchyValidator;
 
 /**
  * Course Catalogue Reader Agent.

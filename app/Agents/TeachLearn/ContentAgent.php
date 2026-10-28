@@ -4,7 +4,7 @@ namespace App\Agents\TeachLearn;
 
 use App\Domain\AI\Agents\Agent;
 use App\Domain\AI\Agents\AgentContext;
-use App\Services\Lms\ContentAgentService;
+use App\Services\lms\ContentAgentService;
 
 /**
  * Content Agent (Agent 2) for Teach/Learn.

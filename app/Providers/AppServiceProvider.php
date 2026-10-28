@@ -38,6 +38,30 @@ class AppServiceProvider extends ServiceProvider
                 }
             }
         }
+
+        // Case-sensitivity bridging for Teach/Learn course catalogue agents on Linux
+        if (!class_exists('App\\Services\\lms\\CourseCatalogueHierarchyValidator', false)) {
+            if (file_exists(app_path('Services/lms/CourseCatalogueHierarchyValidator.php'))) {
+                require_once app_path('Services/lms/CourseCatalogueHierarchyValidator.php');
+            }
+        }
+        if (!class_exists('App\\Services\\lms\\ContentAgentService', false)) {
+            if (file_exists(app_path('Services/lms/ContentAgentService.php'))) {
+                require_once app_path('Services/lms/ContentAgentService.php');
+            }
+        }
+        if (class_exists('App\\Services\\lms\\CourseCatalogueHierarchyValidator')) {
+            if (!class_exists('App\\Services\\Lms\\CourseCatalogueHierarchyValidator', false)) {
+                class_alias('App\\Services\\lms\\CourseCatalogueHierarchyValidator', 'App\\Services\\Lms\\CourseCatalogueHierarchyValidator');
+            }
+            $this->app->bind('App\\Services\\Lms\\CourseCatalogueHierarchyValidator', 'App\\Services\\lms\\CourseCatalogueHierarchyValidator');
+        }
+        if (class_exists('App\\Services\\lms\\ContentAgentService')) {
+            if (!class_exists('App\\Services\\Lms\\ContentAgentService', false)) {
+                class_alias('App\\Services\\lms\\ContentAgentService', 'App\\Services\\Lms\\ContentAgentService');
+            }
+            $this->app->bind('App\\Services\\Lms\\ContentAgentService', 'App\\Services\\lms\\ContentAgentService');
+        }
     }
 
     /**
