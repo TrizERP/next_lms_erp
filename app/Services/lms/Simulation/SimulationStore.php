@@ -14,8 +14,9 @@ use Illuminate\Support\Facades\DB;
  * gallery: a simulation is OWNED by one tenant (the platform tenant, config lms_content.platform_sub_institute_ids), and is READ by the
  * tenants in PrayogshalaService::visibleTenants(). The controller passes that list in; this class never decides who a caller is.
  *
- * VISIBILITY. A learner sees a simulation only when it is `published`, not deleted, owned by a visible tenant AND linked to at least one concept
- * through a link whose review_status is `published` (SimulationLinks). Staff additionally see unlinked simulations, drafts and links in `review`.
+ * VISIBILITY. A learner sees a simulation when it is `published`, not deleted and owned by a visible tenant. MAPPED means it has at least one link whose
+ * review_status is `published` (SimulationLinks::mappedIds): it then shows under the chapters, topics and concepts it is linked to. One that is NOT MAPPED yet
+ * shows in every chapter's tab with a "not mapped yet" flag until its links are published. Staff additionally see links in `review`, and authors see drafts.
  *
  * THE SPECIFICATION IS STORED IN ONE CANONICAL FORM. It is decoded to check it and to read the card facts (title, minutes, missions ...), and
  * what is saved and returned is that same document written out compactly (JSON_FLAGS): an empty object stays `{}`, and a file's layout, or
@@ -500,9 +501,10 @@ final class SimulationStore
      * The simulations a caller can see, in gallery order.
      *
      * `$tenants` is PrayogshalaService::visibleTenants() of the caller's tenant (the controller decides it; it never comes from a request body).
-     * A learner (`$staff` false) gets published, undeleted simulations of those tenants that have at least one PUBLISHED link, and a filter
-     * (`chapter_id`, `topic_id`, `concept_id`, `standard_id`, `subject_id`) is matched against published links only. Staff (`$staff`) also get
-     * simulations with no link, and a filter is matched against links of any review status. Only an AUTHOR (`$drafts`: a platform-tenant staff
+     * Every caller gets the published, undeleted simulations of those tenants. With no filter that is all of them. A filter (`chapter_id`, `topic_id`,
+     * `concept_id`, `standard_id`, `subject_id`) is matched against the simulation's links: published links only for a learner (`$staff` false), links of
+     * any review status for staff. A simulation NOT MAPPED anywhere yet (no published link at all) also matches a chapter, standard or subject filter,
+     * so it is visible in every chapter's tab, flagged "not mapped yet"; a topic or concept filter never matches it. Only an AUTHOR (`$drafts`: a platform-tenant staff
      * member) sees draft and archived simulations; staff of another tenant see published ones, so unfinished work stays with its authors.
      *
      * @param  list<int>  $tenants
@@ -526,14 +528,24 @@ final class SimulationStore
             $q->where('s.status', 'published');
         }
         $linkFilters = array_filter(array_intersect_key($filters, array_flip(self::LINK_FILTERS)), fn ($v) => $v !== null);
-        if (! $staff || $linkFilters !== []) {
-            $q->whereExists(function ($e) use ($staff, $linkFilters) {
-                $e->select(DB::raw(1))->from('lms_simulation_concept as l')->whereColumn('l.simulation_id', 's.id');
-                if (! $staff) {
-                    $e->where('l.review_status', 'published');
-                }
-                foreach ($linkFilters as $column => $value) {   // $column is one of LINK_FILTERS, never request text
-                    $e->where('l.' . $column, (int) $value);
+        if ($linkFilters !== []) {
+            // A topic or a concept is a precise place: only a simulation linked THERE matches it. A chapter, standard or subject is a broad place: a simulation that
+            // is not mapped anywhere yet (no published link at all) also shows there, flagged "not mapped yet", so it is not hidden while its mapping is reviewed.
+            $preciseOnly = isset($linkFilters['topic_id']) || isset($linkFilters['concept_id']);
+            $q->where(function ($w) use ($staff, $linkFilters, $preciseOnly) {
+                $w->whereExists(function ($e) use ($staff, $linkFilters) {
+                    $e->select(DB::raw(1))->from('lms_simulation_concept as l')->whereColumn('l.simulation_id', 's.id');
+                    if (! $staff) {
+                        $e->where('l.review_status', 'published');
+                    }
+                    foreach ($linkFilters as $column => $value) {   // $column is one of LINK_FILTERS, never request text
+                        $e->where('l.' . $column, (int) $value);
+                    }
+                });
+                if (! $preciseOnly) {
+                    $w->orWhereNotExists(function ($e) {
+                        $e->select(DB::raw(1))->from('lms_simulation_concept as p')->whereColumn('p.simulation_id', 's.id')->where('p.review_status', 'published');
+                    });
                 }
             });
         }

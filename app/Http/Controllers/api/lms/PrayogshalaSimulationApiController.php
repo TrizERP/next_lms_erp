@@ -86,9 +86,10 @@ class PrayogshalaSimulationApiController extends Controller
         $ids = $rows->pluck('id')->map(fn ($i) => (int) $i)->all();
         $progress = $this->store->progressMap($tenant, $this->userId($request), $ids);
         $links = $this->links->forSimulations($ids, ! $staff);
+        $mapped = array_flip($this->links->mappedIds($ids));
 
         return $this->ok([
-            'simulations' => $rows->map(fn ($s) => $this->card($s, $request, $progress[$s->id] ?? null, $links[(int) $s->id] ?? []))->values(),
+            'simulations' => $rows->map(fn ($s) => $this->card($s, $request, $progress[$s->id] ?? null, $links[(int) $s->id] ?? [], false, isset($mapped[(int) $s->id])))->values(),
             'categories' => $this->store->categories($rows),
             'total' => $rows->count(),
             'can_manage' => $author,
@@ -492,11 +493,13 @@ class PrayogshalaSimulationApiController extends Controller
      * @param  list<array<string, mixed>>  $links
      * @return array<string, mixed>
      */
-    private function card(object $sim, Request $request, ?object $progress, array $links, bool $withSnapshot = false): array
+    private function card(object $sim, Request $request, ?object $progress, array $links, bool $withSnapshot = false, ?bool $mapped = null): array
     {
         return $this->store->card($sim, $progress, $withSnapshot) + [
             'links' => $links,
             'editable' => $this->canAuthor($request) && (int) $sim->sub_institute_id === $this->tenant($request),
+            // false = not mapped yet: no PUBLISHED link to any concept (whoever asks). The gallery flags such a card; the list passes it in for all cards at once.
+            'mapped' => $mapped ?? in_array((int) $sim->id, $this->links->mappedIds([(int) $sim->id]), true),
         ];
     }
 

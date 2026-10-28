@@ -25,7 +25,7 @@ Always use `--path` for K12 migrations: other migrations may be pending on the s
 
 ## Learner visibility
 
-All 16 links are in `review`. A learner sees a simulation only through a **published** link of a **published** simulation, so no learner sees any of them until a subject teacher signs `TEACHER-MAPPING-SHEET.csv` and a tenant-1 author publishes the links.
+All 16 links are in `review`. Since the owner's change on 2026-10-28 a learner sees every **published** simulation, and one with no published link is shown in every chapter's tab with a small flag "Not mapped yet to a concept and topic"; learners are never shown a link in review. A simulation moves to its own chapters, topics and concepts (and loses the flag) only when a tenant-1 author publishes its links. That should wait until a subject teacher has signed `TEACHER-MAPPING-SHEET.csv`.
 
 ## Undo (reverse order)
 

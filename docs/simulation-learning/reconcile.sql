@@ -34,7 +34,7 @@ WHERE c.sub_institute_id <> 1;
 SELECT 'duplicate link' AS failed_check, simulation_id, concept_id, COUNT(*) AS n
 FROM lms_simulation_concept GROUP BY simulation_id, concept_id HAVING COUNT(*) > 1;
 
--- 6. A published link that nobody reviewed (learners see published links only: it needs a reviewer and a time).
+-- 6. A published link that nobody reviewed (a published link maps the simulation and moves it out of the "not mapped yet" flag: it needs a reviewer and a time).
 SELECT 'published link without reviewer' AS failed_check, id AS link_id, simulation_id, concept_id
 FROM lms_simulation_concept
 WHERE review_status = 'published' AND (reviewed_by IS NULL OR reviewed_at IS NULL);
@@ -56,14 +56,14 @@ SELECT 'traffic-control-room present' AS failed_check, id, slug FROM lms_simulat
 SELECT 'asset without licence' AS failed_check, id, sha256, name
 FROM lms_simulation_asset WHERE deleted_at IS NULL AND (licence IS NULL OR licence = '');
 
--- 10. Simulations visible to learners (published, linked through a published link) must be inside tenant 1.
+-- 10. Every simulation a learner can see (any published, undeleted one: mapped or not) must be inside tenant 1.
 SELECT 'learner-visible simulation outside the platform tenant' AS failed_check, s.id, s.slug, s.sub_institute_id
 FROM lms_simulation s
-JOIN lms_simulation_concept l ON l.simulation_id = s.id AND l.review_status = 'published'
 WHERE s.status = 'published' AND s.deleted_at IS NULL AND s.sub_institute_id <> 1;
 
 -- Summary (not a check): compare by eye with the four package files and mapping.json (expected: 4 simulations, 16 links).
 SELECT s.slug, s.title, s.status, s.current_version,
        (SELECT COUNT(*) FROM lms_simulation_concept l WHERE l.simulation_id = s.id) AS links,
-       (SELECT COUNT(*) FROM lms_simulation_concept l WHERE l.simulation_id = s.id AND l.review_status = 'published') AS links_published
+       (SELECT COUNT(*) FROM lms_simulation_concept l WHERE l.simulation_id = s.id AND l.review_status = 'published') AS links_published,
+       CASE WHEN EXISTS (SELECT 1 FROM lms_simulation_concept l WHERE l.simulation_id = s.id AND l.review_status = 'published') THEN 'mapped' ELSE 'NOT MAPPED YET (flagged)' END AS learner_flag
 FROM lms_simulation s WHERE s.deleted_at IS NULL ORDER BY s.slug;

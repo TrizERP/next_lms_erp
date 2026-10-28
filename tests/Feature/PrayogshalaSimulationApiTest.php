@@ -207,15 +207,21 @@ class PrayogshalaSimulationApiTest extends TestCase
         return $slugs;
     }
 
-    public function test_a_learner_sees_only_published_simulations_through_published_links_in_the_tenants_they_may_read(): void
+    public function test_a_learner_sees_every_published_simulation_of_the_tenants_they_may_read_and_the_unmapped_ones_are_flagged(): void
     {
         $this->gallery();
 
         // tenant 7 is is_Lms = Y, so it reads tenant 1's rows
         [$status, $body] = $this->act('index', 7, [], null, [], 'Student', true);
         $this->assertSame(200, $status);
-        $this->assertSame(['live-one'], $this->slugs($body), 'not the review-only link, the unlinked one, the draft or the deleted one');
-        $card = $body['data']['simulations'][0];
+        $this->assertSame(['live-one', 'loose-one', 'review-one'], $this->slugs($body), 'published ones, mapped or not; not the draft or the deleted one');
+        $byslug = collect($body['data']['simulations'])->keyBy('slug');
+        $this->assertTrue($byslug['live-one']['mapped'], 'it has a PUBLISHED link');
+        $this->assertFalse($byslug['review-one']['mapped'], 'its only link is still in review: not mapped yet');
+        $this->assertFalse($byslug['loose-one']['mapped'], 'no link at all: not mapped yet');
+        $this->assertSame([], $byslug['review-one']['links'], 'a learner is never shown a link that is still in review');
+        $this->assertSame([], $byslug['loose-one']['links']);
+        $card = $byslug['live-one'];
         $this->assertFalse($card['editable'], 'another tenant\'s row is never editable');
         $this->assertFalse($body['data']['can_manage']);
         $this->assertCount(1, $card['links']);
@@ -228,13 +234,13 @@ class PrayogshalaSimulationApiTest extends TestCase
         $this->assertSame([], $this->slugs($body));
         // a parent is a learner too, whatever the is_student flag says
         [, $body] = $this->act('index', 7, [], null, [], 'Parent', false);
-        $this->assertSame(['live-one'], $this->slugs($body));
+        $this->assertSame(['live-one', 'loose-one', 'review-one'], $this->slugs($body));
     }
 
-    public function test_a_learner_cannot_open_a_simulation_the_list_would_not_show_them(): void
+    public function test_a_learner_can_open_what_the_list_shows_them_and_nothing_else(): void
     {
         $sims = $this->gallery();
-        foreach (['review', 'loose', 'draft', 'gone'] as $key) {
+        foreach (['draft', 'gone'] as $key) {
             [$status] = $this->act('show', 7, [$sims[$key]->id], null, [], 'Student', true);
             $this->assertSame(404, $status, $key . ' (show)');
             [$status] = $this->act('progress', 7, [$sims[$key]->id], ['percent' => 10], [], 'Student', true);
@@ -242,10 +248,23 @@ class PrayogshalaSimulationApiTest extends TestCase
             [$status] = $this->act('links', 7, [$sims[$key]->id], null, [], 'Student', true);
             $this->assertSame(404, $status, $key . ' (links)');
         }
+        // an unmapped simulation is shown, so it opens, plays and saves progress; it just carries the flag and no review link
+        foreach (['review' => 'review-one', 'loose' => 'loose-one'] as $key => $slug) {
+            [$status, $shown] = $this->act('show', 7, [$sims[$key]->id], null, [], 'Student', true);
+            $this->assertSame(200, $status, $key . ' (show)');
+            $this->assertFalse($shown['data']['mapped'], $key . ' is flagged');
+            $this->assertSame([], $shown['data']['links'], $key . ' shows a learner no link');
+            [$status] = $this->act('progress', 7, [$sims[$key]->id], ['percent' => 10], [], 'Student', true);
+            $this->assertSame(200, $status, $key . ' (progress)');
+            [$status, $links] = $this->act('links', 7, [$sims[$key]->id], null, [], 'Student', true);
+            $this->assertSame(200, $status, $key . ' (links)');
+            $this->assertSame([], $links['data']['links']);
+        }
         [$status, $body] = $this->act('show', 7, [$sims['live']->id], null, [], 'Student', true);
         $this->assertSame(200, $status);
         $this->assertSame('g2g.sim/1', $body['data']['spec']['schema']);
         $this->assertFalse($body['data']['editable']);
+        $this->assertTrue($body['data']['mapped']);
         [$status] = $this->act('show', 8, [$sims['live']->id], null, [], 'Student', true);
         $this->assertSame(404, $status, 'a tenant outside the platform share cannot read it');
     }
@@ -267,8 +286,9 @@ class PrayogshalaSimulationApiTest extends TestCase
         $this->assertSame(404, $status);
         [, $links] = $this->act('links', 7, [$sims['review']->id], null, [], 'Teacher');
         $this->assertCount(1, $links['data']['links']);
-        [$status] = $this->act('links', 7, [$sims['review']->id], null, [], 'Student', true);
-        $this->assertSame(404, $status, 'a learner cannot even reach a simulation that has only a review link');
+        [$status, $learnerLinks] = $this->act('links', 7, [$sims['review']->id], null, [], 'Student', true);
+        $this->assertSame(200, $status, 'a learner reaches an unmapped simulation...');
+        $this->assertSame([], $learnerLinks['data']['links'], '...but is never shown the link that is still in review');
     }
 
     public function test_the_authors_see_every_status_and_may_edit_their_own_rows(): void
@@ -278,10 +298,10 @@ class PrayogshalaSimulationApiTest extends TestCase
         $this->assertSame(['draft-one', 'live-one', 'loose-one', 'review-one'], $this->slugs($body), 'drafts included, deleted not');
         $this->assertTrue($body['data']['can_manage']);
         $this->assertSame([true], array_values(array_unique(array_map(fn ($c) => $c['editable'], $body['data']['simulations']))));
-        // but a platform-tenant STUDENT is a learner: published and linked only, and nothing is editable
+        // but a platform-tenant STUDENT is a learner: published ones only (no draft), and nothing is editable
         [, $body] = $this->act('index', 1, [], null, [], 'Student', true);
-        $this->assertSame(['live-one'], $this->slugs($body));
-        $this->assertFalse($body['data']['simulations'][0]['editable']);
+        $this->assertSame(['live-one', 'loose-one', 'review-one'], $this->slugs($body));
+        $this->assertSame([false], array_values(array_unique(array_map(fn ($c) => $c['editable'], $body['data']['simulations']))));
     }
 
     public function test_the_list_filters_on_a_link_and_all_filters_must_hold_on_one_link(): void
@@ -296,12 +316,14 @@ class PrayogshalaSimulationApiTest extends TestCase
         $slugs = fn (array $q, string $profile = 'Student', bool $student = true) => $this->slugs($this->act('index', 7, [], null, $q, $profile, $student)[1]);
         $this->assertSame(['sim-a'], $slugs(['concept_id' => 5]), 'a learner: the review link of sim-c does not count');
         $this->assertSame(['sim-a', 'sim-c'], $slugs(['concept_id' => 5], 'Teacher', false), 'staff: it does');
-        $this->assertSame(['sim-a', 'sim-b'], $slugs(['chapter_id' => 100]));
+        // a chapter, standard or subject is a BROAD place: sim-c is not mapped yet (its only link is in review), so it shows everywhere, flagged
+        $this->assertSame(['sim-a', 'sim-b', 'sim-c'], $slugs(['chapter_id' => 100]));
+        $this->assertSame(['sim-a', 'sim-c'], $slugs(['chapter_id' => 200]), 'sim-b is mapped, and not to chapter 200');
+        $this->assertSame(['sim-a', 'sim-c'], $slugs(['standard_id' => 43]));
+        $this->assertSame(['sim-a', 'sim-b', 'sim-c'], $slugs(['subject_id' => 3975]));
+        // a topic or a concept is a PRECISE place: only a simulation linked there matches, never an unmapped one
         $this->assertSame(['sim-b'], $slugs(['topic_id' => 12]));
-        $this->assertSame(['sim-a'], $slugs(['chapter_id' => 200]));
-        $this->assertSame(['sim-a'], $slugs(['standard_id' => 43]));
-        $this->assertSame(['sim-a', 'sim-b'], $slugs(['subject_id' => 3975]));
-        $this->assertSame([], $slugs(['chapter_id' => 200, 'topic_id' => 11]), 'the chapter and the topic must be on the SAME link');
+        $this->assertSame([], $slugs(['chapter_id' => 200, 'topic_id' => 11]), 'the chapter and the topic must be on the SAME link, and a precise filter never matches an unmapped simulation');
         $this->assertSame(['sim-a'], $slugs(['q' => 'sim-a']), 'q searches the card');
         [$status, $body] = $this->act('index', 7, [], null, ['chapter_id' => 'abc'], 'Student', true);
         $this->assertSame(422, $status);
@@ -392,8 +414,11 @@ class PrayogshalaSimulationApiTest extends TestCase
         $sim = $this->makeSimulation('tiny-api');
         $this->linkTo($sim, [5], 'review');
         $link = DB::table('lms_simulation_concept')->first();
-        [, $before] = $this->act('index', 7, [], null, [], 'Student', true);
-        $this->assertSame([], $this->slugs($before));
+        $learner = fn (array $q = []) => $this->act('index', 7, [], null, $q, 'Student', true)[1];
+        $before = $learner();
+        $this->assertSame(['tiny-api'], $this->slugs($before), 'not mapped yet, so it is shown, flagged');
+        $this->assertFalse($before['data']['simulations'][0]['mapped']);
+        $this->assertSame(['tiny-api'], $this->slugs($learner(['chapter_id' => 999])), 'unmapped: it is in every chapter\'s tab');
 
         [$status, $body] = $this->act('reviewLink', 1, [$sim->id, $link->id], ['status' => 'published'], [], 'Teacher', false, 77);
         $this->assertSame(200, $status, json_encode($body));
@@ -401,13 +426,21 @@ class PrayogshalaSimulationApiTest extends TestCase
         $row = DB::table('lms_simulation_concept')->first();
         $this->assertSame(['published', 77], [$row->review_status, (int) $row->reviewed_by]);
         $this->assertNotNull($row->reviewed_at);
-        [, $after] = $this->act('index', 7, [], null, [], 'Student', true);
+        $after = $learner();
         $this->assertSame(['tiny-api'], $this->slugs($after));
+        $this->assertTrue($after['data']['simulations'][0]['mapped'], 'a published link maps it: the flag goes');
+        $this->assertCount(1, $after['data']['simulations'][0]['links']);
+        $this->assertSame(['tiny-api'], $this->slugs($learner(['chapter_id' => 100])), 'it shows in the chapter it is mapped to');
+        $this->assertSame([], $this->slugs($learner(['chapter_id' => 999])), 'and leaves every other chapter\'s tab');
+        $this->assertSame(['tiny-api'], $this->slugs($learner(['concept_id' => 5])));
 
         [, $body] = $this->act('reviewLink', 1, [$sim->id, $link->id], ['status' => 'review'], [], 'Admin', false, 88);
         $this->assertSame(['review', 88], [$body['data']['link']['review_status'], $body['data']['link']['reviewed_by']], 'unpublishing is stamped too');
-        [, $gone] = $this->act('index', 7, [], null, [], 'Student', true);
-        $this->assertSame([], $this->slugs($gone));
+        $gone = $learner();
+        $this->assertSame(['tiny-api'], $this->slugs($gone), 'unpublished: shown again, flagged again');
+        $this->assertFalse($gone['data']['simulations'][0]['mapped']);
+        $this->assertSame([], $this->slugs($learner(['concept_id' => 5])), 'a precise filter does not match an unmapped simulation');
+        $this->assertSame(['tiny-api'], $this->slugs($learner(['chapter_id' => 999])));
 
         foreach (['archived', '', null, ['x']] as $bad) {
             [$status, $body] = $this->act('reviewLink', 1, [$sim->id, $link->id], ['status' => $bad]);

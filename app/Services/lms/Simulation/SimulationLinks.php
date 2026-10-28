@@ -12,7 +12,8 @@ use Illuminate\Support\Facades\DB;
  * must be one of the platform tenant's (config lms_content.platform_sub_institute_ids): an unknown id and another tenant's id are the same 422,
  * naming the id.
  *
- * REVIEW. A link starts in `review`; a learner sees nothing through a link until it is `published`. Saving the set again keeps the review state of
+ * REVIEW. A link starts in `review`; a learner sees nothing through a link until it is `published` (until then the simulation shows as "not mapped
+ * yet", see mappedIds). Saving the set again keeps the review state of
  * a link that did not change (same role, citation and reason) and sends a changed one back to `review`, because a teacher approved the old text.
  */
 final class SimulationLinks
@@ -61,6 +62,23 @@ final class SimulationLinks
     public function forSimulation(int $simulationId, bool $publishedOnly): array
     {
         return $this->forSimulations([$simulationId], $publishedOnly)[$simulationId] ?? [];
+    }
+
+    /**
+     * The ids among `$simulationIds` that are MAPPED: they have at least one PUBLISHED link to a concept. A simulation with no published link
+     * (none at all, or only links still in review) is "not mapped yet"; the gallery shows it with a flag instead of hiding it.
+     *
+     * @param  list<int>  $simulationIds
+     * @return list<int>
+     */
+    public function mappedIds(array $simulationIds): array
+    {
+        if ($simulationIds === []) {
+            return [];
+        }
+
+        return DB::table('lms_simulation_concept')->whereIn('simulation_id', $simulationIds)->where('review_status', 'published')
+            ->distinct()->pluck('simulation_id')->map(fn ($id) => (int) $id)->all();
     }
 
     /** @return array<string, mixed> */
