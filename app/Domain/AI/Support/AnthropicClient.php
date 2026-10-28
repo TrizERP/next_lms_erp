@@ -375,7 +375,7 @@ class AnthropicClient implements ModelClient, SupportsVisionAnalysis
             ->orderByRaw('sub_institute_id IS NULL ASC')
             ->orderByDesc('id');
 
-        $key = $query->value('api_key');
+        $key = \App\Support\KeyVault::reveal($query->value('api_key'));
 
         if (is_string($key) && trim($key) !== '' && trim($key) !== '-') {
             return trim($key);

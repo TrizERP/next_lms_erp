@@ -160,7 +160,7 @@ class dynamic_report_controller extends Controller
             $sort_order_arr[] = $_REQUEST["sort_order3"];
         }
 
-        $old_data = unserialize($_REQUEST["old_data"]);
+        $old_data = unserialize($_REQUEST["old_data"], ['allowed_classes' => false]);
         $old_data["selected_fields"] = explode(",",$_REQUEST["selected_fields"]);
         $old_data["group_by"] = $group_by_arr;
         $old_data["sort_order"] = $sort_order_arr;
@@ -194,7 +194,7 @@ class dynamic_report_controller extends Controller
     public function store(Request $request)
     {
         // echo '<pre>'; print_r($_REQUEST); exit;
-        $old_data = unserialize($_REQUEST["old_data"]);
+        $old_data = unserialize($_REQUEST["old_data"], ['allowed_classes' => false]);
         unset($old_data["old_data"]);
         $old_data["condition"] = $_REQUEST["condition"];
 
@@ -237,7 +237,7 @@ class dynamic_report_controller extends Controller
             $res["message"] = "Please Add Required Data to View Report";
             return is_mobile($type, "dynamic_report.index", $res);
         }
-        $all_detail = unserialize($data[0]->all_data);
+        $all_detail = unserialize($data[0]->all_data, ['allowed_classes' => false]);
 
         //getting main module name
         $main_module = $all_detail["main_module"];

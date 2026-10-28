@@ -58,7 +58,7 @@ class admissionReportController extends Controller
             }
             // 2024-12-28 start 
             $customFields = tblcustomfieldsModel::where(['status' => "1", 'table_name' => "admission_enquiry"])
-            ->whereRaw('(sub_institute_id = '.$sub_institute_id.' OR common_to_all = 1) and user_type="" ')
+            ->whereRaw('(sub_institute_id = ? OR common_to_all = 1) and user_type="" ', [(int) $sub_institute_id])
             ->orderBy('sort_order', 'ASC')
             ->selectRaw("GROUP_CONCAT(
                         CONCAT(
@@ -142,7 +142,7 @@ class admissionReportController extends Controller
                 ->where('ai.sub_institute_id', '=', $sub_institute_id)
                 ->where('ai.syear', '=', $syear)
                 ->when(!empty($from_date) && !empty($to_date), function ($q) use ($from_date, $to_date) {
-                    $q->whereRaw("DATE_FORMAT(ai.created_on, '%Y-%m-%d') BETWEEN '" . $from_date . "' AND '" . $to_date . "'");
+                    $q->whereRaw("DATE_FORMAT(ai.created_on, '%Y-%m-%d') BETWEEN ? AND ?", [$from_date, $to_date]);
                 });
 
             if ($standard != '') {
@@ -224,7 +224,7 @@ class admissionReportController extends Controller
         else
         {
             $customFields = tblcustomfieldsModel::where(['status' => "1", 'table_name' => "admission_form"])
-            ->whereRaw('(sub_institute_id = '.$sub_institute_id.' OR common_to_all = 1) and user_type="" ')
+            ->whereRaw('(sub_institute_id = ? OR common_to_all = 1) and user_type="" ', [(int) $sub_institute_id])
             ->orderBy('sort_order', 'ASC')
             ->get();
             foreach ($customFields as $key => $value) {
@@ -378,7 +378,7 @@ class admissionReportController extends Controller
 
         }
         $customFields = tblcustomfieldsModel::where(['status' => "1", 'table_name' => "admission_enquiry"])
-        ->whereRaw('(sub_institute_id = '.$sub_institute_id.' OR common_to_all = 1) and user_type="" ')
+        ->whereRaw('(sub_institute_id = ? OR common_to_all = 1) and user_type="" ', [(int) $sub_institute_id])
         ->orderBy('sort_order', 'ASC')
         ->get();
         $res['dataCustomFields']=$customFields;
@@ -443,7 +443,7 @@ class admissionReportController extends Controller
         if (isset($report)) {
             // 2024-12-28 start 
             $customFields = tblcustomfieldsModel::where(['status' => "1", 'table_name' => "admission_registration"])
-            ->whereRaw('(sub_institute_id = '.$sub_institute_id.' OR common_to_all = 1) and user_type="" ')
+            ->whereRaw('(sub_institute_id = ? OR common_to_all = 1) and user_type="" ', [(int) $sub_institute_id])
             ->selectRaw('GROUP_CONCAT("ar.",field_name) as fileds')
             ->first();
             $customField = '1=1';
@@ -531,7 +531,7 @@ class admissionReportController extends Controller
         $res['message'] = "Success";
         $res['fields'] = $reportFields;
         $customFields = tblcustomfieldsModel::where(['status' => "1", 'table_name' => "admission_enquiry"])
-        ->whereRaw('(sub_institute_id = '.$sub_institute_id.' OR common_to_all = 1) and user_type="" ')
+        ->whereRaw('(sub_institute_id = ? OR common_to_all = 1) and user_type="" ', [(int) $sub_institute_id])
         ->orderBy('sort_order', 'ASC')
         ->get();
         $res['dataCustomFields']=$customFields;
@@ -603,7 +603,7 @@ class admissionReportController extends Controller
 
         if (isset($report)) {
             $customFields = tblcustomfieldsModel::where(['status' => "1", 'table_name' => "admission_registration"])
-            ->whereRaw('(sub_institute_id = '.$sub_institute_id.' OR common_to_all = 1) and user_type="" ')
+            ->whereRaw('(sub_institute_id = ? OR common_to_all = 1) and user_type="" ', [(int) $sub_institute_id])
             ->selectRaw('GROUP_CONCAT("ar.",field_name) as fileds')
             ->first();
             $customField = '1=1';
@@ -691,7 +691,7 @@ class admissionReportController extends Controller
         $res['message'] = "Success";
         $res['fields'] = $reportFields;
         $customFields = tblcustomfieldsModel::where(['status' => "1", 'table_name' => "admission_enquiry"])
-        ->whereRaw('(sub_institute_id = '.$sub_institute_id.' OR common_to_all = 1) and user_type="" ')
+        ->whereRaw('(sub_institute_id = ? OR common_to_all = 1) and user_type="" ', [(int) $sub_institute_id])
         ->orderBy('sort_order', 'ASC')
         ->get();
         $res['dataCustomFields']=$customFields;

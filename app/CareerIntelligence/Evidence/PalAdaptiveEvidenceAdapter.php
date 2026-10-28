@@ -162,6 +162,8 @@ class PalAdaptiveEvidenceAdapter implements EvidenceIngestionAdapter
                 'method' => 'eso_concept_mastery_subject_rollup',
                 'adapter_version' => self::ADAPTER_VERSION,
                 'ingested_by' => 'PalAdaptiveEvidenceAdapter',
+                'supervised' => false,
+                'reliability_cap' => self::MAX_PRACTICE_RELIABILITY,
                 'concepts_mastered' => $mastered,
                 'concepts_retained' => $retained,
                 'signals_used' => ['recency', 'mastery_volume', 'spaced_retention'],
@@ -225,8 +227,15 @@ class PalAdaptiveEvidenceAdapter implements EvidenceIngestionAdapter
     }
 
     /** Purely a function of evidence volume — independent of how well the student did. */
+    /**
+     * Practice is unproctored and repeatable, so however much of it there is, it never counts as
+     * strongly as a supervised assessment: reliability is capped. (A student can otherwise raise
+     * their own career evidence just by practising.)
+     */
+    private const MAX_PRACTICE_RELIABILITY = 0.6;
+
     private function computeReliability(int $mastered): float
     {
-        return round(min($mastered / 15, 1.0), 2);
+        return round(min($mastered / 15, self::MAX_PRACTICE_RELIABILITY), 2);
     }
 }

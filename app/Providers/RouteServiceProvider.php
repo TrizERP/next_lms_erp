@@ -457,12 +457,14 @@ class RouteServiceProvider extends ServiceProvider
     protected function mapTeacherApiRoutes()
     {
         Route::namespace($this->namespace)
+            ->middleware('mobile.jwt')
             ->group(base_path('routes/teacherapi.php'));
     }
 
     protected function mapAdminApiRoutes()
     {
         Route::namespace($this->namespace)
+            ->middleware('mobile.jwt')
             ->group(base_path('routes/adminapi.php'));
     }
 

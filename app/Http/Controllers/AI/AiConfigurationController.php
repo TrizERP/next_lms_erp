@@ -216,7 +216,7 @@ class AiConfigurationController extends AiController
                 return $this->failure('This row is not tagged with a provider this platform knows.', 422);
             }
 
-            $key = trim((string) ($row->api_key ?? ''));
+            $key = \App\Support\KeyVault::reveal(trim((string) ($row->api_key ?? '')));
             $verdict = $key === '' ? null : $this->discovery->verify($provider, $key, fresh: true);
 
             return $this->success('Credential checked.', [
@@ -260,7 +260,7 @@ class AiConfigurationController extends AiController
             $cacheKey = $row['provider'] . '|' . ($keyId ?? 'env');
 
             if (! array_key_exists($cacheKey, $apiKeys)) {
-                $stored = $keyId === null ? null : DB::table('ai_api_keys')->where('id', $keyId)->value('api_key');
+                $stored = $keyId === null ? null : \App\Support\KeyVault::reveal(DB::table('ai_api_keys')->where('id', $keyId)->value('api_key'));
                 $apiKeys[$cacheKey] = $this->credentials->inspect($row['provider'], $stored, $live);
             }
 
@@ -277,7 +277,7 @@ class AiConfigurationController extends AiController
                 $legCache = $leg['provider'] . '|' . ($legKey ?? 'env');
 
                 if (! array_key_exists($legCache, $apiKeys)) {
-                    $stored = $legKey === null ? null : DB::table('ai_api_keys')->where('id', $legKey)->value('api_key');
+                    $stored = $legKey === null ? null : \App\Support\KeyVault::reveal(DB::table('ai_api_keys')->where('id', $legKey)->value('api_key'));
                     $apiKeys[$legCache] = $this->credentials->inspect($leg['provider'], $stored, $live);
                 }
 
@@ -326,7 +326,7 @@ class AiConfigurationController extends AiController
                 'ai_module' => $data['ai_module'],
                 'api_type' => $data['api_type'],
                 'model' => $data['model'],
-                'api_key' => $data['api_key'],
+                'api_key' => \App\Support\KeyVault::seal($data['api_key']),
                 'account_email' => $data['account_email'],
                 'api_limit' => $data['api_limit'],
                 'status' => $data['status'],
@@ -393,7 +393,7 @@ class AiConfigurationController extends AiController
                 ]);
             }
 
-            $keyToCheck = $data['api_key'] ?? $row->api_key;
+            $keyToCheck = $data['api_key'] ?? \App\Support\KeyVault::reveal($row->api_key);
             $credential = $keyToCheck !== null ? $this->checkCredential($data['provider'], $keyToCheck, $data['model']) : null;
 
             if ($data['model'] !== null) {
@@ -415,7 +415,7 @@ class AiConfigurationController extends AiController
             }
 
             if ($data['api_key'] !== null) {
-                $update['api_key'] = $data['api_key'];
+                $update['api_key'] = \App\Support\KeyVault::seal($data['api_key']);
             }
 
             DB::table('ai_api_keys')->where('id', $id)->update($update);
@@ -781,7 +781,7 @@ class AiConfigurationController extends AiController
         $provider = $this->providerFor($row);
         // Cached verdict only: a list of rows must not make one provider call per row. Saving and the
         // Verify button are what put a verdict in the cache.
-        $credential = $this->credentials->inspect($provider, (string) ($row->api_key ?? ''), live: false);
+        $credential = $this->credentials->inspect($provider, (string) \App\Support\KeyVault::reveal((string) ($row->api_key ?? '')), live: false);
         $isPlatform = ($row->sub_institute_id ?? null) === null;
 
         return [
@@ -805,7 +805,7 @@ class AiConfigurationController extends AiController
             // Platform rows are shared across the estate; this school may look but not
             // touch. The API enforces this too — see ownedRow().
             'editable' => ! $isPlatform && (string) ($row->sub_institute_id ?? '') === (string) $institute,
-            'key_preview' => $this->preview((string) ($row->api_key ?? '')),
+            'key_preview' => $this->preview((string) \App\Support\KeyVault::reveal((string) ($row->api_key ?? ''))),
             'updated_at' => $row->updated_at ?? null,
         ];
     }

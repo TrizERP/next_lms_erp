@@ -232,12 +232,20 @@ class sqaa_controller extends Controller
     public function generatePdf(Request $request) {
         $sub_institute_id = session()->get('sub_institute_id');
         $htmlContent = $request->get('html_content');
-        $menu_id = $request->get('menu_id_pdf');
-        $doc_id = $request->get('doc_id_pdf');
+        // These two become part of a file name under public/, so only digits are accepted
+        // (a value like ../../x would otherwise write outside the folder).
+        $menu_id = preg_replace('/[^0-9]/', '', (string) $request->get('menu_id_pdf'));
+        $doc_id = preg_replace('/[^0-9]/', '', (string) $request->get('doc_id_pdf'));
+        $sub_institute_id = (int) $sub_institute_id;
         
         $pdf = PDF::loadHTML($htmlContent);
+        // The HTML is posted by the browser: do not let it make the server fetch remote files or URLs.
+        $pdf->setOption('isRemoteEnabled', false);
         $filename = $sub_institute_id.'_pdf_menu'.$menu_id.'_doc'.$doc_id.'.pdf';
         $filePath= 'sqaa/' . $filename;
+        if (! is_dir(public_path('sqaa'))) {
+            mkdir(public_path('sqaa'), 0755, true);
+        }
         $pdf->save(public_path('sqaa/' . $filename));
         
         $fileUrl = asset('sqaa/' . $filename);
@@ -252,8 +260,15 @@ class sqaa_controller extends Controller
         // return $request;exit;
     }      
   public function unlink_file(Request $request){
-    if (file_exists($request->file)) {
-        if (unlink($request->file)) {
+    // Only files this module generated under public/sqaa may be removed; the path is client-supplied.
+    $baseDir = realpath(public_path('sqaa'));
+    $target = $baseDir ? realpath((string) $request->file) : false;
+    if ($target === false || strpos($target, $baseDir . DIRECTORY_SEPARATOR) !== 0 || !is_file($target)) {
+        echo 'File not found.';
+        return;
+    }
+    if (file_exists($target)) {
+        if (unlink($target)) {
             echo 'File deleted successfully.';
         } else {
             echo 'Failed to delete the file.';

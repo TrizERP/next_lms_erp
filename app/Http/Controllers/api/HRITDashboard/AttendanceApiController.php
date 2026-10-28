@@ -36,7 +36,7 @@ class AttendanceApiController extends Controller
 
         // Token validation for API type
         if ($type == "API") {
-            $token = $request->input('token');
+            $token = $request->input('token') ?: $request->bearerToken();
 
             if (!$token) {
                 return response()->json(['message' => 'Token not provided'], 401);
@@ -201,7 +201,7 @@ class AttendanceApiController extends Controller
         // TOKEN VALIDATION (ONLY FOR API TYPE)
         // ============================================================
         if ($type === "API") {
-            $token = $request->input('token');
+            $token = $request->input('token') ?: $request->bearerToken();
 
             if (!$token) {
                 return response()->json(['message' => 'Token not provided'], 401);
@@ -303,7 +303,7 @@ class AttendanceApiController extends Controller
 
         // Token validation (same pattern as other APIs)
         if ($type === "API") {
-            $token = $request->input('token');
+            $token = $request->input('token') ?: $request->bearerToken();
 
             if (!$token) {
                 return response()->json(['message' => 'Token not provided'], 401);

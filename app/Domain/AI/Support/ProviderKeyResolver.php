@@ -125,7 +125,7 @@ class ProviderKeyResolver
             $rowInstitute = $hasTenantColumn ? ($row->sub_institute_id ?? null) : null;
 
             return [
-                'api_key' => trim((string) $row->api_key),
+                'api_key' => \App\Support\KeyVault::reveal(trim((string) $row->api_key)),
                 'api_limit' => isset($row->api_limit) ? (int) $row->api_limit : null,
                 'id' => $row->id ?? null,
                 'scope' => $rowInstitute === null || $rowInstitute === '' ? 'platform' : 'institute',

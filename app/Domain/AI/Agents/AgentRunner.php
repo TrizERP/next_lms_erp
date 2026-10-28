@@ -195,7 +195,8 @@ class AgentRunner
                 'summary' => 'The agent could not complete its analysis.',
                 'result' => [],
                 'counters' => $context->counters(),
-                'error' => $exception->getMessage(),
+                // The cause (provider text, SQL, hosts) stays in the run record and audit log; the caller gets a reference.
+                'error' => 'The agent run failed (reference ' . $runId . '). An administrator can see the details in the AI run log.',
             ];
         }
     }

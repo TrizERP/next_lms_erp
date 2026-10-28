@@ -141,7 +141,9 @@ return [
     |   3. flip LMS_API_AUTH_ENFORCE=true only once that count is zero
     |
     */
-    'api_auth_enforce' => env('LMS_API_AUTH_ENFORCE', false),
+    // Enforced by default: the frontend now sends the bearer token on every ERP call (installErpAuthFetch).
+    // Set LMS_API_AUTH_ENFORCE=false only as a short-lived rollback.
+    'api_auth_enforce' => env('LMS_API_AUTH_ENFORCE', true),
 
     /*
     |--------------------------------------------------------------------------

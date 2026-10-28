@@ -188,7 +188,10 @@ class GovernanceValidator
      */
     public function authorizeRole(McpRequestContext $context, array $allowedRoles): GovernanceReport
     {
-        if ($allowedRoles === [] || in_array($context->role, $allowedRoles, true)) {
+        // An empty list used to mean "every role", students included. It now means every staff role:
+        // a role must be named to let a student through.
+        $open = $allowedRoles === [] && ! $context->isStudent;
+        if ($open || in_array($context->role, $allowedRoles, true)) {
             return GovernanceReport::pass([self::RULE_ROLE_PERMITTED]);
         }
 

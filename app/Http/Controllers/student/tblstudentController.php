@@ -1716,6 +1716,12 @@ die; */
 		$syear = $request->input("syear");
 		$imei = $request->input("imei");
 
+		// These are concatenated into the raw SQL below, so only plain digits get through.
+		$student_id = preg_replace('/[^0-9]/', '', (string) $student_id);
+		$sub_institute_id = preg_replace('/[^0-9]/', '', (string) $sub_institute_id);
+		$sms_mobile = preg_replace('/[^0-9]/', '', (string) $sms_mobile);
+		$syear = preg_replace('/[^0-9\-]/', '', (string) $syear);
+
 
 		if ($student_id != "" && $sub_institute_id != "" && $sms_mobile != "" && $syear != "") {
 

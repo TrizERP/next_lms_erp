@@ -296,12 +296,14 @@ Route::get('/whatsapp-show-reply/{wid}', [WhatsappController::class, 'whatsappSh
     
 });
 
-Route::get('/import-data',[ImportController::class,'getImport'])->name('import.data');
-Route::get('/marks-import',[ImportController::class,'Import']);
-Route::post('/custom_import_parse', [ImportController::class,'customParseImport'])->name('custom_import_parse');
-Route::post('/import_parse', [ImportController::class,'parseImport'])->name('import_parse');
-Route::post('/import_parse_fields', [ImportController::class,'matchFields'])->name('update.match_fields');
-Route::post('/import_process', [ImportController::class,'processImport'])->name('import_process');
+Route::middleware(['session', 'check_permissions'])->group(function () {
+    Route::get('/import-data',[ImportController::class,'getImport'])->name('import.data');
+    Route::get('/marks-import',[ImportController::class,'Import']);
+    Route::post('/custom_import_parse', [ImportController::class,'customParseImport'])->name('custom_import_parse');
+    Route::post('/import_parse', [ImportController::class,'parseImport'])->name('import_parse');
+    Route::post('/import_parse_fields', [ImportController::class,'matchFields'])->name('update.match_fields');
+    Route::post('/import_process', [ImportController::class,'processImport'])->name('import_process');
+});
 
 Route::any('/knowledge-base', [dashboardController::class, 'knowledge_base'])->name('knowledge_base')->middleware('session', 'menu');
 
@@ -343,14 +345,14 @@ Route::any('login', [loginController::class, 'index'])->name('login');
 Route::any('signup', [signupController::class, 'index'])->name('signup');
 //Route::get('aftersignuplogin', 'loginController@aftersignuplogin');
 
-Route::any('superAdmin', [superAdminController::class, 'index'])->name('superAdmin');
-Route::post('superAdmin-store', [superAdminController::class, 'store'])->name('superAdmin.store');
+Route::any('superAdmin', [superAdminController::class, 'index'])->name('superAdmin')->middleware(['session', 'super.admin']);
+Route::post('superAdmin-store', [superAdminController::class, 'store'])->name('superAdmin.store')->middleware(['session', 'super.admin']);
 
 Route::any('ajaxMenuSession', [loginController::class, 'ajaxMenuSession'])->name('ajaxMenuSession');
 
 Route::any('/logout', [loginController::class, 'logout']);
 
-Route::any('/profileAPI', [loginController::class, 'profileAPI']);
+Route::any('/profileAPI', [loginController::class, 'profileAPI'])->middleware('session');
 
 Route::any('/tourUpdate', [tourController::class, 'index'])->name('tourUpdate');
 
@@ -484,8 +486,8 @@ Route::post('collectsct', [AJAXController::class, 'collectsct'])->name('collects
 
 Route::get('studentLists', [AJAXController::class, 'studentLists'])->name('studentLists');
 
-Route::get('ckeditor/create', [CkeditorFileUploadController::class, 'create'])->name('ckeditor.create');
-Route::post('ckeditor', [CkeditorFileUploadController::class, 'store'])->name('uploadimage');
+Route::get('ckeditor/create', [CkeditorFileUploadController::class, 'create'])->name('ckeditor.create')->middleware('session');
+Route::post('ckeditor', [CkeditorFileUploadController::class, 'store'])->name('uploadimage')->middleware('session');
 
 // Route::get('exception/index', 'ExceptionController@index');
 
@@ -495,9 +497,9 @@ Route::post('ckeditor', [CkeditorFileUploadController::class, 'store'])->name('u
 
 // Forgot Password Routes
 Route::get('forget-password', [ForgotPasswordController::class, 'showForgetPasswordForm'])->name('forget.password.get');
-Route::post('forget-password', [ForgotPasswordController::class, 'submitForgetPasswordForm'])->name('forget.password.post');
+Route::post('forget-password', [ForgotPasswordController::class, 'submitForgetPasswordForm'])->name('forget.password.post')->middleware('throttle:5,1');
 Route::get('reset-password/{token}/{email}', [ForgotPasswordController::class, 'showResetPasswordForm'])->name('reset.password.get');
-Route::post('reset-password', [ForgotPasswordController::class, 'submitResetPasswordForm'])->name('reset.password.post');
+Route::post('reset-password', [ForgotPasswordController::class, 'submitResetPasswordForm'])->name('reset.password.post')->middleware('throttle:10,1');
 
 
 Route::post('NewLMS_temp_signup', [NewLMS_ApiController::class, 'NewLMS_temp_signup'])->name("NewLMS_temp_signup");
@@ -629,15 +631,15 @@ Route::get('otherPolicy', [dashboardController::class, 'otherPolicy'])->name('ot
 Route::any('check_permissions',[AJAXController::class, 'check_access'])->name('check_permissions');
 Route::any('check_access',[AJAXController::class, 'check_access'])->name('check_access');
 
-Route::any('chat',[AJAXController::class, 'chat'])->name('chat');
+Route::any('chat',[AJAXController::class, 'chat'])->name('chat')->middleware('session');
 Route::post('/lms_chat', [App\Http\Controllers\lms\assessmentQuestionController::class, 'chat'])->name('lms_chat');
 Route::match(['get', 'post'], '/preview_distribution', [App\Http\Controllers\lms\assessmentQuestionController::class, 'previewDistribution'])->name('preview_distribution');
 Route::get('/assessment_question/concepts', [\App\Http\Controllers\lms\assessmentQuestionController::class, 'concepts'])->name('assessment_question.concepts');
 Route::post('assessment_question/store', [\App\Http\Controllers\lms\assessmentQuestionController::class, 'store'])->name('assessment_question.store');
-Route::any('geminiAI',[AJAXController::class, 'geminiAI'])->name('geminiAI');
-Route::get('lms_data',[AJAXController::class, 'lmsDataApi'])->name('lms_data');
-Route::get('table_data',[AJAXController::class, 'lmsDataApi'])->name('table_data');
-Route::any('python_timetable',[AJAXController::class, 'pythonTimetable'])->name('python_timetable');
+Route::any('geminiAI',[AJAXController::class, 'geminiAI'])->name('geminiAI')->middleware('session');
+Route::get('lms_data',[AJAXController::class, 'lmsDataApi'])->name('lms_data')->middleware('api.session');
+Route::get('table_data',[AJAXController::class, 'lmsDataApi'])->name('table_data')->middleware('api.session');
+Route::any('python_timetable',[AJAXController::class, 'pythonTimetable'])->name('python_timetable')->middleware(['session', 'super.admin']);
 
 // Task Management "New Assignment" modal: bare-host legacy endpoints the
 // ported frontend calls via its non-`/api` webClient (see
@@ -648,14 +650,14 @@ Route::any('python_timetable',[AJAXController::class, 'pythonTimetable'])->name(
 // registered, but only under `frontdesk/task` (routes/frontdesk.php), which
 // 404s for the legacy client. Named distinctly from the `frontdesk.*`
 // resource's `task.*` names so the two registrations don't collide.
-Route::get('getSupervisor', [AJAXController::class, 'getSupervisor'])->name('legacy.getSupervisor');
+Route::get('getSupervisor', [AJAXController::class, 'getSupervisor'])->name('legacy.getSupervisor')->middleware('api.session');
 Route::post('task', [\App\Http\Controllers\frontdesk\taskController::class, 'store'])->name('legacy.task.store');
 
 // to transfer files to digital ocean
-Route::post('transferDocs', [oldDocumentTransfer::class, 'storeImagesToDigitalOcean']);
-Route::get('convertDoc',[oldDocumentTransfer::class, 'ConvertBinaryData']);
+Route::post('transferDocs', [oldDocumentTransfer::class, 'storeImagesToDigitalOcean'])->middleware(['session', 'super.admin']);
+Route::get('convertDoc',[oldDocumentTransfer::class, 'ConvertBinaryData'])->middleware(['session', 'super.admin']);
 Route::get('transport_Onboarding', [tourController::class, 'transportOnboarding'])->name('transportOnboarding');
-Route::match(['get', 'post'], '/chatbot', [ChatbotController::class, 'handle']);
+Route::match(['get', 'post'], '/chatbot', [ChatbotController::class, 'handle'])->middleware('session');
 // 03-06-24
 Route::resource('requirements', reuirementController::class);
 Route::get('customers_requirement', [reuirementController::class, 'ReportData'])->name('customers_requirement');
@@ -803,7 +805,7 @@ Route::group(['prefix' => 'agent', 'middleware' => ['session', 'menu', 'logRoute
     route::resource('multi_agent', multiAgentController::class);
 });
 
-route::get('geminiChat', [AJAXController::class, 'geminiChat']);
+route::get('geminiChat', [AJAXController::class, 'geminiChat'])->middleware('session');
 Route::get('ajaxQuestionLists', [AJAXController::class, 'ajaxQuestionListsFunction'])->name('ajaxQuestionLists');
 
 Route::get('/suggested-content', [palController::class, 'suggestedContent'])->name('pal.suggested.content');
@@ -859,7 +861,7 @@ Route::group(['middleware' => ['session', 'menu', 'logRoute', 'check_permissions
     Route::post('/lms/misconception/generate-content', [\App\Http\Controllers\lms\pal\palController::class, 'generateMisconceptionContent'])->name('misconception.generate.content');
     Route::post('/lms/increment-content-visit', [palController::class, 'incrementContentVisit'])->name('increment.content.visit');
 });
-Route::get('/download-folder', [FileController::class, 'downloadFolder']);
+Route::get('/download-folder', [FileController::class, 'downloadFolder'])->middleware(['session', 'super.admin']);
 
 /*
 | The AI Journey console used to be served from here as a Blade page. It now lives in

@@ -58,7 +58,12 @@ abstract class AbstractMcpTool extends Tool implements McpToolInterface
      */
     protected function allowedRoles(): array
     {
-        return ['admin', 'staff'];
+        // Tools that change data, and tools that read fees, payroll, leave, staff attendance or
+        // student medical records, are for administrators. Any other staff member (a teacher or
+        // librarian) used to reach all of them through the AI. A tool can still override this.
+        $sensitive = (bool) preg_match('/^(Fees|Payroll|Leave|StaffAttendance|StudentMedical)/', class_basename(static::class));
+
+        return (! $this->isReadOnly() || $sensitive) ? ['admin'] : ['admin', 'staff'];
     }
 
     protected function isReadOnly(): bool

@@ -41,6 +41,11 @@ class UserManagementApiController extends Controller
             $payload = json_decode($decoded ?: '{}', true) ?: [];
         }
         $actorId = (int) ($payload['id'] ?? 0);
+        // This is a staff API. A student or parent token's `id` is a tblstudent id, and must never be
+        // looked up as a tbluser id (it could match an admin's id in the same school).
+        if (! empty($payload['is_student']) || ! empty($payload['student_id'])) {
+            return response()->json(['status_code' => 2, 'message' => 'Not available to this account.', 'data' => []], 403);
+        }
         $tenantId = (int) ($payload['sub_institute_id'] ?? 0);
         if ($actorId !== $request->integer('user_id') || $tenantId !== $request->integer('sub_institute_id')) {
             return response()->json(['status_code' => 2, 'message' => 'Token context does not match the request.', 'data' => []], 403);
@@ -200,6 +205,25 @@ class UserManagementApiController extends Controller
         return $values;
     }
 
+    /** An admin account is one whose profile is (or hangs under) profile 1, or is named like one. */
+    private function profileGrantsAdmin(int $profileId, int $tenantId): bool
+    {
+        $p = DB::table('tbluserprofilemaster')->where('id', $profileId)->where('sub_institute_id', $tenantId)->first(['id', 'name', 'parent_id']);
+
+        return $p !== null && ((int) $p->id === 1 || (int) $p->parent_id === 1 || str_contains(strtolower((string) $p->name), 'admin'));
+    }
+
+    private function actorIsAdmin($actor): bool
+    {
+        return in_array(strtolower((string) $actor->profile_name), ['admin', 'super admin'], true)
+            || (int) $actor->user_profile_id === 1;
+    }
+
+    private function refuseAdminGrant(): \Illuminate\Http\JsonResponse
+    {
+        return response()->json(['status_code' => 0, 'message' => 'Only an administrator can create or assign an administrator profile.', 'data' => []], 403);
+    }
+
     public function store(Request $request)
     {
         if ($response = $this->context($request)) return $response;
@@ -207,6 +231,9 @@ class UserManagementApiController extends Controller
         $actor = $request->attributes->get('users_actor');
         $validator = Validator::make($request->all(), $this->rules($actor->sub_institute_id));
         if ($validator->fails()) return response()->json(['status_code' => 0, 'message' => $validator->messages()->first(), 'errors' => $validator->errors(), 'data' => []], 422);
+        if (! $this->actorIsAdmin($actor) && $this->profileGrantsAdmin((int) $request->input('user_profile_id'), (int) $actor->sub_institute_id)) {
+            return $this->refuseAdminGrant();
+        }
         $values = $this->values($request);
         $values['sub_institute_id'] = $actor->sub_institute_id;
         $values['client_id'] = 0;
@@ -223,6 +250,11 @@ class UserManagementApiController extends Controller
         if (! $record) return response()->json(['status_code' => 0, 'message' => 'User not found.', 'data' => []], 404);
         $validator = Validator::make($request->all(), $this->rules($actor->sub_institute_id, (int) $id));
         if ($validator->fails()) return response()->json(['status_code' => 0, 'message' => $validator->messages()->first(), 'errors' => $validator->errors(), 'data' => []], 422);
+        if (! $this->actorIsAdmin($actor)
+            && (int) $request->input('user_profile_id') !== (int) $record->user_profile_id
+            && $this->profileGrantsAdmin((int) $request->input('user_profile_id'), (int) $actor->sub_institute_id)) {
+            return $this->refuseAdminGrant();
+        }
         DB::table('tbluser')->where('id', $id)->where('sub_institute_id', $actor->sub_institute_id)->update($this->values($request));
         return response()->json(['status_code' => 1, 'message' => 'User updated successfully.', 'data' => ['id' => (int) $id]]);
     }
@@ -272,6 +304,10 @@ class UserManagementApiController extends Controller
         ]);
         if ($validator->fails()) return response()->json(['status_code' => 0, 'message' => $validator->messages()->first(), 'errors' => $validator->errors(), 'data' => []], 422);
         if ($id && $request->integer('parent_id') === $id) return response()->json(['status_code' => 0, 'message' => 'A profile cannot be its own parent.', 'data' => []], 422);
+        if (! $this->actorIsAdmin($actor)
+            && ((int) $request->input('parent_id') === 1 || str_contains(strtolower((string) $request->input('name')), 'admin') || ($id && $this->profileGrantsAdmin($id, (int) $actor->sub_institute_id)))) {
+            return $this->refuseAdminGrant();
+        }
         $values = $request->only('name','description','parent_id','sort_order') + ['status' => 1, 'sub_institute_id' => $actor->sub_institute_id];
         if ($id) DB::table('tbluserprofilemaster')->where('id', $id)->where('sub_institute_id', $actor->sub_institute_id)->update($values);
         else $id = DB::table('tbluserprofilemaster')->insertGetId($values);

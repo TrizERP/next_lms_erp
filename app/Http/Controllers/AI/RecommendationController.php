@@ -66,6 +66,7 @@ class RecommendationController extends AiController
     {
         try {
             $scope = $this->scope($request);
+            $this->assertMayDecide($scope);
 
             $validated = $request->validate([
                 'reason' => 'nullable|string|max:2000',
@@ -81,7 +82,7 @@ class RecommendationController extends AiController
                 $validated['reason'] ?? null,
                 $validated['modifications'] ?? [],
                 $validated['confirmation_token'] ?? null,
-                $validated['decided_by_name'] ?? null
+                null
             );
 
             $record = $this->recommendations->find($recommendation, $scope);
@@ -105,6 +106,7 @@ class RecommendationController extends AiController
     {
         try {
             $scope = $this->scope($request);
+            $this->assertMayDecide($scope);
 
             $validated = $request->validate([
                 'reason' => 'nullable|string|max:2000',
@@ -115,7 +117,7 @@ class RecommendationController extends AiController
                 $recommendation,
                 $scope,
                 $validated['reason'] ?? null,
-                $validated['decided_by_name'] ?? null
+                null
             );
 
             return $this->success('Recommendation rejected.', [
@@ -131,6 +133,7 @@ class RecommendationController extends AiController
     {
         try {
             $scope = $this->scope($request);
+            $this->assertMayDecide($scope);
 
             $validated = $request->validate([
                 'reason' => 'nullable|string|max:2000',
@@ -142,7 +145,7 @@ class RecommendationController extends AiController
                     $recommendation,
                     $scope,
                     $validated['reason'] ?? null,
-                    $validated['decided_by_name'] ?? null
+                    null
                 ),
             ]);
         } catch (Throwable $exception) {
@@ -184,4 +187,17 @@ class RecommendationController extends AiController
             ];
         }
     }
+
+    /**
+     * Approving, rejecting or deferring a recommendation commits the school to an action, so only an
+     * administrator may. (The name recorded as the decider is the caller's own identity, never a
+     * value the client supplies.)
+     */
+    private function assertMayDecide($scope): void
+    {
+        if (! app(\App\Services\Mcp\AdministratorCheck::class)->isAdministrator($scope)) {
+            throw new \Illuminate\Auth\Access\AuthorizationException('Only an administrator can decide on a recommendation.');
+        }
+    }
+
 }

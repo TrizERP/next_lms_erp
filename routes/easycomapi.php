@@ -33,33 +33,33 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-Route::group(['prefix' => 'easy_com', 'middleware' => ['api.session']], function () {
+Route::group(['prefix' => 'easy_com', 'middleware' => ['api.session', 'staff.only']], function () {
 
     /* ---------------------------------------------------------------
      | Masters - full Edit / Update flow
      * -------------------------------------------------------------*/
 
     // SMS API Master (sms_api_details)
-    Route::get('sms-api', [SmsApiMasterApiController::class, 'index']);
-    Route::post('sms-api', [SmsApiMasterApiController::class, 'store']);
-    Route::get('sms-api/{id}', [SmsApiMasterApiController::class, 'show'])->whereNumber('id');
-    Route::match(['put', 'patch'], 'sms-api/{id}', [SmsApiMasterApiController::class, 'update'])->whereNumber('id');
-    Route::delete('sms-api/{id}', [SmsApiMasterApiController::class, 'destroy'])->whereNumber('id');
+    Route::get('sms-api', [SmsApiMasterApiController::class, 'index'])->middleware('admin.only');
+    Route::post('sms-api', [SmsApiMasterApiController::class, 'store'])->middleware('admin.only');
+    Route::get('sms-api/{id}', [SmsApiMasterApiController::class, 'show'])->whereNumber('id')->middleware('admin.only');
+    Route::match(['put', 'patch'], 'sms-api/{id}', [SmsApiMasterApiController::class, 'update'])->whereNumber('id')->middleware('admin.only');
+    Route::delete('sms-api/{id}', [SmsApiMasterApiController::class, 'destroy'])->whereNumber('id')->middleware('admin.only');
 
     // SMTP Email (smtp_details)
-    Route::get('smtp', [SmtpApiController::class, 'index']);
-    Route::post('smtp', [SmtpApiController::class, 'store']);
-    Route::post('smtp/test', [SmtpApiController::class, 'test']);
-    Route::get('smtp/{id}', [SmtpApiController::class, 'show'])->whereNumber('id');
-    Route::match(['put', 'patch'], 'smtp/{id}', [SmtpApiController::class, 'update'])->whereNumber('id');
-    Route::delete('smtp/{id}', [SmtpApiController::class, 'destroy'])->whereNumber('id');
+    Route::get('smtp', [SmtpApiController::class, 'index'])->middleware('admin.only');
+    Route::post('smtp', [SmtpApiController::class, 'store'])->middleware('admin.only');
+    Route::post('smtp/test', [SmtpApiController::class, 'test'])->middleware('admin.only');
+    Route::get('smtp/{id}', [SmtpApiController::class, 'show'])->whereNumber('id')->middleware('admin.only');
+    Route::match(['put', 'patch'], 'smtp/{id}', [SmtpApiController::class, 'update'])->whereNumber('id')->middleware('admin.only');
+    Route::delete('smtp/{id}', [SmtpApiController::class, 'destroy'])->whereNumber('id')->middleware('admin.only');
 
     // WhatsApp API credentials (whatapp_user_details)
-    Route::get('whatsapp-api', [WhatsappApiConfigApiController::class, 'index']);
-    Route::post('whatsapp-api', [WhatsappApiConfigApiController::class, 'store']);
-    Route::get('whatsapp-api/{id}', [WhatsappApiConfigApiController::class, 'show'])->whereNumber('id');
-    Route::match(['put', 'patch'], 'whatsapp-api/{id}', [WhatsappApiConfigApiController::class, 'update'])->whereNumber('id');
-    Route::delete('whatsapp-api/{id}', [WhatsappApiConfigApiController::class, 'destroy'])->whereNumber('id');
+    Route::get('whatsapp-api', [WhatsappApiConfigApiController::class, 'index'])->middleware('admin.only');
+    Route::post('whatsapp-api', [WhatsappApiConfigApiController::class, 'store'])->middleware('admin.only');
+    Route::get('whatsapp-api/{id}', [WhatsappApiConfigApiController::class, 'show'])->whereNumber('id')->middleware('admin.only');
+    Route::match(['put', 'patch'], 'whatsapp-api/{id}', [WhatsappApiConfigApiController::class, 'update'])->whereNumber('id')->middleware('admin.only');
+    Route::delete('whatsapp-api/{id}', [WhatsappApiConfigApiController::class, 'destroy'])->whereNumber('id')->middleware('admin.only');
 
     /* ---------------------------------------------------------------
      | Send screens

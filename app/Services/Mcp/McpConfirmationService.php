@@ -67,13 +67,22 @@ class McpConfirmationService
             ]);
         }
 
-        DB::table('mcp_confirmation_requests')
+        // Claim the token atomically: only the request whose UPDATE actually flips `pending` to
+        // `consumed` may proceed, so two simultaneous confirmations cannot both run the write.
+        $claimed = DB::table('mcp_confirmation_requests')
             ->where('token', $token)
+            ->where('status', 'pending')
             ->update([
                 'status' => 'consumed',
                 'consumed_at' => now(),
                 'updated_at' => now(),
             ]);
+
+        if ($claimed !== 1) {
+            throw ValidationException::withMessages([
+                'confirmation_token' => ['Confirmation token has already been used.'],
+            ]);
+        }
 
         return [
             'token' => $record->token,

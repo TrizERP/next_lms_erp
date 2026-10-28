@@ -196,12 +196,14 @@ class tbluserController extends Controller
             //open connection
             $ch = curl_init();
 
-            $url = "http://".$_SERVER['HTTP_HOST']."/add_user_hrms.php";
+            // The ERP calls its own configured address, never whatever Host header the request carried.
+            $url = rtrim((string) config('app.url'), '/')."/add_user_hrms.php";
 
             //set the url, number of POST vars, POST data
             curl_setopt($ch, CURLOPT_URL, $url);
             curl_setopt($ch, CURLOPT_POST, count($fields));
             curl_setopt($ch, CURLOPT_POSTFIELDS, $fields_string);
+            curl_setopt($ch, CURLOPT_HTTPHEADER, ['X-Internal-Key: '.hash_hmac('sha256', 'add_user_hrms', (string) config('app.key'))]);
 
             //execute post
             $result = curl_exec($ch);

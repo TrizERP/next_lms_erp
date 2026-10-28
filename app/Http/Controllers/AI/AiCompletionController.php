@@ -5,6 +5,7 @@ namespace App\Http\Controllers\AI;
 use App\Domain\AI\Configuration\AiConfigurationException;
 use App\Domain\AI\Configuration\AiModelClientFactory;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Validation\Rule;
 use Throwable;
 
@@ -41,6 +42,20 @@ class AiCompletionController extends AiController
     {
         try {
             $institute = $this->scope($request)->selectedInstituteId;
+
+            // This spends the school's paid provider key, so it has a budget on top of the
+            // per-minute limit: a low hourly allowance for students, more for staff, and a
+            // daily cap for the whole school.
+            $auth = (array) $request->attributes->get('mcp_auth', []);
+            $isStudent = !empty($auth['is_student']);
+            $userKey = 'ai-complete:u:' . $institute . ':' . ($auth['user_id'] ?? $request->ip());
+            $schoolKey = 'ai-complete:s:' . $institute;
+            if (RateLimiter::tooManyAttempts($userKey, $isStudent ? 10 : 100)
+                || RateLimiter::tooManyAttempts($schoolKey, (int) config('ai.completion_daily_cap', 3000))) {
+                return response()->json(['success' => false, 'message' => 'AI usage limit reached. Try again later.'], 429);
+            }
+            RateLimiter::hit($userKey, 3600);
+            RateLimiter::hit($schoolKey, 86400);
 
             $data = $request->validate([
                 'module' => ['required', 'string', Rule::in($this->modules->keys())],

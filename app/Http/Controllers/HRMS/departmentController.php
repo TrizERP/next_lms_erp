@@ -454,7 +454,7 @@ class departmentController extends Controller
      */
     private function managementTokenContext(Request $request)
     {
-        $token = $request->input('token');
+        $token = $request->input('token') ?: $request->bearerToken();
 
         if (!$token) {
             return response()->json(['status' => 0, 'message' => 'Token not provided'], 401);

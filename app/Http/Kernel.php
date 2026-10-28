@@ -21,6 +21,7 @@ class Kernel extends HttpKernel
         HandleCors::class,
         \App\Http\Middleware\PreventRequestsDuringMaintenance::class,
         \Illuminate\Foundation\Http\Middleware\ValidatePostSize::class,
+        \App\Http\Middleware\BlockExecutableUploads::class,
         \App\Http\Middleware\TrimStrings::class,
         \Illuminate\Foundation\Http\Middleware\ConvertEmptyStringsToNull::class,
     ];
@@ -89,6 +90,13 @@ class Kernel extends HttpKernel
         'perm' => \App\Http\Middleware\RequirePermission::class,
         'eso.student' => \App\Http\Middleware\EsoStudentOnlyAuth::class,
         'staff.only' => \App\Http\Middleware\RequireStaffRole::class,
+        'super.admin' => \App\Http\Middleware\RequireSuperAdmin::class,
+        'staff.writes' => \App\Http\Middleware\RequireStaffForWrites::class,
+        'webhook.secret' => \App\Http\Middleware\VerifyWebhookSecret::class,
+        'mobile.identity' => \App\Http\Middleware\PinMobileIdentity::class,
+        'admin.only' => \App\Http\Middleware\RequireAdminRole::class,
+        'mobile.jwt' => \App\Http\Middleware\RequireMobileApiJwt::class,
+        'livechat.identity' =>\App\Http\Middleware\LiveChatIdentity::class,
         // The same rule as `staff.only`, for routes authenticated by `lms.auth`
         // rather than `api.session`. The two are not interchangeable — see
         // RequireLmsStaff for why.

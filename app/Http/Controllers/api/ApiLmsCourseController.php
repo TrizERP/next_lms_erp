@@ -95,25 +95,29 @@ class ApiLmsCourseController extends Controller
     public function search(Request $request): JsonResponse
     {
         $sub_institute_id = $request->input('sub_institute_id') ?? $this->sessionValue($request, 'sub_institute_id');
-        $grade = $request->input('grade');
-        $standard = $request->input('standard');
+        // Concatenated into raw SQL below: digits and commas only (one id or a list).
+        $sub_institute_id = preg_replace('/[^0-9,]/', '', is_array($sub_institute_id)
+            ? implode(',', $sub_institute_id) : (string) $sub_institute_id);
+        // Both are placed inside raw SQL, so digits only.
+        $grade = preg_replace('/[^0-9]/', '', (string) $request->input('grade'));
+        $standard = preg_replace('/[^0-9]/', '', (string) $request->input('standard'));
         $user_profile_name = $request->input('user_profile_name') ?? $this->sessionValue($request, 'user_profile_name');
 
         $mycourse_arr = [];
         $extra = "";
 
         if ($user_profile_name && strtoupper($user_profile_name) == "STUDENT") {
-            $student_id = $request->input('user_id') ?? $this->sessionValue($request, 'user_id');
+            $student_id = (int) ($request->input('user_id') ?? $this->sessionValue($request, 'user_id'));
             $stu_data = tblstudentEnrollmentModel::select('standard_id')->where(['student_id' => $student_id])->get()->toArray();
             $extra = " AND 
                 find_in_set(
                     s.standard_id,
                     (SELECT concat_ws(',','" . $stu_data[0]['standard_id'] . "',group_concat(id))
                     FROM standard
-                    WHERE sub_institute_id IN (" . implode(',', $sub_institute_id) . ") AND grade_id IN (
+                    WHERE sub_institute_id IN (" . $sub_institute_id . ") AND grade_id IN (
                     SELECT id
                     FROM academic_section
-                    WHERE sub_institute_id IN (" . implode(',', $sub_institute_id) . ") AND title = 'Other'))
+                    WHERE sub_institute_id IN (" . $sub_institute_id . ") AND title = 'Other'))
                 )";
         }
 
@@ -176,6 +180,14 @@ class ApiLmsCourseController extends Controller
     private function getCourseData($sub_institute_id, $syear, $user_profile_name, $user_id): array
     {
         $mycourse_arr = [];
+
+        // These go into raw SQL strings below, so only numeric forms are allowed through.
+        // A single id or a comma list; digits and commas only.
+        $sub_institute_id = is_array($sub_institute_id)
+            ? implode(',', array_map('intval', $sub_institute_id))
+            : preg_replace('/[^0-9,]/', '', (string) $sub_institute_id);
+        $syear = preg_replace('/[^0-9\-]/', '', (string) $syear);
+        $user_id = (int) $user_id;
 
         $extra = " 1=1 ";
         if (strtoupper($user_profile_name) == "STUDENT") {

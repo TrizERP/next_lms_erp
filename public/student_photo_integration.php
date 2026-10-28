@@ -1,4 +1,5 @@
 <?php
+if (PHP_SAPI !== 'cli') { http_response_code(404); exit; } // one-off maintenance script, not web-reachable
 set_time_limit(0);
 include("excel_upload/db.php");
 

@@ -1324,7 +1324,7 @@ foreach ($previous_standard as $item) {
             ->whereNull('deleted_at')
             ->where('standard_id', $request->standard_id)
             ->where('subject_id', $request->subject_id)
-            ->whereRaw('chapter_id IN (' . $request->chapter_ids . ')')
+            ->whereIn('chapter_id', array_filter(array_map('intval', explode(',', (string) $request->chapter_ids))))
             ->when($multiple && $narrative != 1, fn($q) => $q->where('multiple_answer', 1))
             ->when($multiple != 1 && $narrative, fn($q) => $q->where('multiple_answer', 0))
             ->get()
@@ -2536,7 +2536,12 @@ foreach ($previous_standard as $item) {
             if(isset($request->topic_id) && $request->topic_id!=''){
                 $topics = " and topic_id ='".$request->topic_id."'";
             }
-           $getAllQuestion = DB::table('lms_question_master')->whereNull('deleted_at')->whereRaw('sub_institute_id = '.$sub_institute_id.' and standard_id='.$standard.' and chapter_id ='.$request->chapter_id.$topics.' ')->where('status',1)->pluck('question_title');
+           $getAllQuestion = DB::table('lms_question_master')->whereNull('deleted_at')
+                ->where('sub_institute_id', $sub_institute_id)
+                ->where('standard_id', $standard)
+                ->where('chapter_id', $request->chapter_id)
+                ->when(isset($request->topic_id) && $request->topic_id != '', fn($q) => $q->where('topic_id', $request->topic_id))
+                ->where('status',1)->pluck('question_title');
             $questionPrompt = $this->appendSelectedMappingsToDistributionRequirements($request->question_prompt, $request);
             $message=array($questionPrompt,"search only 1 question from mentioned standard and subject and chapter and topic and get different question which are not in this '".$getAllQuestion."'");
             // return $message;exit;
@@ -2845,7 +2850,12 @@ foreach ($previous_standard as $item) {
             if(isset($request->topic_id) && $request->topic_id!=''){
                 $topics = " and topic_id ='".$request->topic_id."'";
             }
-           $getAllQuestion = DB::table('lms_question_master')->whereNull('deleted_at')->whereRaw('sub_institute_id = '.$sub_institute_id.' and standard_id='.$standard.' and chapter_id ='.$request->chapter_id.$topics.' ')->where('status',1)->pluck('question_title');
+           $getAllQuestion = DB::table('lms_question_master')->whereNull('deleted_at')
+                ->where('sub_institute_id', $sub_institute_id)
+                ->where('standard_id', $standard)
+                ->where('chapter_id', $request->chapter_id)
+                ->when(isset($request->topic_id) && $request->topic_id != '', fn($q) => $q->where('topic_id', $request->topic_id))
+                ->where('status',1)->pluck('question_title');
             
            $questionPrompt = $this->appendSelectedMappingsToDistributionRequirements($request->question_prompt, $request);
            $message=array($questionPrompt,"search only 1 question from mentioned standard and subject and chapter and topic and get different question which are not in this '".$getAllQuestion."'");
@@ -2873,7 +2883,8 @@ foreach ($previous_standard as $item) {
     public function getSupervisor(Request $request)
     {
         $user_id = $request->input('user_id');
-        $sub_institute_id = $request->input('sub_institute_id');
+        // The school is the caller's own (verified session); a client-named school is ignored.
+        $sub_institute_id = session()->get('sub_institute_id') ?: null;
 
         if (!$user_id || !ctype_digit((string) $user_id) || !$sub_institute_id || !ctype_digit((string) $sub_institute_id)) {
             return response()->json([
@@ -2959,7 +2970,18 @@ foreach ($previous_standard as $item) {
         return response()->json($std_sub_map);
     }
 
+    /** Tables the generic lookup may read. Anything else needs a platform Super Admin. */
+    private const LOOKUP_TABLES = ['tbluser', 's_user_jobrole', 's_user_jobrole_task', 's_jobrole_skills'];
+
     public function lmsDataApi(Request $request){
+        $isPlatformAdmin = strtolower((string) session()->get('user_profile_name')) === 'super admin'
+            && (int) session()->get('is_admin') === 2;
+
+        // Listing every table and column of the database is for platform administrators only.
+        if (($request->has('all_tables') || $request->has('table_data')) && ! $isPlatformAdmin) {
+            return response()->json(['message' => 'Not allowed'], 403);
+        }
+
         // get whole tables in database
         if($request->has('all_tables') && $request->all_tables==1){
             $tables = DB::select('SHOW TABLES');
@@ -2994,8 +3016,17 @@ foreach ($previous_standard as $item) {
             return response()->json(['message' => 'Invalid table name'], 200);
         }
 
+        if (! $isPlatformAdmin && ! in_array($table, self::LOOKUP_TABLES, true)) {
+            return response()->json(['message' => 'This table cannot be queried here'], 403);
+        }
+
         // Start query
         $query = DB::table($table);
+
+        // A school only ever sees its own rows. The request's own sub_institute_id filter is ignored.
+        if (! $isPlatformAdmin && Schema::hasColumn($table, 'sub_institute_id')) {
+            $query->where('sub_institute_id', (int) session()->get('sub_institute_id'));
+        }
 
         // Apply filters if provided
         if ($request->has('filters') && is_array($request->filters)) {
@@ -3036,8 +3067,17 @@ foreach ($previous_standard as $item) {
             }
         }
 
-        // Fetch data
-        $data = $query->get();
+        // Fetch data, never returning credential-like columns whatever the table holds.
+        $data = $query->get()->map(function ($row) {
+            $row = (array) $row;
+            foreach (array_keys($row) as $column) {
+                if (preg_match('/pass|otp|token|secret|api_key|pwd/i', (string) $column)) {
+                    unset($row[$column]);
+                }
+            }
+
+            return (object) $row;
+        });
 
         // Check if data is empty
 	    if ($data->isEmpty()) {

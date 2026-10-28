@@ -67,12 +67,12 @@ class adminapiController extends Controller
             if (isset($data['id']) && $data['id'] != '') {
 
                 // send otp
-                $otp = rand(100000, 999999);
+                $otp = random_int(100000, 999999);
 
                 $sub_institute_id = $data['sub_institute_id'];
                 $sub_Array = [328,329,330,331,333,61,336,337,338,339,340,341];
-                if ($_REQUEST['mobile'] == '9979176562') {
-                    $otp = "123456";
+                if (\App\Support\ReviewOtp::matches($_REQUEST['mobile'])) {
+                    $otp = \App\Support\ReviewOtp::code();
                 }else if(in_array($sub_institute_id, $sub_Array)){
                     $otp = date('dmy', strtotime($data['birthdate']));
                 } else {
@@ -89,7 +89,7 @@ class adminapiController extends Controller
                     if ($res["error"] == 1) {
                         $errorMessage = "Please add api details first.";
                         if ($res["error"] == $errorMessage) {
-                            $otp = "123456";
+                            // no fixed fallback OTP: a failed SMS must not make the login code guessable
                         }
                     }
                 }

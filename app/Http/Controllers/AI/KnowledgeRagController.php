@@ -39,7 +39,7 @@ class KnowledgeRagController extends AiController
             $instituteId = (int) $this->scope($request)->selectedInstituteId;
             $limit = $this->limit($request, 6, 10);
 
-            $result = $this->answerer->answer($validated['question'], $instituteId, $limit);
+            $result = $this->answerer->answer($validated['question'], $instituteId, $limit, (bool) $this->scope($request)->isStudent);
 
             return $this->success('Knowledge & RAG answer resolved.', $result);
         } catch (Throwable $exception) {

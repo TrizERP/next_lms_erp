@@ -79,7 +79,7 @@ class AiImportEnvKeysCommand extends Command
             return self::SUCCESS;
         }
 
-        $stored = DB::table('ai_api_keys')->pluck('api_key')->map(fn ($k) => trim((string) $k))->all();
+        $stored = DB::table('ai_api_keys')->pluck('api_key')->map(fn ($k) => trim((string) \App\Support\KeyVault::reveal((string) $k)))->all();
         $rows = [];
         $toInsert = [];
         $seen = [];
@@ -155,7 +155,7 @@ class AiImportEnvKeysCommand extends Command
             foreach ($toInsert as $row) {
                 $columns = [
                     'api_type' => $providers->apiType($row['provider']),
-                    'api_key' => $row['value'],
+                    'api_key' => \App\Support\KeyVault::seal($row['value']),
                     'account_email' => null,
                     'status' => 1,
                     'sub_institute_id' => null,

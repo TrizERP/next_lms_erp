@@ -102,7 +102,8 @@ final class AgentManifest
 
     public function permitsRole(string $role): bool
     {
-        return $this->allowedRoles === [] || in_array($role, $this->allowedRoles, true);
+        // No roles listed means every staff role; a student must be named explicitly.
+        return ($this->allowedRoles === [] && $role !== 'student') || in_array($role, $this->allowedRoles, true);
     }
 
     public function toArray(): array

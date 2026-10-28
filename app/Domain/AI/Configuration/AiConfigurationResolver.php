@@ -328,7 +328,7 @@ final class AiConfigurationResolver
             }
 
             $model = $this->modelFor($provider, $row->model ?? null, $subInstituteId, $moduleKey);
-            $key = trim((string) $row->api_key);
+            $key = \App\Support\KeyVault::reveal(trim((string) $row->api_key));
             $signature = $provider . '|' . $model . '|' . $key;
 
             if (isset($seen[$signature])) {
@@ -454,7 +454,7 @@ final class AiConfigurationResolver
             if ($row !== null && trim((string) ($row->api_key ?? '')) !== '' && trim((string) $row->api_key) !== '-') {
                 return [
                     'id' => (int) $row->id,
-                    'api_key' => trim((string) $row->api_key),
+                    'api_key' => \App\Support\KeyVault::reveal(trim((string) $row->api_key)),
                     'api_limit' => $row->api_limit ?? null,
                     'scope' => ($row->sub_institute_id ?? null) === null ? 'platform' : 'institute',
                 ];

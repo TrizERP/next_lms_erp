@@ -46,7 +46,7 @@ class organizationDetailsController extends Controller
      */
     public function index(Request $request)
     {
-        $token = $request->input('token');  // get token from input field 'token'
+        $token = $request->input('token') ?: $request->bearerToken();  // get token from input field 'token'
 
         if (!$token) {
             return response()->json(['message' => 'Token not provided'], 401);
@@ -95,7 +95,7 @@ class organizationDetailsController extends Controller
 public function store(Request $request)
 {
     // return $request;exit;
-    $token = $request->input('token');
+    $token = $request->input('token') ?: $request->bearerToken();
 
     if (!$token) {
         return response()->json(['message' => 'Token not provided'], 401);
