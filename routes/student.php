@@ -263,7 +263,7 @@ Route::post('dicipline_alone/store', [diciplineController::class,'store'])->name
 
 Route::get('search_students', [studentSearchController::class,'searchBydata'])->name('search_students.search');
 
-Route::prefix('student/api/student_certificate')->group(function () {
+Route::prefix('student/api/student_certificate')->middleware(['api.session', 'staff.only'])->group(function () {
     Route::get('templates', [StudentCertificateApiController::class, 'templates']);
     Route::post('search', [StudentCertificateApiController::class, 'search']);
     Route::post('preview', [StudentCertificateApiController::class, 'preview']);
@@ -271,13 +271,13 @@ Route::prefix('student/api/student_certificate')->group(function () {
     Route::get('history', [StudentCertificateApiController::class, 'history']);
 });
 
-Route::prefix('student/api/student_icard')->group(function () {
+Route::prefix('student/api/student_icard')->middleware(['api.session', 'staff.only'])->group(function () {
     Route::get('metadata', [StudentIcardApiController::class, 'metadata']);
     Route::post('search', [StudentIcardApiController::class, 'search']);
     Route::post('preview', [StudentIcardApiController::class, 'preview']);
 });
 
-Route::prefix('student/api/teacher_icard')->group(function () {
+Route::prefix('student/api/teacher_icard')->middleware(['api.session', 'staff.only'])->group(function () {
     Route::get('metadata', [\App\Http\Controllers\student\TeacherIcardApiController::class, 'metadata']);
     Route::post('search', [\App\Http\Controllers\student\TeacherIcardApiController::class, 'search']);
     Route::post('preview', [\App\Http\Controllers\student\TeacherIcardApiController::class, 'preview']);

@@ -90,13 +90,13 @@ use App\Http\Controllers\FileController;
 // Other pedagogy routes...
 Route::get('/lms/student-profile', [PedagogyEngineController::class, 'buildStudentProfile'])->name('student.profile');
 Route::get('/lms/forgetting-curve', [PedagogyEngineController::class, 'getForgettingCurve'])->name('forgetting.curve');
-Route::post('/lms/update-forgetting-curve', [PedagogyEngineController::class, 'updateForgettingCurve'])->name('update.forgetting.curve');
+Route::post('/lms/update-forgetting-curve', [PedagogyEngineController::class, 'updateForgettingCurve'])->name('update.forgetting.curve')->middleware('session');
 Route::get('/lms/class-insights', [PedagogyEngineController::class, 'generateClassInsights'])->name('class.insights');
 Route::get('/lms/teacher-dashboard', [PedagogyEngineController::class, 'teacherDashboard'])->name('teacher.dashboard');
 Route::get('/lms/knowledge-graph', [PedagogyEngineController::class, 'buildKnowledgeGraph'])->name('knowledge.graph');
 Route::get('/lms/concept-prerequisites', [PedagogyEngineController::class, 'getConceptPrerequisites'])->name('concept.prerequisites');
 Route::get('/lms/recommend-content', [PedagogyEngineController::class, 'recommendContent'])->name('recommend.content');
-Route::post('/lms/track-content-view', [PedagogyEngineController::class, 'trackContentView'])->name('track.content.view');
+Route::post('/lms/track-content-view', [PedagogyEngineController::class, 'trackContentView'])->name('track.content.view')->middleware('session');
 Route::get('/lms/pedagogy-recommendations', [PedagogyEngineController::class, 'getPedagogyRecommendations'])->name('pedagogy.recommendations');
 
 
@@ -342,7 +342,7 @@ Route::get('schoolList', [dashboardController::class, 'schoolList'])->name('scho
 Route::get('siteMap', [dashboardController::class, 'siteMap'])->name('siteMap')->middleware('session', 'menu', 'logRoute');
 
 Route::any('login', [loginController::class, 'index'])->name('login');
-Route::any('signup', [signupController::class, 'index'])->name('signup');
+Route::any('signup', [signupController::class, 'index'])->name('signup')->middleware('throttle:20,1');
 //Route::get('aftersignuplogin', 'loginController@aftersignuplogin');
 
 Route::any('superAdmin', [superAdminController::class, 'index'])->name('superAdmin')->middleware(['session', 'super.admin']);
@@ -502,20 +502,20 @@ Route::get('reset-password/{token}/{email}', [ForgotPasswordController::class, '
 Route::post('reset-password', [ForgotPasswordController::class, 'submitResetPasswordForm'])->name('reset.password.post')->middleware('throttle:10,1');
 
 
-Route::post('NewLMS_temp_signup', [NewLMS_ApiController::class, 'NewLMS_temp_signup'])->name("NewLMS_temp_signup");
-Route::post('NewLMS_signup', [NewLMS_ApiController::class, 'NewLMS_signup'])->name("NewLMS_signup");
+Route::post('NewLMS_temp_signup', [NewLMS_ApiController::class, 'NewLMS_temp_signup'])->name("NewLMS_temp_signup")->middleware('throttle:20,1');
+Route::post('NewLMS_signup', [NewLMS_ApiController::class, 'NewLMS_signup'])->name("NewLMS_signup")->middleware('throttle:20,1');
 Route::get('Resend_otp', [NewLMS_ApiController::class, 'Resend_otp'])->name("Resend_otp");
-Route::post('preload-institute', [NewLMS_ApiController::Class, 'Preload_institute'])->name("preload-institute");
-Route::post('add-institute', [NewLMS_ApiController::Class, 'add_institute'])->name("add-institute");
+Route::post('preload-institute', [NewLMS_ApiController::Class, 'Preload_institute'])->name("preload-institute")->middleware('throttle:20,1');
+Route::post('add-institute', [NewLMS_ApiController::Class, 'add_institute'])->name("add-institute")->middleware('throttle:20,1');
 
-Route::post('NewLMS_temp_signup_student', [NewLMS_StudentApiController::class, 'NewLMS_temp_signup_student'])->name("NewLMS_temp_signup_student");
-Route::post('NewLMS_signup_student', [NewLMS_StudentApiController::class, 'NewLMS_signup_student'])->name("NewLMS_signup_student");
+Route::post('NewLMS_temp_signup_student', [NewLMS_StudentApiController::class, 'NewLMS_temp_signup_student'])->name("NewLMS_temp_signup_student")->middleware('throttle:20,1');
+Route::post('NewLMS_signup_student', [NewLMS_StudentApiController::class, 'NewLMS_signup_student'])->name("NewLMS_signup_student")->middleware('throttle:20,1');
 
 
 Route::get('get_trizStandard', [signupController::class, 'get_trizStandard'])->name("get_trizStandard");
 
 Route::post('searching_menu', [AJAXController::class, 'searchMenu'])->name("searching_menu");
-Route::post('get_search_url', [AJAXController::class, 'get_search_url'])->name("get_search_url");
+Route::post('get_search_url', [AJAXController::class, 'get_search_url'])->name("get_search_url")->middleware('session');
 
 
 // send birthday notification
@@ -632,8 +632,8 @@ Route::any('check_permissions',[AJAXController::class, 'check_access'])->name('c
 Route::any('check_access',[AJAXController::class, 'check_access'])->name('check_access');
 
 Route::any('chat',[AJAXController::class, 'chat'])->name('chat')->middleware('session');
-Route::post('/lms_chat', [App\Http\Controllers\lms\assessmentQuestionController::class, 'chat'])->name('lms_chat');
-Route::match(['get', 'post'], '/preview_distribution', [App\Http\Controllers\lms\assessmentQuestionController::class, 'previewDistribution'])->name('preview_distribution');
+Route::post('/lms_chat', [App\Http\Controllers\lms\assessmentQuestionController::class, 'chat'])->name('lms_chat')->middleware('session');
+Route::match(['get', 'post'], '/preview_distribution', [App\Http\Controllers\lms\assessmentQuestionController::class, 'previewDistribution'])->name('preview_distribution')->middleware('session');
 Route::get('/assessment_question/concepts', [\App\Http\Controllers\lms\assessmentQuestionController::class, 'concepts'])->name('assessment_question.concepts');
 Route::post('assessment_question/store', [\App\Http\Controllers\lms\assessmentQuestionController::class, 'store'])->name('assessment_question.store');
 Route::any('geminiAI',[AJAXController::class, 'geminiAI'])->name('geminiAI')->middleware('session');
@@ -785,7 +785,10 @@ Route::get('/get-fields', function (Request $request) {
     ]);
 });
 
-Route::resource('blogs', BlogController::class);
+// Reading the blog is public; writing it needs a login.
+// Registered first so that /blogs/create is not swallowed by the public /blogs/{blog} below.
+Route::resource('blogs', BlogController::class)->except(['index', 'show'])->middleware('session');
+Route::resource('blogs', BlogController::class)->only(['index', 'show']);
 // REMOVED 2026-09-04 — DataMigrationController and its /migrate-data route are gone. It keyed
 // nodes on NAME via Neo4jService::createOrGetNode and built OFFERS edges with unparameterised
 // Cypher; the route had been disabled since 2026-08-10.

@@ -446,16 +446,16 @@ Route::middleware(['session'])->group(function () {
     Route::post('careerMentorCrosswalk', [\App\Http\Controllers\lms\counselling\CareerMentorController::class, 'save'])->middleware('throttle:20,1');
     Route::delete('careerMentorCrosswalk/{id}', [\App\Http\Controllers\lms\counselling\CareerMentorController::class, 'destroy'])->whereNumber('id')->middleware('throttle:20,1');
 });
-Route::post('/ai/processData',[contentController::class,'processAIData'])->name('ai.processData');
-Route::post('/ai/generateLessonPlan', [contentController::class, 'generateLessonPlan'])->name('ai.generateLessonPlan');
-Route::post('/ai/generateLessonPlanNew', [contentController::class, 'generateLessonPlanNew'])->name('ai.generateLessonPlanNew');
-Route::post('/ai/generateSportsData', [contentController::class, 'generateSportsData'])->name('ai.generateSportsData');
-Route::post('/ai/generateSlides', [contentController::class, 'generateSlides'])->name('ai.generateSlides');
-Route::post('/ai/generateKAABSlides', [contentController::class, 'generateKAABSlides'])->name('ai.generateKAABSlides');
-Route::post('/ai/generateGammaStyleSlide', [contentController::class, 'generateGammaStyleSlide'])->name('ai.generateGammaStyleSlide');
-Route::post('/ai/generateGammaPresentation', [contentController::class, 'generateGammaPresentation'])->name('ai.generateGammaPresentation');
-Route::post('/ai/getGammaPresentationStatus', [contentController::class, 'getGammaPresentationStatus'])->name('ai.getGammaPresentationStatus');
-Route::post('/generate-gamma-pdf', [contentController::class, 'generateGammaPDF'])->name('generate-gamma-pdf');
+Route::post('/ai/processData',[contentController::class,'processAIData'])->name('ai.processData')->middleware('session');
+Route::post('/ai/generateLessonPlan', [contentController::class, 'generateLessonPlan'])->name('ai.generateLessonPlan')->middleware('session');
+Route::post('/ai/generateLessonPlanNew', [contentController::class, 'generateLessonPlanNew'])->name('ai.generateLessonPlanNew')->middleware('session');
+Route::post('/ai/generateSportsData', [contentController::class, 'generateSportsData'])->name('ai.generateSportsData')->middleware('session');
+Route::post('/ai/generateSlides', [contentController::class, 'generateSlides'])->name('ai.generateSlides')->middleware('session');
+Route::post('/ai/generateKAABSlides', [contentController::class, 'generateKAABSlides'])->name('ai.generateKAABSlides')->middleware('session');
+Route::post('/ai/generateGammaStyleSlide', [contentController::class, 'generateGammaStyleSlide'])->name('ai.generateGammaStyleSlide')->middleware('session');
+Route::post('/ai/generateGammaPresentation', [contentController::class, 'generateGammaPresentation'])->name('ai.generateGammaPresentation')->middleware('session');
+Route::post('/ai/getGammaPresentationStatus', [contentController::class, 'getGammaPresentationStatus'])->name('ai.getGammaPresentationStatus')->middleware('session');
+Route::post('/generate-gamma-pdf', [contentController::class, 'generateGammaPDF'])->name('generate-gamma-pdf')->middleware('session');
 Route::post('/paraphraseNew', [ParaphraseController::class, 'paraphrase']);
 Route::post('/set-book-session',[contentController::class,'setBookSession'])->name('set-book-session');
 
@@ -621,7 +621,7 @@ Route::resource('lms/new_curriculum',newCurricuumController::class);
 // Route::get('/dashboard', function () {
 //     return view('recommend');
 // });
-Route::prefix('lms/api/teacher_resource')->group(function () {
+Route::prefix('lms/api/teacher_resource')->middleware('session')->group(function () {
     Route::get('/', [\App\Http\Controllers\lms\teacher_resource\TeacherResourceApiController::class, 'index']);
     Route::get('{id}', [\App\Http\Controllers\lms\teacher_resource\TeacherResourceApiController::class, 'show']);
     Route::post('store', [\App\Http\Controllers\lms\teacher_resource\TeacherResourceApiController::class, 'store']);

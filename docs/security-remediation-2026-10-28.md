@@ -87,3 +87,14 @@ ExamEvaluation `GeminiDocumentClientTest` / `QueueAndGeminiConfigTest`, AI `Modu
 - Uploaded SVG files are cleaned in `BlockExecutableUploads` (scripts, event handlers, `javascript:` links,
   foreignObject, animation elements, DOCTYPE/entities removed); an SVG that cannot be parsed is refused with 422.
   HTML uploads are still allowed (LMS and H5P content needs them).
+- Found with `php artisan routes:unmapped-writes` plus a read of the controller source: write routes with neither
+  a declared guard nor any auth in the controller. Now login-gated: the `ai/*` generators and `generate-gamma-pdf`,
+  `lms/api/teacher_resource/*`, `lms_chat`, `preview_distribution`, `get_search_url`, `lms/track-content-view`,
+  `lms/update-forgetting-curve`, `neo4j/assessment`, blog create/update/delete (blog reading stays public),
+  `map_student/bulk-delete`, and the Next.js `student/api/{student_certificate,student_icard,teacher_icard}/*`
+  routes (staff only, bearer token). The public sign-up / onboarding posts (`signup`, `NewLMS_*`, `add-institute`,
+  `preload-institute`, `admission_enquiry/payment_proof`) stay open on purpose and are limited to 20 per minute.
+- `php artisan routes:unmapped-writes [--json] [--only=web|api]` is read only. It lists every write route whose name
+  has no `tblmenumaster` row, grouped by what protects it. Map those routes, then make `checkPermission` fail closed
+  (E4). Its "no login and no rights check" group reads route middleware only, so `api/*` entries there are usually
+  covered by the `api` group guard or by the controller.
