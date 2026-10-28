@@ -107,3 +107,22 @@ ExamEvaluation `GeminiDocumentClientTest` / `QueueAndGeminiConfigTest`, AI `Modu
   (dompurify 3.4.17). Still reported: firebase/php-jwt (low, needs v7), and in the Next.js app a few high ones in
   dev-adjacent packages that need a major upgrade (shadcn/zod) or just `npm audit fix` (body-parser, undici,
   source-map-js, @modelcontextprotocol/sdk); in the React Native app `expo` and `node-forge` (high).
+
+## 8. Final status and what was deliberately left
+
+Closed in code: B13 `/logout` ignores a request whose Origin/Referer is another site (bookmark, same-site and mobile
+requests with no header still log out).
+
+Left on purpose, each with the reason:
+
+| Item | Why it is not changed in code |
+|---|---|
+| **B2** stored passwords | The sidebar sends the stored password in the URL to the external Library, LMS and dailyLMS apps, which have no SSO token. Add SSO there first; then hash the column and drop `plain_password`. |
+| **G2** web token in `localStorage` | The web app deliberately has no idle timeout and no 401-then-sign-in flow. Shortening the token life now would fail mid-work. Needs that flow (or an httpOnly cookie) first. |
+| **G6** enforced CSP | Report-only is on. Enforce `script-src` once `/api/csp-report` shows what real pages load. |
+| **B10** CORS | Auth is a bearer token, not cookies, so a foreign origin cannot ride a session. The real control is setting `CORS_ALLOWED_ORIGINS` in production (it defaults to `*`). Ops. |
+| **B7** same email in several schools | Login now requires the password to match, so only the owner of both accounts is affected. Needs a school picker in the login UI. |
+| **E22** exam help ignores open/close dates | Matches how the exam screen itself behaves (it opens a paper whatever its dates say). Product decision. |
+| **H3** certificate pinning | Needs the production certificate fingerprint and a rotation plan; a wrong pin locks every user out. |
+| **H4** dev host as default | Failing a build that lacks `--dart-define` would also break any Shorebird/EAS patch built the same way. Check the release scripts instead. |
+| React Native / Expo | The three remaining high advisories need an Expo major upgrade. |

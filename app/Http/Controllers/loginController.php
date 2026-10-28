@@ -498,6 +498,14 @@ class loginController extends Controller
     }
     public function logout(Request $request)
     {
+        // /logout answers every method, so another site could sign a user out with an <img> or a link.
+        // A request that names a different site as its origin is ignored; one from this site, or with no
+        // Origin/Referer at all (a typed address, a bookmark, the mobile web view), logs out as before.
+        $source = $request->headers->get('Origin') ?: $request->headers->get('Referer');
+        if ($source && ($sourceHost = parse_url((string) $source, PHP_URL_HOST)) && strcasecmp($sourceHost, $request->getHost()) !== 0) {
+            return redirect('/');
+        }
+
         //logout user
         $request->session()->flush();
 
