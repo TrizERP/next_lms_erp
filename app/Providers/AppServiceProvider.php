@@ -38,6 +38,16 @@ class AppServiceProvider extends ServiceProvider
                 }
             }
         }
+
+        // Autoloader fallback for Linux environments where the service directory is lowercase lms
+        spl_autoload_register(function ($class) {
+            if (str_starts_with($class, 'App\\Services\\Lms\\')) {
+                $file = app_path('Services/lms/' . str_replace('\\', '/', substr($class, 17)) . '.php');
+                if (file_exists($file)) {
+                    require_once $file;
+                }
+            }
+        }, true, true);
     }
 
     /**
