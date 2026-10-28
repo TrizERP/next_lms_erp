@@ -78,3 +78,12 @@ php artisan ai:encrypt-keys --decrypt
 ExamEvaluation `GeminiDocumentClientTest` / `QueueAndGeminiConfigTest`, AI `ModuleModelBindingIsolationTest`,
 `AiConfigIntegrityTest`, `GeminiDailyQuotaFallbackTest`, Eso (4), CoursePresentation (14), and most of `tests/Unit`
 (missing test-support classes).
+
+## 7. Round 2 (after PR #966)
+
+- `requirements` CRUD and `/task` now need a login; the school comes from the session. Platform-wide process
+  documents (school 0, used by the add-process screen) can only be written by a Super Admin. The all-schools report
+  `customers_requirement` is Super Admin only.
+- Uploaded SVG files are cleaned in `BlockExecutableUploads` (scripts, event handlers, `javascript:` links,
+  foreignObject, animation elements, DOCTYPE/entities removed); an SVG that cannot be parsed is refused with 422.
+  HTML uploads are still allowed (LMS and H5P content needs them).

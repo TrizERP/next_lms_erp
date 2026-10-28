@@ -651,7 +651,7 @@ Route::any('python_timetable',[AJAXController::class, 'pythonTimetable'])->name(
 // 404s for the legacy client. Named distinctly from the `frontdesk.*`
 // resource's `task.*` names so the two registrations don't collide.
 Route::get('getSupervisor', [AJAXController::class, 'getSupervisor'])->name('legacy.getSupervisor')->middleware('api.session');
-Route::post('task', [\App\Http\Controllers\frontdesk\taskController::class, 'store'])->name('legacy.task.store');
+Route::post('task', [\App\Http\Controllers\frontdesk\taskController::class, 'store'])->name('legacy.task.store')->middleware('api.session');
 
 // to transfer files to digital ocean
 Route::post('transferDocs', [oldDocumentTransfer::class, 'storeImagesToDigitalOcean'])->middleware(['session', 'super.admin']);
@@ -659,8 +659,8 @@ Route::get('convertDoc',[oldDocumentTransfer::class, 'ConvertBinaryData'])->midd
 Route::get('transport_Onboarding', [tourController::class, 'transportOnboarding'])->name('transportOnboarding');
 Route::match(['get', 'post'], '/chatbot', [ChatbotController::class, 'handle'])->middleware('session');
 // 03-06-24
-Route::resource('requirements', reuirementController::class);
-Route::get('customers_requirement', [reuirementController::class, 'ReportData'])->name('customers_requirement');
+Route::resource('requirements', reuirementController::class)->middleware('session');
+Route::get('customers_requirement', [reuirementController::class, 'ReportData'])->name('customers_requirement')->middleware(['session', 'super.admin']);
 Route::post('/paraphrase',[LmsChapterController::class,'paraphraseContentAjax'])->name('paraphrase.ajax');
 Route::post('/paraphrase-file', [LmsChapterController::class, 'paraphraseFile'])->name('paraphrase.file');
 Route::post('/flush-session', function () {
