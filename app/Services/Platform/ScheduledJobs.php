@@ -21,13 +21,18 @@ use Illuminate\Support\Facades\DB;
  */
 class ScheduledJobs
 {
-    /** @return array<string,callable(PlatformScheduledTask):string> task_key => job */
+    /**
+     * A job returns a one-line string, or a structured result
+     * `{summary:string, findings:[{key,count,severity,fingerprint,message}]}` (see SchedulerDispatcher::normalise()).
+     *
+     * @return array<string,callable(PlatformScheduledTask):(string|array)> task_key => job
+     */
     public static function registry(): array
     {
         // Jobs for the other modules live beside this file, grouped by area, so
         // each can be read on its own. A group that is absent simply adds nothing.
         $groups = [];
-        foreach ([ScheduledJobsAcademic::class, ScheduledJobsOperations::class, ScheduledJobsFinance::class] as $group) {
+        foreach ([ScheduledJobsAcademic::class, ScheduledJobsOperations::class, ScheduledJobsFinance::class, ScheduledJobsPending::class] as $group) {
             if (class_exists($group)) {
                 $groups[] = $group::registry();
             }
@@ -50,7 +55,7 @@ class ScheduledJobs
      * late dates. This is the due-date side only: whether each student has paid is
      * held elsewhere and is not evaluated here, so this does not count defaulters.
      */
-    public static function feesInstalmentsPastDue(PlatformScheduledTask $task): string
+    public static function feesInstalmentsPastDue(PlatformScheduledTask $task): string|array
     {
         $tenant = (int) $task->sub_institute_id;
         $syear = DB::table('fees_late_master')->where('sub_institute_id', $tenant)->max('syear');
@@ -64,12 +69,19 @@ class ScheduledJobs
         $classes = (clone $q)->distinct()->count('standard_id');
         $oldest = (clone $q)->min('late_date');
 
-        return $rows === 0
-            ? "No instalments are past their late date for {$syear}."
-            : "{$rows} instalments across {$classes} classes are past their late date for {$syear} (oldest {$oldest}). Payment status per student was not evaluated.";
+        if ($rows === 0) {
+            return ['summary' => "No instalments are past their late date for {$syear}.", 'findings' => []];
+        }
+
+        $summary = "{$rows} instalments across {$classes} classes are past their late date for {$syear} (oldest {$oldest}). Payment status per student was not evaluated.";
+
+        return ['summary' => $summary, 'findings' => [[
+            'key' => 'instalments_past_due', 'count' => $rows, 'severity' => 'warning',
+            'fingerprint' => $rows.'|'.$oldest, 'message' => $summary,
+        ]]];
     }
 
-    public static function libraryOverdue(PlatformScheduledTask $task): string
+    public static function libraryOverdue(PlatformScheduledTask $task): string|array
     {
         $q = DB::table('library_book_circulations')
             ->where('sub_institute_id', (int) $task->sub_institute_id)
@@ -77,12 +89,17 @@ class ScheduledJobs
             ->whereDate('due_date', '<', Carbon::today());
         $books = (clone $q)->count();
         if ($books === 0) {
-            return 'No library books are overdue.';
+            return ['summary' => 'No library books are overdue.', 'findings' => []];
         }
         $students = (clone $q)->distinct()->count('student_id');
         $oldest = (clone $q)->min('due_date');
 
-        return "{$books} library books are overdue, held by {$students} students (oldest due {$oldest}).";
+        $summary = "{$books} library books are overdue, held by {$students} students (oldest due {$oldest}).";
+
+        return ['summary' => $summary, 'findings' => [[
+            'key' => 'overdue_books', 'count' => $books, 'severity' => 'warning',
+            'fingerprint' => $books.'|'.$oldest, 'message' => $summary,
+        ]]];
     }
 
     /**
@@ -90,7 +107,7 @@ class ScheduledJobs
      * Sundays. A class that has never taken attendance is not reported, so an
      * unused section does not look like a missed one.
      */
-    public static function attendanceUnmarked(PlatformScheduledTask $task): string
+    public static function attendanceUnmarked(PlatformScheduledTask $task): string|array
     {
         $today = Carbon::today();
         if ($today->isSunday()) {
@@ -107,9 +124,17 @@ class ScheduledJobs
 
         $missing = $recent->filter(fn ($r) => ! isset($marked[$r->standard_id.'-'.$r->section_id]))->count();
 
-        return $missing === 0
-            ? "Every class that took attendance recently has marked it today ({$recent->count()} classes)."
-            : "{$missing} of {$recent->count()} classes that took attendance recently have not marked it today.";
+        if ($missing === 0) {
+            return ['summary' => "Every class that took attendance recently has marked it today ({$recent->count()} classes).", 'findings' => []];
+        }
+
+        $summary = "{$missing} of {$recent->count()} classes that took attendance recently have not marked it today.";
+
+        // Fingerprint carries today's date: an unmarked class is a fresh problem each day.
+        return ['summary' => $summary, 'findings' => [[
+            'key' => 'unmarked_attendance', 'count' => $missing, 'severity' => 'warning',
+            'fingerprint' => $missing.'|'.$today->toDateString(), 'message' => $summary,
+        ]]];
     }
 
     public static function lmsAssignmentsOverdue(PlatformScheduledTask $task): string

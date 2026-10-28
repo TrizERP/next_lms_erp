@@ -515,6 +515,19 @@ final class RuleCatalogue
             'category' => 'optimize',
         ],
 
+        /* -------------------------------------------------------------- career */
+        // Only the coverage rule carries an approved cause. The other three career
+        // rules (aspiration_without_evidence, stale_evidence, revised_evidence)
+        // are deliberately absent: the ledger shows THAT evidence is missing, old
+        // or revised, and nothing in it says why, so they stop at evidence.
+        'mod_career_evidence_coverage_gap' => [
+            'family' => 'ingestion_dependency',
+            'confidence' => 0.55,
+            'hypothesis' => 'Career evidence is written only when a student submits an online exam or when the ingest command is run for a single student. Nothing backfills a cohort, so students who have not sat an online exam have no rows however well their marks are recorded elsewhere.',
+            'action' => 'Confirm which Grade 9-10 classes are meant to produce career evidence this year, then check whether online exams are set for them and whether ingestion has been run for the rest.',
+            'category' => 'investigate',
+        ],
+
         /* ------------------------------------------------------------ academic */
         'mod_academic_teacher_clash' => [
             'family' => 'scheduling_conflict',

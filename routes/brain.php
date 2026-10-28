@@ -17,6 +17,7 @@ use App\Http\Controllers\Brain\BrainIntelligenceController;
 use App\Http\Controllers\Brain\BrainIntelligenceIntegrationController;
 use App\Http\Controllers\Brain\BrainInventoryIntelligenceController;
 use App\Http\Controllers\Brain\BrainLibraryIntelligenceController;
+use App\Http\Controllers\Brain\BrainCareerIntelligenceController;
 use App\Http\Controllers\Brain\BrainLmsActivityIntelligenceController;
 use App\Http\Controllers\Brain\BrainOrganizationIntelligenceController;
 use App\Http\Controllers\Brain\BrainConsentIntelligenceController;
@@ -193,6 +194,8 @@ Route::middleware(['brain.auth', 'brain.tenant'])->group(function () {
         Route::post('capability/intelligence/run', [BrainCapabilityIntelligenceController::class, 'run'])->middleware('brain.permission:create');
         Route::get('staff-attendance/intelligence', [BrainStaffAttendanceIntelligenceController::class, 'index'])->middleware('brain.permission:read');
         Route::post('staff-attendance/intelligence/run', [BrainStaffAttendanceIntelligenceController::class, 'run'])->middleware('brain.permission:create');
+        Route::get('career/intelligence', [BrainCareerIntelligenceController::class, 'index'])->middleware('brain.permission:read');
+        Route::post('career/intelligence/run', [BrainCareerIntelligenceController::class, 'run'])->middleware('brain.permission:create');
         Route::get('lms-activity/intelligence', [BrainLmsActivityIntelligenceController::class, 'index'])->middleware('brain.permission:read');
         Route::post('lms-activity/intelligence/run', [BrainLmsActivityIntelligenceController::class, 'run'])->middleware('brain.permission:create');
 

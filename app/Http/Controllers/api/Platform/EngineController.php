@@ -140,11 +140,28 @@ class EngineController extends PlatformController
                 $q->where($f, (string) $request->query($f));
             }
         }
+        if ($prefix = (string) $request->query('event_prefix', '')) {
+            $q->where('event_key', 'like', addcslashes($prefix, '%_\\') . '%');
+        }
         $page = $q->orderByDesc('id')->paginate(max(1, min(100, (int) $request->query('per_page', 25))));
 
         return $this->ok($page->items(), ['meta' => [
             'page' => $page->currentPage(), 'per_page' => $page->perPage(), 'total' => $page->total(), 'last_page' => $page->lastPage(),
         ]]);
+    }
+
+    /** Admin header bell: the latest in-app (web) notifications that were really delivered. */
+    public function notificationInbox(Request $request): JsonResponse
+    {
+        $tenant = $this->tenantId($request);
+        if ($tenant === null) {
+            return $this->unauthenticated($request);
+        }
+        $rows = DB::table('platform_notification_log')
+            ->where('sub_institute_id', $tenant)->where('channel', 'web')->where('recipient', 'admin')->where('status', 'sent')
+            ->orderByDesc('id')->limit(20)->get(['id', 'event_key', 'subject', 'body', 'created_at']);
+
+        return $this->ok($rows);
     }
 
     public function sendTest(Request $request): JsonResponse

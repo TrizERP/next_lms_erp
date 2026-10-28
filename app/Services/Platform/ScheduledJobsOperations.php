@@ -5,6 +5,7 @@ namespace App\Services\Platform;
 use App\Models\Platform\PlatformScheduledTask;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 /**
  * Operations-side scheduled jobs (complaints, library, compliance).
@@ -15,6 +16,9 @@ use Illuminate\Support\Facades\DB;
  * Task keys deliberately NOT registered, because the tables cannot support them:
  *  - hr.staff.document_expiry_scan: staff_document has no expiry date column.
  *  - transport.vehicle.document_expiry_scan: no vehicle document / expiry table exists.
+ *  - transport.trip.delay_watch: no live trip / GPS position table (transport_vehicle holds only a gps_link).
+ *  - hostel.mess.monthly_billing: no mess charge / mess bill table exists.
+ *  - compliance.retention.purge_run: no per-record retention periods are defined.
  *  - front_desk.call_log.follow_up_scan: front_desk is a visitor log; no call log or call-back field.
  *  - hostel.gate_pass.overdue_return: no gate pass / return time table exists.
  *  - inventory.stock.reorder_scan: item master holds opening and minimum stock only; issues and
@@ -29,6 +33,8 @@ class ScheduledJobsOperations
             'front_desk.complaint.escalation_scan' => [self::class, 'complaintsAgeing'],
             'library.catalogue.stock_audit' => [self::class, 'libraryCatalogueAudit'],
             'compliance.document.expiry_scan' => [self::class, 'complianceEvidenceExpiry'],
+            'front_desk.visitor.auto_checkout' => [self::class, 'visitorsStillOpen'],
+            'library.fine.accrue' => [self::class, 'libraryOverdueLoans'],
         ];
     }
 
@@ -91,5 +97,70 @@ class ScheduledJobsOperations
 
         return "{$expired} evidence files are past their expiry date; {$n} expire within 30 days"
             .($n > 0 ? " (soonest {$next})" : '')." of {$tracked} with an expiry date.";
+    }
+
+    /**
+     * Visitor passes (front desk and visitor_master) still open, i.e. no out time, from a day
+     * before today. Report only: nothing is checked out.
+     */
+    public static function visitorsStillOpen(PlatformScheduledTask $task): string
+    {
+        $tenant = (int) $task->sub_institute_id;
+        $today = Carbon::today()->toDateString();
+        $total = 0;
+        $oldest = null;
+        $seen = false;
+
+        if (Schema::hasTable('front_desk') && Schema::hasColumn('front_desk', 'OUT_TIME')
+            && Schema::hasColumn('front_desk', 'OUT_DATE') && Schema::hasColumn('front_desk', 'DATE')) {
+            $seen = true;
+            $q = DB::table('front_desk')->where('SUB_INSTITUTE_ID', $tenant)
+                ->whereNull('OUT_TIME')->whereNull('OUT_DATE')->whereDate('DATE', '<', $today);
+            $total += (clone $q)->count();
+            $oldest = (clone $q)->min('DATE');
+        }
+        if (Schema::hasTable('visitor_master') && Schema::hasColumn('visitor_master', 'out_time')
+            && Schema::hasColumn('visitor_master', 'meet_date')) {
+            $seen = true;
+            $q = DB::table('visitor_master')->where('sub_institute_id', $tenant)
+                ->whereNull('out_time')->whereDate('meet_date', '<', $today);
+            $total += (clone $q)->count();
+            $min = (clone $q)->min('meet_date');
+            if ($min && (! $oldest || $min < $oldest)) {
+                $oldest = $min;
+            }
+        }
+        if (! $seen) {
+            return 'Report only: the visitor log tables or their out-time columns are not available, so nothing was checked.';
+        }
+        if ($total === 0) {
+            return 'Report only: no visitor passes are still open from before today; none were closed.';
+        }
+        $oldest = substr((string) $oldest, 0, 10);
+
+        return "Report only: {$total} visitor passes are still open from before today (oldest {$oldest}); none were closed.";
+    }
+
+    /**
+     * Loans not yet returned whose due date has passed. The fine rate is not stored anywhere
+     * readable, so no amount is computed. Report only: no fine is added.
+     */
+    public static function libraryOverdueLoans(PlatformScheduledTask $task): string
+    {
+        if (! Schema::hasTable('library_book_circulations')
+            || ! Schema::hasColumn('library_book_circulations', 'due_date')
+            || ! Schema::hasColumn('library_book_circulations', 'return_date')) {
+            return 'Report only: the library loan table or its due-date columns are not available, so nothing was checked.';
+        }
+        $q = DB::table('library_book_circulations')->where('sub_institute_id', (int) $task->sub_institute_id)
+            ->whereNull('return_date')->whereNull('deleted_at')
+            ->whereNotNull('due_date')->whereDate('due_date', '<', Carbon::today());
+        $n = (clone $q)->count();
+        if ($n === 0) {
+            return 'Report only: no loans are overdue today; no fines were added.';
+        }
+        $oldest = substr((string) (clone $q)->min('due_date'), 0, 10);
+
+        return "Report only: {$n} overdue loans are past their due date (oldest due {$oldest}); no fine amount was calculated or added.";
     }
 }
