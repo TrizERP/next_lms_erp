@@ -27,6 +27,10 @@ class ApiSessionHydrator
             return $error;
         }
 
+        if (\App\Support\TenantDeleteGuard::crossesTenant($request)) {
+            return response()->json(['message' => 'This record belongs to another school.'], 403);
+        }
+
         return $next($request);
     }
 }

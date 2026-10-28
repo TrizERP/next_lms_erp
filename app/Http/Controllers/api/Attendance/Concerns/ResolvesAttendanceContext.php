@@ -29,7 +29,7 @@ trait ResolvesAttendanceContext
      */
     protected function attendanceContext(Request $request)
     {
-        $token = $request->input('token');
+        $token = $request->input('token') ?: $request->bearerToken();
 
         if (!$token) {
             return response()->json(['status' => 0, 'message' => 'Token not provided'], 401);
@@ -53,7 +53,7 @@ trait ResolvesAttendanceContext
 
         return [
             'sub_institute_id' => (int) $subInstituteId,
-            'user_id'          => is_numeric($request->input('user_id')) ? (int) $request->input('user_id') : null,
+            'user_id'          => $this->actingUserId($request),
             'syear'            => $request->input('syear'),
         ];
     }
@@ -75,4 +75,23 @@ trait ResolvesAttendanceContext
 
         return ($value === '' || $value === '0' || strtolower($value) === 'all') ? null : $value;
     }
+
+    /**
+     * Who the call acts as. A signed-in staff member acts as themselves: the request's `user_id`
+     * is honoured only for an admin, so a colleague cannot punch in or approve leave as someone
+     * else just by naming their id.
+     */
+    protected function actingUserId(Request $request): ?int
+    {
+        $tokenUser = $this->jwtPayload('id', $request);
+        $requested = is_numeric($request->input('user_id')) ? (int) $request->input('user_id') : null;
+        if (!is_numeric($tokenUser) || (int) $tokenUser <= 0) {
+            return $requested;
+        }
+
+        $isAdmin = (int) $this->jwtPayload('is_admin', $request) >= 1;
+
+        return ($isAdmin && $requested !== null) ? $requested : (int) $tokenUser;
+    }
+
 }

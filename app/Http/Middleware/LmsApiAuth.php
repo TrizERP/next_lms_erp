@@ -52,7 +52,7 @@ class LmsApiAuth
         $auth = $this->resolveAuth($request);
 
         if ($auth === null) {
-            if (! config('lms_content.api_auth_enforce', false)) {
+            if (! config('lms_content.api_auth_enforce', true)) {
                 // Warn-only: record it, let it through, and mark the request so
                 // downstream permission checks know identity is unverified.
                 $request->attributes->set('lms_auth', null);

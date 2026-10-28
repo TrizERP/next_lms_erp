@@ -40,7 +40,7 @@ class RequirePermission
         // returning 403 to any JWT client the moment the middleware shipped, and 59
         // (profile, tenant) pairs hold rights on menu 270 with no row on menu 236 at all
         // - every one of them a 403. Warn-only must mean warn-only for everybody.
-        $enforcing = (bool) config('lms_content.api_auth_enforce', false);
+        $enforcing = (bool) config('lms_content.api_auth_enforce', true);
 
         /** @var array<string,mixed>|null $auth */
         $auth = $request->attributes->get('lms_auth');

@@ -26,6 +26,12 @@ class BrainAuthenticate
             return response()->json(['error' => 'brain_token_expired'], 401);
         }
 
+        // Brain holds fee, HR, talent and student-risk intelligence for staff. A student or parent
+        // token used to fall through to the default `viewer` role and could read all of it.
+        if (! empty($payload['is_student']) || ! empty($payload['student_id'])) {
+            return response()->json(['error' => 'brain_forbidden', 'message' => 'Not available to this account.'], 403);
+        }
+
         $role = $this->roleFor($payload);
 
         $request->attributes->set('auth.userId', (string) $payload['id']);
@@ -43,7 +49,13 @@ class BrainAuthenticate
             return trim(substr($header, 7));
         }
 
-        return $request->query('token') ? (string) $request->query('token') : null;
+        // A token in the URL ends up in server, proxy and browser logs and in Referer headers, so it is
+        // only accepted outside production (handy for a quick curl while developing).
+        if (! app()->environment('production') && $request->query('token')) {
+            return (string) $request->query('token');
+        }
+
+        return null;
     }
 
     private function decodeJwt(string $token): ?array

@@ -41,9 +41,17 @@ class RequireApiJwt
         if ($caller instanceof JsonResponse) {
             return $caller;
         }
+        $viaCookie = $caller === null;
         $caller ??= $this->callerFromWebSession($request);
         if ($caller === null) {
             return $this->deny('Authentication required', 401);
+        }
+
+        // These paths are exempt from CSRF tokens because API clients send a bearer token. A browser
+        // sends cookies on its own, so a state-changing request authenticated only by the session
+        // cookie must come from this site's own pages: another site's page cannot forge it.
+        if ($viaCookie && ! $request->isMethodSafe() && ! $this->isSameSiteRequest($request)) {
+            return $this->deny('Cross-site request refused', 403);
         }
 
         $requested = $request->input('sub_institute_id');
@@ -53,6 +61,13 @@ class RequireApiJwt
         if ($requested !== null && $requested !== '' && (int) $requested !== $caller['school']
             && ! $this->mayActForSchool($caller, (int) $requested)) {
             return $this->deny('Not valid for this school', 403);
+        }
+
+        // A request that names no school used to run unscoped, so a handler that filters by
+        // school only "when given" returned any school's rows. Fill in the caller's own school.
+        // Platform admins (is_admin 2) are left alone: they legitimately span schools.
+        if (($requested === null || $requested === '') && $caller['is_admin'] < 2 && $caller['school'] > 0) {
+            $request->merge(['sub_institute_id' => $caller['school']]);
         }
 
         if ($this->matchesAny('staff', $request) && $this->isStudentOrParent($caller)) {
@@ -216,6 +231,27 @@ class RequireApiJwt
 
         return (int) DB::table('school_setup')->where('Id', $requestedSchool)->value('client_id')
             === (int) $caller['client_id'];
+    }
+
+    /** Origin (or, failing that, Referer) must be this site. A request with neither is refused. */
+    private function isSameSiteRequest(Request $request): bool
+    {
+        $source = $request->headers->get('Origin') ?: $request->headers->get('Referer');
+        if (! $source) {
+            return false;
+        }
+
+        $host = parse_url((string) $source, PHP_URL_HOST);
+        $port = parse_url((string) $source, PHP_URL_PORT);
+        if (! $host) {
+            return false;
+        }
+
+        $own = $request->getHost();
+        $ownPort = $request->getPort();
+        $sameHost = strcasecmp($host, $own) === 0;
+
+        return $sameHost && ($port === null || (int) $port === (int) $ownPort);
     }
 
     private function deny(string $message, int $status): JsonResponse

@@ -1,4 +1,14 @@
 <?php
+// Internal endpoint: it connects to the database named in the request, so only the ERP itself
+// (which signs the call with a key derived from APP_KEY) may use it.
+require_once __DIR__ . '/../bootstrap/legacy_env.php';
+$expectedKey = hash_hmac('sha256', 'add_user_hrms', (string) legacy_env('APP_KEY'));
+$givenKey = $_SERVER['HTTP_X_INTERNAL_KEY'] ?? '';
+if ((string) legacy_env('APP_KEY') === '' || !hash_equals($expectedKey, (string) $givenKey)) {
+    http_response_code(403);
+    exit;
+}
+
 $host = $_REQUEST['db_host'];
 $username = $_REQUEST['db_user'];
 $password = $_REQUEST['db_password'];

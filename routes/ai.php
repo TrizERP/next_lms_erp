@@ -97,20 +97,20 @@ Route::prefix(config('ai.route_prefix', 'api/ai'))
             // shows the moment a module is picked. Registered before `/configuration/{id}`
             // routes so the word is never read as an id.
             Route::get('/configuration/compatibility', [AiConfigurationController::class, 'compatibility']);
-            Route::post('/configuration/reorder', [AiConfigurationController::class, 'reorder']);
+            Route::post('/configuration/reorder', [AiConfigurationController::class, 'reorder'])->middleware('admin.only');
             Route::get('/configuration', [AiConfigurationController::class, 'index']);
-            Route::post('/configuration', [AiConfigurationController::class, 'store']);
+            Route::post('/configuration', [AiConfigurationController::class, 'store'])->middleware('admin.only');
             Route::post('/configuration/{id}/verify', [AiConfigurationController::class, 'verify'])
-                ->where('id', '[0-9]+');
+                ->where('id', '[0-9]+')->middleware('admin.only');
             Route::put('/configuration/{id}', [AiConfigurationController::class, 'update'])
-                ->where('id', '[0-9]+');
+                ->where('id', '[0-9]+')->middleware('admin.only');
             Route::delete('/configuration/{id}', [AiConfigurationController::class, 'destroy'])
-                ->where('id', '[0-9]+');
+                ->where('id', '[0-9]+')->middleware('admin.only');
 
             Route::get('/configuration-models', [AiConfigurationController::class, 'models']);
-            Route::post('/configuration-models', [AiConfigurationController::class, 'storeModel']);
+            Route::post('/configuration-models', [AiConfigurationController::class, 'storeModel'])->middleware('admin.only');
             Route::put('/configuration-models/{id}', [AiConfigurationController::class, 'updateModel'])
-                ->where('id', '[0-9]+');
+                ->where('id', '[0-9]+')->middleware('admin.only');
 
             /*
             | Template Management — module-wise AI templates, managed centrally.

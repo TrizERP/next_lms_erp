@@ -128,7 +128,7 @@ class addAssesmentController extends Controller
             ], 422);
         } catch (\Exception $e) {
             Log::error('Neo4j Assessment Insertion Error: ' . $e->getMessage(), [
-                'request_data' => $request->all(),
+                'request_fields' => array_keys($request->all()),
                 'trace' => $e->getTraceAsString()
             ]);
 

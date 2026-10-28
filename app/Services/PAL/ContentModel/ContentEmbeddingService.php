@@ -239,7 +239,7 @@ class ContentEmbeddingService
      *
      * @return array{ok:bool, matches?:array<int, array{content_master_id:int, title:string, chunk_text:string, score:float}>, error?:string}
      */
-    public function searchChunks(string $query, int $subInstituteId, int $limit = 6): array
+    public function searchChunks(string $query, int $subInstituteId, int $limit = 6, bool $forStudent = false): array
     {
         if (trim($query) === '') {
             return ['ok' => false, 'error' => 'A question is required.'];
@@ -265,6 +265,11 @@ class ContentEmbeddingService
         $rows = DB::table('content_master')
             ->where('sub_institute_id', $subInstituteId)
             ->whereNotNull('embedding')
+            // Content authored for a staff profile (Admin, teacher...) must not be quoted to a student;
+            // an empty profile name means general content and 'student' means written for students.
+            ->when($forStudent, fn ($q) => $q->where(function ($w) {
+                $w->whereNull('user_profile_name')->orWhere('user_profile_name', '')->orWhereRaw('LOWER(user_profile_name) = ?', ['student']);
+            }))
             ->select(['id', 'title', 'embedding'])
             ->limit(500)
             ->get();

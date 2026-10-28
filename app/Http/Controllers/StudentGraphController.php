@@ -252,7 +252,11 @@ class StudentGraphController extends Controller
 
             // Required parameters
             $studentId = (int) $request->get('student_id');
-            $subInstituteId = (int) $request->get('sub_institute_id');
+            // The school comes from the verified session, and the student must be one the caller may see.
+            $subInstituteId = (int) \App\Support\StudentAccess::tenantFor($studentId);
+            if ($studentId && ! $subInstituteId) {
+                return response()->json(['success' => false, 'error' => 'Not allowed for this student.'], 403);
+            }
             $year = (int) $request->get('syear', 2025); // Default to 2025
 
             // Required filter parameters for the query

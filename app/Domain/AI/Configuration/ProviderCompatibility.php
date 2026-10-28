@@ -447,7 +447,7 @@ final class ProviderCompatibility
 
             $out[$provider] = [
                 'id' => (int) $row->id,
-                'api_key' => trim((string) ($row->api_key ?? '')),
+                'api_key' => \App\Support\KeyVault::reveal(trim((string) ($row->api_key ?? ''))),
                 'model' => $row->model ?? null,
                 'priority' => $hasPriority && is_numeric($row->priority ?? null) && (int) $row->priority > 0 ? (int) $row->priority : null,
                 'scope' => ($row->sub_institute_id ?? null) === null ? 'platform' : 'institute',

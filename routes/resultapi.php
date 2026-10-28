@@ -49,14 +49,14 @@ use Illuminate\Support\Facades\Route;
 | unchanged. Docs: docs/result-api/README.md
 */
 
-Route::group(['prefix' => 'sqaa', 'middleware' => ['api.session']], function () {
+Route::group(['prefix' => 'sqaa', 'middleware' => ['api.session', 'staff.writes']], function () {
     Route::get('levels', [SqaaApiController::class, 'levels']);
     Route::get('entry/{menuId}', [SqaaApiController::class, 'entry']);
     Route::post('entry', [SqaaApiController::class, 'store']);
     Route::get('document-report', [SqaaApiController::class, 'documentReport']);
 });
 
-Route::group(['prefix' => 'result', 'middleware' => ['api.session']], function () {
+Route::group(['prefix' => 'result', 'middleware' => ['api.session', 'staff.writes']], function () {
 
     /* ---------------- Exam Master ---------------- */
     Route::get('exam-master/create', [ExamMasterApiController::class, 'create']);

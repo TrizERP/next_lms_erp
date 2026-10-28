@@ -11,6 +11,7 @@ use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 
@@ -36,14 +37,27 @@ class ForgotPasswordController extends Controller
     public function submitForgetPasswordForm(Request $request)
     {
         $request->validate([
-            'email' => 'required|email|exists:tbluser,email',
+            'email' => 'required|email',
         ]);
+
+        // Same answer whether or not the address is registered, so this form cannot be
+        // used to find out who has an account.
+        $generic = response()->json([
+            'success' => true,
+            'message' => 'If that email is registered, a password reset link has been sent.',
+        ], 200);
+
+        if (! tbluserModel::where('email', $request->email)->exists()) {
+            return $generic;
+        }
 
         $token = Str::random(64);
 
+        // One live token per address; only a hash is stored, the plain token is only in the email.
+        DB::table('password_resets')->where('email', $request->email)->delete();
         DB::table('password_resets')->insert([
             'email'      => $request->email,
-            'token'      => $token,
+            'token'      => hash('sha256', $token),
             'created_at' => Carbon::now(),
         ]);
 
@@ -55,21 +69,12 @@ class ForgotPasswordController extends Controller
                 $message->to($request->email);
                 $message->subject('Reset Password');
             });
-
-            // If mail sending has no exception
-            return response()->json([
-                'success' => true,
-                'message' => 'Password reset email sent successfully.'
-            ], 200);
-
         } catch (\Exception $e) {
-            // If any mail sending error occurs
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to send password reset email.',
-                'error'   => $e->getMessage()
-            ], 500);
+            // The cause (SMTP host, credentials) is for the log, never for the caller.
+            Log::warning('Password reset email failed', ['error' => $e->getMessage()]);
         }
+
+        return $generic;
     }
 
     /**
@@ -92,19 +97,21 @@ class ForgotPasswordController extends Controller
     public function submitResetPasswordForm(Request $request)
     {
         $request->validate([
-            'email'                 => 'required|email|exists:tbluser',
-            'password'              => 'required|string|min:6|confirmed',
+            'email'                 => 'required|email',
+            'password'              => 'required|string|min:8|confirmed',
             'password_confirmation' => 'required',
         ]);
 
         $updatePassword = DB::table('password_resets')
-            ->where([
-                'email' => $request->email,
-                'token' => $request->token,
-            ])->first();
+            ->where('email', $request->email)
+            ->first();
 
-        if (! $updatePassword) {
-            return back()->withInput()->with('error', 'Invalid token!');
+        $valid = $updatePassword
+            && hash_equals((string) $updatePassword->token, hash('sha256', (string) $request->token))
+            && Carbon::parse($updatePassword->created_at)->gt(Carbon::now()->subMinutes(60));
+
+        if (! $valid) {
+            return back()->withInput()->with('error', 'Invalid or expired token!');
         }
 
         $user = tbluserModel::where('email', $request->email)->update(['password' => $request->password]);

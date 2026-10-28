@@ -1998,8 +1998,8 @@ if (!function_exists('htmlToPDF')) {
     function htmlToPDF($htmlPath, $pdfPath)
     {
         $command = '/usr/local/bin/wkhtmltopdf ';
-        $command .= " $htmlPath ";
-        $command .= " $pdfPath ";
+        $command .= ' ' . escapeshellarg($htmlPath) . ' ';
+        $command .= ' ' . escapeshellarg($pdfPath) . ' ';
 
         return exec($command);
     }
@@ -2019,8 +2019,8 @@ if (!function_exists('htmlToPDFHills')) {
         $command .= '--margin-top 35mm --margin-bottom 15mm ';
         $command .= '--enable-local-file-access '; // Allows external files (CSS, fonts)
         $command .= '--load-media-error-handling ignore '; // Ignore font load errors
-        $command .= "$htmlPath ";
-        $command .= "$pdfPath ";
+        $command .= escapeshellarg($htmlPath) . ' ';
+        $command .= escapeshellarg($pdfPath) . ' ';
 
         return exec($command);
     }
@@ -2031,8 +2031,8 @@ if (!function_exists('htmlToPDFPortraitLetter')) {
     {
         $command = '/usr/local/bin/wkhtmltopdf -L 5 -R 10 -B 5 -T 5 -s letter ';
         // $command = '/usr/local/bin/wkhtmltopdf -L 0 -R 0 -B 0 -T 0.5 --page-height 350mm --page-width 250mm ';
-        $command .= " $htmlPath ";
-        $command .= " $pdfPath ";
+        $command .= ' ' . escapeshellarg($htmlPath) . ' ';
+        $command .= ' ' . escapeshellarg($pdfPath) . ' ';
         return exec($command);
     }
 }
@@ -2041,8 +2041,8 @@ if (!function_exists('htmlToPDFPortrait')) {
     function htmlToPDFPortrait($htmlPath, $pdfPath)
     {
         $command = '/usr/local/bin/wkhtmltopdf -L 0 -R 0 -B 0 -T 0.5 -s A4 '; // --page-height 297mm //-L 0 -R 0 -B 0 -T 0 -s A4
-        $command .= " $htmlPath ";
-        $command .= " $pdfPath ";
+        $command .= ' ' . escapeshellarg($htmlPath) . ' ';
+        $command .= ' ' . escapeshellarg($pdfPath) . ' ';
 
         return exec($command);
     }
@@ -2053,8 +2053,8 @@ if (!function_exists('htmlToPDFLandscape')) {
     function htmlToPDFLandscape($htmlPath, $pdfPath)
     {
         $command = '/usr/local/bin/wkhtmltopdf -L 0 -R 0 -B 0 -T 0.5 --page-height 250mm --page-width 300mm '; // --page-height 297mm //-L 0 -R 0 -B 0 -T 0 -s A4
-        $command .= " $htmlPath ";
-        $command .= " $pdfPath ";
+        $command .= ' ' . escapeshellarg($htmlPath) . ' ';
+        $command .= ' ' . escapeshellarg($pdfPath) . ' ';
 
         return exec($command);
     }
@@ -2064,8 +2064,8 @@ if (!function_exists('htmlToPDFLandscapeCertificate')) {
     function htmlToPDFLandscapeCertificate($htmlPath, $pdfPath)
     {
         $command = '/usr/local/bin/wkhtmltopdf -L 5 -R 5 -B 5 -T 5 -s A5 --orientation "Landscape" '; // --page-height 297mm //-L 0 -R 0 -B 0 -T 0 -s A4
-        $command .= " $htmlPath ";
-        $command .= " $pdfPath ";
+        $command .= ' ' . escapeshellarg($htmlPath) . ' ';
+        $command .= ' ' . escapeshellarg($pdfPath) . ' ';
 
         return exec($command);
     }
@@ -3129,9 +3129,21 @@ if (!function_exists('get_string')) {
     if(!function_exists('getAIKey')){
         function getAIKey($keyType,$status=1)
         {
+            // Keys belong to a school. Without a school in the session this used to return the
+            // first active row of ANY school; now only the caller's own school's key is returned
+            // (or a platform-level row with no school), never another tenant's.
+            $tenant = (int) session()->get('sub_institute_id');
             $result = DB::table('ai_api_keys')
                 ->where('api_type', $keyType)
                 ->where('status', $status)
+                ->where(function ($q) use ($tenant) {
+                    if ($tenant > 0) {
+                        $q->where('sub_institute_id', $tenant);
+                    } else {
+                        $q->whereNull('sub_institute_id')->orWhere('sub_institute_id', 0);
+                    }
+                })
+                ->orderByRaw('sub_institute_id IS NULL')
                 ->first();
             return $result ?? '-';
         }

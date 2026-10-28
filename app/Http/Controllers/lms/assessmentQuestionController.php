@@ -632,7 +632,8 @@ class assessmentQuestionController extends Controller
     {
         // return $request;
         // Log the incoming request for debugging
-        \Log::info('Assessment Question Store Request:', $request->all());
+        // Field names only: the body can carry tokens and personal data.
+        \Log::info('Assessment Question Store Request:', ['fields' => array_keys($request->all())]);
         
         $sub_institute_id = $request->session()->get('sub_institute_id');
         $user_id = $request->session()->get('user_id');

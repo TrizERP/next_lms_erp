@@ -1,8 +1,9 @@
 <?php
-$host = "150.129.172.214";
-$username = "triz_erp";
-$password = "Triz@2019$04";
-$database = "triz_erp_2";
+require_once __DIR__ . '/../bootstrap/legacy_env.php';
+$host = legacy_env('LEGACY_DB_HOST');
+$username = legacy_env('LEGACY_DB_USER');
+$password = legacy_env('LEGACY_DB_PASSWORD');
+$database = legacy_env('LEGACY_DB_NAME');
 
 $cn = mysqli_connect($host, $username, $password) or die("Database Not Connected");
 mysqli_select_db($cn, $database) or die("database");

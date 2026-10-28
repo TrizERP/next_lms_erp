@@ -354,21 +354,21 @@ Route::post('show_question_wise_report',
 });
 
 Route::controller(lms_apiController::class)->group(function () {
-    Route::post('/studentVirtualClassroomAPI', 'studentVirtualClassroomAPI');
-    Route::post('/studentPortfolioAPI', 'studentPortfolioAPI');
-    Route::post('/studentSocialCollabrativeAPI', 'studentSocialCollabrativeAPI');
-    Route::post('/studentSubjectAPI', 'studentSubjectAPI');
-    Route::post('/studentContentAPI', 'studentContentAPI');
-    Route::post('/studentQuestionPaperListAPI', 'studentQuestionPaperListAPI');
-    Route::post('/studentQuestionPaperAPI', 'studentQuestionPaperAPI');
-    Route::post('/studentAssessmentAPI', 'studentAssessmentAPI');
-    Route::post('/studentTransportAPI', 'studentTransportAPI');
-    Route::post('/studentLeaderBoardAPI', 'studentLeaderBoardAPI');
-    Route::post('/studentActivityStreamAPI', 'studentActivityStreamAPI');
-    Route::post('/studentBookListAPI', 'studentBookListAPI');
-    Route::post('/studentSyllabusAPI', 'studentSyllabusAPI');
-    Route::post('/studentQuestionPaperSaveAPI', 'studentQuestionPaperSaveAPI');
-    Route::post('/studentAssessmentDetailAPI', 'studentAssessmentDetailAPI');
+    Route::post('/studentVirtualClassroomAPI', 'studentVirtualClassroomAPI')->middleware('mobile.identity:student');
+    Route::post('/studentPortfolioAPI', 'studentPortfolioAPI')->middleware('mobile.identity:student');
+    Route::post('/studentSocialCollabrativeAPI', 'studentSocialCollabrativeAPI')->middleware('mobile.identity:student');
+    Route::post('/studentSubjectAPI', 'studentSubjectAPI')->middleware('mobile.identity:student');
+    Route::post('/studentContentAPI', 'studentContentAPI')->middleware('mobile.identity:student');
+    Route::post('/studentQuestionPaperListAPI', 'studentQuestionPaperListAPI')->middleware('mobile.identity:student');
+    Route::post('/studentQuestionPaperAPI', 'studentQuestionPaperAPI')->middleware('mobile.identity:student');
+    Route::post('/studentAssessmentAPI', 'studentAssessmentAPI')->middleware('mobile.identity:student');
+    Route::post('/studentTransportAPI', 'studentTransportAPI')->middleware('mobile.identity:student');
+    Route::post('/studentLeaderBoardAPI', 'studentLeaderBoardAPI')->middleware('mobile.identity:student');
+    Route::post('/studentActivityStreamAPI', 'studentActivityStreamAPI')->middleware('mobile.identity:student');
+    Route::post('/studentBookListAPI', 'studentBookListAPI')->middleware('mobile.identity:student');
+    Route::post('/studentSyllabusAPI', 'studentSyllabusAPI')->middleware('mobile.identity:student');
+    Route::post('/studentQuestionPaperSaveAPI', 'studentQuestionPaperSaveAPI')->middleware('mobile.identity:student');
+    Route::post('/studentAssessmentDetailAPI', 'studentAssessmentDetailAPI')->middleware('mobile.identity:student');
     Route::post('/lmsCategorywiseSubjectAPI', 'lmsCategorywiseSubjectAPI');
     Route::post('/trizStandardAPI', 'trizStandardAPI');
 });
@@ -441,10 +441,10 @@ Route::middleware(['session'])->group(function () {
     // is role-gated in the controller (read: administrator, hr_manager,
     // hr_executive, executive, auditor; write: administrator, hr_manager,
     // hr_executive). Dormant until s_users_skills_onet_map is migrated.
-    Route::get('careerMentorSuggestions', [\App\Http\Controllers\lms\counselling\CareerMentorController::class, 'suggestions']);
-    Route::get('careerMentorCrosswalk', [\App\Http\Controllers\lms\counselling\CareerMentorController::class, 'crosswalk']);
-    Route::post('careerMentorCrosswalk', [\App\Http\Controllers\lms\counselling\CareerMentorController::class, 'save']);
-    Route::delete('careerMentorCrosswalk/{id}', [\App\Http\Controllers\lms\counselling\CareerMentorController::class, 'destroy'])->whereNumber('id');
+    Route::get('careerMentorSuggestions', [\App\Http\Controllers\lms\counselling\CareerMentorController::class, 'suggestions'])->middleware('throttle:30,1');
+    Route::get('careerMentorCrosswalk', [\App\Http\Controllers\lms\counselling\CareerMentorController::class, 'crosswalk'])->middleware('throttle:30,1');
+    Route::post('careerMentorCrosswalk', [\App\Http\Controllers\lms\counselling\CareerMentorController::class, 'save'])->middleware('throttle:20,1');
+    Route::delete('careerMentorCrosswalk/{id}', [\App\Http\Controllers\lms\counselling\CareerMentorController::class, 'destroy'])->whereNumber('id')->middleware('throttle:20,1');
 });
 Route::post('/ai/processData',[contentController::class,'processAIData'])->name('ai.processData');
 Route::post('/ai/generateLessonPlan', [contentController::class, 'generateLessonPlan'])->name('ai.generateLessonPlan');

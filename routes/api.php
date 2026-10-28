@@ -63,14 +63,14 @@ Route::middleware('api.session')->get('/student-results/{stuId}/graph', [Student
 
 Route::post('whats-send-app',function (Request $request) {
     \Illuminate\Support\Facades\Log::info(json_encode($request->all()));
-});
+})->middleware('webhook.secret');
 
 Route::post('whats-comming-app',function (Request $request) {
     \Illuminate\Support\Facades\Log::info(json_encode($request->all()));
-});
+})->middleware('webhook.secret');
 
-Route::post('update-message',[\App\Http\Controllers\WhatsappController::class,'updateDeliveryStatus']);
-Route::post('incoming-message',[\App\Http\Controllers\WhatsappController::class,'incomingMessage']);
+Route::post('update-message',[\App\Http\Controllers\WhatsappController::class,'updateDeliveryStatus'])->middleware('webhook.secret');
+Route::post('incoming-message',[\App\Http\Controllers\WhatsappController::class,'incomingMessage'])->middleware('webhook.secret');
 
 
 Route::controller(apiController::class)->group(function () {
@@ -1104,7 +1104,7 @@ Route::prefix('attendance')->group(function () {
 | Intelligent Document Management System (IDMS) API v1
 |--------------------------------------------------------------------------
 */
-Route::prefix('v1')->group(function () {
+Route::prefix('v1')->middleware('api.session')->group(function () {
     Route::get('documents', [\App\Http\Controllers\api\v1\DocumentController::class, 'index']);
     Route::post('documents', [\App\Http\Controllers\api\v1\DocumentController::class, 'store']);
     Route::get('documents/{id}', [\App\Http\Controllers\api\v1\DocumentController::class, 'show']);
@@ -1155,7 +1155,7 @@ Route::middleware('api.session')->prefix('capture-photo')->group(function () {
 // ------------------------------------------------------------------
 // Live Admin & Student Support Chat (real-time synchronized)
 // ------------------------------------------------------------------
-Route::prefix('live-chat')->group(function () {
+Route::prefix('live-chat')->middleware(['api.session', 'livechat.identity'])->group(function () {
     Route::get('session', [\App\Http\Controllers\AI\AiLiveChatController::class, 'sessionGet']);
     Route::post('session', [\App\Http\Controllers\AI\AiLiveChatController::class, 'sessionPost']);
     Route::get('messages', [\App\Http\Controllers\AI\AiLiveChatController::class, 'messagesGet']);

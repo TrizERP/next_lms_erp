@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 /**
  * Career Counseling: staff mentor suggestions and the HR-managed crosswalk
@@ -47,11 +48,52 @@ class CareerMentorController extends Controller
             return response()->json(['status_code' => 0, 'message' => 'occupation_code is required.'], 422);
         }
 
+        $data = $this->service->suggestMentors($code, $tenant, 10);
+        // Staff names and job titles are shown to the caller (often a minor), so keep a record of who looked.
+        Log::channel('daily')->info('career.mentor_suggestions viewed', [
+            'viewer_id' => (int) $request->session()->get('user_id'),
+            'school_id' => $tenant,
+            'student_view' => $this->callerIsStudent($request),
+            'occupation_code' => $code,
+            'mentors_returned' => count($data['mentors'] ?? []),
+        ]);
+        if ($this->callerIsStudent($request)) {
+            $data = $this->studentSafeMentors($data);
+        }
+
         return response()->json([
             'status_code' => 1,
             'message' => 'SUCCESS',
-            'data' => $this->service->suggestMentors($code, $tenant, 10),
+            'data' => $data,
         ]);
+    }
+
+    private function callerIsStudent(Request $request): bool
+    {
+        $profile = strtolower((string) $request->session()->get('user_profile_name'));
+
+        return (bool) $request->session()->get('is_student') || in_array($profile, ['student', 'parent'], true);
+    }
+
+    /**
+     * Students see who could mentor them, not staff records: no staff id and no
+     * self-rated skill levels, only name, job title, match score and skill names.
+     */
+    private function studentSafeMentors(array $data): array
+    {
+        $data['mentors'] = array_map(static function (array $m): array {
+            return [
+                'name' => $m['name'] ?? null,
+                'job_title' => $m['job_title'] ?? null,
+                'score' => $m['score'] ?? null,
+                'matched_skills' => array_map(
+                    static fn ($s) => ['skill_title' => $s['skill_title'] ?? null],
+                    $m['matched_skills'] ?? []
+                ),
+            ];
+        }, $data['mentors'] ?? []);
+
+        return $data;
     }
 
     /** GET careerMentorCrosswalk?search= : unmapped staff skills with PROPOSED elements, plus confirmed mappings. */
@@ -105,6 +147,16 @@ class CareerMentorController extends Controller
             return response()->json(['status_code' => 0, 'message' => $message], $status);
         }
 
+        // Who mapped which skill to which element, for the record: this steers which staff are shown
+        // to students as mentors.
+        Log::channel('daily')->info('career.mentor_crosswalk saved', [
+            'actor_id' => (int) $request->session()->get('user_id'),
+            'school_id' => (int) $request->session()->get('sub_institute_id'),
+            'skill_id' => $skillId,
+            'element_id' => $elementId,
+            'ip' => $request->ip(),
+        ]);
+
         return response()->json(['status_code' => 1, 'message' => 'SUCCESS', 'data' => $result]);
     }
 
@@ -117,6 +169,13 @@ class CareerMentorController extends Controller
         }
 
         $deleted = $this->service->deleteMapping((int) $request->session()->get('sub_institute_id'), $id);
+        Log::channel('daily')->info('career.mentor_crosswalk deleted', [
+            'actor_id' => (int) $request->session()->get('user_id'),
+            'school_id' => (int) $request->session()->get('sub_institute_id'),
+            'mapping_id' => $id,
+            'found' => (bool) $deleted,
+            'ip' => $request->ip(),
+        ]);
 
         return $deleted
             ? response()->json(['status_code' => 1, 'message' => 'SUCCESS'])
@@ -140,12 +199,22 @@ class CareerMentorController extends Controller
             return false;
         }
 
-        return in_array((string) $profile->role_key, $roleKeys, true)
-            || in_array(strtolower(trim((string) $profile->name)), $profileNames, true);
+        // Profile names are editable by anyone who can save profiles, so a name alone is not
+        // proof of an admin: the account must also carry the admin flag.
+        $nameMatches = in_array(strtolower(trim((string) $profile->name)), $profileNames, true)
+            && (int) $request->session()->get('is_admin') >= 1;
+
+        return in_array((string) $profile->role_key, $roleKeys, true) || $nameMatches;
     }
 
     private function authorise(Request $request, array $roleKeys, array $profileNames): ?JsonResponse
     {
+        // These routes are CSRF-exempt because the SPA calls them with a bearer token. A
+        // browser cannot attach that header cross-site, so requiring it on writes closes
+        // the forgery gap for requests that only carry a session cookie.
+        if (! $request->isMethodSafe() && ! $request->bearerToken()) {
+            return response()->json(['status_code' => 0, 'message' => 'Bearer token required.'], 401);
+        }
         if ((int) $request->session()->get('sub_institute_id') <= 0 || empty($request->session()->get('user_id'))) {
             return response()->json(['status_code' => 0, 'message' => 'Unauthenticated.'], 401);
         }

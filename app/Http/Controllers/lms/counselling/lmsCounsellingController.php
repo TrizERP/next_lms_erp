@@ -1646,6 +1646,19 @@ class lmsCounsellingController extends Controller
                     'message' => 'You do not have permission to view this student\'s career evidence.',
                 ], 403);
             }
+            // A school admin sees only their own school's students; only a platform admin spans schools.
+            if ($isAdmin === 1) {
+                $sameSchool = DB::table('tblstudent')
+                    ->where('id', (int) $requestedStudentId)
+                    ->where('sub_institute_id', (int) $request->session()->get('sub_institute_id'))
+                    ->exists();
+                if (! $sameSchool) {
+                    return response()->json([
+                        'status_code' => 0,
+                        'message' => 'You do not have permission to view this student\'s career evidence.',
+                    ], 403);
+                }
+            }
             $studentId = (string) $requestedStudentId;
         }
 

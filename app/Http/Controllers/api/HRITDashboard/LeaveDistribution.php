@@ -16,7 +16,7 @@ class LeaveDistribution extends Controller
     public function leaveDistribution(Request $request)
     {
         $type = $request->query('type');
-        $token = $request->query('token');
+        $token = $request->query('token') ?: $request->bearerToken();
 
         // Token validation for API type. Matched case-insensitively since the
         // Next.js HRIT frontend always sends type=API (uppercase) - the

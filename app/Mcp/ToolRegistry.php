@@ -95,6 +95,12 @@ class ToolRegistry
             ]);
         }
 
+        // Enforce the role the tool declares (the declaration alone did nothing).
+        $roles = (array) ($tool->definition()['annotations']['allowed_roles'] ?? ['admin', 'staff']);
+        if (! in_array('staff', $roles, true) && ! app(\App\Services\Mcp\AdministratorCheck::class)->isAdministrator($context)) {
+            throw new \Illuminate\Auth\Access\AuthorizationException('This tool is available to administrators only.');
+        }
+
         if ($tool instanceof ConfirmableMcpToolInterface) {
             if ($confirmationToken) {
                 $confirmation = $this->confirmationService->consume($confirmationToken, $toolName, $context);

@@ -41,6 +41,9 @@ return [
 
     'rate_limit' => [
         'per_minute' => (int) env('MCP_RATE_LIMIT_PER_MINUTE', 60),
+        // Whole-school caps, on top of the per-user one (see McpRateLimit).
+        'school_per_minute' => (int) env('MCP_SCHOOL_RATE_PER_MINUTE', 600),
+        'school_per_day' => (int) env('MCP_SCHOOL_RATE_PER_DAY', 20000),
     ],
 
     /*

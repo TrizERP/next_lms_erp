@@ -50,6 +50,12 @@ class TeacherDailyReportApiController extends Controller
         }
 
         $actorId = (int) ($payload['id'] ?? 0);
+
+        // This is a staff API. A student or parent token's `id` is a tblstudent id, and must never be
+        // looked up as a tbluser id (it could match an admin's id in the same school).
+        if (! empty($payload['is_student']) || ! empty($payload['student_id'])) {
+            return response()->json(['status_code' => 2, 'message' => 'Not available to this account.', 'data' => []], 403);
+        }
         $tenantId = (int) ($payload['sub_institute_id'] ?? 0);
         if ($actorId !== $request->integer('user_id') || $tenantId !== $request->integer('sub_institute_id')) {
             return response()->json(['status_code' => 2, 'message' => 'Token context does not match the request.', 'data' => []], 403);
