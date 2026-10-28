@@ -49,13 +49,22 @@ class checkPermission
             // A write route with no menu row is not rights-checked at all. Failing it closed would
             // block every such screen at once, so first make the gap visible: one warning per
             // route per hour, listing exactly which routes need a menu row (or an explicit guard).
-            if (empty($menu_id) && ! $request->isMethodSafe() && Cache::add('perm_unmapped_logged:'.$currentRouteName, 1, 3600)) {
-                \Illuminate\Support\Facades\Log::channel('daily')->warning('perm: write route has no menu row, rights not checked', [
-                    'route' => $currentRouteName,
-                    'method' => $request->method(),
-                    'path' => $request->path(),
-                    'profile' => session()->get('user_profile_name'),
-                ]);
+            if (empty($menu_id) && ! $request->isMethodSafe()) {
+                if (Cache::add('perm_unmapped_logged:'.$currentRouteName, 1, 3600)) {
+                    \Illuminate\Support\Facades\Log::channel('daily')->warning('perm: write route has no menu row, rights not checked', [
+                        'route' => $currentRouteName,
+                        'method' => $request->method(),
+                        'path' => $request->path(),
+                        'profile' => session()->get('user_profile_name'),
+                    ]);
+                }
+
+                // Opt-in (config/permissions.php): once the routes are mapped, an unmapped write is refused
+                // instead of allowed, except the route names listed as deliberate exceptions.
+                if (config('permissions.fail_closed', false)
+                    && ! in_array((string) $currentRouteName, (array) config('permissions.unmapped_allow', []), true)) {
+                    throw new AuthorizationException('No rights are defined for this action.');
+                }
             }
             // echo "<pre>";print_r($currentRouteName);exit;
             // 02-01-2025 end

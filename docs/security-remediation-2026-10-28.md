@@ -98,3 +98,12 @@ ExamEvaluation `GeminiDocumentClientTest` / `QueueAndGeminiConfigTest`, AI `Modu
   has no `tblmenumaster` row, grouped by what protects it. Map those routes, then make `checkPermission` fail closed
   (E4). Its "no login and no rights check" group reads route middleware only, so `api/*` entries there are usually
   covered by the `api` group guard or by the controller.
+- **E4 switch**: `PERM_FAIL_CLOSED=true` (default `false`, `config/permissions.php`) makes `checkPermission` refuse a write
+  route that has no menu row. Name deliberate exceptions in `PERM_UNMAPPED_ALLOW` (comma separated route names). Map
+  the routes from `php artisan routes:unmapped-writes` first, watch `perm: write route has no menu row` in the daily
+  log, then turn it on. Super Admin and all reads are unaffected.
+- **Dependencies** (`composer audit` / `npm audit`): phpspreadsheet 1.30.7 and league/commonmark 2.10.4 (patch upgrades);
+  Next.js app: `next` 16.4.3 (critical unauthenticated RCE advisories in 16.0-16.4.0) and isomorphic-dompurify 4.6.0
+  (dompurify 3.4.17). Still reported: firebase/php-jwt (low, needs v7), and in the Next.js app a few high ones in
+  dev-adjacent packages that need a major upgrade (shadcn/zod) or just `npm audit fix` (body-parser, undici,
+  source-map-js, @modelcontextprotocol/sdk); in the React Native app `expo` and `node-forge` (high).
