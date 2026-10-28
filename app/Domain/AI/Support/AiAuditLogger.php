@@ -191,6 +191,11 @@ class AiAuditLogger
 
     private function fallback(string $eventType, array $payload): void
     {
-        Log::channel(config('logging.default'))->info('[ai.audit] ' . $eventType, $payload);
+        // An empty or unknown default channel must not turn an audit line into an exception.
+        try {
+            Log::channel(config('logging.default') ?: 'stack')->info('[ai.audit] ' . $eventType, $payload);
+        } catch (\Throwable $e) {
+            error_log('[ai.audit] ' . $eventType . ' (log channel unavailable: ' . $e->getMessage() . ')');
+        }
     }
 }

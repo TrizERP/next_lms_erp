@@ -232,6 +232,9 @@ class ImagePlanner
      */
     public function plan(array $slides, array $content, ?callable $progress = null): array
     {
+        if ($this->fast !== null) {
+            return $this->planFast($slides, $content, $progress);
+        }
         $out = [];
         $usedUrls = [];
 
@@ -276,6 +279,368 @@ class ImagePlanner
         }
 
         return $out;
+    }
+
+    // ------------------------------------------------------------------------------------------------ the fast picture policy
+
+    /** @var array<string,mixed>|null */
+    private ?array $fast = null;
+
+    /** What the last fast pass did, for the run's log: counts per outcome and the seconds it took. @var array<string,mixed> */
+    public array $fastReport = [];
+
+    /**
+     * Speed over the perfect picture, for a run that must finish in minutes. plan() then follows this policy, bounded by one budget for the whole
+     * optional picture stage (not a fresh one per slide):
+     *   1. a picture already resolved for the same words (a verified, stored, licensed one) is reused, with no search at all;
+     *   2. otherwise ONE search per slide, all slides at once, each with a short timeout and no retry;
+     *   3. the FIRST candidate in rank order that passes the cheap checks (licence and credit, format, a descriptive title, keyword evidence, readable
+     *      bytes, big enough, not blurred) is taken, and nothing better is looked for; no model is asked about any candidate;
+     *   4. what is still missing goes down the existing ladder: the chapter's textbook picture, then a diagram drawn from the plan, then no picture.
+     * A picture chosen this way says so: its review note states that it was matched on title and tags and not reviewed, and the validator warns.
+     *
+     * @param array{scope?:string,tenant?:int,stage_seconds?:int,search_timeout?:int,download_timeout?:int,concurrency?:int,rounds?:int,source?:string,candidates?:int} $config
+     */
+    public function withFastPolicy(array $config): static
+    {
+        $this->fast = $config + ['scope' => 'default', 'tenant' => 0, 'stage_seconds' => 20, 'search_timeout' => 12, 'download_timeout' => 5, 'concurrency' => 40, 'rounds' => 2, 'source' => '', 'candidates' => 6];
+
+        return $this;
+    }
+
+    /** The first two significant words of a phrase (a shorter question that a picture search can usually answer), or '' when it is that short already. */
+    private function coreQuery(string $query): string
+    {
+        $words = array_values(array_filter(preg_split('/\s+/', trim(mb_strtolower($query))) ?: [], fn ($w) => mb_strlen($w) > 2 && !in_array($w, ['the', 'and', 'for', 'with', 'from', 'into'], true)));
+
+        return count($words) > 2 ? implode(' ', array_slice($words, 0, 2)) : '';
+    }
+
+    private function resolvedKey(string $query): string
+    {
+        return 'cp:img-resolved:' . $this->fast['scope'] . ':' . sha1(mb_strtolower(trim($query)));
+    }
+
+    /** A picture resolved earlier for these words, if it is still in the school's picture store. @return array<string,mixed>|null */
+    private function resolvedBefore(string $query): ?array
+    {
+        try {
+            $hit = \Illuminate\Support\Facades\Cache::get($this->resolvedKey($query));
+        } catch (\Throwable) {
+            return null;
+        }
+        $id = is_array($hit) ? StudyDeckImages::idFromRef($hit['url'] ?? null) : null;
+        if ($id === null || (int) $this->fast['tenant'] <= 0) {
+            return null;
+        }
+        try {
+            return (new StudyDeckImages())->visibleMeta($id, (int) $this->fast['tenant']) !== null ? $hit : null;
+        } catch (\Throwable) {
+            return null;
+        }
+    }
+
+    /**
+     * The candidates of one search that pass the checks that need no download, in rank order.
+     *
+     * @param array<int,array<string,mixed>> $ranked
+     * @return array<int,array<string,mixed>>
+     */
+    private function acceptableCandidates(array $ranked, string $query): array
+    {
+        $out = [];
+        foreach ($ranked as $image) {
+            $url = (string) ($image['url'] ?? '');
+            $licence = (string) ($image['license'] ?? '');
+            if ($url === '' || !$this->licenceAccepted($licence)) {
+                $this->stats['rejected_licence']++;
+                continue;
+            }
+            if (!$this->isWikimediaSvg($url) && preg_match('/\.(svg|tiff?|pdf|djvu|ogv|webm|ogg|gif)(\?|$)/i', $url)) {
+                $this->stats['rejected_format']++;
+                continue;
+            }
+            if ($this->skip !== [] && (in_array(strtolower((string) ($image['provider'] ?? 'openverse')), $this->skip, true) || (in_array('wikimedia', $this->skip, true) && str_contains($url, 'upload.wikimedia.org')))) {
+                continue;
+            }
+            if (!$this->titleIsDescriptive((string) ($image['title'] ?? ''))) {
+                $this->stats['rejected_title']++;
+                continue;
+            }
+            $match = $this->matchEvidence($query, $image);
+            if ($match['shared'] < min(2, max(1, $match['of'])) || $match['shared'] / max(1, $match['of']) < 0.4) {
+                $this->stats['rejected_title']++;
+                continue;
+            }
+            if (preg_match(self::NEEDS_CREDIT, $licence) && $this->credit($image) === '') {
+                continue;   // cannot be shown lawfully without a credit
+            }
+            $out[] = $image + ['_match' => $match];
+        }
+
+        return $out;
+    }
+
+    /**
+     * The bytes of several pictures at once, each tried ONCE: a short timeout, at most three redirects, nothing over 8 MB, and only JPEG, PNG or WebP.
+     * A picture the school already downloaded is taken from the store with no request. A slot that fails is null.
+     *
+     * @param array<int,array<string,mixed>> $want slide number => candidate
+     * @return array<int,array{bytes:string,mime:string,width:int,height:int,source:string}|null>
+     */
+    private function downloadMany(array $want, float $deadline): array
+    {
+        $files = array_fill_keys(array_keys($want), null);
+        $pending = [];
+        foreach ($want as $n => $image) {
+            $url = (string) $image['url'];
+            if ($this->store instanceof SourceImageCache && ($hit = $this->store->cached($url)) !== null) {
+                $files[$n] = $hit + ['source' => $url];
+            } else {
+                $pending[$n] = $image;
+            }
+        }
+        foreach (array_chunk($pending, max(1, (int) $this->fast['concurrency']), true) as $group) {
+            $left = $deadline - microtime(true);
+            if ($left < 0.8) {
+                break;   // no time for another round of downloads: those slides take a fallback
+            }
+            $timeout = max(1, min((int) $this->fast['download_timeout'], (int) ceil($left)));
+            $responses = Http::pool(function (\Illuminate\Http\Client\Pool $pool) use ($group, $timeout) {
+                $calls = [];
+                foreach ($group as $n => $image) {
+                    $calls[] = $pool->as((string) $n)->withUserAgent($this->userAgent())->timeout($timeout)->withOptions(['allow_redirects' => ['max' => 3]])->get($this->preferThumbnail((string) $image['url']));
+                }
+
+                return $calls;
+            });
+            foreach ($group as $n => $image) {
+                $r = $responses[(string) $n] ?? null;
+                $why = null;
+                if (!$r instanceof \Illuminate\Http\Client\Response) {
+                    $why = 'no answer in ' . $timeout . ' s';
+                } elseif (!$r->successful()) {
+                    $why = 'HTTP ' . $r->status();
+                } elseif (($bytes = $r->body()) === '' || strlen($bytes) > 8 * 1024 * 1024) {
+                    $why = $bytes === '' ? 'an empty answer' : 'larger than 8 MB';
+                } elseif (($info = @getimagesizefromstring($bytes)) === false || !in_array($info['mime'] ?? '', ['image/jpeg', 'image/png', 'image/webp'], true)) {
+                    $why = 'not a JPEG, PNG or WebP picture';
+                }
+                if ($why !== null) {
+                    $this->stats['download_failed']++;
+                    $this->event($image, 'download failed', $why);
+                    continue;
+                }
+                $files[$n] = ['bytes' => $bytes, 'mime' => (string) $info['mime'], 'width' => (int) $info[0], 'height' => (int) $info[1], 'source' => (string) $image['url']];
+            }
+        }
+
+        return $files;
+    }
+
+    /**
+     * plan() under the fast policy (see withFastPolicy()). Same result shape: slide number => image record, or ['missing' => why].
+     *
+     * @param array<int,array<string,mixed>> $slides
+     * @param array<int,array<string,mixed>> $content
+     * @return array<int,array<string,mixed>>
+     */
+    private function planFast(array $slides, array $content, ?callable $progress): array
+    {
+        $started = microtime(true);
+        $deadline = $started + (float) $this->fast['stage_seconds'];
+        if ($this->deadline !== null) {
+            $deadline = min($deadline, $this->deadline);
+        }
+        $out = [];
+        $todo = [];
+        $used = [];
+        $report = ['reused' => 0, 'first_acceptable' => 0, 'textbook' => 0, 'diagram' => 0, 'missing' => 0, 'searched' => 0, 'deadline_reached' => false];
+        $say = function (int $n) use (&$out, $progress): void {
+            if ($progress) {
+                $progress($n, $out[$n]);
+            }
+        };
+
+        foreach ($slides as $slide) {
+            $visual = $slide['visual'] ?? null;
+            if (!$visual) {
+                continue;
+            }
+            $n = (int) $slide['n'];
+            $spec = is_array($slide['diagram'] ?? null) && !DiagramRenderer::problems($slide['diagram']) ? $slide['diagram'] : null;
+            if ((string) ($visual['role'] ?? 'object') === 'diagram' && $spec) {
+                $out[$n] = $this->diagram($spec) + ['purpose' => $visual['purpose']];
+                $say($n);
+                continue;
+            }
+            $todo[$n] = ['slide' => $slide, 'visual' => $visual, 'spec' => $spec, 'query' => (string) $visual['query'], 'teaches' => (string) ($slide['teaches'] ?? '')];
+        }
+
+        // 1. A picture already resolved for these words.
+        foreach ($todo as $n => $job) {
+            $hit = $this->resolvedBefore($job['query']);
+            if ($hit !== null && !in_array($hit['source_image_url'] ?? '', $used, true)) {
+                $out[$n] = $hit + ['purpose' => $job['visual']['purpose'], 'source_kind' => self::KIND_WEB, 'reused' => true];
+                $used[] = (string) ($hit['source_image_url'] ?? '');
+                $report['reused']++;
+                unset($todo[$n]);
+                $say($n);
+            }
+        }
+
+        // 2. One search for every remaining slide, at once.
+        // Each slide asks for its full phrase AND its two-word core in the same round: a long phrase often finds nothing, and asking again one
+        // after the other is what made generation slow. Both answers are in hand together, and the first acceptable picture wins.
+        $ranked = [];
+        $asked = [];
+        foreach ($todo as $n => $job) {
+            $asked[$n] = array_values(array_unique(array_filter([$job['query'], $this->coreQuery($job['query'])])));
+        }
+        if ($todo !== [] && microtime(true) < $deadline - 1.0) {
+            $this->search->searches = [];
+            $all = array_values(array_unique(array_merge(...array_values($asked))));
+            $ranked = $this->search->rankedMany($all, (int) $this->fast['candidates'], $this->minScore, (string) $this->fast['source'], (int) $this->fast['search_timeout'], (int) $this->fast['concurrency'], $deadline);
+            $report['searched'] = count($all);
+            $this->stats['searches'] += $report['searched'];
+        }
+        $failedQueries = [];
+        foreach ($this->search->searches as $s) {
+            if (!in_array($s['outcome'] ?? '', ['ok', 'cache'], true)) {
+                $failedQueries[] = (string) $s['query'];
+            }
+        }
+        if ($todo !== [] && $ranked === []) {
+            $failedQueries = array_merge(...array_values($asked));   // no time was left to search at all
+        }
+        $candidates = [];
+        foreach ($todo as $n => $job) {
+            $merged = [];
+            foreach ($asked[$n] as $q) {
+                foreach ($ranked[$q] ?? [] as $row) {
+                    $merged[(string) $row['url']] ??= $row;
+                }
+            }
+            $candidates[$n] = $this->acceptableCandidates(array_values($merged), $job['query']);
+            $this->stats['candidates'] += count($candidates[$n]);
+        }
+
+        // 3. The first acceptable picture of each slide: the best-ranked candidate that downloads and passes the byte checks, nothing better sought.
+        $tried = [];
+        for ($round = 0; $round < (int) $this->fast['rounds'] && $todo !== []; $round++) {
+            if (microtime(true) >= $deadline - 0.8) {
+                $report['deadline_reached'] = true;
+                break;
+            }
+            $want = [];
+            foreach ($todo as $n => $job) {
+                foreach ($candidates[$n] as $image) {
+                    $url = (string) $image['url'];
+                    if (!in_array($url, $tried[$n] ?? [], true) && !in_array($url, $used, true)) {
+                        $want[$n] = $image;
+                        $tried[$n][] = $url;
+                        break;
+                    }
+                }
+            }
+            if ($want === []) {
+                break;
+            }
+            $files = $this->downloadMany($want, $deadline);
+            foreach ($want as $n => $image) {
+                $file = $files[$n] ?? null;
+                if ($file === null || in_array((string) $image['url'], $used, true)) {
+                    continue;
+                }
+                $short = min($file['width'], $file['height']);
+                if ($short < 240 || max($file['width'], $file['height']) / max(1, $short) > 2.6 || !self::hasDetail($file['bytes'])) {
+                    $this->event($image, 'rejected', 'too small, too narrow or no detail: ' . $file['width'] . 'x' . $file['height']);
+                    continue;
+                }
+                $job = $todo[$n];
+                $record = $this->fastRecord($image, $file, $job['query'], (string) $job['visual']['purpose']);
+                $out[$n] = $record + ['source_kind' => self::KIND_WEB];
+                $used[] = (string) $image['url'];
+                $report['first_acceptable']++;
+                $this->stats['accepted']++;
+                $this->event($image, 'ACCEPTED', 'first acceptable');
+                try {
+                    \Illuminate\Support\Facades\Cache::put($this->resolvedKey($job['query']), $record, now()->addDays(30));
+                } catch (\Throwable) {
+                }
+                unset($todo[$n]);
+                $say($n);
+            }
+        }
+
+        // 4. What is still missing goes down the existing ladder: the chapter's textbook, a diagram drawn from the plan, then no picture.
+        foreach ($todo as $n => $job) {
+            // A search that could not be made (timeout, error, no time left) is said so; only an answer with nothing usable is "nothing found".
+            $unanswered = $candidates[$n] === [] && array_intersect($asked[$n], $failedQueries) !== [];
+            $why = $unanswered ? 'the picture search did not answer in time' : ($candidates[$n] === [] ? 'no sufficiently relevant, openly licensed image found' : 'no candidate could be downloaded in time');
+            $book = microtime(true) < $deadline + 5 ? $this->textbookPicture($job['query'], (string) $job['visual']['purpose'], $job['teaches']) : null;
+            if ($book !== null && !in_array($book['source_image_url'] ?? '', $used, true)) {
+                $used[] = (string) $book['source_image_url'];
+                $out[$n] = $book + ['purpose' => $job['visual']['purpose'], 'web_search' => $why];
+                $report['textbook']++;
+            } elseif ($job['spec']) {
+                $out[$n] = $this->diagram($job['spec']) + ['purpose' => $job['visual']['purpose'], 'photo_missing' => $why];
+                $report['diagram']++;
+            } else {
+                $out[$n] = ['missing' => $why, 'query' => $job['query'], 'purpose' => $job['visual']['purpose'], 'source_kind' => self::KIND_NONE];
+                $report['missing']++;
+            }
+            $say($n);
+        }
+
+        $report['seconds'] = round(microtime(true) - $started, 1);
+        $report['deadline_reached'] = $report['deadline_reached'] || microtime(true) >= $deadline;
+        $this->fastReport = $report;
+        try {
+            \Illuminate\Support\Facades\Log::info('[course-presentation] picture stage', $report + ['stage_seconds' => $this->fast['stage_seconds']]);
+        } catch (\Throwable) {
+        }
+
+        return $out;
+    }
+
+    /**
+     * The record of a picture taken as the first acceptable one. It never claims a review: matched on title and tags, readable, licensed, credited.
+     *
+     * @param array<string,mixed> $image
+     * @param array{bytes:string,mime:string,width:int,height:int,source:string} $file
+     * @return array<string,mixed>
+     */
+    private function fastRecord(array $image, array $file, string $query, string $purpose): array
+    {
+        $needsCredit = (bool) preg_match(self::NEEDS_CREDIT, (string) $image['license']);
+
+        return [
+            'type' => 'photo',
+            'parts' => [],
+            'match_level' => self::LEVEL_EXACT,
+            'fetched_from' => (string) $file['source'],
+            'alt' => $this->altFor($image),
+            'caption' => $this->cleanTitle((string) ($image['title'] ?? '')),
+            'url' => $this->store->store($file['bytes'], $file['mime'], (string) $file['source']),
+            'width' => $file['width'],
+            'height' => $file['height'],
+            'query' => $image['query'] ?? $query,
+            'source_image_url' => (string) $image['url'],
+            'source_url' => $image['source_url'] ?? null,
+            'title' => $image['title'] ?? null,
+            'creator' => $image['creator'] ?? null,
+            'provider' => $image['provider'] ?? 'openverse',
+            'licence' => (string) $image['license'],
+            'attribution_required' => $needsCredit,
+            'attribution' => $this->credit($image),
+            'sha1' => sha1($file['bytes']),
+            'sha256' => hash('sha256', $file['bytes']),
+            'match' => $image['_match'],
+            'selection' => 'first_acceptable',
+            'review' => null,   // matched on title and tags only: not reviewed by a model or a person, and never said to be
+            'purpose' => $purpose,
+        ];
     }
 
     /** Fill gaps after the normal web, textbook and planned-diagram ladder, using the existing diagram renderer. */

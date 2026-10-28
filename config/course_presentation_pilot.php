@@ -202,6 +202,26 @@ return [
         'max_visuals' => 24,
         // Difficult chapter and teaching-method combinations may need the planner's full repair limit.
         'repair_rounds' => 6,
+        // Time boxing of a slides run, counted from the start of the job. The TARGET is what the run aims for: the optional picture search is cut
+        // short to keep to it, and the report says whether it was kept. The HARD LIMIT is when no model call starts, waits or retries any more
+        // (a repair round that cannot finish is not started either); the run then fails with that reason instead of hanging. 0 turns either off.
+        'target_seconds' => (int) env('COURSE_PRESENTATION_TARGET_SECONDS', 60),
+        // The optional picture stage of a slides run: ONE budget for the whole stage (not per slide), one search per slide asked all at once, the first
+        // acceptable picture taken, no model asked about any candidate. What it cannot resolve in time takes the textbook / diagram / no-picture ladder.
+        // No stage may last longer than this (seconds); the run is then failed with the stage named. 0 turns it off.
+        'stage_max_seconds' => (int) env('COURSE_PRESENTATION_STAGE_MAX_SECONDS', 900),
+        // Refuse to run on a queue worker that was started before the pipeline's code last changed (it would run the old code).
+        'worker_guard' => (bool) env('COURSE_PRESENTATION_WORKER_GUARD', true),
+        'images' => [
+            'fast' => (bool) env('COURSE_PRESENTATION_FAST_IMAGES', true),
+            'stage_seconds' => (int) env('COURSE_PRESENTATION_IMAGE_SECONDS', 20),
+            'search_timeout' => (int) env('COURSE_PRESENTATION_IMAGE_SEARCH_TIMEOUT', 12),
+            'download_timeout' => (int) env('COURSE_PRESENTATION_IMAGE_DOWNLOAD_TIMEOUT', 5),
+            'concurrency' => (int) env('COURSE_PRESENTATION_IMAGE_CONCURRENCY', 40),
+            'rounds' => 2,
+            'source' => (string) env('COURSE_PRESENTATION_IMAGE_SOURCE', ''),
+        ],
+        'hard_limit_seconds' => (int) env('COURSE_PRESENTATION_HARD_LIMIT_SECONDS', 240),
         'run_dir' => 'app/course-presentation',
     ],
     // Where an earlier, unstored study-deck bundle of a chapter is looked for (read only, its report.json). Tests point it elsewhere.

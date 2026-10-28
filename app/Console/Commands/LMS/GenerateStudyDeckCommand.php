@@ -36,6 +36,9 @@ class GenerateStudyDeckCommand extends Command
         {chapter : chapter_master.id}
         {--tenant=1 : sub_institute_id}
         {--executor= : api | cli | gemini (cli is dev-only; gemini writes slides through the estate Gemini client and key pool; default from config claude.executor)}
+        {--fast-images : slides only: take the first acceptable picture of one bounded search per slide and never ask a model about a candidate (see ImagePlanner::withFastPolicy)}
+        {--target-seconds=0 : slides only: the time the run aims to finish within; the optional picture search is cut short to keep to it (0 = no target)}
+        {--hard-limit-seconds=0 : slides only: no model call starts, waits or retries past this many seconds from the start of the run (0 = no limit)}
         {--repair-rounds= : how many times a rejected slide plan is sent back to the model with its reasons (default 2, at most 6)}
         {--require-concept-visuals : every concept_intro / concept_visual slide must carry a picture or diagram (the plan is refused otherwise)}
         {--require-every-slide-image : every slide must carry a readable picture or diagram}
@@ -116,6 +119,11 @@ class GenerateStudyDeckCommand extends Command
             $completer = $replay ? $this->noModel() : ($gemini ? $this->geminiCompleter($tenant) : $this->completer($executor, $content));
             // Pictures go straight into the database (study_deck_images) and the bundle carries only their
             // references: a run writes no picture file anywhere. Publishing is lms:store-study-deck's job.
+            // The clock of a time-boxed run starts here, so a model call can never outlast the run's own limit.
+            $startedAt = microtime(true);
+            if (($limit = (int) $this->option('hard-limit-seconds')) > 0 && $completer instanceof \App\Services\StudyDeck\Contracts\DeadlineAware) {
+                $completer->setDeadline($startedAt + $limit);
+            }
             $images = $this->pictureStore($tenant, $chapterId, $isolated);
             $service = StudyDeckService::make($completer, $images);
 
@@ -143,6 +151,9 @@ class GenerateStudyDeckCommand extends Command
                 // Finished acts are kept between runs of the same chapter, so a failure late in the story is resumed, not redone.
                 'story_checkpoint_dir' => $template !== null ? storage_path('app/study-deck/story-checkpoints/chapter-' . $chapterId . '-school-' . $tenant) : null,
                 'teaching_method' => $method,
+                'target_seconds' => (int) $this->option('target-seconds'),
+                'fast_images' => $this->option('fast-images') ? array_filter((array) config('course_presentation_pilot.generation.images', []), fn ($v) => $v !== null) : null,
+                'started_at' => $startedAt,
                 'image_coverage' => $template !== null && !$this->option('no-image-coverage'),
                 'ai_scene_art' => $template !== null && (bool) $this->option('ai-scene-art'),
                 'ai_scene_max' => max(1, (int) $this->option('ai-scene-max')),

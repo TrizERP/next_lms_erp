@@ -50,6 +50,13 @@ class AppServiceProvider extends ServiceProvider
         Blade::component('filters', filters::class);
         Paginator::useBootstrap();
 
+        // A queue worker reports that it is alive, so a Course Presentation run nobody has picked up can say so.
+        $events = $this->app['events'];
+        $events->listen(\Illuminate\Queue\Events\Looping::class, fn () => \App\Services\CoursePresentation\WorkerHeartbeat::beat(false));
+        $events->listen(\Illuminate\Queue\Events\JobProcessing::class, fn () => \App\Services\CoursePresentation\WorkerHeartbeat::beat(true));
+        $events->listen(\Illuminate\Queue\Events\JobProcessed::class, fn () => \App\Services\CoursePresentation\WorkerHeartbeat::beat(false));
+        $events->listen(\Illuminate\Queue\Events\JobFailed::class, fn () => \App\Services\CoursePresentation\WorkerHeartbeat::beat(false));
+
         // if (env('APP_ENV') !== 'local') {
         //     URL::forceScheme('https');
         // }

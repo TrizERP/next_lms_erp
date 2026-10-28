@@ -3,6 +3,7 @@
 namespace App\Services\StudyDeck;
 
 use App\Services\StudyDeck\Contracts\Completer;
+use App\Services\StudyDeck\Contracts\ParallelCompleter;
 
 /**
  * Stage 3 of the study-deck flow: decides, concept by concept, whether a slide earns an
@@ -90,9 +91,19 @@ class InteractionPlanner
             $slides[$s['n']] = $this->candidate($s, $content[$s['n']] ?? [], $images[$s['n']] ?? null, $map);
         }
 
-        foreach (array_chunk($slides, $this->chunkSize, true) as $chunk) {
+        // The first pass of every chunk is independent of the others: asked at the same time where the completer can.
+        $chunks = array_chunk($slides, $this->chunkSize, true);
+        $replies = [];
+        if ($this->completer instanceof ParallelCompleter && count($chunks) > 1) {
+            $got = $this->completer->completeMany(self::SYSTEM, array_map(fn ($c) => $this->prompt($context, $plan, $c, $caps), $chunks), 12000);
+            foreach ($got as $i => $reply) {
+                $replies[$i] = $this->replies[] = $reply;
+            }
+        }
+
+        foreach ($chunks as $i => $chunk) {
             $prompt = $this->prompt($context, $plan, $chunk, $caps);
-            $got = $this->parse($this->ask($prompt), $chunk);
+            $got = $this->parse($replies[$i] ?? $this->ask($prompt), $chunk);
 
             [$ok, $bad] = $this->check($got, $chunk);
             foreach ($ok as $n => $d) {

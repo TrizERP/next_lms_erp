@@ -3,6 +3,7 @@
 namespace App\Services\StudyDeck;
 
 use App\Services\StudyDeck\Contracts\Completer;
+use App\Services\StudyDeck\Contracts\ParallelCompleter;
 
 /**
  * Stage 2 of the two-call flow: Claude writes the wording of every slide in the
@@ -52,10 +53,18 @@ class SlideContentGenerator
     {
         $content = [];
 
-        foreach (array_chunk($plan['slides'], $this->chunkSize) as $chunk) {
+        $chunks = array_chunk($plan['slides'], $this->chunkSize);
+        // The chunks do not depend on each other: where the completer can, all of them are asked at the same time, so the slide text
+        // costs one model round trip instead of one per chunk. A chunk that did not answer is asked again alone (see completeMany).
+        $replies = [];
+        if ($this->completer instanceof ParallelCompleter && count($chunks) > 1) {
+            $replies = $this->completer->completeMany(self::SYSTEM, array_map(fn ($chunk) => $this->prompt($context, $map, $plan, $chunk), $chunks), 12000);
+        }
+
+        foreach ($chunks as $i => $chunk) {
             $numbers = array_column($chunk, 'n');
             $prompt = $this->prompt($context, $map, $plan, $chunk);
-            $got = $this->parse($this->completer->complete(self::SYSTEM, $prompt, 12000), $numbers);
+            $got = $this->parse($replies[$i] ?? $this->completer->complete(self::SYSTEM, $prompt, 12000), $numbers);
 
             $missing = array_diff($numbers, array_keys($got));
             if ($missing) {

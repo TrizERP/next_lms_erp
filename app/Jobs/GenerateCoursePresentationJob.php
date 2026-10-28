@@ -35,6 +35,13 @@ class GenerateCoursePresentationJob implements ShouldQueue, ShouldBeUnique
     public function handle(GenerationRun $runs): void
     {
         @set_time_limit(0);
+        // A worker that was started before the pipeline's code was changed still runs the OLD code. Better a clear refusal at once than a run that
+        // follows rules the code no longer has (this is how a run once spent most of an hour in one stage).
+        if (config('course_presentation_pilot.generation.worker_guard', true) && $runs->codeChangedSince((int) ($_SERVER['REQUEST_TIME'] ?? 0))) {
+            $runs->failRun($this->chapterId, $this->tenant, $this->run, 'The queue worker was started before the generation code was changed, so it would run the old code. Restart the queue worker (php artisan queue:work) and try again.');
+
+            return;
+        }
         $runs->execute($this->chapterId, $this->tenant, $this->run);
     }
 }

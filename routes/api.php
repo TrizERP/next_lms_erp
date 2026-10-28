@@ -1167,4 +1167,10 @@ Route::middleware(['api.session', 'lms.auth', 'perm:lms.content,create'])->prefi
     Route::post('generate', [\App\Http\Controllers\api\lms\CoursePresentationController::class, 'generate'])->middleware('throttle:10,1');
     Route::post('approve', [\App\Http\Controllers\api\lms\CoursePresentationController::class, 'approve']);
     Route::post('discard', [\App\Http\Controllers\api\lms\CoursePresentationController::class, 'discard']);
+    // Replacing one slide's picture in a draft that is waiting for review (nothing is regenerated or approved).
+    Route::get('draft-image/search', [\App\Http\Controllers\api\lms\CoursePresentationController::class, 'draftImageSearch'])->middleware('throttle:30,1');
+    Route::post('draft-image/replace', [\App\Http\Controllers\api\lms\CoursePresentationController::class, 'draftImageReplace'])->middleware('throttle:20,1');
+    Route::post('draft-image/remove', [\App\Http\Controllers\api\lms\CoursePresentationController::class, 'draftImageRemove'])->middleware('throttle:20,1');
+    Route::get('draft-image/access', [\App\Http\Controllers\api\lms\CoursePresentationController::class, 'draftImageAccess']);
+    Route::post('draft-image/restore', [\App\Http\Controllers\api\lms\CoursePresentationController::class, 'draftImageRestore'])->middleware('throttle:20,1');
 });

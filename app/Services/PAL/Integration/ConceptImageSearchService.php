@@ -86,13 +86,26 @@ class ConceptImageSearchService
         return $this->withTimeout($seconds);
     }
 
+    /** One log line that can never break the search: a logger that cannot be built drops the line. */
+    protected function logLine(string $message, array $context): void
+    {
+        try {
+            Log::info($message, $context);
+        } catch (\Throwable) {
+        }
+    }
+
     /** @param array{query:string,source:string,outcome:string,status:?int,ms:int,raw:int,usable:int,retry_after:?string,cached:bool} $row */
     protected function noteSearch(array $row): void
     {
         $this->searches[] = $row;
         $this->searches = array_slice($this->searches, -500);
         // One line per search, so a missing picture can be traced to its search. No token or key is ever logged.
-        Log::info('[pal-image] openverse search', $row);
+        // A logger that cannot be built (a missing channel) must never break a search: the line is dropped, the search carries on.
+        try {
+            Log::info('[pal-image] openverse search', $row);
+        } catch (\Throwable) {
+        }
     }
 
     /**
@@ -289,6 +302,110 @@ class ConceptImageSearchService
         return array_values($out);
     }
 
+    /**
+     * One search per query, all at the same time: the batch form for a generation that needs a picture for many slides.
+     *
+     * Each query is asked ONCE (no narrower variants, no retry), with its own short timeout, at most `$concurrency` at a time; answers are cached
+     * and ranked exactly as rankedImagesFor() does, so the two share a cache. A query that could not be searched (timeout, HTTP error, no time left
+     * before `$deadline`) comes back empty and is noted in `$searches` as its own outcome: it says nothing about whether a picture exists.
+     *
+     * @param array<int,string> $queries
+     * @return array<string,array<int,array<string,mixed>>> query => ranked candidates (each with its `query`)
+     */
+    public function rankedMany(array $queries, int $limit = 6, ?float $minScore = null, ?string $source = null, int $timeout = 7, int $concurrency = 12, ?float $deadline = null): array
+    {
+        // The answer is keyed by the query as the caller wrote it; what is sent is the clipped form.
+        $original = array_values(array_unique(array_filter(array_map(fn ($q) => trim((string) $q), $queries), fn ($q) => $q !== '')));
+        $clip = [];
+        foreach ($original as $o) {
+            $clip[$o] = $this->clipQuery($o);
+        }
+        $queries = array_values(array_unique(array_filter($clip, fn ($q) => $q !== '')));
+        $empty = array_fill_keys($queries, []);
+        if ($queries === [] || ! $this->available()) {
+            return array_fill_keys($original, []);
+        }
+
+        $effectiveSource = $source ?? trim((string) config('pal_content.image.external.source', 'wikimedia'));
+        $shaped = [];
+        $pending = [];
+        foreach ($queries as $q) {
+            $cached = Cache::get('pal:image:openverse:' . sha1($effectiveSource . '|' . $q));
+            if (is_array($cached)) {
+                $this->noteSearch(['query' => $q, 'source' => $effectiveSource ?: 'all', 'outcome' => 'cache', 'status' => null, 'ms' => 0, 'raw' => count($cached), 'usable' => count($cached), 'retry_after' => null, 'cached' => true]);
+                $shaped[$q] = $cached;
+            } else {
+                $pending[] = $q;
+            }
+        }
+
+        $token = $pending === [] ? null : $this->accessToken();
+        $endpoint = (string) config(self::SEARCH_ENDPOINT_CONFIG, 'https://api.openverse.org/v1/images/');
+        foreach (array_chunk($pending, max(1, $concurrency)) as $group) {
+            $left = $deadline === null ? null : $deadline - microtime(true);
+            if ($left !== null && $left < 1.0) {
+                foreach ($group as $q) {
+                    $this->noteSearch(['query' => $q, 'source' => $effectiveSource ?: 'all', 'outcome' => 'skipped_no_time', 'status' => null, 'ms' => 0, 'raw' => 0, 'usable' => 0, 'retry_after' => null, 'cached' => false]);
+                }
+                continue;
+            }
+            $perRequest = $left === null ? $timeout : max(1, min($timeout, (int) ceil($left)));
+            $started = microtime(true);
+            $responses = Http::pool(function (\Illuminate\Http\Client\Pool $pool) use ($group, $token, $endpoint, $effectiveSource, $perRequest) {
+                $calls = [];
+                foreach ($group as $i => $q) {
+                    $params = ['q' => $q, 'license_type' => config('pal_content.image.external.license_type', 'commercial,modification'), 'mature' => 'false', 'page_size' => (int) config('pal_content.image.external.max_results', 12)];
+                    if ($effectiveSource !== '') {
+                        $params['source'] = $effectiveSource;
+                    }
+                    $request = $pool->as((string) $i)->withUserAgent($this->userAgent())->timeout($perRequest);
+                    $calls[] = ($token !== null ? $request->withToken($token) : $request)->get($endpoint, $params);
+                }
+
+                return $calls;
+            });
+            $ms = (int) round((microtime(true) - $started) * 1000);
+            foreach ($group as $i => $q) {
+                $r = $responses[(string) $i] ?? null;
+                $row = ['query' => $q, 'source' => $effectiveSource ?: 'all', 'status' => null, 'ms' => $ms, 'raw' => 0, 'usable' => 0, 'retry_after' => null, 'cached' => false];
+                if ($r instanceof \Throwable || $r === null) {
+                    $this->noteSearch($row + ['outcome' => $r instanceof \Throwable && (str_contains($r->getMessage(), 'cURL error 28') || stripos($r->getMessage(), 'timed out') !== false) ? 'timeout' : 'error']);
+                } elseif (! $r->successful()) {
+                    $this->noteSearch(['status' => $r->status(), 'retry_after' => $r->header('Retry-After') ?: null, 'outcome' => 'http_error'] + $row);
+                } elseif (! is_array($results = $r->json('results'))) {
+                    $this->noteSearch(['status' => $r->status(), 'outcome' => 'malformed'] + $row);
+                } else {
+                    $shaped[$q] = $this->shape($results);
+                    $this->noteSearch(['status' => $r->status(), 'raw' => count($results), 'usable' => count($shaped[$q]), 'outcome' => 'ok'] + $row);
+                    Cache::put('pal:image:openverse:' . sha1($effectiveSource . '|' . $q), $shaped[$q], now()->addHours((int) config('pal_content.image.external.cache_hours', 720)));
+                }
+            }
+        }
+
+        $floor = $minScore ?? (float) config('pal_content.image.external.min_score', 1.0);
+        foreach ($shaped as $q => $candidates) {
+            $out = [];
+            foreach ($this->rank($candidates, $q, $minScore) as $row) {
+                if ($row['score'] < $floor || isset($out[$row['url']])) {
+                    continue;
+                }
+                unset($row['score']);
+                $out[$row['url']] = $row + ['query' => $q];
+                if (count($out) >= $limit) {
+                    break;
+                }
+            }
+            $empty[$q] = array_values($out);
+        }
+
+        $byOriginal = [];
+        foreach ($original as $o) {
+            $byOriginal[$o] = $empty[$clip[$o]] ?? [];
+        }
+
+        return $byOriginal;
+    }
+
     /** Did the search just made fail technically (a timeout, an HTTP error, an unreadable answer), as opposed to answering with no results? */
     protected function lastSearchFailed(): bool
     {
@@ -411,7 +528,7 @@ class ConceptImageSearchService
             if (! $response->successful()) {
                 // 429 is the anonymous quota (20 a minute, 200 a day) and says how long to wait. Not cached: it says nothing about the query.
                 $note('http_error', $response->status(), 0, 0, $response->header('Retry-After') ?: null);
-                Log::info('[pal-image] Openverse search failed', ['status' => $response->status(), 'query' => $query]);
+                $this->logLine('[pal-image] Openverse search failed', ['status' => $response->status(), 'query' => $query]);
 
                 return [];
             }
@@ -433,7 +550,7 @@ class ConceptImageSearchService
             // A timeout is the usual failure here. It is NOT "no image exists" and is reported as its own outcome.
             $timedOut = str_contains($e->getMessage(), 'cURL error 28') || stripos($e->getMessage(), 'timed out') !== false;
             $note($timedOut ? 'timeout' : 'error', null, 0, 0);
-            Log::info('[pal-image] Openverse search errored', ['message' => mb_substr((string) preg_replace('/\s*\(see https:.*$/s', '', $e->getMessage()), 0, 200), 'query' => $query]);
+            $this->logLine('[pal-image] Openverse search errored', ['message' => mb_substr((string) preg_replace('/\s*\(see https:.*$/s', '', $e->getMessage()), 0, 200), 'query' => $query]);
 
             return [];
         }
@@ -515,7 +632,7 @@ class ConceptImageSearchService
                 return $candidate;
             }
 
-            Log::info('[pal-image] candidate image did not resolve, trying next', ['url' => $candidate['url']]);
+            $this->logLine('[pal-image] candidate image did not resolve, trying next', ['url' => $candidate['url']]);
         }
 
         return null;

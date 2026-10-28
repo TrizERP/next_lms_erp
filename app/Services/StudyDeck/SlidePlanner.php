@@ -103,7 +103,13 @@ class SlidePlanner
         [$plan, $errors] = $this->read($this->ask($prompt), $map, $eligible);
 
         $rounds = self::limits($map)['repair_rounds'];
+        $outOfTime = false;
         for ($round = 1; $errors && $round <= $rounds; $round++) {
+            // A repair round is a whole 16,000-token plan again: one that could not finish before the deadline is not started.
+            if ($this->completer instanceof \App\Services\StudyDeck\Contracts\DeadlineAware && ($until = $this->completer->deadline()) !== null && microtime(true) + 25 > $until) {
+                $outOfTime = true;
+                break;
+            }
             $min = $map['target_slides']['min'];
             $max = $map['target_slides']['max'];
             $plannedSlides = count((array) ($plan['slides'] ?? []));
@@ -137,7 +143,7 @@ class SlidePlanner
         }
 
         if ($errors) {
-            throw new \RuntimeException("Slide plan is invalid after " . ($rounds === 2 ? 'two' : $rounds) . " repair attempts:\n- " . implode("\n- ", $errors));
+            throw new \RuntimeException(($outOfTime ? 'Slide plan is invalid and there was no time left for another repair attempt (round ' . $round . ' of ' . $rounds . "):\n- " : 'Slide plan is invalid after ' . ($rounds === 2 ? 'two' : $rounds) . " repair attempts:\n- ") . implode("\n- ", $errors));
         }
 
         return $this->withConceptVisuals($this->normalise($plan), $map);

@@ -23,6 +23,8 @@ class CoursePresentationGenerationTest extends CoursePresentationTestCase
 
     private bool $progressWasPersistedDuringGeneration = false;
 
+    private ?string $stageDuringGeneration = null;
+
     protected function setUp(): void
     {
         parent::setUp();
@@ -55,6 +57,7 @@ class CoursePresentationGenerationTest extends CoursePresentationTestCase
                 $out->writeln('  plan     35 slides planned');
                 $bundle = $args['--out'];
                 $liveStatus = json_decode((string) file_get_contents(dirname($bundle) . '/status.json'), true);
+                $this->stageDuringGeneration = $liveStatus["stage"] ?? null;
                 $this->progressWasPersistedDuringGeneration = in_array('plan     35 slides planned', (array) ($liveStatus['log'] ?? []), true);
                 $out->writeln('Bundle: C:\\secret\\storage\\app\\somewhere');
                 $out->writeln($message !== '' ? $message : '  validate Validation passed');
@@ -633,5 +636,166 @@ class CoursePresentationGenerationTest extends CoursePresentationTestCase
         $this->fake(model: false);
         $this->assertFalse($story()['generation_supported']);
         $this->assertStringContainsString('No model access', implode(' ', $story()['generation_blockers']));
+    }
+
+    // ---- generation lifecycle, progress, estimate -------------------------------------------------------------------
+
+    public function test_a_new_run_is_queued_with_no_percentage_and_says_whether_a_worker_is_there(): void
+    {
+        $this->seedPilotChapter();
+        $this->seedStrategiesForGeneration();
+        $this->fake();
+        Bus::fake();
+
+        config(['queue.default' => 'database']);
+        $info = $this->act('generate')->assertStatus(202)->json('run.progress_info');
+
+        $this->assertSame('queued', $info['lifecycle']);
+        $this->assertSame(0, $info['percent']);
+        $this->assertNull($info['started_at']);
+        $this->assertFalse($info['estimate']['available'], 'no estimate before the run has started');
+        $this->assertSame('not_detected', $info['queue']['worker'], 'no worker has reported in: the run says so instead of "waiting to start"');
+        $this->assertSame('queued', $info['stage']);
+        \App\Services\CoursePresentation\WorkerHeartbeat::beat(false);
+        $this->assertSame('active', \App\Services\CoursePresentation\WorkerHeartbeat::state());
+        \App\Services\CoursePresentation\WorkerHeartbeat::beat(true);
+        $this->assertSame('busy', \App\Services\CoursePresentation\WorkerHeartbeat::state());
+    }
+
+    public function test_a_running_run_records_real_stages_and_times_and_finishes_with_its_duration(): void
+    {
+        [$run, $runs] = $this->ready();
+
+        $this->assertSame('content', $this->stageDuringGeneration, 'the stage was saved while the pipeline was still running');
+        $status = $runs->read(self::CHAPTER, self::TENANT, $run);
+        $this->assertNotEmpty($status['started_at']);
+        $this->assertNotEmpty($status['finished_at']);
+        $this->assertGreaterThan(0, $status['duration_seconds']);
+        $this->assertArrayHasKey('verify', $status['stage_times']);
+
+        $info = $this->asTeacher()->getJson('/api/lms/course-presentation/status?' . http_build_query(['chapter_id' => self::CHAPTER, 'run' => $run, 'pedagogy' => 'inquiry_based', 'format' => 'interactive_slides']))->json('run.progress_info');
+        $this->assertSame('completed', $info['lifecycle']);
+        $this->assertSame(100, $info['percent']);
+        $this->assertSame($status['duration_seconds'], $info['duration_seconds']);
+        $this->assertSame(['done'], array_values(array_unique(array_column($info['stages'], 'status'))));
+    }
+
+    public function test_stages_only_move_forward_and_a_stage_is_done_only_when_a_later_one_was_seen(): void
+    {
+        $s = ['format' => 'interactive_slides', 'stage' => 'prepare'];
+        \App\Services\CoursePresentation\GenerationProgress::advance($s, ['load     Loading', 'plan     35 slides'], 1000);
+        $this->assertSame('content', $s['stage']);
+        \App\Services\CoursePresentation\GenerationProgress::advance($s, ['images   slide 1: drawn diagram', 'context  4 topics'], 2000);
+        $this->assertSame('images', $s['stage'], 'a later line of an earlier stage never moves it back');
+        $this->assertSame(date('c', 2000), $s['stage_times']['images']);
+        \App\Services\CoursePresentation\GenerationProgress::advance($s, ['Executor: cli', 'Bundle: x'], 3000);
+        $this->assertSame('images', $s['stage'], 'lines that are not stage lines change nothing');
+
+        $info = \App\Services\CoursePresentation\GenerationProgress::describe($s + ['state' => 'running', 'created_at' => date('c', 900), 'started_at' => date('c', 1000), 'run' => 'r1'], null, 'busy', 2500);
+        $by = array_column($info['stages'], 'status', 'key');
+        $this->assertSame(['queued' => 'done', 'prepare' => 'done', 'content' => 'done', 'images' => 'current', 'interact' => 'pending', 'validate' => 'pending', 'verify' => 'pending', 'ready' => 'pending'], $by);
+        $this->assertSame(37, $info['percent'], '3 of 8 stages done: stage-based, not a clock');
+        $this->assertSame(1500, $info['elapsed_seconds']);
+    }
+
+    public function test_the_estimate_needs_enough_comparable_finished_runs_and_is_a_range(): void
+    {
+        $P = \App\Services\CoursePresentation\GenerationProgress::class;
+        $run = fn (int $chapter, string $method, int $secs, string $format = 'interactive_slides') => ['chapter_id' => $chapter, 'method' => $method, 'format' => $format, 'state' => 'stored', 'duration_seconds' => $secs];
+
+        $this->assertNull($P::comparable([$run(1, 'a', 600), $run(1, 'a', 700)], 1, 'a', 'interactive_slides'), 'two runs are not enough');
+        $this->assertFalse($P::estimate(null, 100)['available'], 'no history: "Calculating estimated time…"');
+
+        $h = $P::comparable([$run(1, 'a', 600), $run(1, 'a', 800), $run(1, 'a', 1000), $run(2, 'b', 90), $run(1, 'a', 500, 'branching_scenario')], 1, 'a', 'interactive_slides');
+        $this->assertSame('this chapter, teaching method and format', $h['basis']);
+        $this->assertCount(3, $h['durations'], 'another method, chapter or format is not evidence for this run');
+        $e = $P::estimate($h, 300);
+        $this->assertTrue($e['available']);
+        $this->assertSame([400, 600], [$e['min_seconds'], $e['max_seconds']], 'a range from the middle half of earlier runs, minus the time already spent');
+        $this->assertTrue($P::estimate($h, 5000)['overdue'], 'past the usual range it says so instead of counting down');
+
+        $wider = $P::comparable([$run(2, 'a', 600), $run(3, 'a', 800), $run(4, 'a', 1000)], 1, 'a', 'interactive_slides');
+        $this->assertSame('this teaching method and format', $wider['basis']);
+    }
+
+    public function test_a_failed_run_says_what_kind_of_failure_it_was_and_whether_trying_again_may_help(): void
+    {
+        $P = \App\Services\CoursePresentation\GenerationProgress::class;
+        $this->assertSame(['quota', true], [$P::classifyError('Gemini daily quota exhausted')['kind'], $P::classifyError('429 Too Many Requests')['retryable']]);
+        $this->assertSame('queue', $P::classifyError('The generation worker did not start within 30 minutes. Start a new draft.')['kind']);
+        $this->assertSame('images', $P::classifyError('Every slide must have a readable image.')['kind']);
+        $this->assertFalse($P::classifyError('The generated deck did not pass validation: x')['retryable']);
+        $this->assertSame('unknown', $P::classifyError('Something odd')['kind']);
+        $this->assertNull($P::classifyError(null));
+
+        $this->seedPilotChapter();
+        $this->seedStrategiesForGeneration();
+        $runs = $this->fake(generateCode: 1, reportOk: false);
+        Bus::fake();
+        $run = $this->act('generate')->json('run.run');
+        $runs->execute(self::CHAPTER, self::TENANT, $run);
+        $info = $runs->read(self::CHAPTER, self::TENANT, $run);
+        $this->assertSame('failed', $info['state']);
+        $summary = $this->asTeacher()->getJson('/api/lms/course-presentation/status?' . http_build_query(['chapter_id' => self::CHAPTER, 'run' => $run]))->json('run.progress_info');
+        $this->assertSame('failed', $summary['lifecycle']);
+        $this->assertNull($summary['percent']);
+        $this->assertNotNull($summary['failure']);
+        $this->assertNotEmpty($info['duration_seconds'], 'even a failed run records how long it ran');
+    }
+
+    public function test_a_finished_run_keeps_where_its_time_went_and_the_slides_command_is_time_boxed(): void
+    {
+        config(['course_presentation_pilot.generation.target_seconds' => 60, 'course_presentation_pilot.generation.hard_limit_seconds' => 240]);
+        [$run, $runs] = $this->ready();
+
+        $args = $this->commands[0][1];
+        $this->assertSame([60, 240], [$args['--target-seconds'], $args['--hard-limit-seconds']]);
+        $timings = $runs->read(self::CHAPTER, self::TENANT, $run)['timings'];
+        $this->assertSame(60, $timings['target_seconds']);
+        $this->assertIsInt($timings['queue_wait_seconds']);
+        $this->assertArrayHasKey('content', $timings['stages']);
+        $this->assertTrue($timings['within_target'], 'a fake run takes no time');
+        $this->assertNull($timings['failure']);
+    }
+
+    public function test_a_draft_that_cannot_be_read_back_is_never_reported_ready(): void
+    {
+        $this->seedPilotChapter();
+        $this->seedStrategiesForGeneration();
+        $this->fakeDeck = [];
+        $runs = $this->fake();
+        Bus::fake();
+        $run = $this->act('generate')->json('run.run');
+        $runs->execute(self::CHAPTER, self::TENANT, $run);
+
+        $status = $runs->read(self::CHAPTER, self::TENANT, $run);
+        $this->assertSame('failed', $status['state']);
+        $this->assertStringContainsString('could not be read back', $status['error']);
+        $this->assertSame('failed', $status['state']);
+        $this->assertNotNull($status['timings']['failure'], 'the failure is in the timings and the log');
+    }
+
+    public function test_a_second_approval_while_the_first_is_saving_is_refused_and_a_saving_run_reports_saving(): void
+    {
+        [$run, $runs] = $this->ready();
+        $status = $runs->read(self::CHAPTER, self::TENANT, $run);
+        $status['saving'] = date('c');
+        $dir = storage_path(config('course_presentation_pilot.generation.run_dir') . '/chapter-' . self::CHAPTER . '/' . $run . '/status.json');
+        file_put_contents($dir, json_encode($status));
+
+        $res = $this->postRun('approve', $run, ['reviewed' => true])->assertStatus(422);
+        $this->assertStringContainsString('already being saved', $res->json('message'));
+        $this->assertSame('saving', $res->json('run.progress_info.lifecycle'));
+        $this->assertCount(1, $this->commands, 'the store command did not run a second time');
+    }
+
+    public function test_the_run_of_one_choice_is_never_reported_for_another(): void
+    {
+        [$run] = $this->ready('inquiry_based');
+
+        $this->asTeacher()->getJson('/api/lms/course-presentation/status?' . http_build_query(['chapter_id' => self::CHAPTER, 'run' => $run, 'pedagogy' => 'experiential', 'format' => 'interactive_slides']))
+            ->assertStatus(422);
+        $this->asTeacher()->getJson('/api/lms/course-presentation/status?' . http_build_query(['chapter_id' => self::CHAPTER, 'run' => $run, 'pedagogy' => 'inquiry_based', 'format' => 'branching_scenario']))
+            ->assertStatus(422);
     }
 }
