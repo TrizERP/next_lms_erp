@@ -70,6 +70,23 @@ final class AiConfigurationResolver
     ) {
     }
 
+    public function flush(?string $institute = null): void
+    {
+        if ($institute === null) {
+            $this->rowCache = [];
+            $this->poolKeyCache = [];
+            $this->defaultModelCache = [];
+        } else {
+            unset(
+                $this->rowCache[$institute],
+                $this->rowCache[''],
+                $this->poolKeyCache[$institute],
+                $this->poolKeyCache['']
+            );
+            $this->defaultModelCache = [];
+        }
+    }
+
     // ---------------------------------------------------------------------
     // Public API
     // ---------------------------------------------------------------------
@@ -281,12 +298,19 @@ final class AiConfigurationResolver
         $requires = $moduleKey !== null ? $this->modules->requires($moduleKey) : ['chat'];
         $chain = [];
         $seen = [];
+        $instituteProviders = [];
 
         foreach ($rows as $row) {
             $provider = $this->providerFromRow($row);
 
-            // One entry per provider: a school's row for a provider shadows the platform's.
-            if ($provider === null || isset($seen[$provider])) {
+            if ($provider === null) {
+                continue;
+            }
+
+            $isPlatform = ($row->source ?? '') === 'module_platform';
+
+            // A school's row for a provider shadows the platform's rows for that provider.
+            if ($isPlatform && isset($instituteProviders[$provider])) {
                 continue;
             }
 
@@ -303,12 +327,23 @@ final class AiConfigurationResolver
                 continue;
             }
 
-            $seen[$provider] = true;
+            $model = $this->modelFor($provider, $row->model ?? null, $subInstituteId, $moduleKey);
+            $key = trim((string) $row->api_key);
+            $signature = $provider . '|' . $model . '|' . $key;
+
+            if (isset($seen[$signature])) {
+                continue;
+            }
+
+            $seen[$signature] = true;
+            if (! $isPlatform) {
+                $instituteProviders[$provider] = true;
+            }
 
             $chain[] = new ResolvedAiConfiguration(
                 provider: $provider,
-                model: $this->modelFor($provider, $row->model ?? null, $subInstituteId, $moduleKey),
-                apiKey: trim((string) $row->api_key),
+                model: $model,
+                apiKey: $key,
                 source: (string) $row->source,
                 keyId: $row->id ?? null,
                 scope: ($row->sub_institute_id ?? null) === null ? 'platform' : 'institute',

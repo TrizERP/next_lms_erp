@@ -8,6 +8,7 @@ use App\Services\Platform\PlatformRegistry;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 
 /**
@@ -158,12 +159,46 @@ class SchedulerController extends PlatformController
             ->get()
             ->keyBy('task_key');
 
+        $messages = $this->lastRunMessages($tenantId);
+
         $rows = [];
         foreach ($this->registry->scope($this->registry->tasks(), $module, $component) as $key => $definition) {
-            $rows[] = $this->taskRow($key, $definition, $saved->get($key));
+            $row = $this->taskRow($key, $definition, $saved->get($key));
+            // Only an ok run writes a message, so a failed last run must not show an older success message.
+            $row['last_run_message'] = $row['last_run_status'] === 'ok' ? ($messages[$key] ?? null) : null;
+            $rows[] = $row;
         }
 
         return $rows;
+    }
+
+    /**
+     * The summary line of each task's latest ok run. The dispatcher stores it in the audit trail
+     * (action task_run), not on the task row, so it is read from there: one query for the school.
+     *
+     * @return array<string,string> task_key => message
+     */
+    private function lastRunMessages(int $tenantId): array
+    {
+        try {
+            $out = [];
+            $rows = DB::table('platform_audit_log')
+                ->where('sub_institute_id', $tenantId)->where('entity_type', 'scheduled_task')->where('action', 'task_run')
+                ->orderByDesc('id')->limit(400)->get(['entity_id', 'after_json']);
+            foreach ($rows as $r) {
+                if (isset($out[$r->entity_id])) {
+                    continue;
+                }
+                $after = json_decode((string) $r->after_json, true);
+                if (is_array($after) && isset($after['message']) && is_string($after['message'])) {
+                    $out[$r->entity_id] = mb_substr($after['message'], 0, 400);
+                }
+            }
+
+            return $out;
+        } catch (\Throwable $e) {
+            return [];
+        }
     }
 
     /**
@@ -213,6 +248,8 @@ class SchedulerController extends PlatformController
             'describes' => $describes,
             'disabled' => $disabled,
             'disabled_by_default' => (bool) ($definition['disabled_by_default'] ?? false),
+            // Whether a job is registered to run this task. Without one, Run now has nothing to do.
+            'has_job' => \App\Services\Platform\SchedulerDispatcher::hasJob($key),
             'fail_delay' => $row ? (int) $row->fail_delay : 0,
             'last_run_at' => $row?->last_run_at?->toIso8601String(),
             'last_run_status' => $row?->last_run_status,

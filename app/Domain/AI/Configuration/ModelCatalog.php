@@ -127,6 +127,11 @@ final class ModelCatalog
      */
     public function offers(string $provider, string $modelId, int|string|null $subInstituteId = null): bool
     {
+        // 1. Check curated reliable registry
+        if (app(ModelRegistry::class)->find($provider, $modelId) !== null) {
+            return true;
+        }
+
         if (! $this->schema->hasTable('ai_models')) {
             // No catalogue on this estate: nothing to contradict, so nothing to refuse.
             return true;
@@ -140,6 +145,37 @@ final class ModelCatalog
         $this->scopeTo($query, $subInstituteId);
 
         return $query->exists();
+    }
+
+    /**
+     * Ensure a verified model exists in the database catalogue so future queries find it.
+     */
+    public function ensure(string $provider, string $modelId, int|string|null $subInstituteId = null): void
+    {
+        if (! $this->schema->hasTable('ai_models')) {
+            return;
+        }
+
+        $query = DB::table('ai_models')
+            ->where('provider', $provider)
+            ->where('model_id', $modelId);
+
+        $this->scopeTo($query, $subInstituteId);
+
+        if (! $query->exists()) {
+            $reg = app(ModelRegistry::class)->find($provider, $modelId);
+            DB::table('ai_models')->insert([
+                'provider' => $provider,
+                'model_id' => $modelId,
+                'label' => $reg['label'] ?? $modelId,
+                'max_output_tokens' => $reg['max_output_tokens'] ?? null,
+                'sort_order' => 10,
+                'status' => 1,
+                'sub_institute_id' => $subInstituteId,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        }
     }
 
     /**

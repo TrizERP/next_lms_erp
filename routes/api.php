@@ -1152,6 +1152,24 @@ Route::middleware('api.session')->prefix('capture-photo')->group(function () {
     Route::post('delete', [\App\Http\Controllers\api\StudentCapturePhotoApiController::class, 'destroy']);
 });
 
+// ------------------------------------------------------------------
+// Live Admin & Student Support Chat (real-time synchronized)
+// ------------------------------------------------------------------
+Route::prefix('live-chat')->group(function () {
+    Route::get('session', [\App\Http\Controllers\AI\AiLiveChatController::class, 'sessionGet']);
+    Route::post('session', [\App\Http\Controllers\AI\AiLiveChatController::class, 'sessionPost']);
+    Route::get('messages', [\App\Http\Controllers\AI\AiLiveChatController::class, 'messagesGet']);
+    Route::post('messages', [\App\Http\Controllers\AI\AiLiveChatController::class, 'messagesPost']);
+    Route::get('presence', [\App\Http\Controllers\AI\AiLiveChatController::class, 'presenceGet']);
+    Route::post('presence', [\App\Http\Controllers\AI\AiLiveChatController::class, 'presencePost']);
+    Route::get('slots', [\App\Http\Controllers\AI\AiLiveChatController::class, 'slotsGet']);
+    Route::post('slots', [\App\Http\Controllers\AI\AiLiveChatController::class, 'slotsPost']);
+    Route::delete('slots', [\App\Http\Controllers\AI\AiLiveChatController::class, 'slotsDelete']);
+    Route::get('bookings', [\App\Http\Controllers\AI\AiLiveChatController::class, 'bookingsGet']);
+    Route::post('bookings', [\App\Http\Controllers\AI\AiLiveChatController::class, 'bookingsPost']);
+    Route::post('meet', [\App\Http\Controllers\AI\AiLiveChatController::class, 'meetPost']);
+});
+
 // Course Presentation pilot: the two choices and a read-only source pre-flight. See CoursePresentationController.
 Route::middleware(['api.session', 'staff.only'])->prefix('lms/course-presentation')->group(function () {
     Route::get('options', [\App\Http\Controllers\api\lms\CoursePresentationController::class, 'options']);

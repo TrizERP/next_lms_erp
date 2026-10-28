@@ -443,6 +443,67 @@ class onlineExamController extends Controller
 
         $data['questionpaper_data'] = questionpaperModel::find($questionpaper_id)->toArray();
 
+        // A result is only ever the review of an attempt that exists. Without one there is
+        // nothing to review, and returning the paper here would hand over every question with
+        // its correct options before the student has answered anything. With no attempt id the
+        // student's latest attempt on this paper is used.
+        $attempt = $online_exam_id
+            ? lmsOnlineExamModel::where(['id' => $online_exam_id, 'student_id' => $user_id, 'question_paper_id' => $questionpaper_id])->first()
+            : lmsOnlineExamModel::where(['student_id' => $user_id, 'question_paper_id' => $questionpaper_id])->orderByDesc('id')->first();
+
+        if (! $attempt) {
+            $noAttempt = [
+                'status_code' => 1,
+                'message' => 'NO_ATTEMPT',
+                'no_attempt' => true,
+                'user_id' => $online_exam_id,
+                'questionpaper_data' => [
+                    'id' => $data['questionpaper_data']['id'],
+                    'paper_name' => $data['questionpaper_data']['paper_name'] ?? '',
+                    'total_marks' => $data['questionpaper_data']['total_marks'] ?? 0,
+                ],
+                'question_arr' => [],
+                'answer_arr' => [],
+                'mapping_arr' => [],
+                'online_exam_data' => [],
+            ];
+
+            return is_mobile($type, 'lms/online_exam_result', $noAttempt, "view");
+        }
+
+        // A student sees the review (answers, correct options) only once every allowed attempt
+        // has been used; before that the exam can still be taken again and the answers would
+        // give the paper away. Staff reviewing a learner's result are not held back.
+        $isStudent = (bool) $request->session()->get('is_student')
+            || strtolower(trim((string) $request->session()->get('user_profile_name'))) === 'student';
+        $allowed = max(1, (int) ($data['questionpaper_data']['attempt_allowed'] ?? 1));
+        $used = lmsOnlineExamModel::where(['student_id' => $user_id, 'question_paper_id' => $questionpaper_id])->count();
+
+        if ($isStudent && $used < $allowed) {
+            $locked = [
+                'status_code' => 1,
+                'message' => 'ATTEMPTS_REMAINING',
+                'attempts_remaining' => $allowed - $used,
+                'attempts_allowed' => $allowed,
+                'attempts_used' => $used,
+                'user_id' => $online_exam_id,
+                'questionpaper_data' => [
+                    'id' => $data['questionpaper_data']['id'],
+                    'paper_name' => $data['questionpaper_data']['paper_name'] ?? '',
+                    'total_marks' => $data['questionpaper_data']['total_marks'] ?? 0,
+                ],
+                'question_arr' => [],
+                'answer_arr' => [],
+                'mapping_arr' => [],
+                'online_exam_data' => [],
+            ];
+
+            return is_mobile($type, 'lms/online_exam_result', $locked, "view");
+        }
+
+        $online_exam_id = $attempt->id;
+        $data['user_id'] = $online_exam_id;
+
         //Get all questions subject wise        
         $question_ids = explode(",", $data['questionpaper_data']['question_ids']);
         $data['question_arr'] = lmsQuestionMasterModel::whereIn("id", $question_ids)->get()->toArray();

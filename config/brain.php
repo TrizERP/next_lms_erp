@@ -66,8 +66,14 @@ return [
         'assistant admin' => 'manager',
         'trustee' => 'manager',
         'head of department' => 'manager',
+        'hod' => 'manager',
+        'academic head' => 'manager',
+        'coordinator' => 'manager',
 
-        // Read plus evidence curation, no approval.
+        // Read plus evidence curation and workflow initiation.
+        'teacher' => 'analyst',
+        'lms teacher' => 'analyst',
+        'faculty' => 'analyst',
         'accountant' => 'analyst',
         'accoutant' => 'analyst',
         'clerk' => 'analyst',

@@ -686,13 +686,15 @@ return [
         ],
         'admissions.application.document_chase' => [
             'label' => 'Chase missing application documents',
-            'description' => 'Reminds families whose application is short of a document.',
+            'description' => 'Not yet available. Document tracking is per enrolled student, not per application.',
             'schedule' => ['minute' => '30', 'hour' => '10', 'day' => '*', 'month' => '*', 'day_of_week' => '1-5'],
+            'disabled_by_default' => true,
         ],
         'admissions.confirmation.offer_expiry' => [
             'label' => 'Expire unaccepted offers',
-            'description' => 'Releases seats whose offer window has closed.',
+            'description' => 'Not yet available. No offer or offer window is recorded.',
             'schedule' => ['minute' => '0', 'hour' => '1', 'day' => '*', 'month' => '*', 'day_of_week' => '*'],
+            'disabled_by_default' => true,
         ],
 
         // Students
@@ -703,8 +705,9 @@ return [
         ],
         'students.identity.card_batch' => [
             'label' => 'Build ID card print batch',
-            'description' => 'Collects students with no issued card into a print batch.',
+            'description' => 'Not yet available. Student ID card issue is not recorded.',
             'schedule' => ['minute' => '0', 'hour' => '3', 'day' => '1', 'month' => '*', 'day_of_week' => '*'],
+            'disabled_by_default' => true,
         ],
 
         // Attendance
@@ -725,26 +728,27 @@ return [
         ],
         'attendance.staff.muster_close' => [
             'label' => 'Close the daily staff muster',
-            'description' => 'Freezes the day attendance and marks absences.',
+            'description' => 'Reports how many staff have punched in today and how many have no punch-out yet. It does not close the muster or mark absences.',
             'schedule' => ['minute' => '0', 'hour' => '20', 'day' => '*', 'month' => '*', 'day_of_week' => '1-6'],
         ],
 
         // Examination
         'examination.marks.entry_reminder' => [
             'label' => 'Remind teachers of pending marks',
-            'description' => 'Reminds subject teachers with marks still to enter.',
+            'description' => 'Reports exams already held that have no marks entered yet. It does not send reminders to teachers.',
             'schedule' => ['minute' => '0', 'hour' => '16', 'day' => '*', 'month' => '*', 'day_of_week' => '1-5'],
         ],
         'examination.result.recompute' => [
             'label' => 'Recompute pending results',
-            'description' => 'Rebuilds results where marks changed since the last computation.',
+            'description' => 'Not yet available. The system does not record when results were last computed.',
             'schedule' => ['minute' => '0', 'hour' => '23', 'day' => '*', 'month' => '*', 'day_of_week' => '*'],
+            'disabled_by_default' => true,
         ],
 
         // Academics
         'academics.syllabus.coverage_rollup' => [
             'label' => 'Roll up syllabus coverage',
-            'description' => 'Recalculates planned against actual coverage per subject.',
+            'description' => 'Reports how many planned lessons up to today are marked taught. It does not recalculate or store coverage.',
             'schedule' => ['minute' => '0', 'hour' => '22', 'day' => '*', 'month' => '*', 'day_of_week' => '5'],
         ],
         'academics.homework.digest' => [
@@ -766,8 +770,13 @@ return [
         ],
         'lms.content.index_rebuild' => [
             'label' => 'Rebuild the content search index',
-            'description' => 'Re-indexes learning content so search reflects new material.',
+            'description' => 'Reports learning content with no stored embedding. It does not re-index anything.',
             'schedule' => ['minute' => '0', 'hour' => '3', 'day' => '*', 'month' => '*', 'day_of_week' => '0'],
+        ],
+        'lms.course.hierarchy_validation' => [
+            'label' => 'Course catalogue hierarchy validation',
+            'description' => 'Continuously validates the 5-tier learning content hierarchy (Standard -> Subject -> Chapter -> Topic -> Intelligence) for Course Catalogue Reader Agent.',
+            'schedule' => ['minute' => '*/30', 'hour' => '*', 'day' => '*', 'month' => '*', 'day_of_week' => '*'],
         ],
 
         // Fees
@@ -778,35 +787,38 @@ return [
         ],
         'fees.defaulter.reminder_run' => [
             'label' => 'Send fee reminders',
-            'description' => 'Sends the due-soon and overdue reminders to families.',
+            'description' => 'Previews which fee instalments reach their late date in the next 7 days. Report only: it does not send reminders and does not check which families still owe.',
             'schedule' => ['minute' => '0', 'hour' => '10', 'day' => '*', 'month' => '*', 'day_of_week' => '1'],
             'disabled_by_default' => true,
         ],
         'fees.collection.gateway_reconcile' => [
             'label' => 'Reconcile the payment gateway',
-            'description' => 'Matches gateway settlements against captured payments.',
+            'description' => 'Not yet available. Reconciliation against gateway settlements is not set up.',
             'schedule' => ['minute' => '0', 'hour' => '2', 'day' => '*', 'month' => '*', 'day_of_week' => '*'],
+            'disabled_by_default' => true,
         ],
         'fees.receipt.daily_close' => [
             'label' => 'Close the day collection',
-            'description' => 'Freezes the day counter collection and produces the summary.',
+            'description' => 'Summarises today\'s fee receipts (count, payment modes, school total). Report only: it does not close or freeze the day.',
             'schedule' => ['minute' => '0', 'hour' => '21', 'day' => '*', 'month' => '*', 'day_of_week' => '*'],
         ],
 
         // HR
         'hr.staff.document_expiry_scan' => [
             'label' => 'Scan staff documents for expiry',
-            'description' => 'Finds certificates and licences nearing expiry.',
+            'description' => 'Not yet available. Staff documents carry no expiry date.',
             'schedule' => ['minute' => '0', 'hour' => '5', 'day' => '*', 'month' => '*', 'day_of_week' => '1'],
+            'disabled_by_default' => true,
         ],
         'hr.leave.balance_accrual' => [
             'label' => 'Accrue monthly leave balance',
-            'description' => 'Adds the month leave entitlement to every staff balance.',
+            'description' => 'Not yet available. Leave is allocated as an annual quota; monthly accrual is not configured.',
             'schedule' => ['minute' => '0', 'hour' => '0', 'day' => '1', 'month' => '*', 'day_of_week' => '*'],
+            'disabled_by_default' => true,
         ],
         'hr.payroll.monthly_run' => [
             'label' => 'Prepare the monthly payroll',
-            'description' => 'Builds the salary run from attendance and deductions, for review.',
+            'description' => 'Shows how many active staff have no saved salary row for the current month. Report only: it does not build or save payroll.',
             'schedule' => ['minute' => '0', 'hour' => '2', 'day' => '25', 'month' => '*', 'day_of_week' => '*'],
             'disabled_by_default' => true,
         ],
@@ -814,7 +826,7 @@ return [
         // Front desk
         'front_desk.visitor.auto_checkout' => [
             'label' => 'Auto check-out stale visitors',
-            'description' => 'Closes visitor passes left open at the end of the day.',
+            'description' => 'Counts visitor passes still open from before today. Report only: nothing is checked out.',
             'schedule' => ['minute' => '0', 'hour' => '22', 'day' => '*', 'month' => '*', 'day_of_week' => '*'],
         ],
         'front_desk.complaint.escalation_scan' => [
@@ -826,8 +838,9 @@ return [
         // Front desk
         'front_desk.call_log.follow_up_scan' => [
             'label' => 'Scan for pending call follow-ups',
-            'description' => 'Finds logged calls promised a call back that have not had one.',
+            'description' => 'Not yet available. Calls are not logged with a call-back promise.',
             'schedule' => ['minute' => '0', 'hour' => '9', 'day' => '*', 'month' => '*', 'day_of_week' => '1-6'],
+            'disabled_by_default' => true,
         ],
 
         // Library
@@ -838,44 +851,49 @@ return [
         ],
         'library.circulation.overdue_scan' => [
             'label' => 'Scan for overdue books',
-            'description' => 'Marks loans overdue and notifies the borrower.',
+            'description' => 'Counts overdue loans and notifies the librarian.',
             'schedule' => ['minute' => '0', 'hour' => '6', 'day' => '*', 'month' => '*', 'day_of_week' => '*'],
         ],
         'library.fine.accrue' => [
             'label' => 'Accrue overdue fines',
-            'description' => 'Adds the day fine to every overdue loan.',
+            'description' => 'Counts loans past their due date and not yet returned. Report only: no fine is calculated or added.',
             'schedule' => ['minute' => '30', 'hour' => '6', 'day' => '*', 'month' => '*', 'day_of_week' => '*'],
         ],
 
         // Hostel
         'hostel.mess.monthly_billing' => [
             'label' => 'Raise monthly mess bills',
-            'description' => 'Posts the month mess charge per resident.',
+            'description' => 'Not yet available. No mess charge or bill is recorded.',
             'schedule' => ['minute' => '0', 'hour' => '3', 'day' => '1', 'month' => '*', 'day_of_week' => '*'],
+            'disabled_by_default' => true,
         ],
         'hostel.gate_pass.overdue_return' => [
             'label' => 'Flag overdue hostel returns',
-            'description' => 'Alerts the warden about residents past their return time.',
+            'description' => 'Not yet available. Gate passes and return times are not recorded.',
             'schedule' => ['minute' => '0', 'hour' => '21', 'day' => '*', 'month' => '*', 'day_of_week' => '*'],
+            'disabled_by_default' => true,
         ],
 
         // Transport
         'transport.vehicle.document_expiry_scan' => [
             'label' => 'Scan vehicle documents for expiry',
-            'description' => 'Finds fitness, insurance and permits nearing expiry.',
+            'description' => 'Not yet available. Vehicle fitness, insurance and permit dates are not recorded.',
             'schedule' => ['minute' => '0', 'hour' => '5', 'day' => '*', 'month' => '*', 'day_of_week' => '1'],
+            'disabled_by_default' => true,
         ],
         'transport.trip.delay_watch' => [
             'label' => 'Watch trips for delay',
-            'description' => 'Compares live trips against schedule and raises delay alerts.',
+            'description' => 'Not yet available. There is no live trip or GPS position data.',
             'schedule' => ['minute' => '*/10', 'hour' => '7,8,14,15,16', 'day' => '*', 'month' => '*', 'day_of_week' => '*'],
+            'disabled_by_default' => true,
         ],
 
         // Inventory
         'inventory.stock.reorder_scan' => [
             'label' => 'Scan stock for reorder',
-            'description' => 'Finds items below their reorder level and raises an indent.',
+            'description' => 'Not yet available. Current stock is not tracked against a reorder level.',
             'schedule' => ['minute' => '0', 'hour' => '7', 'day' => '*', 'month' => '*', 'day_of_week' => '1'],
+            'disabled_by_default' => true,
         ],
 
         // Communication
@@ -910,10 +928,28 @@ return [
         ],
         'compliance.retention.purge_run' => [
             'label' => 'Purge records past retention',
-            'description' => 'Archives and removes records past their retention period.',
+            'description' => 'Not yet available. No retention periods are defined for records.',
             'schedule' => ['minute' => '0', 'hour' => '3', 'day' => '1', 'month' => '*', 'day_of_week' => '*'],
             'disabled_by_default' => true,
         ],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Scheduler audiences
+    |--------------------------------------------------------------------------
+    |
+    | Who is told when a scheduled job finds something: task key => profile NAMES
+    | (tbluserprofilemaster.name, matched case-insensitively, within the task's school,
+    | active users only). role_key is empty on every profile so it is not used.
+    | STAFF ONLY: parents and students are never listed here and SchedulerNotifier
+    | drops those names even if added. Only tasks listed here send anything.
+    |
+    */
+    'scheduler_audiences' => [
+        'library.circulation.overdue_scan' => ['Librarian', 'School admin'],
+        'attendance.student.unmarked_check' => ['School admin', 'Principal', 'Vice Principal'],
+        'fees.defaulter.overdue_scan' => ['School admin'],
     ],
 
     /*

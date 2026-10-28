@@ -26,7 +26,7 @@ class BrainTaskIntelligenceController extends Controller
 
         // The L5 half of the payload, read back from the signal ledger this
         // module's findings were written to by the pipeline.
-        $loop = new ModuleLoop($this->tenantId, $this->syear, 'tasks', 'tasks');
+        $loop = new ModuleLoop($this->tenantId, $this->syear, 'task-management', 'tasks');
 
         $analytics = new TaskIntelligence($this->tenantId, $this->syear);
         $coverage = $analytics->coverage();

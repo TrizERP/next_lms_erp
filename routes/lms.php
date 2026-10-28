@@ -436,6 +436,15 @@ Route::middleware(['session'])->group(function () {
     // Career Counselling — AI counsellor narrative (CaiCoreService
     // evaluation + real concept-mastery state). GET only, same reasoning.
     Route::get('careerCounsellingNarrative', [\App\Http\Controllers\lms\counselling\CareerCounsellingNarrativeController::class, 'narrate']);
+    // Career Counseling staff mentor match. Suggestions are tenant-scoped and
+    // read-only; the crosswalk (HR-confirmed skill -> O*NET element mapping)
+    // is role-gated in the controller (read: administrator, hr_manager,
+    // hr_executive, executive, auditor; write: administrator, hr_manager,
+    // hr_executive). Dormant until s_users_skills_onet_map is migrated.
+    Route::get('careerMentorSuggestions', [\App\Http\Controllers\lms\counselling\CareerMentorController::class, 'suggestions']);
+    Route::get('careerMentorCrosswalk', [\App\Http\Controllers\lms\counselling\CareerMentorController::class, 'crosswalk']);
+    Route::post('careerMentorCrosswalk', [\App\Http\Controllers\lms\counselling\CareerMentorController::class, 'save']);
+    Route::delete('careerMentorCrosswalk/{id}', [\App\Http\Controllers\lms\counselling\CareerMentorController::class, 'destroy'])->whereNumber('id');
 });
 Route::post('/ai/processData',[contentController::class,'processAIData'])->name('ai.processData');
 Route::post('/ai/generateLessonPlan', [contentController::class, 'generateLessonPlan'])->name('ai.generateLessonPlan');

@@ -111,6 +111,125 @@ final class ProviderModelDiscovery
         }
     }
 
+    /**
+     * Verify that an API key is valid AND that the specific model is accessible with that key.
+     *
+     * @return array{ok:bool, status:string, message:string|null}
+     */
+    public function verifyModelAccess(string $provider, string $apiKey, string $model): array
+    {
+        // 1. Verify general key acceptance
+        $keyVerdict = $this->verify($provider, $apiKey, fresh: true);
+        if ($keyVerdict['status'] === 'invalid') {
+            return [
+                'ok' => false,
+                'status' => 'invalid_key',
+                'message' => $keyVerdict['message'] ?? sprintf('%s rejected this API key.', $this->providers->label($provider)),
+            ];
+        }
+
+        // 2. If provider is unreachable, report it clearly
+        if ($keyVerdict['status'] === 'unreachable') {
+            return [
+                'ok' => false,
+                'status' => 'unreachable',
+                'message' => $keyVerdict['message'] ?? sprintf('Could not reach %s to verify the key.', $this->providers->label($provider)),
+            ];
+        }
+
+        // 3. Verify specific model access
+        try {
+            if ($provider === 'gemini') {
+                $cleanModel = preg_replace('#^models/#', '', $model);
+                $resp = $this->http('gemini', $apiKey)->get($this->base('gemini') . '/models/' . $cleanModel);
+                if ($resp->status() === 404 || ($resp->status() === 400 && str_contains($resp->body(), 'not found'))) {
+                    return [
+                        'ok' => false,
+                        'status' => 'model_unsupported',
+                        'message' => sprintf("Model '%s' is not accessible using this Gemini API key or does not exist for API version v1beta.", $model),
+                    ];
+                }
+                if (! $resp->successful()) {
+                    return [
+                        'ok' => false,
+                        'status' => 'provider_error',
+                        'message' => sprintf("Gemini returned %d for model '%s': %s", $resp->status(), $model, mb_substr($resp->body(), 0, 200)),
+                    ];
+                }
+            } elseif ($provider === 'openai') {
+                $resp = $this->http('openai', $apiKey)->get($this->base('openai') . '/models/' . $model);
+                if ($resp->status() === 404) {
+                    return [
+                        'ok' => false,
+                        'status' => 'model_unsupported',
+                        'message' => sprintf("Model '%s' does not exist or this OpenAI API key/organization does not have permission to access it.", $model),
+                    ];
+                }
+                if (! $resp->successful()) {
+                    return [
+                        'ok' => false,
+                        'status' => 'provider_error',
+                        'message' => sprintf("OpenAI returned %d for model '%s': %s", $resp->status(), $model, mb_substr($resp->body(), 0, 200)),
+                    ];
+                }
+            } elseif ($provider === 'groq') {
+                $resp = $this->http('groq', $apiKey)->get($this->base('groq') . '/models/' . $model);
+                if ($resp->status() === 404) {
+                    return [
+                        'ok' => false,
+                        'status' => 'model_unsupported',
+                        'message' => sprintf("Model '%s' is not supported or accessible on Groq.", $model),
+                    ];
+                }
+            } elseif ($provider === 'mistral') {
+                $resp = $this->http('mistral', $apiKey)->get($this->base('mistral') . '/models/' . $model);
+                if ($resp->status() === 404) {
+                    return [
+                        'ok' => false,
+                        'status' => 'model_unsupported',
+                        'message' => sprintf("Model '%s' is not supported or accessible on Mistral.", $model),
+                    ];
+                }
+            } elseif ($provider === 'anthropic') {
+                $resp = $this->http('anthropic', $apiKey)->get($this->base('anthropic') . '/models/' . $model);
+                if ($resp->status() === 404) {
+                    return [
+                        'ok' => false,
+                        'status' => 'model_unsupported',
+                        'message' => sprintf("Model '%s' is not accessible using this Anthropic API key.", $model),
+                    ];
+                }
+            } elseif ($provider === 'openrouter') {
+                // Check if model is listed in OpenRouter models
+                $listing = $this->models('openrouter', $apiKey);
+                if ($listing['status'] === 'ok' && ! empty($listing['models'])) {
+                    $found = false;
+                    foreach ($listing['models'] as $m) {
+                        if ($m['id'] === $model) {
+                            $found = true;
+                            break;
+                        }
+                    }
+                    if (! $found) {
+                        return [
+                            'ok' => false,
+                            'status' => 'model_unsupported',
+                            'message' => sprintf("Model '%s' is not in OpenRouter's supported models list.", $model),
+                        ];
+                    }
+                }
+            }
+        } catch (Throwable $e) {
+            return [
+                'ok' => false,
+                'status' => 'unreachable',
+                'message' => sprintf("Could not verify model '%s': %s", $model, $e->getMessage()),
+            ];
+        }
+
+        return ['ok' => true, 'status' => 'valid', 'message' => null];
+    }
+
     // ---------------------------------------------------------------------
 
     /** @return array{status:string, message:string|null} */
@@ -131,6 +250,12 @@ final class ProviderModelDiscovery
 
             if ($provider === 'gemini') {
                 $response = $this->http($provider, $apiKey)->get($this->base($provider) . '/models', ['pageSize' => 1]);
+
+                return $this->verdict($response);
+            }
+
+            if ($provider === 'anthropic') {
+                $response = $this->http($provider, $apiKey)->get($this->base($provider) . '/models');
 
                 return $this->verdict($response);
             }
@@ -181,6 +306,7 @@ final class ProviderModelDiscovery
             return match ($provider) {
                 'gemini' => $this->fetchGemini($apiKey),
                 'openrouter' => $this->fetchOpenRouter($apiKey),
+                'anthropic' => $this->fetchAnthropic($apiKey),
                 default => $this->fetchOpenAiShaped($provider, $apiKey),
             };
         } catch (ConnectionException) {
@@ -340,11 +466,56 @@ final class ProviderModelDiscovery
         return ['status' => 'ok', 'models' => $models, 'message' => null];
     }
 
+    /** @return array{status:string, models:array<int, array<string, mixed>>, message:string|null} */
+    private function fetchAnthropic(string $apiKey): array
+    {
+        $response = $this->http('anthropic', $apiKey)->get($this->base('anthropic') . '/models');
+
+        if (! $response->successful()) {
+            $verdict = $this->verdict($response);
+
+            return [
+                'status' => $verdict['status'] === 'invalid' ? 'invalid' : 'unreachable',
+                'models' => [],
+                'message' => $verdict['message'],
+            ];
+        }
+
+        $models = [];
+
+        foreach ((array) $response->json('data', []) as $row) {
+            $id = (string) ($row['id'] ?? '');
+
+            if ($id === '') {
+                continue;
+            }
+
+            $models[] = [
+                'id' => $id,
+                'chat' => true,
+                'embedding' => false,
+                'image_output' => false,
+                'vision_input' => (bool) preg_match('/sonnet|opus|claude-3/i', $id),
+                'structured_output' => true,
+                'tools' => true,
+                'context_tokens' => 200000,
+                'max_output_tokens' => (bool) preg_match('/3-5/i', $id) ? 8192 : 4096,
+            ];
+        }
+
+        return ['status' => 'ok', 'models' => $models, 'message' => null];
+    }
+
     private function http(string $provider, string $apiKey): \Illuminate\Http\Client\PendingRequest
     {
-        $headers = $provider === 'gemini'
-            ? ['x-goog-api-key' => $apiKey]
-            : ['Authorization' => 'Bearer ' . $apiKey];
+        $headers = match ($provider) {
+            'gemini' => ['x-goog-api-key' => $apiKey],
+            'anthropic' => [
+                'x-api-key' => $apiKey,
+                'anthropic-version' => '2023-06-01',
+            ],
+            default => ['Authorization' => 'Bearer ' . $apiKey],
+        };
 
         return Http::withHeaders($headers)->timeout(self::TIMEOUT)->connectTimeout(4);
     }

@@ -76,8 +76,7 @@ final class ProviderCatalog
         ],
         'anthropic' => [
             'label' => 'Anthropic Claude',
-            // No driver: the Messages API is not OpenAI-compatible. See the class note.
-            'driver' => null,
+            'driver' => \App\Domain\AI\Support\AnthropicClient::class,
             'base_url' => 'https://api.anthropic.com/v1',
             'docs' => 'https://console.anthropic.com/settings/keys',
         ],

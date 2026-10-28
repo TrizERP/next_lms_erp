@@ -5,15 +5,19 @@
 // still pinned in a deployed .env is mapped forward to its replacement here, so a
 // stale environment keeps working without an .env edit on every server.
 $retiredGeminiModels = [
-    'gemini-2.5-flash' => 'gemini-3.6-flash',
-    'gemini-1.5-flash' => 'gemini-3.6-flash',
-    'gemini-1.5-pro'   => 'gemini-3.6-pro',
+    'gemini-3.6-flash' => 'gemini-3-flash-preview',
+    'gemini-3.6-pro'   => 'gemini-3-flash-preview',
+    'gemini-2.5-pro'   => 'gemini-3-flash-preview',
+    'gemini-2.5-flash' => 'gemini-3-flash-preview',
+    'gemini-1.5-flash' => 'gemini-3-flash-preview',
+    'gemini-1.5-pro'   => 'gemini-3-flash-preview',
+    'gemini-1.0-pro'   => 'gemini-3-flash-preview',
 ];
 
 $geminiModel = (static function () use ($retiredGeminiModels): string {
     $model = trim((string) env('GEMINI_MODEL', ''));
 
-    return $retiredGeminiModels[$model] ?? ($model !== '' ? $model : 'gemini-3.6-flash');
+    return $retiredGeminiModels[$model] ?? ($model !== '' ? $model : 'gemini-3-flash-preview');
 })();
 
 // The model the document (homework / exam answer-sheet) client tries when the main
@@ -627,6 +631,7 @@ return [
                     'lms.courses',
                     'lms.course_summary',
                     'lms.activities',
+                    'teach_learn.content_model_coverage',
                     'academics.structure',
                     'academics.subjects',
                     'ai.templates.list',

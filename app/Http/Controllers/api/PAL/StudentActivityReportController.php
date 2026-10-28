@@ -139,6 +139,38 @@ class StudentActivityReportController extends Controller
         return $this->streamDocx($binary, $filename);
     }
 
+    /**
+     * GET /api/pal/eso/reports/activity/class/roster?standard_id=&syear=&section_id=&subject_id=&from=&to=
+     *
+     * The named-student counterpart to classReport(): one row per student
+     * in the cohort — {student_id, name, mastered_pct, bucket} — instead of
+     * that method's class-wide aggregate. Scoped by the exact same
+     * requireClassScope() this file already uses for classReport()/
+     * classReportDownload(), so a plain subject/class teacher is confirmed
+     * against their assigned classes exactly as before; nothing new is
+     * invented. `from`/`to` are accepted (requireClassScope() validates
+     * them for parity with the sibling route) but unused here: mastery
+     * state and the plateau/regression engines are current-state reads,
+     * not event-log reads, the same reason buildClassReport()'s own
+     * mastery_overview section ignores the date window (see
+     * StudentActivityReportService's class docblock, "DATE SCOPING").
+     */
+    public function classRoster(Request $request): JsonResponse
+    {
+        $scope = $this->requireClassScope($request);
+        if (! is_array($scope)) {
+            return $scope;
+        }
+
+        return $this->ok($this->report->buildCohortRoster(
+            $scope['sub_institute_id'],
+            (string) $scope['standard_id'],
+            (string) $scope['syear'],
+            isset($scope['section_id']) ? (string) $scope['section_id'] : null,
+            isset($scope['subject_id']) ? (string) $scope['subject_id'] : null
+        ));
+    }
+
     // -------------------------------------------------------------------
     // Shared helpers
     // -------------------------------------------------------------------

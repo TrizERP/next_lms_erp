@@ -3,7 +3,9 @@
 namespace App\Providers;
 
 use App\Events\Lms\ExamSubmitted;
+use App\Events\Pal\ConceptOutcomeRecorded;
 use App\Listeners\CareerIntelligence\GenerateAssessmentEvidenceListener;
+use App\Listeners\CareerIntelligence\GeneratePalEvidenceListener;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Auth\Listeners\SendEmailVerificationNotification;
 use Illuminate\Foundation\Support\Providers\EventServiceProvider as ServiceProvider;
@@ -22,6 +24,9 @@ class EventServiceProvider extends ServiceProvider
         ],
         ExamSubmitted::class => [
             GenerateAssessmentEvidenceListener::class,
+        ],
+        ConceptOutcomeRecorded::class => [
+            GeneratePalEvidenceListener::class,
         ],
     ];
 
