@@ -145,7 +145,7 @@ class LmsCourseCatalogService
             'courses' => $courses,
         ];
 
-        $validator = app(\App\Services\lms\CourseCatalogueHierarchyValidator::class);
+        $validator = app(\App\Services\Lms\CourseCatalogueHierarchyValidator::class);
 
         if (!empty($filters['validate_hierarchy'])) {
             $force = !empty($filters['force']);

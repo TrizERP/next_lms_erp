@@ -2,7 +2,7 @@
 
 namespace App\Console\Commands\LMS;
 
-use App\Services\lms\CourseCatalogueHierarchyValidator;
+use App\Services\Lms\CourseCatalogueHierarchyValidator;
 use Carbon\Carbon;
 use Illuminate\Console\Command;
 

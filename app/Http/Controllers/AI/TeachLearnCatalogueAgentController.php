@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers\AI;
 
-use App\Services\lms\ContentAgentService;
-use App\Services\lms\CourseCatalogueHierarchyValidator;
+use App\Services\Lms\ContentAgentService;
+use App\Services\Lms\CourseCatalogueHierarchyValidator;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
