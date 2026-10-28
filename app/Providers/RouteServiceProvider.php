@@ -36,6 +36,21 @@ class RouteServiceProvider extends ServiceProvider
     public function boot()
     {
         parent::boot();
+
+        // Simulation Learning: `throttle:simulation-assets`, 30 uploads of a model, image or HDR sky a minute for each caller.
+        RateLimiter::for('simulation-assets', function (Request $request) {
+            $bearer = trim((string) $request->bearerToken());
+
+            return Limit::perMinute(30)
+                ->by($bearer === '' ? 'sim-assets-ip|' . $request->ip() : 'sim-assets|' . sha1($bearer))
+                ->response(fn (Request $request, array $headers) => response()->json([
+                    'success' => false,
+                    'data' => null,
+                    'message' => 'Too many uploads. Wait a minute and try again.',
+                    'errors' => ['file' => ['Too many uploads. Wait a minute and try again.']],
+                    'problems' => ['Too many uploads. Wait a minute and try again.'],
+                ], 429, $headers));
+        });
 //        $this->configureRateLimiting();
 //
 //        $this->routes(function () {

@@ -22,6 +22,8 @@ class Kernel extends HttpKernel
         \App\Http\Middleware\PreventRequestsDuringMaintenance::class,
         \Illuminate\Foundation\Http\Middleware\ValidatePostSize::class,
         \App\Http\Middleware\BlockExecutableUploads::class,
+        // Simulation Learning: refuses an oversize spec body before TrimStrings decodes it. A no-op for every other route.
+        \App\Http\Middleware\LimitSimulationBody::class,
         \App\Http\Middleware\TrimStrings::class,
         \Illuminate\Foundation\Http\Middleware\ConvertEmptyStringsToNull::class,
     ];
