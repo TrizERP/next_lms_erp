@@ -31,7 +31,7 @@ class TenantDeleteGuard
         }
 
         [$class, $method] = explode('@', $route->getActionName(), 2);
-        if ($method !== 'destroy' || !class_exists($class)) {
+        if (!in_array($method, ['destroy', 'update', 'edit', 'show'], true) || !class_exists($class)) {
             return false;
         }
 
@@ -68,7 +68,7 @@ class TenantDeleteGuard
     /** The table whose rows a destroy method works on, or null when it cannot be told. */
     public static function tableFor(string $class, string $method): ?string
     {
-        return Cache::remember('tenant_delete_table:' . $class, 3600, function () use ($class, $method) {
+        return Cache::remember('tenant_delete_table:v2:' . $class . '@' . $method, 3600, function () use ($class, $method) {
             try {
                 $ref = new ReflectionMethod($class, $method);
                 $file = $ref->getFileName();
@@ -78,6 +78,14 @@ class TenantDeleteGuard
                 $lines = file($file);
                 $body = implode('', array_slice($lines, $ref->getStartLine() - 1, $ref->getEndLine() - $ref->getStartLine() + 1));
                 $table = self::deriveTable($body, (string) file_get_contents($file), $ref->getDeclaringClass()->getNamespaceName());
+                // For update/edit/show the table is trusted only when the very first query is on the id from the URL;
+                // otherwise a lookup table read first could be mistaken for the resource and refuse a valid request.
+                if ($table !== null && $method !== 'destroy') {
+                    $param = ($ref->getParameters()[count($ref->getParameters()) - 1] ?? null)?->getName();
+                    if (!$param || !self::firstQueryUses($body, $param)) {
+                        return false;
+                    }
+                }
             } catch (\Throwable) {
                 return false;
             }
@@ -91,6 +99,18 @@ class TenantDeleteGuard
 
             return $table;
         }) ?: null;
+    }
+
+    /** Whether the first statement that starts a query (DB::table / Model::find|where) mentions `$param`. */
+    public static function firstQueryUses(string $body, string $param): bool
+    {
+        if (!preg_match('/DB::table\(|\b[A-Za-z_][A-Za-z0-9_]*::(?:find|findOrFail|where|destroy)\(/', $body, $m, PREG_OFFSET_CAPTURE)) {
+            return false;
+        }
+        $rest = substr($body, $m[0][1]);
+        $statement = strstr($rest, ';', true) ?: $rest;
+
+        return (bool) preg_match('/\$' . preg_quote($param, '/') . '\b/', $statement);
     }
 
     public static function deriveTable(string $body, string $fileSource, string $namespace): ?string

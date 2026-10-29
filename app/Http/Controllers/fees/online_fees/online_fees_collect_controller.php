@@ -2564,7 +2564,8 @@ exit; */
     {
         $student_id = (int) ($request->student_id);
         $syear = $request->syear;
-        $sub_institute_id= $request->sub_institute_id;
+        $sub_institute_id = session()->get('sub_institute_id') ?: $request->sub_institute_id; // the caller's school, not the body's
+        $request->merge(['sub_institute_id' => $sub_institute_id]);
         $amount= $request->amount;
         $transactionid= $request->transactionid;
         $fine= $request->fine;  
