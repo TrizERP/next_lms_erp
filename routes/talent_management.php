@@ -78,23 +78,23 @@ Route::middleware(['api.session', 'staff.only'])->group(function () {
     // ---------------------------------------------------------------
     // Recruitment
     // ---------------------------------------------------------------
-    Route::get('job-postings', [JobPostingController::class, 'index']);
-    Route::post('job-postings', [JobPostingController::class, 'store']);
-    Route::put('job-postings/{id}', [JobPostingController::class, 'update']);
-    Route::delete('job-postings/{id}', [JobPostingController::class, 'destroy']);
-    Route::get('talent/team-overview', [JobPostingController::class, 'getHiringStatus']);
+    Route::get('job-postings', [JobPostingController::class, 'index'])->middleware('hr.manage');
+    Route::post('job-postings', [JobPostingController::class, 'store'])->middleware('hr.manage');
+    Route::put('job-postings/{id}', [JobPostingController::class, 'update'])->middleware('hr.manage');
+    Route::delete('job-postings/{id}', [JobPostingController::class, 'destroy'])->middleware('hr.manage');
+    Route::get('talent/team-overview', [JobPostingController::class, 'getHiringStatus'])->middleware('hr.manage');
     Route::post('gemini/analyze-jd', [AnalyzeJDController::class, 'analyze']);
 
-    Route::get('job-applications', [JobApplicationController::class, 'index']);
-    Route::get('job-applications/shortlisted', [JobApplicationController::class, 'getShortlistedCandidates']);
-    Route::get('job-applications/candidate/{candidate_id}', [JobApplicationController::class, 'getCandidateApplications']);
-    Route::get('job-applications/{id}', [JobApplicationController::class, 'show']);
-    Route::post('job-applications', [JobApplicationController::class, 'store']);
-    Route::put('job-applications/{id}', [JobApplicationController::class, 'update']);
-    Route::post('job-applications/{id}/status', [JobApplicationController::class, 'updateStatus']);
+    Route::get('job-applications', [JobApplicationController::class, 'index'])->middleware('hr.manage');
+    Route::get('job-applications/shortlisted', [JobApplicationController::class, 'getShortlistedCandidates'])->middleware('hr.manage');
+    Route::get('job-applications/candidate/{candidate_id}', [JobApplicationController::class, 'getCandidateApplications'])->middleware('hr.manage');
+    Route::get('job-applications/{id}', [JobApplicationController::class, 'show'])->middleware('hr.manage');
+    Route::post('job-applications', [JobApplicationController::class, 'store'])->middleware('hr.manage');
+    Route::put('job-applications/{id}', [JobApplicationController::class, 'update'])->middleware('hr.manage');
+    Route::post('job-applications/{id}/status', [JobApplicationController::class, 'updateStatus'])->middleware('hr.manage');
 
-    Route::get('candidate', [CandidateController::class, 'getCandidate']);
-    Route::get('candidate-pipeline', [InterviewScheduleController::class, 'candidatepipeline']);
+    Route::get('candidate', [CandidateController::class, 'getCandidate'])->middleware('hr.manage');
+    Route::get('candidate-pipeline', [InterviewScheduleController::class, 'candidatepipeline'])->middleware('hr.manage');
 
     Route::get('interview-details', [InterviewScheduleController::class, 'index']);
     Route::post('interview-schedules', [InterviewScheduleController::class, 'store']);
@@ -118,19 +118,19 @@ Route::middleware(['api.session', 'staff.only'])->group(function () {
     Route::put('feedback/{id}', [FeedbackController::class, 'updateFeedback']);
     Route::delete('feedback/{id}', [FeedbackController::class, 'destroy']);
 
-    Route::post('talent-screening-results', [ScreeningResultController::class, 'store']);
-    Route::get('talent-screening-results/candidate/{candidate_id}', [ScreeningResultController::class, 'show']);
+    Route::post('talent-screening-results', [ScreeningResultController::class, 'store'])->middleware('hr.manage');
+    Route::get('talent-screening-results/candidate/{candidate_id}', [ScreeningResultController::class, 'show'])->middleware('hr.manage');
 
-    Route::get('offers', [OfferController::class, 'index']);
-    Route::post('talent-offers', [OfferController::class, 'store']);
-    Route::post('talent-offers/{id}/reject', [OfferController::class, 'reject']);
-    Route::get('talent-offer-letter/{offerId}', [OfferController::class, 'getOfferLetter']);
-    Route::get('talent-templates', [OfferController::class, 'getTemplates']);
+    Route::get('offers', [OfferController::class, 'index'])->middleware('hr.manage');
+    Route::post('talent-offers', [OfferController::class, 'store'])->middleware('hr.manage');
+    Route::post('talent-offers/{id}/reject', [OfferController::class, 'reject'])->middleware('hr.manage');
+    Route::get('talent-offer-letter/{offerId}', [OfferController::class, 'getOfferLetter'])->middleware('hr.manage');
+    Route::get('talent-templates', [OfferController::class, 'getTemplates'])->middleware('hr.manage');
 
-    Route::post('talent-acquisition/kpis', [AcquisitionController::class, 'getKpis']);
-    Route::post('talent-acquisition/dropoff', [AcquisitionController::class, 'getDropoff']);
-    Route::post('talent-acquisition/funnel', [AcquisitionController::class, 'getFunnelData']);
-    Route::post('talent-acquisition/requisitions', [AcquisitionController::class, 'getRequisitions']);
+    Route::post('talent-acquisition/kpis', [AcquisitionController::class, 'getKpis'])->middleware('hr.manage');
+    Route::post('talent-acquisition/dropoff', [AcquisitionController::class, 'getDropoff'])->middleware('hr.manage');
+    Route::post('talent-acquisition/funnel', [AcquisitionController::class, 'getFunnelData'])->middleware('hr.manage');
+    Route::post('talent-acquisition/requisitions', [AcquisitionController::class, 'getRequisitions'])->middleware('hr.manage');
 
     // ---------------------------------------------------------------
     // Onboarding
@@ -259,7 +259,7 @@ Route::middleware(['api.session', 'staff.only'])->group(function () {
     // ---------------------------------------------------------------
     // Mobility & Succession
     // ---------------------------------------------------------------
-    Route::prefix('mobility')->group(function () {
+    Route::prefix('mobility')->middleware('hr.manage')->group(function () {
         Route::get('overview', [MobilityOverviewController::class, 'index']);
         Route::get('filters', [MobilityOverviewController::class, 'filters']);
 
@@ -296,7 +296,7 @@ Route::middleware(['api.session', 'staff.only'])->group(function () {
     // ---------------------------------------------------------------
     // Offboarding
     // ---------------------------------------------------------------
-    Route::prefix('offboarding')->group(function () {
+    Route::prefix('offboarding')->middleware('hr.manage')->group(function () {
         Route::get('overview', [OffboardingController::class, 'overview']);
         Route::get('filters', [OffboardingController::class, 'filters']);
         Route::get('cases', [OffboardingController::class, 'index']);
@@ -314,5 +314,5 @@ Route::middleware(['api.session', 'staff.only'])->group(function () {
     // ---------------------------------------------------------------
     // Administration
     // ---------------------------------------------------------------
-    Route::get('talent/admin/workflows', [AdminWorkflowController::class, 'index']);
+    Route::get('talent/admin/workflows', [AdminWorkflowController::class, 'index'])->middleware('hr.manage');
 });

@@ -93,6 +93,7 @@ class Kernel extends HttpKernel
         'eso.student' => \App\Http\Middleware\EsoStudentOnlyAuth::class,
         'staff.only' => \App\Http\Middleware\RequireStaffRole::class,
         'super.admin' => \App\Http\Middleware\RequireSuperAdmin::class,
+        'hr.manage' => \App\Http\Middleware\RequireHrRole::class,
         'staff.writes' => \App\Http\Middleware\RequireStaffForWrites::class,
         'webhook.secret' => \App\Http\Middleware\VerifyWebhookSecret::class,
         'mobile.identity' => \App\Http\Middleware\PinMobileIdentity::class,
