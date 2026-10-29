@@ -307,6 +307,16 @@ Route::prefix(config('ai.route_prefix', 'api/ai'))
             | Teach/Learn Course Catalogue Reader Agent - Web Interface Management
             | Start, stop, interval configuration, and continuous loop state without CLI.
             */
+            Route::prefix('exam-assessment/agent')->group(function () {
+                Route::get('state', [\App\Http\Controllers\AI\ExamAssessmentAgentController::class, 'state']);
+                Route::post('start', [\App\Http\Controllers\AI\ExamAssessmentAgentController::class, 'start']);
+                Route::post('stop', [\App\Http\Controllers\AI\ExamAssessmentAgentController::class, 'stop']);
+                Route::post('run-now', [\App\Http\Controllers\AI\ExamAssessmentAgentController::class, 'runNow']);
+                Route::post('interval', [\App\Http\Controllers\AI\ExamAssessmentAgentController::class, 'setInterval']);
+                Route::post('pipeline', [\App\Http\Controllers\AI\ExamAssessmentAgentController::class, 'pipeline']);
+                Route::get('eso', [\App\Http\Controllers\AI\ExamAssessmentAgentController::class, 'eso']);
+            });
+
             Route::prefix('teach-learn/catalogue-agent')->group(function () {
                 Route::get('state', [\App\Http\Controllers\AI\TeachLearnCatalogueAgentController::class, 'state']);
                 Route::get('content-tasks', [\App\Http\Controllers\AI\TeachLearnCatalogueAgentController::class, 'contentTasks']);
@@ -316,6 +326,8 @@ Route::prefix(config('ai.route_prefix', 'api/ai'))
                 Route::post('interval', [\App\Http\Controllers\AI\TeachLearnCatalogueAgentController::class, 'setInterval']);
                 Route::post('auto-generate/toggle', [\App\Http\Controllers\AI\TeachLearnCatalogueAgentController::class, 'toggleAutoGenerate']);
                 Route::post('auto-generate/batch', [\App\Http\Controllers\AI\TeachLearnCatalogueAgentController::class, 'runContentBatch']);
+                Route::post('pipeline', [\App\Http\Controllers\AI\TeachLearnCatalogueAgentController::class, 'pipeline']);
+                Route::get('eso', [\App\Http\Controllers\AI\TeachLearnCatalogueAgentController::class, 'eso']);
             });
 
             /*
