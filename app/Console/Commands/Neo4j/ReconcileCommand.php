@@ -112,8 +112,14 @@ class ReconcileCommand extends Command
      *
      * [label, table k12_cypher.txt expects, what is actually wrong]
      */
+    // CORRECTED 2026-10-28 (ERP_SQL_Neo4j_Complete_Synchronization_Audit.docx §6): Misconception
+    // removed from this list. It's no longer true that nothing keeps it current — live-confirmed
+    // ~3,664 :Misconception nodes against 3,662 pal_misconception_library rows (near-exact match,
+    // properties align), actively maintained by CoherenceGraphProjection::projectMisconceptions()
+    // (Pipeline B, nightly sweep) — a different pipeline than the one this list is about, but a
+    // real one. This list entry was correct when written, about the k12_cypher.txt ingest path
+    // specifically, but had gone stale as a blanket "no live source" claim.
     private const K12_LABELS_WITHOUT_SOURCE = [
-        ['Misconception', 'lms_misconceptions', 'table does not exist; misconceptions live in pal_misconceptions / pal_misconception_library on the PAL model'],
         ['LearningContent', 'suggested_content', 'table exists but has no concept_id, misconception_id, title, modality or bloom_level'],
         ['LearningObjects', 'lms_learning_objectives', 'table does not exist'],
         ['CompetencyStandards', 'lms_competency_standards', 'table does not exist'],

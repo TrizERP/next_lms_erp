@@ -743,34 +743,39 @@ RETURN count(r) AS allocatedRoom;
 
 
 // Inventory hierarchy.
+// FIXED 2026-10-28 (ERP_SQL_Neo4j_Complete_Synchronization_Audit.docx): all three blocks
+// below were bare-pk on the category/sub-category/type side — none of those ids are
+// globally unique across tenants, so this matched whichever tenant's row shared the id
+// (88-98% wrong, live-measured). Now scoped by the row's own tenant on both sides.
 LOAD CSV WITH HEADERS FROM 'file:///inventory_item_master.csv' AS row
 WITH row WHERE row.category_id IS NOT NULL AND trim(row.category_id) <> '0'
-MATCH (it:InventoryItem {inventoryitemId: toInteger(trim(row.id))})
-MATCH (ic:ItemCategory {itemcategoryId: toInteger(trim(row.category_id))})
+MATCH (it:InventoryItem {inventoryitemId: toInteger(trim(row.id)), sub_institute_id: toInteger(trim(row.sub_institute_id))})
+MATCH (ic:ItemCategory {itemcategoryId: toInteger(trim(row.category_id)), sub_institute_id: toInteger(trim(row.sub_institute_id))})
 MERGE (it)-[:IN_CATEGORY]->(ic)
 RETURN count(*) AS inCategory;
 
 
 LOAD CSV WITH HEADERS FROM 'file:///inventory_item_master.csv' AS row
 WITH row WHERE row.sub_category_id IS NOT NULL AND trim(row.sub_category_id) <> '0'
-MATCH (it:InventoryItem {inventoryitemId: toInteger(trim(row.id))})
-MATCH (isc:ItemSubCategory {itemsubcategoryId: toInteger(trim(row.sub_category_id))})
+MATCH (it:InventoryItem {inventoryitemId: toInteger(trim(row.id)), sub_institute_id: toInteger(trim(row.sub_institute_id))})
+MATCH (isc:ItemSubCategory {itemsubcategoryId: toInteger(trim(row.sub_category_id)), sub_institute_id: toInteger(trim(row.sub_institute_id))})
 MERGE (it)-[:IN_SUB_CATEGORY]->(isc)
 RETURN count(*) AS inSubCategory;
 
 
 LOAD CSV WITH HEADERS FROM 'file:///inventory_item_master.csv' AS row
 WITH row WHERE row.item_type_id IS NOT NULL AND trim(row.item_type_id) <> '0'
-MATCH (it:InventoryItem {inventoryitemId: toInteger(trim(row.id))})
-MATCH (ity:ItemType {itemtypeId: toInteger(trim(row.item_type_id))})
+MATCH (it:InventoryItem {inventoryitemId: toInteger(trim(row.id)), sub_institute_id: toInteger(trim(row.sub_institute_id))})
+MATCH (ity:ItemType {itemtypeId: toInteger(trim(row.item_type_id)), sub_institute_id: toInteger(trim(row.sub_institute_id))})
 MERGE (it)-[:OF_ITEM_TYPE]->(ity)
 RETURN count(*) AS ofItemType;
 
 
+// FIXED 2026-10-28: same bare-pk issue as the blocks above, scoped by tenant now.
 LOAD CSV WITH HEADERS FROM 'file:///inventory_item_sub_category_master.csv' AS row
 WITH row WHERE row.category_id IS NOT NULL AND trim(row.category_id) <> '0'
-MATCH (isc:ItemSubCategory {itemsubcategoryId: toInteger(trim(row.id))})
-MATCH (ic:ItemCategory {itemcategoryId: toInteger(trim(row.category_id))})
+MATCH (isc:ItemSubCategory {itemsubcategoryId: toInteger(trim(row.id)), sub_institute_id: toInteger(trim(row.sub_institute_id))})
+MATCH (ic:ItemCategory {itemcategoryId: toInteger(trim(row.category_id)), sub_institute_id: toInteger(trim(row.sub_institute_id))})
 MERGE (isc)-[:UNDER_CATEGORY]->(ic)
 RETURN count(*) AS underCategory;
 
@@ -883,10 +888,11 @@ MERGE (ow)-[:FILED_AT]->(fl)
 RETURN count(*) AS outwardFiledAt;
 
 
+// FIXED 2026-10-28: same bare-pk issue (338/862 wrong, live-measured), scoped by tenant now.
 LOAD CSV WITH HEADERS FROM 'file:///visitor_master.csv' AS row
 WITH row WHERE row.visitor_type IS NOT NULL AND trim(row.visitor_type) <> '' AND trim(row.visitor_type) <> '0'
-MATCH (vi:Visitor {visitorId: toInteger(trim(row.id))})
-MATCH (vty:VisitorType {visitortypeId: toInteger(trim(row.visitor_type))})
+MATCH (vi:Visitor {visitorId: toInteger(trim(row.id)), sub_institute_id: toInteger(trim(row.sub_institute_id))})
+MATCH (vty:VisitorType {visitortypeId: toInteger(trim(row.visitor_type)), sub_institute_id: toInteger(trim(row.sub_institute_id))})
 MERGE (vi)-[:OF_VISITOR_TYPE]->(vty)
 RETURN count(*) AS ofVisitorType;
 

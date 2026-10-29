@@ -307,19 +307,22 @@ RETURN count(*) AS inPart;
 
 // Grade band -> the area it bands. 166 of 371 distinct map_id values resolve; the
 // rest point at co-scholastic rows that no longer exist.
+// FIXED 2026-10-28 (ERP_SQL_Neo4j_Complete_Synchronization_Audit.docx): both MATCHes
+// were bare-pk (71% wrong, live-measured) — scoped by the row's own tenant now.
 LOAD CSV WITH HEADERS FROM 'file:///result_co_scholastic_grades.csv' AS row
 WITH row WHERE row.map_id IS NOT NULL AND trim(row.map_id) <> '' AND trim(row.map_id) <> '0'
-MATCH (cb:CoScholasticGradeBand {coscholasticgradebandId: toInteger(trim(row.id))})
-MATCH (ca:CoScholasticArea {coscholasticareaId: toInteger(trim(row.map_id))})
+MATCH (cb:CoScholasticGradeBand {coscholasticgradebandId: toInteger(trim(row.id)), sub_institute_id: toInteger(trim(row.sub_institute_id))})
+MATCH (ca:CoScholasticArea {coscholasticareaId: toInteger(trim(row.map_id)), sub_institute_id: toInteger(trim(row.sub_institute_id))})
 MERGE (ca)-[:HAS_GRADE_BAND]->(cb)
 RETURN count(*) AS hasGradeBand;
 
 
 // Activity -> Skillset (458 of 460 resolve).
+// FIXED 2026-10-28: same bare-pk issue (5% wrong, smaller but still real), tenant-scoped now.
 LOAD CSV WITH HEADERS FROM 'file:///result_activity_master.csv' AS row
 WITH row WHERE row.skill_id IS NOT NULL AND trim(row.skill_id) <> '' AND trim(row.skill_id) <> '0'
-MATCH (a:Activity {activityId: toInteger(trim(row.id))})
-MATCH (sk:Skillset {skillsetId: toInteger(trim(row.skill_id))})
+MATCH (a:Activity {activityId: toInteger(trim(row.id)), sub_institute_id: toInteger(trim(row.sub_institute_id))})
+MATCH (sk:Skillset {skillsetId: toInteger(trim(row.skill_id)), sub_institute_id: toInteger(trim(row.sub_institute_id))})
 MERGE (a)-[:IN_SKILLSET]->(sk)
 RETURN count(*) AS inSkillset;
 

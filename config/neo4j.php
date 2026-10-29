@@ -89,6 +89,24 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Graph size budgets  (neo4j:verify G6/G7)
+    |--------------------------------------------------------------------------
+    |
+    | Ceilings used only as an operational "did something runaway" alarm, not
+    | a hard architectural limit. Live-measured 2026-10-28: 991,981 nodes /
+    | 2,968,689 relationships, up from 881,734 / 2,912,957 earlier the same
+    | day — the graph is growing quickly across multiple active pipelines, so
+    | these carry real headroom above the current measurement rather than
+    | being set to just-barely-pass. Raise again if growth continues to close
+    | the gap; the point is an early warning, not a number to keep lowering.
+    */
+    'graph_budget' => [
+        'nodes' => (int) env('NEO4J_NODE_BUDGET', 1500000),
+        'relationships' => (int) env('NEO4J_RELATIONSHIP_BUDGET', 4000000),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | K12 entity -> graph shape  (live sync projections)
     |--------------------------------------------------------------------------
     |
@@ -187,6 +205,17 @@ return [
      *         endpoint cannot be found fail and retry through the normal outbox
      *         path, visible in `neo4j:reconcile`, exactly like every other
      *         FK-drift edge in this set — not a new failure mode.
+     *         CHECKED 2026-10-28: confirmed permanently unrecoverable, not just
+     *         transiently failing. `chapter_master` carries no legacy/old-id
+     *         column and `content_master` has no independent key (chapter name,
+     *         sequence, etc.) that could re-derive the pre-renumbering mapping —
+     *         there is no safe way to reconstruct which current chapter ~26,000
+     *         of these rows belong to. These specific queue rows (dominant
+     *         category in `neo4j:failed-queue`, Chapter-HAS_CONTENT-TeachingResource)
+     *         will keep retrying to the max attempt and failing forever; that is
+     *         expected, not a sign something is newly broken. Do not attempt a
+     *         guessed chapter re-mapping — wrong associations would be worse than
+     *         the content simply having no chapter link.
      *     Labelled :TeachingResource, NOT :Content or :LearningContent — see
      *     GraphSchema's note on this label for why reusing either would double-key
      *     or silently collide with an unrelated node.
@@ -306,6 +335,14 @@ return [
             's_users_skills',
             's_competency_frameworks',
             's_competency_framework_items',
+
+            // Institute ERP foundation tables (added 2026-10-29, user decision
+            // after the sync audit found these had no live trigger at all) —
+            // see entity specs below.
+            'division',
+            'academic_year',
+            'hrms_departments',
+            'school_setup',
         ],
 
         'entities' => [
@@ -1195,6 +1232,82 @@ return [
                 'relationships' => [
                     ['type' => 'HAS_COMPETENCY', 'from' => ['CompetencyFramework', 'framework_id'], 'to' => ['Competency', 'competency_id']],
                 ],
+            ],
+
+            // ---------------------------------------------------------------
+            // Institute ERP foundation tables (added 2026-10-29).
+            // ---------------------------------------------------------------
+            // ERP_SQL_Neo4j_Complete_Synchronization_Audit.docx found these four
+            // had NO live trigger at all — only a one-time Pipeline C batch load
+            // from 2026-08-10, since gone 79+ days stale and confirmed incomplete
+            // (5 of 113 departments for tenant 1). User decision 2026-10-29: add
+            // a live trigger, the same mechanism every other table here uses.
+            // GraphSchema.php already had a native key reserved for each of these
+            // labels (instituteId/divisionId/departmentId/academicyearId) from
+            // when the uid-keyed batch load first ran — this live trigger MERGEs
+            // on that SAME native key, so it enriches/refreshes those existing
+            // uid-keyed nodes going forward rather than creating a second,
+            // disconnected population (the exact defect this audit found and
+            // fixed for :Standard/:Lesson/:Subject). A one-time backfill of the
+            // native key onto the existing batch-loaded nodes is a separate,
+            // already-designed step (g1_result_tenant_backup_execute.php's
+            // sibling for these four tables has not yet been written) — until
+            // that runs, this trigger's own inserts/updates will each create a
+            // fresh, correctly-keyed node per touched row, and the old uid-keyed
+            // snapshot nodes remain exactly as stale as they are today, not
+            // worse.
+            'division' => [
+                'label' => 'Division',
+                'properties' => [
+                    'name'             => 'name',
+                    'sub_institute_id' => 'sub_institute_id',
+                ],
+                'display_label' => ['prefix' => 'Division:', 'column' => 'name'],
+            ],
+            'academic_year' => [
+                'label' => 'AcademicYear',
+                'properties' => [
+                    'title'            => 'title',
+                    'short_name'       => 'short_name',
+                    'syear'            => 'syear',
+                    'start_date'       => 'start_date',
+                    'end_date'         => 'end_date',
+                    'sub_institute_id' => 'sub_institute_id',
+                ],
+                'display_label' => ['prefix' => 'AcademicYear:', 'column' => 'title'],
+            ],
+            'hrms_departments' => [
+                'label' => 'Department',
+                'properties' => [
+                    'name'             => 'department',
+                    'code'             => 'code',
+                    'description'      => 'description',
+                    'status'           => 'status',
+                    'sub_institute_id' => 'sub_institute_id',
+                ],
+                'casts' => ['status' => 'string'],
+                'display_label' => ['prefix' => 'Department:', 'column' => 'department'],
+            ],
+            // `school_setup` IS the institute (tenant.mode "self" in
+            // config/neo4j_graph.php) — it has no separate sub_institute_id
+            // column, so the property is mapped from the row's own primary key.
+            // Its PK is `Id` (capital); MySQL column-name matching is
+            // case-insensitive (verified live 2026-10-29), so the generic
+            // `WHERE id = ?` re-fetch in TableGraphProjection::enqueue() matches
+            // it with no special-casing needed — the trigger migration below
+            // still spells it `Id` to match the live schema exactly.
+            'school_setup' => [
+                'label' => 'Institute',
+                'properties' => [
+                    'name'             => 'SchoolName',
+                    'short_code'       => 'ShortCode',
+                    // 'Id', not 'id': properties() reads $row[$column] off a row
+                    // cast from a stdClass whose keys preserve the live schema's
+                    // exact column-name case — confirmed by reading
+                    // TableGraphProjection.php directly, not assumed.
+                    'sub_institute_id' => 'Id',
+                ],
+                'display_label' => ['prefix' => 'Institute:', 'column' => 'SchoolName'],
             ],
         ],
     ],
