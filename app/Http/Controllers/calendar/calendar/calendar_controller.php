@@ -102,9 +102,13 @@ class calendar_controller extends Controller
         } else {
             //process the request
 
-            $sub_institute_id = $_REQUEST['sub_institute_id'];
-            $syear = $_REQUEST['syear'];
             $student_id = $_REQUEST['student_id'];
+            // The school is the caller's (and the student must be visible to them), never the request's.
+            $sub_institute_id = \App\Support\StudentAccess::tenantFor($student_id);
+            if ($sub_institute_id === null) {
+                return response()->json(['response' => 'Not allowed', 'success' => false], 403);
+            }
+            $syear = $_REQUEST['syear'];
 
             $result = DB::table('tblstudent as s')
                 ->join('tblstudent_enrollment as se', function ($join) {

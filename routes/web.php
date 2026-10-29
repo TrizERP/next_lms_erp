@@ -89,15 +89,15 @@ use App\Http\Controllers\FileController;
 
 // Other pedagogy routes...
 Route::get('/lms/student-profile', [PedagogyEngineController::class, 'buildStudentProfile'])->name('student.profile');
-Route::get('/lms/forgetting-curve', [PedagogyEngineController::class, 'getForgettingCurve'])->name('forgetting.curve');
+Route::get('/lms/forgetting-curve', [PedagogyEngineController::class, 'getForgettingCurve'])->name('forgetting.curve')->middleware('api.session');
 Route::post('/lms/update-forgetting-curve', [PedagogyEngineController::class, 'updateForgettingCurve'])->name('update.forgetting.curve')->middleware('session');
 Route::get('/lms/class-insights', [PedagogyEngineController::class, 'generateClassInsights'])->name('class.insights');
 Route::get('/lms/teacher-dashboard', [PedagogyEngineController::class, 'teacherDashboard'])->name('teacher.dashboard');
 Route::get('/lms/knowledge-graph', [PedagogyEngineController::class, 'buildKnowledgeGraph'])->name('knowledge.graph');
-Route::get('/lms/concept-prerequisites', [PedagogyEngineController::class, 'getConceptPrerequisites'])->name('concept.prerequisites');
+Route::get('/lms/concept-prerequisites', [PedagogyEngineController::class, 'getConceptPrerequisites'])->name('concept.prerequisites')->middleware('api.session');
 Route::get('/lms/recommend-content', [PedagogyEngineController::class, 'recommendContent'])->name('recommend.content');
 Route::post('/lms/track-content-view', [PedagogyEngineController::class, 'trackContentView'])->name('track.content.view')->middleware('session');
-Route::get('/lms/pedagogy-recommendations', [PedagogyEngineController::class, 'getPedagogyRecommendations'])->name('pedagogy.recommendations');
+Route::get('/lms/pedagogy-recommendations', [PedagogyEngineController::class, 'getPedagogyRecommendations'])->name('pedagogy.recommendations')->middleware('api.session');
 
 
 // PHASE 3: Adaptive Practice Routes
@@ -131,7 +131,7 @@ Route::get('/lms/practice-history', [App\Http\Controllers\lms\assessmentQuestion
 
 // Spaced Repetition
 Route::get('/lms/spaced-repetition', [App\Http\Controllers\lms\assessmentQuestionController::class, 'getSpacedRepetition'])
-    ->name('spaced.repetition');
+    ->name('spaced.repetition')->middleware('api.session');
 
 // ============================================================
 // PHASE 4: PEDAGOGY ENGINE ROUTES
@@ -312,8 +312,8 @@ Route::any('/knowledge-base-detail/{id}/{title}', [dashboardController::class, '
 Route::get('dashboard', [dashboardController::class, 'index'])->name('dashboard')->middleware('session', 'menu', 'logRoute');
 Route::get('dashboard/communication-details', [dashboardController::class, 'getCommunicationDetails'])->name('dashboard.communication.details')->middleware('session');
 // add by uma 
-Route::resource('norm-clature', normClatureController::class);
-Route::resource('add-institute-details', institute_detail::class);
+Route::resource('norm-clature', normClatureController::class)->middleware('session');
+Route::resource('add-institute-details', institute_detail::class)->middleware('session');
 
 // From Build
 Route::get('formbuilder/list', [UserFormbuilderController::class, 'index'])->name('formbuild.list')->middleware('session', 'menu', 'logRoute');
@@ -504,7 +504,7 @@ Route::post('reset-password', [ForgotPasswordController::class, 'submitResetPass
 
 Route::post('NewLMS_temp_signup', [NewLMS_ApiController::class, 'NewLMS_temp_signup'])->name("NewLMS_temp_signup")->middleware('throttle:20,1');
 Route::post('NewLMS_signup', [NewLMS_ApiController::class, 'NewLMS_signup'])->name("NewLMS_signup")->middleware('throttle:20,1');
-Route::get('Resend_otp', [NewLMS_ApiController::class, 'Resend_otp'])->name("Resend_otp");
+Route::get('Resend_otp', [NewLMS_ApiController::class, 'Resend_otp'])->name("Resend_otp")->middleware('throttle:3,10');
 Route::post('preload-institute', [NewLMS_ApiController::Class, 'Preload_institute'])->name("preload-institute")->middleware('throttle:20,1');
 Route::post('add-institute', [NewLMS_ApiController::Class, 'add_institute'])->name("add-institute")->middleware('throttle:20,1');
 
@@ -520,7 +520,7 @@ Route::post('get_search_url', [AJAXController::class, 'get_search_url'])->name("
 
 // send birthday notification
 Route::get('send_birthday_notification',
-    [send_birthday_notification_controller::class, 'send_birthday_notification'])->name('send_birthday_notification');
+    [send_birthday_notification_controller::class, 'send_birthday_notification'])->name('send_birthday_notification')->middleware('throttle:2,60');
 
 // Question Wise Report
 Route::get('/questionReport', [questionWiseReportController::class, 'index'])->name('question_wise_report');

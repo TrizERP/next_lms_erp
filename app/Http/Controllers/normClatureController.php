@@ -21,9 +21,9 @@ class normClatureController extends Controller
     public function create(Request $request){
         $type=$request->type;
         if($request->has('menu_id')){
-            $menu_id = $request->menu_id;     
+            $menu_id = (int) $request->menu_id;     
         }else{
-            $menu_id = $request->menu_title;
+            $menu_id = (int) $request->menu_title;
         }
        
         $sub_institute_id = session()->get('sub_institute_id');
@@ -44,7 +44,7 @@ class normClatureController extends Controller
     public function store(Request $request){
         $sub_institute_id = session()->get('sub_institute_id');
         $user_id=session()->get('user_id');
-        $menu_id = $request->menu_id;
+        $menu_id = (int) $request->menu_id;
         $type=$request->type;
         $res['get_data'] = normClature::whereRaw('menu_id='.$menu_id.' and sub_institute_id =0')->get(); 
         foreach($res['get_data'] as $key => $value){
@@ -79,7 +79,7 @@ class normClatureController extends Controller
         $type=$request->type;
         $sub_institute_id = session()->get('sub_institute_id');
         
-        $menu_id = $request->menu_id;
+        $menu_id = (int) $request->menu_id;
         $res['get_data'] = normClature::whereRaw('menu_id='.$menu_id.' and sub_institute_id ='.$sub_institute_id)->get();         
         foreach($res['get_data'] as $key => $value){
             if($request->value[$value->id]!==null){

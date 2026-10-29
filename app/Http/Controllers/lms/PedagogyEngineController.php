@@ -347,6 +347,9 @@ class PedagogyEngineController extends Controller
                 'message' => 'Student ID is required'
             ]);
         }
+        if ($student_id && !\App\Support\StudentAccess::allows($student_id)) {
+            return response()->json(['status_code' => 0, 'message' => 'Not allowed'], 403);
+        }
 
         $query = DB::table('lms_forgetting_curve')
             ->where('student_id', $student_id);
@@ -1089,6 +1092,9 @@ class PedagogyEngineController extends Controller
                 'status_code' => 0,
                 'message' => 'Student ID is required'
             ]);
+        }
+        if ($student_id && !\App\Support\StudentAccess::allows($student_id)) {
+            return response()->json(['status_code' => 0, 'message' => 'Not allowed'], 403);
         }
 
         // 1. Student Intelligence

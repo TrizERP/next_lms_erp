@@ -297,6 +297,12 @@ class map_student_controller extends Controller
             return response()->json($response);
         }
 
+        // Signed-in callers only see students they may see; the school is the caller's, not the request's.
+        $tenant = \App\Support\StudentAccess::tenantFor($request->input('student_id'));
+        if ($tenant === null) {
+            return response()->json(['response' => 'Not allowed', 'success' => false], 403);
+        }
+
         // Bound parameters — the values reach the query as data, never as SQL.
         $data_sql = "SELECT tms.syear,tms.student_id,tms.sub_institute_id,
             tssf.shift_title from_shift,tvf.title from_vehicle,fd.first_name from_driver,fd.mobile from_driver_mobile,fc.first_name from_cundoctor,fc.mobile from_conductor_mobile,tfs.stop_name from_stop,
@@ -317,7 +323,7 @@ class map_student_controller extends Controller
 
         $response['response'] = DB::select(preg_replace('/\s+/', ' ', $data_sql), [
             $request->input('student_id'),
-            $request->input('sub_institute_id'),
+            $tenant,
             $request->input('syear'),
         ]);
         $response['success'] = true;

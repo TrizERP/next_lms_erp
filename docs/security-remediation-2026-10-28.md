@@ -126,3 +126,11 @@ Left on purpose, each with the reason:
 | **H3** certificate pinning | Needs the production certificate fingerprint and a rotation plan; a wrong pin locks every user out. |
 | **H4** dev host as default | Failing a build that lacks `--dart-define` would also break any Shorebird/EAS patch built the same way. Check the release scripts instead. |
 | React Native / Expo | The three remaining high advisories need an Expo major upgrade. |
+
+## 9. Round 3 (2026-10-29 re-audit)
+
+Fixed: anonymous student-data GETs (`map_student/fetchData`, `calendar/fetchData`, `lms/spaced-repetition|forgetting-curve|concept-prerequisites|pedagogy-recommendations` now `api.session` + `StudentAccess`), `Resend_otp` (throttle + 3 SMS/number/hour), `send_birthday_notification` (throttle; set `CRON_SECRET` and call it with `?secret=` or `X-Cron-Secret`), `public/getworkflow.php` (CLI or HMAC key), `norm-clature` and `add-institute-details` (session middleware), stored rich text in Blade now passes `App\Support\SafeHtml::clean`.
+
+Checked and fine: `public/*_integration.php`, `test.php` are CLI-only; `hrms_api.php` / `library_api.php` need a signed JWT; Next.js `dangerouslySetInnerHTML` sinks are sanitised or escaped.
+
+Not done: the other ~230 `{!! !!}` Blade outputs are server-built HTML (school header, asterisks, flash messages) and were not changed; a `lms/new_*`, paraphrase and result-permission route group points at controllers that do not exist (dead routes, 500 not data).

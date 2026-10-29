@@ -37,7 +37,7 @@
                                 <tr>
                                     <td>{{$j}}</td>
                                     <td>{{$data->type}}</td>
-                                    <td>{!!$data->title!!}</td>
+                                    <td>{!! \App\Support\SafeHtml::clean($data->title) !!}</td>
                                     <td>
                                         <div class="d-inline">
     									   <a href="{{ route('schooldetail.edit',$data->id)}}" class="btn btn-info btn-outline">
