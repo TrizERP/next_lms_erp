@@ -237,7 +237,7 @@ $taskType = ['Daily Task','Weekly Task','Monthly Task','Yearly Task'];
                                        <td>{{$value['department']}}</td>
                                        <td>{{$value['mainDepartment']}}</td>
                                        <td><a onclick="getEmpModel('{{$value['emp_ids']}}','{{$value['department']}}','sub department')">{{$value['total_emp']}}</a></td>
-                                       <td>{!! substr($value['roles_responsibility'],0,200) !!}....</td>
+                                       <td>{!! \App\Support\SafeHtml::clean(substr($value['roles_responsibility'],0,200)) !!}....</td>
                                        <td class="text-left">
                                           <div class="d-inline">
                                              @if($value['sub_institute_id']!=0 && $value['total_subDep']==0)

@@ -33,10 +33,10 @@
                                 @foreach($data['data'] as $key => $data)
            
                                 <tr>    
-                                    <td>{!!$data['line1']!!}</td>
-                                    <td>{!!$data['line2']!!}</td>
-                                    <td>{!!$data['line3']!!}</td>
-                                    <td>{!!$data['line4']!!}</td>
+                                    <td>{!! \App\Support\SafeHtml::clean($data['line1']) !!}</td>
+                                    <td>{!! \App\Support\SafeHtml::clean($data['line2']) !!}</td>
+                                    <td>{!! \App\Support\SafeHtml::clean($data['line3']) !!}</td>
+                                    <td>{!! \App\Support\SafeHtml::clean($data['line4']) !!}</td>
                                     <td>{{$data['grade_name']}}</td>
                                     <td>{{$data['standard_name']}}</td>
                                     <td>{{$data['status']}}</td>

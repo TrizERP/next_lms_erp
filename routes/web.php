@@ -312,8 +312,8 @@ Route::any('/knowledge-base-detail/{id}/{title}', [dashboardController::class, '
 Route::get('dashboard', [dashboardController::class, 'index'])->name('dashboard')->middleware('session', 'menu', 'logRoute');
 Route::get('dashboard/communication-details', [dashboardController::class, 'getCommunicationDetails'])->name('dashboard.communication.details')->middleware('session');
 // add by uma 
-Route::resource('norm-clature', normClatureController::class);
-Route::resource('add-institute-details', institute_detail::class);
+Route::resource('norm-clature', normClatureController::class)->middleware('session');
+Route::resource('add-institute-details', institute_detail::class)->middleware('session');
 
 // From Build
 Route::get('formbuilder/list', [UserFormbuilderController::class, 'index'])->name('formbuild.list')->middleware('session', 'menu', 'logRoute');
