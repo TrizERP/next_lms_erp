@@ -1,5 +1,10 @@
 <?php
 require_once __DIR__ . '/../bootstrap/legacy_env.php';
+// Runs every pending workflow (SMS / mail / updates): cron (CLI) or a link carrying the key the ERP page builds.
+if (PHP_SAPI !== 'cli') {
+    $expectedKey = hash_hmac('sha256', 'getworkflow', (string) legacy_env('APP_KEY'));
+    if (!hash_equals($expectedKey, (string) ($_GET['k'] ?? ''))) { http_response_code(404); exit; }
+}
 $host = legacy_env('LEGACY_DB_HOST');
 $username = legacy_env('LEGACY_DB_USER');
 $password = legacy_env('LEGACY_DB_PASSWORD');

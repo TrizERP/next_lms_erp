@@ -2877,6 +2877,9 @@ private function getStudentMastery($student_id, $standard_id, $subject_id, $chap
                 'message' => 'Student ID is required'
             ]);
         }
+        if ($student_id && !\App\Support\StudentAccess::allows($student_id)) {
+            return response()->json(['status_code' => 0, 'message' => 'Not allowed'], 403);
+        }
 
         // Get concepts that need review based on Ebbinghaus forgetting curve
         // lms_concept_mastery_log has no sub_institute_id column -- it's scoped

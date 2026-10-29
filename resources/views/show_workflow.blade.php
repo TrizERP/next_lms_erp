@@ -22,7 +22,7 @@
                 $servername = ($_SERVER['HTTP_HOST']);                
                 ?>
                 <div class="col-lg-3 col-sm-3 col-xs-3">
-                    <a href="http://{{$servername}}/getworkflow.php" class="btn btn-info add-new">Get Workflow</a>
+                    <a href="http://{{$servername}}/getworkflow.php?k={{ hash_hmac('sha256', 'getworkflow', (string) config('app.key')) }}" class="btn btn-info add-new">Get Workflow</a>
                 </div>
 				<div class="col-lg-3 col-sm-3 col-xs-3">
                     <a href="{{ route('workflow.create') }}" class="btn btn-info add-new"><i class="fa fa-plus"></i> Add New</a>

@@ -19,7 +19,7 @@ Route::group(['prefix' => 'calendar', 'middleware' => ['session', 'menu', 'logRo
 
 Route::controller(calendar_controller::class)->group(function () {
     Route::post('/studentCalenderAPI', 'studentCalenderAPI');
-    Route::get('calendar/fetchData', 'fetchData');
+    Route::get('calendar/fetchData', 'fetchData')->middleware('api.session');
     Route::post('calendar/TeacherFetchData', 'TeacherFetchData');
     Route::get('calendar/searchByDate', 'searchByDate')->name('searchByDate');
 });

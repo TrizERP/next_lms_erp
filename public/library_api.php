@@ -13,7 +13,7 @@ mysqli_select_db($cn, $database) or die("database");
 
 $type = $_REQUEST['type'];
 $teacher_id = $_REQUEST['teacher_id'];
-$sub_institute_id = $_REQUEST['sub_institute_id'];
+$sub_institute_id = (int) $_REQUEST['sub_institute_id'];
 $syear = $_REQUEST['syear'];
 $action = $_REQUEST['action'];
 

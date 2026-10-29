@@ -757,7 +757,10 @@ class teacherapiController extends Controller
 
             //START Add Dynamic Field data
             $dataCustomFields = tblcustomfieldsModel::where(['status' => "1", 'table_name' => "lms_teacher_resource"])
-                ->whereRaw('(sub_institute_id = '.$request->get('sub_institute_id').' OR common_to_all = 1)  and user_type="" ')
+                ->where(function ($q) use ($request) {
+                    $q->where('sub_institute_id', $request->get('sub_institute_id'))->orWhere('common_to_all', 1);
+                })
+                ->where('user_type', '')
                 ->orderBy('sort_order', 'ASC')
                 ->get();
 
