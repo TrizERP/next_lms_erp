@@ -5464,7 +5464,14 @@ return [
             'tier' => 'D',
             'decision' => 'EXCLUDE',
             'rows_at_classification' => 0,
-            'reason' => 'PAL stub, empty — schema exists, feature not in production',
+            // CORRECTED 2026-10-28 (next_lms_erp\AUDIT, ERP_SQL_Neo4j_Complete_Synchronization_Audit.docx):
+            // this table is NOT an empty stub — it has two live SQL writers today,
+            // palController::recordPalEvidenceAndMastery() (the PAL exam-submission flow;
+            // its own code comment calls this "the first real write path") and the
+            // on-demand `pal:derive-competencies` console command. The EXCLUDE decision
+            // itself may still be correct (no Neo4j consumer needs this data yet), but the
+            // original "empty, not in production" justification was stale.
+            'reason' => 'EXCLUDE kept deliberately — no current Neo4j consumer needs this data — not because the table is empty; it has live writers (see correction above).',
         ],
 
         'pal_concepts' => [

@@ -382,11 +382,17 @@ RETURN count(r) AS appliesTo;
 
 // What a learner owes under the "other fees" heads. This is the one breakoff table
 // that carries a student_id.
+//
+// FIXED 2026-10-28 (ERP_SQL_Neo4j_Complete_Synchronization_Audit.docx): both MATCHes
+// below were previously bare-pk, no sub_institute_id scoping — feeotherheadId is a
+// per-tenant value, not globally unique, so this matched whichever tenant's row
+// happened to carry that id, producing 7,382 wrong edges (100% of this relationship
+// type, live-measured). Now scoped by the row's own tenant on both sides.
 LOAD CSV WITH HEADERS FROM 'file:///fees_breakoff_other_agg.csv' AS row
 WITH row WHERE row.student_id IS NOT NULL AND row.fee_type_id IS NOT NULL
 
-MATCH (sd:StuDetail {sdId: toInteger(trim(row.student_id))})
-MATCH (fo:FeeOtherHead {feeotherheadId: toInteger(trim(row.fee_type_id))})
+MATCH (sd:StuDetail {sdId: toInteger(trim(row.student_id)), sub_institute_id: toInteger(trim(row.sub_institute_id))})
+MATCH (fo:FeeOtherHead {feeotherheadId: toInteger(trim(row.fee_type_id)), sub_institute_id: toInteger(trim(row.sub_institute_id))})
 
 MERGE (sd)-[r:LIABLE_FOR {syear: toInteger(trim(row.syear))}]->(fo)
 ON CREATE SET
