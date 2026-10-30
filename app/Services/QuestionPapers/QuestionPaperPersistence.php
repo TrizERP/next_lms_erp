@@ -14,8 +14,8 @@ use Illuminate\Support\Facades\Schema;
  * source page and number). Nothing else, and existing rows are never updated or deleted.
  *
  * Idempotency has three layers: the item row is locked and skipped once it holds a question_id;
- * (job_id, content_hash) is UNIQUE on the item table; and a question with the same content hash
- * already in the bank for this school/standard/subject is recorded as a duplicate instead of inserted.
+ * each extracted occurrence has a stable (job_id, source_key); and a normalized question title
+ * already in the same resolved chapter is recorded as a duplicate instead of inserted.
  * Each write is one transaction, so a crash leaves either a complete question or none.
  */
 class QuestionPaperPersistence
@@ -56,19 +56,38 @@ class QuestionPaperPersistence
                 return 'skipped';
             }
 
-            if ($this->existsInBank($job, $row->content_hash)) {
-                $this->setState($itemId, 'duplicate', 'An identical question is already in the bank.');
-
-                return 'duplicate';
-            }
-
             $explicitChapterId = !empty($item['chapter_text'])
                 ? app(QuestionPaperMetadataResolver::class)->resolveChapterTitle($job, (string) $item['chapter_text'])
                 : null;
             $chapterId = $explicitChapterId
                 ?? (!empty($item['chapter_id'])
                     ? app(QuestionPaperMetadataResolver::class)->validChapter((int) $job->sub_institute_id, (int) $job->standard_id, (int) $job->subject_id, (int) $item['chapter_id'])
-                    : $job->chapter_id);
+                    : app(QuestionPaperMetadataResolver::class)->validChapter(
+                        (int) $job->sub_institute_id,
+                        (int) $job->standard_id,
+                        (int) $job->subject_id,
+                        $job->chapter_id !== null ? (int) $job->chapter_id : null
+                    ));
+
+            if ($chapterId !== null) {
+                $chapter = DB::table('chapter_master')->where('id', $chapterId)
+                    ->where('sub_institute_id', $job->sub_institute_id)
+                    ->where('standard_id', $job->standard_id)
+                    ->where('subject_id', $job->subject_id)
+                    ->lockForUpdate()
+                    ->first(['id']);
+
+                if ($chapter && $this->existsInChapter($job, $chapterId, (string) $item['question_text'])) {
+                    $this->setState($itemId, 'duplicate', 'A matching question already exists in this chapter.');
+
+                    return 'duplicate';
+                }
+
+                if (!$chapter) {
+                    $chapterId = null;
+                }
+            }
+
             $reasons = $item['review'] ?? [];
             if ($chapterId === null) {
                 $reasons[] = 'Chapter is not resolved.';
@@ -98,19 +117,26 @@ class QuestionPaperPersistence
         DB::table('question_paper_items')->where('id', $itemId)->update(['state' => $state, 'reason' => $reason, 'updated_at' => now()]);
     }
 
-    private function existsInBank(object $job, string $hash): bool
+    private function existsInChapter(object $job, int $chapterId, string $questionText): bool
     {
-        if (!$this->hasColumn('lms_question_master', 'g_content_hash')) {
-            return false;
+        $normaliser = app(QuestionPaperItemNormaliser::class);
+        $normalized = $normaliser->normaliseQuestionText($questionText);
+
+        $questions = DB::table('lms_question_master')
+            ->where('sub_institute_id', $job->sub_institute_id)
+            ->where('chapter_id', $chapterId)
+            ->whereNotNull('question_title')
+            ->when($this->hasColumn('lms_question_master', 'deleted_at'), fn ($q) => $q->whereNull('deleted_at'))
+            ->orderBy('id')
+            ->cursor(['question_title']);
+
+        foreach ($questions as $question) {
+            if ($normaliser->normaliseQuestionText((string) $question->question_title) === $normalized) {
+                return true;
+            }
         }
 
-        return DB::table('lms_question_master')
-            ->where('sub_institute_id', $job->sub_institute_id)
-            ->where('standard_id', $job->standard_id)
-            ->where('subject_id', $job->subject_id)
-            ->where('g_content_hash', $hash)
-            ->when($this->hasColumn('lms_question_master', 'deleted_at'), fn ($q) => $q->whereNull('deleted_at'))
-            ->exists();
+        return false;
     }
 
     /** @return array<string, mixed> */

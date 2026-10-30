@@ -61,6 +61,10 @@ class QuestionPaperPipelineTest extends QuestionPaperTestCase
         $this->assertSame(1, (int) $short->status);
         $this->assertSame('short', $short->question_format_code);
         $this->assertSame(2, (int) $short->points);
+        $this->assertSame(
+            'Change of liquid to vapour below its boiling point.',
+            json_decode($short->answer, true)['model_answer']
+        );
 
         $this->assertSame(1, DB::table('user_notifications')->count());
         $note = DB::table('user_notifications')->first();
@@ -78,6 +82,23 @@ class QuestionPaperPipelineTest extends QuestionPaperTestCase
 
         $this->assertSame('completed', $this->job($job)->status);
         $this->assertSame('success', DB::table('user_notifications')->value('severity'));
+    }
+
+    public function test_a_large_multi_page_paper_is_processed_in_bounded_ai_chunks(): void
+    {
+        $this->fakeParser([
+            ['header' => self::HEADER, 'questions' => [$this->mcq('Large paper first question?', 'A')]],
+            ['header' => self::HEADER, 'questions' => [$this->mcq('Large paper second question?', 'B')]],
+        ]);
+        $pages = array_fill(0, 10, str_repeat('Question paper content for this page. ', 40));
+        $job = $this->makeJob(pages: $pages);
+
+        $this->process($job);
+
+        $row = $this->job($job);
+        $this->assertSame('completed', $row->status);
+        $this->assertSame([2, 2, 10], [(int) $row->total_chunks, (int) $row->parsed_chunks, (int) $row->processed_pages]);
+        $this->assertSame(2, DB::table('lms_question_master')->count());
     }
 
     public function test_running_the_job_again_cannot_duplicate_questions_answers_or_notifications(): void
@@ -158,6 +179,62 @@ class QuestionPaperPipelineTest extends QuestionPaperTestCase
         $this->assertSame(3, DB::table('question_paper_items')->where('job_id', $second->id)->where('state', 'duplicate')->count());
         $this->assertSame(3, (int) $this->job($second)->questions_skipped);
         $this->assertSame(0, (int) $this->job($second)->questions_saved);
+    }
+
+    public function test_duplicate_text_is_normalized_and_only_skips_that_question_in_the_same_chapter(): void
+    {
+        $this->fakeParser([
+            ['header' => self::HEADER, 'questions' => [$this->mcq('What is matter made of?', 'A')]],
+            ['header' => self::HEADER, 'questions' => [
+                $this->mcq("  WHAT is matter\nmade of!!! ", 'A'),
+                $this->mcq('Name the process by which a liquid becomes a gas.', 'B'),
+                $this->mcq('  NAME the process by which a liquid becomes a gas!!!', 'B'),
+                ['format' => 'short', 'question_text' => 'bad'],
+            ]],
+        ]);
+        $first = $this->makeJob();
+        $this->process($first);
+
+        $second = $this->makeJob();
+        $this->process($second);
+
+        $row = $this->job($second);
+        $stats = app(QuestionPaperJobService::class)->present($row, null, app(QuestionPaperJobService::class)->breakdowns([(int) $second->id])[(int) $second->id]);
+        $this->assertSame(4, (int) $row->questions_extracted);
+        $this->assertSame(1, (int) $row->questions_saved);
+        $this->assertSame(3, (int) $row->questions_skipped);
+        $this->assertSame(2, $stats['questions_duplicates']);
+        $this->assertSame(1, $stats['questions_failed']);
+        $this->assertSame(2, DB::table('lms_question_master')->count());
+        $this->assertSame(8, DB::table('answer_master')->count(), 'the duplicate produced no answer rows; the new question did');
+        $this->assertSame(2, DB::table('question_paper_items')->where('job_id', $second->id)->where('state', 'duplicate')->count());
+        $this->assertSame(1, DB::table('question_paper_items')->where('job_id', $second->id)->where('state', 'skipped')->count());
+    }
+
+    public function test_a_matching_question_in_another_chapter_is_not_a_duplicate(): void
+    {
+        $question = $this->mcq('Which state of matter has a definite shape?', 'A');
+        DB::table('chapter_master')->insert([
+            'id' => 102,
+            'standard_id' => 9,
+            'subject_id' => 3,
+            'chapter_name' => 'Atoms and Molecules',
+            'sub_institute_id' => self::TENANT,
+        ]);
+        $this->fakeParser([
+            ['header' => self::HEADER, 'questions' => [$question]],
+            ['header' => self::HEADER, 'questions' => [$question]],
+        ]);
+        $otherChapter = $this->makeJob(academic: ['standard_id' => 9, 'subject_id' => 3, 'chapter_id' => 102]);
+        $this->process($otherChapter);
+
+        $currentChapter = $this->makeJob(academic: ['standard_id' => 9, 'subject_id' => 3, 'chapter_id' => 101]);
+        $this->process($currentChapter);
+
+        $this->assertSame(2, DB::table('lms_question_master')->count());
+        $this->assertSame([102, 101], DB::table('lms_question_master')->orderBy('id')->pluck('chapter_id')->map(fn ($id) => (int) $id)->all());
+        $this->assertSame(0, DB::table('question_paper_items')->where('job_id', $currentChapter->id)->where('state', 'duplicate')->count());
+        $this->assertSame(0, (int) $this->job($currentChapter)->questions_skipped);
     }
 
     public function test_unresolved_standard_holds_questions_instead_of_guessing_then_a_retry_with_metadata_saves_them(): void

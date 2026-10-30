@@ -10,9 +10,8 @@ use RuntimeException;
  * Reads the questions out of a block of question-paper text with the school's configured
  * Document Intelligence provider chain (the same one the document classifier uses).
  *
- * The model only transcribes. It is told to copy question text, options, keys and explanations
- * exactly as printed and to leave a field null when the page does not give it. Nothing the model
- * returns is trusted beyond that: QuestionPaperItemNormaliser validates each question afterwards.
+ * The model transcribes and translates non-English content to English. It leaves absent fields null;
+ * QuestionPaperItemNormaliser validates every returned question before it can enter the question bank.
  */
 class QuestionPaperParser
 {
@@ -84,7 +83,7 @@ class QuestionPaperParser
     private function systemPrompt(): string
     {
         return <<<'PROMPT'
-You transcribe questions from a school question paper into strict JSON. Return ONE JSON object:
+You extract questions from a school question paper into strict JSON and return ONE JSON object.
 
 {
   "header": {"standard": string|null, "subject": string|null, "chapter": string|null, "academic_year": string|null},
@@ -93,12 +92,12 @@ You transcribe questions from a school question paper into strict JSON. Return O
       "item_number": string|null,   // as printed, e.g. "3", "Q.4", "5(a)"
       "page": integer|null,         // from the [[PAGE n]] marker the question starts on
       "format": "mcq"|"true_false"|"fill_blank"|"match_following"|"assertion_reason"|"numerical"|"very_short"|"short"|"long"|"case_study"|"proof"|"construction"|"other",
-      "question_text": string,      // exactly as printed
+      "question_text": string,      // faithfully translated into English when printed in another language
       "chapter": string|null,        // explicit chapter heading governing this question, else null
-      "options": [{"label": "A", "text": string}],   // only for printed options, else []
+      "options": [{"label": "A", "text": string}],   // only for printed options; text is in English
       "correct_option": string|null,                // option label, ONLY if the paper prints an answer key
-      "answer_text": string|null,                   // printed model answer / true-false verdict, else null
-      "explanation": string|null,                   // printed explanation, else null
+      "answer_text": string|null,                   // printed model answer / true-false verdict in English, else null
+      "explanation": string|null,                   // printed explanation in English, else null
       "marks": integer|null,                        // printed marks, else null
       "pairs": [{"left": string, "right": string}]|null   // match-the-following only
     }
@@ -106,7 +105,11 @@ You transcribe questions from a school question paper into strict JSON. Return O
 }
 
 Rules:
-- Transcribe; never write, fix or improve a question. Copy text exactly as printed.
+- Output all student-facing text in English. Faithfully translate question text, option text, printed answers,
+  explanations, matching-pair text and explicit chapter headings when the source is in another language.
+- If the paper already includes an English version, use that version rather than translating it again.
+- Translation must preserve meaning and difficulty. Do not solve, rewrite, correct, summarize or improve a question.
+- Preserve names, numbers, units, formulas, symbols, option labels and item numbering.
 - NEVER invent an answer, a correct option, an explanation, marks, a standard, subject or chapter.
   If the paper does not print it, use null.
 - "header" comes only from titles/headings that state it (e.g. "Class 9 Science, Chapter 1: Matter").

@@ -172,11 +172,15 @@ again: it must work without anyone starting anything.
 ## Behaviour to rely on (all covered by tests)
 
 - Upload stores the PDF and creates the job row **before** it answers; the browser never waits for extraction.
+- An upload may include a future extraction time. The scheduler leaves it queued until that time, then dispatches it to the same worker; the browser does not need to remain open.
 - One worker per job (database lease, 20 min, renewed on every progress write). A killed worker's job is picked up
   by the scheduler after the lease expires and resumes from saved progress (parsed chunks, saved questions).
 - Retries: 4 attempts, waits of 60 s, 300 s, 900 s, then `failed` with `retryable` kept so the owner can retry.
-- Questions cannot be duplicated: unique `(job_id, content_hash)`, per-question transactions, and a bank-wide hash check
-  for the same school, standard and subject.
+- Duplicate questions are matched by normalized question text only inside the resolved `chapter_id` for the same school.
+  Other chapters never participate. A match is marked as a skipped duplicate before question or answer rows are written;
+  remaining questions continue normally. The UI reports extracted, stored, duplicate, and failed question counts.
+- Stable `(job_id, source_key)` item identities make extraction retries idempotent while retaining repeated occurrences
+  for accurate duplicate counts.
 - A paper never reports **completed** while a question is unwritten.
 
 ## Apply / verify, in order (staging first)
@@ -187,6 +191,8 @@ again: it must work without anyone starting anything.
    php artisan migrate --path=database/migrations/2026_10_28_100000_create_question_paper_jobs_tables.php --force
    php artisan migrate --path=database/migrations/2026_10_28_100100_create_user_notifications_table.php --force
    php artisan migrate --path=database/migrations/2026_10_28_100200_add_declared_type_to_document_master.php --force
+   php artisan migrate --path=database/migrations/2026_10_30_140000_add_scheduled_at_to_question_paper_jobs.php --force
+   php artisan migrate --path=database/migrations/2026_10_30_160000_scope_question_paper_items_to_extraction_occurrences.php --force
    ```
 2. Install the worker (Supervisor **or** systemd) and confirm it is alive:
    `supervisorctl status question-papers-worker:*` / `systemctl status question-papers-worker`.
@@ -194,7 +200,9 @@ again: it must work without anyone starting anything.
 4. Confirm the environment: `php artisan tinker --execute="echo config('queue.default');"` is not `sync`.
 5. Upload a small non-sensitive paper. Within a few seconds the Question papers tab must move from "Waiting to start" to
    "Processing" **without any manual command**. Close the browser; reopen; the job and counts are still there.
-6. Stop the worker mid-job (`supervisorctl stop ...`), wait for the lease to expire (20 min) or set `lease_expires_at` in the
+6. Upload a second paper with a future schedule. Close the browser before that time; after the next scheduler tick the worker
+   must start it automatically and the status must progress without opening the application.
+7. Stop the worker mid-job (`supervisorctl stop ...`), wait for the lease to expire (20 min) or set `lease_expires_at` in the
    past on a **staging** row, start it again: the job must finish with no duplicate questions.
 
 ## Known gaps
@@ -202,6 +210,6 @@ again: it must work without anyone starting anything.
 - The hosting platform of the production backend could not be inspected from the development machine (no server access, and
   nothing in the repository identifies it). The Supervisor and systemd files therefore contain `__PLACEHOLDERS__` instead of
   guessed values; see "Host discovery" above. They are not installable until those are filled in.
-- Cleanup: the 3 migrations were already applied to the shared database; staging must get its own database.
+- The original migrations were already applied to the shared database; apply the scheduled-time and extraction-occurrence migrations to each target database before deploying these changes. Staging must use its own database.
 - Job id 16 in the shared `jobs` table is an old `QuestionPaperExtractionJob` on the `default` queue from before this
   connection existed. It belongs to a finished job, so it would exit immediately, but it only runs if a `default` worker is started.

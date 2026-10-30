@@ -12,6 +12,7 @@ use App\Services\QuestionPapers\QuestionPaperMetadataResolver;
 use App\Services\QuestionPapers\QuestionPaperReviewService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
@@ -55,10 +56,28 @@ class QuestionPaperController extends PlatformController
             'subject_id' => 'nullable|integer|min:1',
             'chapter_id' => 'nullable|integer|min:1',
             'academic_year' => 'nullable|string|max:20',
+            'scheduled_at' => ['nullable', 'date_format:Y-m-d\TH:i:s.v\Z'],
         ]);
-        if ($validator->fails()) {
+        $validationFailed = $validator->fails();
+        if (!$validationFailed && $request->filled('scheduled_at')) {
+            $requestedSchedule = Carbon::createFromFormat('Y-m-d\TH:i:s.v\Z', $request->input('scheduled_at'), 'UTC');
+            if (!$requestedSchedule || !$requestedSchedule->isAfter(now())) {
+                $validator->errors()->add('scheduled_at', 'The scheduled extraction time must be in the future.');
+                $validationFailed = true;
+            }
+        }
+        if ($validationFailed) {
             return $this->fail($validator->errors()->first(), 422);
         }
+        if ($request->filled('scheduled_at') && !Schema::hasColumn('question_paper_jobs', 'scheduled_at')) {
+            return $this->fail(
+                'Scheduled extraction is not enabled yet. Apply the scheduled question paper migration, then try again.',
+                503
+            );
+        }
+        $scheduledAt = $request->filled('scheduled_at')
+            ? Carbon::createFromFormat('Y-m-d\TH:i:s.v\Z', $request->input('scheduled_at'), 'UTC')->utc()
+            : null;
 
         $file = $request->file('file');
         if (strtolower($file->getClientOriginalExtension()) !== 'pdf') {
@@ -85,7 +104,7 @@ class QuestionPaperController extends PlatformController
         $stored = $this->storage->storeUpload($file);
 
         try {
-            [$document, $job] = DB::transaction(function () use ($stored, $tenant, $userId, $chosen, $request) {
+            [$document, $job] = DB::transaction(function () use ($stored, $tenant, $userId, $chosen, $request, $scheduledAt) {
                 $document = DocumentMaster::create([
                     'sub_institute_id' => $tenant,
                     'title' => pathinfo($stored['original_file_name'], PATHINFO_FILENAME),
@@ -112,7 +131,10 @@ class QuestionPaperController extends PlatformController
                 DocumentAuditService::logVersion($document, 1, $stored['storage_path'], $stored['checksum_sha256'], $stored['size'], 'Initial upload', $userId);
                 DocumentAuditService::log($document, 'upload', $userId, ['original_file_name' => $stored['original_file_name'], 'declared_type' => 'question_paper']);
 
-                $job = $this->jobs->create($document->id, $tenant, $userId, $chosen + ['academic_year' => $request->input('academic_year')]);
+                $job = $this->jobs->create($document->id, $tenant, $userId, $chosen + [
+                    'academic_year' => $request->input('academic_year'),
+                    'scheduled_at' => $scheduledAt?->toDateTimeString(),
+                ]);
 
                 return [$document, $job];
             });
@@ -127,13 +149,16 @@ class QuestionPaperController extends PlatformController
             return $this->fail('The upload could not be saved. Please try again.', 500);
         }
 
-        $queued = $this->jobs->dispatch($job);
+        $isScheduled = $scheduledAt !== null && $scheduledAt->isFuture();
+        $queued = $isScheduled ? false : $this->jobs->dispatch($job);
 
         return response()->json([
             'status_code' => 1,
-            'message' => $queued
-                ? 'Question paper uploaded. It is being processed in the background.'
-                : 'Question paper uploaded. Processing will start when the background worker is available.',
+            'message' => $isScheduled
+                ? 'Question paper uploaded and scheduled. It will start automatically at the selected time.'
+                : ($queued
+                    ? 'Question paper uploaded. It is being processed in the background.'
+                    : 'Question paper uploaded. Processing will start when the background worker is available.'),
             'data' => $this->jobs->present($job, $document),
         ], 201);
     }

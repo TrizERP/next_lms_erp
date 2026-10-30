@@ -6,9 +6,8 @@ use App\Services\QuestionPapers\QuestionPaperJobService;
 use Illuminate\Console\Command;
 
 /**
- * Recovery for Question Paper jobs: dispatches a bounded batch of unfinished jobs that no worker is
- * running (lost queue message, killed worker, expired lease). It only enqueues; the extraction runs
- * on the queue worker, never inside the scheduler. Re-dispatching a healthy job is harmless.
+ * Dispatches due Question Paper jobs and recovers unfinished jobs with lost queue messages, killed
+ * workers or expired leases. It only enqueues; extraction runs on the queue worker, never here.
  */
 class DispatchQuestionPapers extends Command
 {

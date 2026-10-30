@@ -114,7 +114,30 @@ class QuestionPaperProcessor
         }
 
         $temp = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'qp_' . $job->uuid . '.pdf';
-        file_put_contents($temp, app(DocumentStorageService::class)->get($document->storage_path)); // storage errors are transient
+        $target = @fopen($temp, 'wb');
+        if ($target === false) {
+            throw new \RuntimeException('A temporary file could not be opened for this question paper.');
+        }
+
+        $source = null;
+        try {
+            $source = app(DocumentStorageService::class)->readStream($document->storage_path);
+            if (!is_resource($source)) {
+                throw new \RuntimeException('The stored question paper could not be opened for reading.');
+            }
+            $bytes = stream_copy_to_stream($source, $target);
+            if ($bytes === false || $bytes === 0) {
+                throw new \RuntimeException('The stored question paper could not be copied to the worker.');
+            }
+        } catch (Throwable $e) {
+            @unlink($temp);
+            throw $e;
+        } finally {
+            if (is_resource($source)) {
+                fclose($source);
+            }
+            fclose($target);
+        }
 
         if ($problem = PdfFileCheck::problem($temp)) {
             @unlink($temp);
@@ -206,7 +229,7 @@ class QuestionPaperProcessor
             foreach ($parsed['header'] as $key => $value) {
                 $header[$key] ??= $value;
             }
-            $this->storeItems($job, $parsed['questions']);
+            $this->storeItems($job, $parsed['questions'], $index);
 
             $pagesDone += count($pages);
             $this->jobs->update((int) $job->id, $token, [
@@ -220,14 +243,15 @@ class QuestionPaperProcessor
         // total_chunks == 0 (blank document) falls through to finalize, which reports "no questions".
     }
 
-    private function storeItems(object $job, array $questions): void
+    private function storeItems(object $job, array $questions, int $chunkIndex): void
     {
         $ordinal = (int) DB::table('question_paper_items')->where('job_id', $job->id)->max('ordinal');
 
-        foreach ($questions as $raw) {
+        foreach ($questions as $questionIndex => $raw) {
             $ordinal++;
             $result = $this->normaliser->normalise($raw);
             $now = now();
+            $sourceKey = $chunkIndex . ':' . $questionIndex;
 
             if ($result['ok']) {
                 $item = $result['item'];
@@ -236,6 +260,7 @@ class QuestionPaperProcessor
                     'source_page' => $item['source_page'],
                     'format_code' => $item['format_code'],
                     'content_hash' => $item['content_hash'],
+                    'source_key' => $sourceKey,
                     'state' => 'parsed',
                     'reason' => null,
                     'payload' => json_encode($item, JSON_UNESCAPED_UNICODE),
@@ -247,13 +272,21 @@ class QuestionPaperProcessor
                     'source_page' => isset($raw['page']) && is_numeric($raw['page']) ? (int) $raw['page'] : null,
                     'format_code' => null,
                     'content_hash' => hash('sha256', 'skipped|' . $job->id . '|' . json_encode($raw)),
+                    'source_key' => $sourceKey,
                     'state' => 'skipped',
                     'reason' => mb_substr($result['reason'], 0, 255),
                     'payload' => json_encode($raw, JSON_UNESCAPED_UNICODE),
                 ];
             }
 
-            // The unique (job_id, content_hash) makes re-parsing a chunk after a crash harmless.
+            // Adopt a pre-migration item when an interrupted old chunk is parsed again.
+            $legacyItem = DB::table('question_paper_items')->where('job_id', $job->id)
+                ->where('content_hash', $row['content_hash'])->where('source_key', 'like', 'legacy:%')->first(['id']);
+            if ($legacyItem && !DB::table('question_paper_items')->where('job_id', $job->id)->where('source_key', $sourceKey)->exists()) {
+                DB::table('question_paper_items')->where('id', $legacyItem->id)->update(['source_key' => $sourceKey, 'updated_at' => $now]);
+                continue;
+            }
+
             DB::table('question_paper_items')->insertOrIgnore($row + [
                 'job_id' => $job->id,
                 'sub_institute_id' => $job->sub_institute_id,

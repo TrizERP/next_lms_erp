@@ -4,7 +4,7 @@ namespace Tests\Support;
 
 use App\Services\Documents\DocumentStorageService;
 
-/** Reads "stored" documents from a local folder instead of Spaces. Only get() is needed by the worker. */
+/** Reads "stored" documents from a local folder instead of Spaces. */
 class FileBackedDocumentStorage extends DocumentStorageService
 {
     public function __construct(private string $dir)
@@ -16,5 +16,13 @@ class FileBackedDocumentStorage extends DocumentStorageService
         $file = $this->dir . DIRECTORY_SEPARATOR . basename($path);
 
         return is_file($file) ? (string) file_get_contents($file) : throw new \RuntimeException("No stored file {$path}");
+    }
+
+    public function readStream(string $path)
+    {
+        $file = $this->dir . DIRECTORY_SEPARATOR . basename($path);
+        $stream = is_file($file) ? fopen($file, 'rb') : false;
+
+        return $stream !== false ? $stream : throw new \RuntimeException("No stored file {$path}");
     }
 }

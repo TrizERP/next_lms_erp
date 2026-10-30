@@ -115,6 +115,11 @@ class QuestionPaperItemNormaliser
         return hash('sha256', implode("\n", $parts));
     }
 
+    public function normaliseQuestionText(string $text): string
+    {
+        return $this->fold($text);
+    }
+
     private function fold(string $value): string
     {
         return preg_replace('/[^\p{L}\p{N} ]/u', '', mb_strtolower(preg_replace('/\s+/u', ' ', trim($value)))) ?? '';

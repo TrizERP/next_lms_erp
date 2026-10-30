@@ -181,26 +181,52 @@ try {
     Write-Host "dispatcher   every 60 s (idms:dispatch-question-papers)"
     Write-Host "logs         $logDir\dev-*.log     stop: Ctrl+C"
 
+    $workerStartTime = if ($children.worker) { Get-Date } else { $null }
+
     while ($true) {
-        Start-Sleep -Seconds 2
+        try {
+            Start-Sleep -Seconds 2
 
-        # Keep OUR worker alive. --max-time ends it hourly on purpose; a crash is restarted with a growing pause.
-        # EXCEPT while an operator has stopped it from the Document Library (the stop flag): that Stop must stay stopped until
-        # Start worker is pressed, which removes the flag, and the next pass then brings the worker back.
-        $stoppedByOperator = Test-Path $stopFlag
-        if ($ownsWorker -and $children.worker.HasExited -and -not $stoppedByOperator) {
-            $restarts++
-            $pause = [Math]::Min(30, [Math]::Pow(2, [Math]::Min($restarts, 5)))
-            if ($children.worker.ExitCode -eq 0) { $restarts = 0; $pause = 1 }
-            Write-Host ("{0} worker exited (code {1}); restarting in {2}s" -f (Get-Date -Format HH:mm:ss), $children.worker.ExitCode, $pause)
-            Start-Sleep -Seconds $pause
-            $children.worker = Start-Child 'worker' $workerArgs
-            (Get-Content $pidFile -Raw | ConvertFrom-Json) | ForEach-Object { $_.worker = $children.worker.Id; $_ } | ConvertTo-Json | Set-Content $pidFile
-        }
+            # Keep OUR worker alive. --max-time ends it hourly on purpose; a crash is restarted with a growing pause.
+            # EXCEPT while an operator has stopped it from the Document Library (the stop flag): that Stop must stay stopped until
+            # Start worker is pressed, which removes the flag, and the next pass then brings the worker back.
+            $stoppedByOperator = Test-Path $stopFlag
+            $workerExited = $false
+            try { $workerExited = $ownsWorker -and $children.worker -and $children.worker.HasExited } catch { }
+            if ($workerExited -and -not $stoppedByOperator) {
+                $exitCode = try { $children.worker.ExitCode } catch { $null }
+                $ranSeconds = if ($workerStartTime) { ((Get-Date) - $workerStartTime).TotalSeconds } else { 0 }
+                if ($ranSeconds -ge 60 -or ($exitCode -ne $null -and $exitCode -eq 0)) {
+                    $restarts = 0
+                    $pause = 1
+                } else {
+                    $restarts++
+                    $pause = [Math]::Min(30, [Math]::Pow(2, [Math]::Min($restarts, 5)))
+                }
+                Write-Host ("{0} worker exited (code {1}, ran {2:N0}s); restarting in {3}s" -f (Get-Date -Format HH:mm:ss), $exitCode, $ranSeconds, $pause)
+                Start-Sleep -Seconds $pause
+                try {
+                    $children.worker = Start-Child 'worker' $workerArgs
+                    $workerStartTime = Get-Date
+                    try {
+                        $currState = Read-PidFile
+                        if ($currState) {
+                            $currState.worker = $children.worker.Id
+                            $currState | ConvertTo-Json | Set-Content $pidFile
+                        }
+                    } catch { }
+                } catch {
+                    Write-Warning "Could not restart worker: $_"
+                }
+            }
 
-        if ((Get-Date) -ge $nextDispatch) {
-            $nextDispatch = (Get-Date).AddSeconds(60)
-            try { & $Php $artisan idms:dispatch-question-papers 2>&1 | Out-File (Join-Path $logDir 'dev-dispatch.log') -Append -Encoding utf8 } catch { }
+            if ((Get-Date) -ge $nextDispatch) {
+                $nextDispatch = (Get-Date).AddSeconds(60)
+                try { & $Php $artisan idms:dispatch-question-papers 2>&1 | Out-File (Join-Path $logDir 'dev-dispatch.log') -Append -Encoding utf8 } catch { }
+            }
+        } catch {
+            Write-Warning "Supervisor loop encountered error: $_"
+            Start-Sleep -Seconds 2
         }
     }
 }

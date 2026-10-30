@@ -12,6 +12,8 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Carbon;
 
 class QuestionPaperApiTest extends QuestionPaperTestCase
 {
@@ -84,6 +86,79 @@ class QuestionPaperApiTest extends QuestionPaperTestCase
         $this->assertSame(self::OWNER, (int) $doc->owner_id);
         $this->assertNotNull($job->last_dispatched_at);
         $this->assertSame(0, DB::table('lms_question_master')->count(), 'nothing is extracted inside the request');
+    }
+
+    public function test_a_scheduled_upload_is_not_queued_until_its_scheduled_time(): void
+    {
+        Queue::fake();
+        $scheduledAt = now()->addHour()->utc()->format('Y-m-d\TH:i:s.v\Z');
+
+        $response = $this->upload(['scheduled_at' => $scheduledAt]);
+
+        $this->assertSame(201, $response->getStatusCode());
+        $data = $response->getData(true)['data'];
+        $this->assertSame('queued', $data['status']);
+        $this->assertNotNull($data['scheduled_at']);
+        Queue::assertNothingPushed();
+
+        $job = DB::table('question_paper_jobs')->where('uuid', $data['id'])->first();
+        $this->assertNotNull($job->scheduled_at);
+        $this->assertNull($job->last_dispatched_at);
+        $jobs = app(QuestionPaperJobService::class);
+        $this->assertSame([], $jobs->dispatchable(10));
+        $this->assertNull($jobs->acquireLease((int) $job->id), 'a worker cannot claim a paper before its scheduled time');
+
+        Carbon::setTestNow(now()->addHours(2));
+        try {
+            $this->artisan('idms:dispatch-question-papers')->assertExitCode(0);
+            Queue::assertPushed(QuestionPaperExtractionJob::class, fn ($queued) => $queued->jobUuid === $data['id']);
+            $this->assertNotNull($jobs->acquireLease((int) $job->id), 'the due paper can be claimed by the background worker');
+        } finally {
+            Carbon::setTestNow();
+        }
+    }
+
+    public function test_a_past_schedule_is_rejected_without_storing_or_dispatching_the_document(): void
+    {
+        Queue::fake();
+
+        $response = $this->upload(['scheduled_at' => now()->subMinute()->utc()->format('Y-m-d\TH:i:s.v\Z')]);
+
+        $this->assertSame(422, $response->getStatusCode(), json_encode($response->getData(true)));
+        $this->assertStringContainsString('future', $response->getData(true)['message']);
+        $this->assertSame(0, DB::table('question_paper_jobs')->count());
+        Queue::assertNothingPushed();
+    }
+
+    public function test_question_paper_jobs_remain_loadable_before_the_scheduling_migration_is_applied(): void
+    {
+        Queue::fake();
+        Schema::table('question_paper_jobs', fn ($table) => $table->dropIndex('idx_qpj_scheduled'));
+        Schema::table('question_paper_jobs', fn ($table) => $table->dropColumn('scheduled_at'));
+
+        $job = $this->makeJob();
+        $response = $this->controller()->show($this->authed('GET'), $job->uuid);
+
+        $this->assertSame(200, $response->getStatusCode());
+        $this->assertNull($response->getData(true)['data']['scheduled_at']);
+        $this->assertCount(1, app(QuestionPaperJobService::class)->dispatchable(10));
+        $this->assertNotNull(app(QuestionPaperJobService::class)->acquireLease((int) $job->id));
+    }
+
+    public function test_scheduled_upload_explains_when_the_scheduling_migration_is_missing(): void
+    {
+        Queue::fake();
+        Schema::table('question_paper_jobs', fn ($table) => $table->dropIndex('idx_qpj_scheduled'));
+        Schema::table('question_paper_jobs', fn ($table) => $table->dropColumn('scheduled_at'));
+
+        $response = $this->upload([
+            'scheduled_at' => now()->addHour()->utc()->format('Y-m-d\TH:i:s.v\Z'),
+        ]);
+
+        $this->assertSame(503, $response->getStatusCode());
+        $this->assertStringContainsString('Apply the scheduled question paper migration', $response->getData(true)['message']);
+        $this->assertSame(0, DB::table('document_master')->count());
+        Queue::assertNothingPushed();
     }
 
     public function test_upload_rejects_wrong_extension_fake_pdf_truncated_pdf_and_foreign_academic_ids(): void

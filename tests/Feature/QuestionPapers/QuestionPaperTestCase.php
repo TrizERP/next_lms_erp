@@ -119,6 +119,8 @@ abstract class QuestionPaperTestCase extends TestCase
 
         foreach ([
             '2026_10_28_100000_create_question_paper_jobs_tables',
+            '2026_10_30_140000_add_scheduled_at_to_question_paper_jobs',
+            '2026_10_30_160000_scope_question_paper_items_to_extraction_occurrences',
             '2026_10_28_100100_create_user_notifications_table',
         ] as $migration) {
             (require base_path("database/migrations/{$migration}.php"))->up();
@@ -250,6 +252,16 @@ abstract class QuestionPaperTestCase extends TestCase
             public function get(string $path): string
             {
                 return $this->test->files[$path] ?? throw new \RuntimeException("No fake file at {$path}");
+            }
+
+            public function readStream(string $path)
+            {
+                $contents = $this->test->files[$path] ?? throw new \RuntimeException("No fake file at {$path}");
+                $stream = fopen('php://temp', 'w+b');
+                fwrite($stream, $contents);
+                rewind($stream);
+
+                return $stream;
             }
 
             public function storeUpload(UploadedFile $file): array
