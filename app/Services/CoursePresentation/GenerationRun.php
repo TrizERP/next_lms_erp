@@ -30,6 +30,8 @@ class GenerationRun
 {
     public const ACTIVE = ['queued', 'running', 'ready'];
     private const STALE_AFTER_SECONDS = 1800;
+    /** A saving mark older than this belongs to a request that died; approval may be tried again. */
+    private const SAVING_LOCK_SECONDS = 600;
 
     /**
      * @param Closure(string $command, array<string,mixed> $args, BufferedOutput $out):int|null $artisan the command runner (tests replace it)
@@ -76,6 +78,14 @@ class GenerationRun
     /** @param array<string,mixed> $data */
     private function write(array $data): void
     {
+        // A run that was failed or discarded (by the watchdog, or by a teacher) is not brought back to life by the worker still writing to it.
+        $path = $this->runDir((int) $data['chapter_id'], (string) $data['run']) . '/status.json';
+        if (in_array($data['state'] ?? '', ['queued', 'running', 'ready'], true) && is_file($path)) {
+            $disk = json_decode((string) @file_get_contents($path), true);
+            if (is_array($disk) && in_array($disk['state'] ?? '', ['failed', 'discarded'], true)) {
+                return;
+            }
+        }
         $data['updated_at'] = date('c');
         file_put_contents($this->runDir((int) $data['chapter_id'], (string) $data['run']) . '/status.json', json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
     }
@@ -135,7 +145,7 @@ class GenerationRun
         }
         $lastUpdate = strtotime((string) ($status['updated_at'] ?? $status['created_at'] ?? ''));
         if ($lastUpdate === false || time() - $lastUpdate <= self::STALE_AFTER_SECONDS) {
-            return $status;
+            return $this->failIfStuckInStage($status);
         }
 
         $wasQueued = $status['state'] === 'queued';
@@ -153,6 +163,62 @@ class GenerationRun
         );
 
         return $status;
+    }
+
+    /**
+     * A run that keeps reporting but has sat in ONE stage far too long (a stage that never ends is a stuck run, however busy its log looks) is
+     * failed with the stage named. The worker's own later writes cannot bring it back (see write()).
+     *
+     * @param array<string,mixed> $status
+     * @return array<string,mixed>
+     */
+    private function failIfStuckInStage(array $status): array
+    {
+        $cap = (int) config('course_presentation_pilot.generation.stage_max_seconds', 900);
+        $stage = (string) ($status['stage'] ?? '');
+        $since = isset($status['stage_times'][$stage]) ? strtotime((string) $status['stage_times'][$stage]) : false;
+        if (($status['state'] ?? '') !== 'running' || $cap <= 0 || $since === false || time() - $since <= $cap) {
+            return $status;
+        }
+        $label = GenerationProgress::describe($status, null, 'active')['stages'][array_search($stage, GenerationProgress::stageKeys(), true) ?: 0]['label'] ?? $stage;
+        $status['state'] = 'failed';
+        $status['error'] = sprintf('The run spent more than %d minutes in "%s" and was stopped. Nothing was stored. Start a new draft.', (int) round($cap / 60), $label);
+        $status['finished_at'] = date('c');
+        $this->write($status);
+        try {
+            app(\Illuminate\Bus\UniqueLock::class)->release(new \App\Jobs\GenerateCoursePresentationJob((int) $status['chapter_id'], (int) $status['tenant'], (string) $status['run']));
+        } catch (\Throwable) {
+        }
+
+        return $status;
+    }
+
+    /**
+     * Fails a run that has not started (or is running) with a reason the teacher can read. Used by the job when it cannot honestly run.
+     */
+    public function failRun(int $chapterId, int $tenant, string $run, string $reason): void
+    {
+        $status = $this->read($chapterId, $tenant, $run);
+        if ($status === null || !in_array($status['state'], ['queued', 'running'], true)) {
+            return;
+        }
+        $status['state'] = 'failed';
+        $status['error'] = $reason;
+        $status['finished_at'] = date('c');
+        $this->write($status);
+    }
+
+    /** True when a file of the generation pipeline was changed after this process started: a long-running worker still holds the older code. */
+    public function codeChangedSince(int $startedAt): bool
+    {
+        foreach (['Services/CoursePresentation/GenerationRun.php', 'Services/CoursePresentation/GenerationProgress.php', 'Services/StudyDeck/StudyDeckService.php', 'Services/StudyDeck/ImagePlanner.php', 'Services/StudyDeck/SlideContentGenerator.php', 'Services/StudyDeck/InteractionPlanner.php', 'Services/StudyDeck/SlidePlanner.php', 'Console/Commands/LMS/GenerateStudyDeckCommand.php'] as $file) {
+            $path = app_path($file);
+            if (is_file($path) && (int) filemtime($path) > $startedAt + 2) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
@@ -224,6 +290,16 @@ class GenerationRun
         return $status;
     }
 
+    /**
+     * Writes a run's status back (used by the draft picture editor after it changed the draft's files).
+     *
+     * @param array<string,mixed> $status
+     */
+    public function save(array $status): void
+    {
+        $this->write($status);
+    }
+
     /** Runs the pipeline. Never throws: a failure becomes the run's state. */
     public function execute(int $chapterId, int $tenant, string $run): void
     {
@@ -232,6 +308,9 @@ class GenerationRun
             return;
         }
         $status['state'] = 'running';
+        $status['started_at'] = date('c');
+        $status['stage'] = 'prepare';
+        $status['stage_times'] = ['queued' => $status['created_at'], 'prepare' => $status['started_at']];
         $this->write($status);
 
         $bundle = $this->runDir($chapterId, $run) . '/bundle';
@@ -241,6 +320,7 @@ class GenerationRun
                 return;
             }
             $status['log'] = array_slice(array_merge((array) ($status['log'] ?? []), $lines), -30);
+            GenerationProgress::advance($status, $lines);
             $this->write($status);
         }) extends BufferedOutput {
             private Closure $onWrite;
@@ -272,6 +352,11 @@ class GenerationRun
                 $args['--max-visuals'] = 35;
                 $args['--repair-rounds'] = (int) config('course_presentation_pilot.generation.repair_rounds', 4);
                 $args['--executor'] = app(ModelAvailability::class)->slidesExecutor();
+                if (config('course_presentation_pilot.generation.images.fast', true)) {
+                    $args['--fast-images'] = true;
+                }
+                $args['--target-seconds'] = (int) config('course_presentation_pilot.generation.target_seconds', 60);
+                $args['--hard-limit-seconds'] = (int) config('course_presentation_pilot.generation.hard_limit_seconds', 240);
             }
             $code = ($this->artisan)('lms:generate-study-deck', $args, $out);
         } catch (\Throwable $e) {
@@ -281,7 +366,13 @@ class GenerationRun
 
         $commandOutput = $out->fetch();
         $status['log'] = array_slice(array_values(array_filter(array_map('trim', explode("\n", $commandOutput)))), -30);
-        $report = is_file($bundle . '/report.json') ? json_decode((string) file_get_contents($bundle . '/report.json'), true) : null;
+        // The command has returned: what follows (readable pictures, quality rules, coverage) is the final verification.
+        if ($code === 0) {
+            $status['stage'] = 'verify';
+            $status['stage_times']['verify'] = date('c');
+            $this->write($status);
+        }
+        $report =is_file($bundle . '/report.json') ? json_decode((string) file_get_contents($bundle . '/report.json'), true) : null;
 
         $pictures = $code === 0 && is_array($report) && !empty($report['ok']) ? $this->imageReadiness->deckImages($bundle, $tenant) : null;
         $missingSlideImages = $code === 0 && is_array($report) && !empty($report['ok']) && ($status['format'] ?? '') === 'interactive_slides' ? $this->slidesWithoutReadableImages($bundle, $tenant) : [];
@@ -301,6 +392,10 @@ class GenerationRun
         } elseif ($missingSlideImages !== []) {
             $status['state'] = 'failed';
             $status['error'] = 'Every slide must have a readable image. The following slides have none: ' . implode(', ', array_slice($missingSlideImages, 0, 12)) . (count($missingSlideImages) > 12 ? ', and others' : '.') . ' Add a relevant image or a generated diagram and try again.';
+        } elseif ($code === 0 && is_array($report) && !empty($report['ok']) && !empty($report['teaching_method']['followed']) && !$this->readsBack($bundle)) {
+            // "Ready" means the draft is on disk and can be opened again, not that the model answered.
+            $status['state'] = 'failed';
+            $status['error'] = 'The draft was generated but could not be read back from where it was saved, so it was not offered for review.';
         } elseif ($code === 0 && is_array($report) && !empty($report['ok']) && !empty($report['teaching_method']['followed'])) {
             $status['state'] = 'ready';
             $status['images'] = array_diff_key($pictures ?? [], ['ids' => 1]);
@@ -320,7 +415,47 @@ class GenerationRun
                 : $this->failureDetail($commandOutput);
             $status['error'] = self::clean($detail);
         }
+        // The real time this run took, kept so later runs of the same kind can offer an honest estimate.
+        $status['finished_at'] = date('c');
+        $status['duration_seconds'] = max(1, strtotime($status['finished_at']) - strtotime((string) $status['started_at']));
+        if ($status['state'] === 'ready') {
+            $status['stage'] = 'ready';
+            $status['stage_times']['ready'] = $status['finished_at'];
+        }
+        // Where the time went, kept with the run and written to the log so a slow run can be traced to its stage.
+        $status['timings'] = GenerationProgress::timings($status, (int) config('course_presentation_pilot.generation.target_seconds', 60));
         $this->write($status);
+        try {
+            \Illuminate\Support\Facades\Log::info('course-presentation.run', ['run' => $status['run'], 'chapter' => $chapterId, 'state' => $status['state'], 'format' => $status['format'] ?? null, 'timings' => $status['timings'], 'error' => $status['error'] ?? null]);
+        } catch (\Throwable) {
+            // A log that cannot be written never changes the run.
+        }
+    }
+
+    /** The saved draft can be opened again: its deck reads back as non-empty JSON. */
+    private function readsBack(string $bundle): bool
+    {
+        $deck = is_file($bundle . '/deck.json') ? json_decode((string) file_get_contents($bundle . '/deck.json'), true) : null;
+
+        return is_array($deck) && $deck !== [];
+    }
+
+    /**
+     * Earlier runs of the school that finished a draft, with the time each took. Only status files are read.
+     *
+     * @return array<int,array<string,mixed>>
+     */
+    public function finishedRuns(int $tenant): array
+    {
+        $found = [];
+        foreach (glob(storage_path((string) config('course_presentation_pilot.generation.run_dir', 'app/course-presentation')) . '/chapter-*/r*/status.json') ?: [] as $path) {
+            $data = json_decode((string) @file_get_contents($path), true);
+            if (is_array($data) && (int) ($data['tenant'] ?? 0) === $tenant && !empty($data['duration_seconds']) && in_array($data['state'] ?? '', ['ready', 'stored'], true)) {
+                $found[] = array_intersect_key($data, array_flip(['chapter_id', 'method', 'format', 'state', 'duration_seconds']));
+            }
+        }
+
+        return $found;
     }
 
     /** Keep the actionable exception/validation text without repeating the progress log in the error alert. */
@@ -469,6 +604,10 @@ class GenerationRun
         if ($status['state'] !== 'ready') {
             return ['ok' => false, 'message' => 'Only a draft that passed validation and is waiting for review can be approved.', 'status' => $status];
         }
+        // A second approval while the first is still saving would store a duplicate: it is refused, not queued.
+        if (!empty($status['saving']) && time() - (int) strtotime((string) $status['saving']) < self::SAVING_LOCK_SECONDS) {
+            return ['ok' => false, 'message' => 'This draft is already being saved. Please wait.', 'status' => $status];
+        }
         $bundle = $this->runDir($chapterId, $run) . '/bundle';
         $deck = is_file($bundle . '/deck.json') ? json_decode((string) file_get_contents($bundle . '/deck.json'), true) : null;
         $report = is_file($bundle . '/report.json') ? json_decode((string) file_get_contents($bundle . '/report.json'), true) : null;
@@ -488,14 +627,26 @@ class GenerationRun
             return ['ok' => false, 'message' => 'A presentation is already stored for this chapter, teaching method and format; this draft would be a duplicate.', 'status' => $status];
         }
 
+        // Recorded for as long as the store command runs, so a refresh or a reopened window can say "saving" truthfully.
+        $status['saving'] = date('c');
+        $this->write($status);
+        $unlock = function () use (&$status): void {
+            unset($status['saving']);
+            $this->write($status);
+        };
+
         $out = new BufferedOutput();
         try {
             $code = ($this->artisan)('lms:store-study-deck', ['chapter' => $chapterId, '--bundle' => $bundle, '--tenant' => $tenant, '--user' => $userId, '--profile' => $profile, '--teaching-method' => $method], $out);
         } catch (\Throwable $e) {
+            $unlock();
+
             return ['ok' => false, 'message' => 'The draft could not be stored: ' . $e->getMessage(), 'status' => $status];
         }
         $row = $code === 0 ? $this->storedPresentation($chapterId, $tenant, $format, $method) : null;
         if ($row === null) {
+            $unlock();
+
             return ['ok' => false, 'message' => 'The draft could not be stored. ' . (trim($out->fetch()) ?: 'No details were recorded.'), 'status' => $status];
         }
 
@@ -505,6 +656,8 @@ class GenerationRun
         $linked = array_values(array_intersect($wanted, (new StudyDeckImages())->linkedImageIds((int) $row['id'])));
 
         $status['state'] = 'stored';
+        unset($status['saving']);
+        $status['stored_at'] = date('c');
         $status['stored'] = ['content_id' => (int) $row['id'], 'deep_link' => ContentGenerationService::studyDeckDeepLink($row), 'images' => ['referenced' => count($wanted), 'linked' => count($linked)]];
         $this->write($status);
 
@@ -592,6 +745,10 @@ class GenerationRun
     public function discard(int $chapterId, int $tenant, string $run): ?array
     {
         $status = $this->read($chapterId, $tenant, $run);
+        // Discarding twice is the same as discarding once: a second click (or a stale screen) is not an error.
+        if ($status !== null && $status['state'] === 'discarded') {
+            return $status;
+        }
         if ($status === null || !in_array($status['state'], ['ready', 'failed', 'queued'], true)) {
             return null;
         }

@@ -10,8 +10,10 @@ use App\Services\CoursePresentation\Templates\TextbookPicturePool;
 use App\Services\StudyDeck\ConceptContextBuilder;
 use App\Services\StudyDeck\StudyDeckImageUrls;
 use App\Services\CoursePresentation\FitValidator;
+use App\Services\CoursePresentation\GenerationProgress;
 use App\Services\CoursePresentation\GenerationRun;
 use App\Services\CoursePresentation\ImageReadiness;
+use App\Services\CoursePresentation\WorkerHeartbeat;
 use App\Services\CoursePresentation\ModelAvailability;
 use App\Services\CoursePresentation\MethodSuitability;
 use App\Services\CoursePresentation\Options;
@@ -244,7 +246,13 @@ class CoursePresentationController extends Controller
         }
         $progress = array_values(array_filter((array) ($s['log'] ?? []), fn ($l) => preg_match('/^(load|context|questions|map|plan|content|images|interact|activities|validate)\s/', (string) $l)));
 
+        // Earlier runs are read only to estimate the time of a run that is running right now.
+        $history = $s['state'] === 'running'
+            ? GenerationProgress::comparable(app(GenerationRun::class)->finishedRuns((int) $s['tenant']), (int) $s['chapter_id'], (string) $s['method'], (string) ($s['format'] ?? 'interactive_slides'))
+            : null;
+
         return [
+            'progress_info' => GenerationProgress::describe($s, $history, WorkerHeartbeat::state()),
             'run' => $s['run'],
             'state' => $s['state'],
             'method' => $s['method'],
@@ -281,7 +289,101 @@ class CoursePresentationController extends Controller
             'status_code' => 1,
             'notice' => 'This is a draft for review. Nothing has been stored or shown to students yet.',
             'deck' => (new \App\Services\StudyDeck\StudyDeckImageUrls())->hydrate($deck, $tenant),
+            // Per slide with a picture: can it be replaced here (and why not), and can the original be restored.
+            'slide_images' => (object) $this->imageEditor()->slideStates((int) $chapter['id'], $data['run'], $deck),
         ]);
+    }
+
+    private function imageEditor(): \App\Services\CoursePresentation\DraftImageEditor
+    {
+        return app(\App\Services\CoursePresentation\DraftImageEditor::class);
+    }
+
+    /**
+     * GET lms/course-presentation/draft-image/search?chapter_id=&run=&slide=&q= : openly licensed candidates for one slide's picture, searched with
+     * the slide's own words (or `q`). Writes nothing to the draft.
+     */
+    public function draftImageSearch(Request $request): JsonResponse
+    {
+        $data = $request->validate(['chapter_id' => 'required|integer|min:1', 'run' => ['required', 'string', 'regex:/^r[0-9a-f]{12}$/'], 'slide' => 'required|integer|min:1', 'node' => self::NODE_RULE, 'q' => 'nullable|string|max:200']);
+
+        return $this->imageEdit($request, $data, fn ($chapter, $tenant) => $this->imageEditor()->search((int) $chapter['id'], $tenant, $data['run'], (int) $data['slide'], $data['q'] ?? null, $data['node'] ?? null));
+    }
+
+    /**
+     * POST lms/course-presentation/draft-image/replace : replaces ONE slide's picture in a draft waiting for review, with a candidate the search
+     * offered (`candidate_id`) or an uploaded file (`image`, with `rights_confirmed`). Nothing else in the draft changes and nothing is approved.
+     */
+    public function draftImageReplace(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'chapter_id' => 'required|integer|min:1', 'run' => ['required', 'string', 'regex:/^r[0-9a-f]{12}$/'], 'slide' => 'required|integer|min:1', 'node' => self::NODE_RULE,
+            'candidate_id' => 'nullable|string|regex:/^[0-9a-f]{16}$/|required_without:image',
+            'image' => 'nullable|file|required_without:candidate_id|max:8192',
+            'rights_confirmed' => 'nullable|boolean', 'credit' => 'nullable|string|max:200', 'alt' => 'nullable|string|max:300',
+        ]);
+        $userId = (int) $request->session()->get('user_id');
+
+        return $this->imageEdit($request, $data, function ($chapter, $tenant) use ($data, $request, $userId) {
+            if ($request->hasFile('image')) {
+                if (!$request->boolean('rights_confirmed')) {
+                    throw new \App\Services\CoursePresentation\DraftImageException('Confirm that you have the right to use this picture.', 422);
+                }
+                $file = $request->file('image');
+                if (!$file->isValid()) {
+                    throw new \App\Services\CoursePresentation\DraftImageException('The upload did not complete. Try again.', 422);
+                }
+
+                return $this->imageEditor()->replaceFromUpload((int) $chapter['id'], $tenant, $data['run'], (int) $data['slide'], (string) file_get_contents($file->getRealPath()), (string) $file->getClientOriginalName(), $data['credit'] ?? null, $data['alt'] ?? null, $userId, $data['node'] ?? null);
+            }
+
+            return $this->imageEditor()->replaceFromSearch((int) $chapter['id'], $tenant, $data['run'], (int) $data['slide'], (string) $data['candidate_id'], $userId, $data['node'] ?? null);
+        });
+    }
+
+    /** POST lms/course-presentation/draft-image/restore : puts the original back (the first picture, or none when the slide began without one). */
+    public function draftImageRestore(Request $request): JsonResponse
+    {
+        $data = $request->validate(['chapter_id' => 'required|integer|min:1', 'run' => ['required', 'string', 'regex:/^r[0-9a-f]{12}$/'], 'slide' => 'required|integer|min:1', 'node' => self::NODE_RULE]);
+        $userId = (int) $request->session()->get('user_id');
+
+        return $this->imageEdit($request, $data, fn ($chapter, $tenant) => $this->imageEditor()->restore((int) $chapter['id'], $tenant, $data['run'], (int) $data['slide'], $userId, $data['node'] ?? null));
+    }
+
+    /** POST lms/course-presentation/draft-image/remove : takes the picture off the slide or scene; its text and interactions stay. */
+    public function draftImageRemove(Request $request): JsonResponse
+    {
+        $data = $request->validate(['chapter_id' => 'required|integer|min:1', 'run' => ['required', 'string', 'regex:/^r[0-9a-f]{12}$/'], 'slide' => 'required|integer|min:1', 'node' => self::NODE_RULE]);
+        $userId = (int) $request->session()->get('user_id');
+
+        return $this->imageEdit($request, $data, fn ($chapter, $tenant) => $this->imageEditor()->remove((int) $chapter['id'], $tenant, $data['run'], (int) $data['slide'], $userId, $data['node'] ?? null));
+    }
+
+    /** GET lms/course-presentation/draft-image/access : answers 200 only for a user who may change pictures (the route's own permission gate decides). */
+    public function draftImageAccess(): JsonResponse
+    {
+        return response()->json(['status_code' => 1, 'can_edit' => true]);
+    }
+
+    /** The id of a story scene inside a slide: letters, digits and the separators the story generator uses. */
+    private const NODE_RULE = ['nullable', 'string', 'max:64', 'regex:/^[A-Za-z0-9_.\/-]+$/'];
+
+    /**
+     * The chapter and school checks every picture edit passes, and the teacher-facing answer for a refusal.
+     *
+     * @param array<string,mixed> $data
+     */
+    private function imageEdit(Request $request, array $data, \Closure $work): JsonResponse
+    {
+        $chapter = $this->verifiedChapter($request, (int) $data['chapter_id'], $error);
+        if ($chapter === null) {
+            return $error;
+        }
+        try {
+            return response()->json(['status_code' => 1] + $work($chapter, (int) $chapter['sub_institute_id']));
+        } catch (\App\Services\CoursePresentation\DraftImageException $e) {
+            return response()->json(['status_code' => 0, 'message' => $e->getMessage()], $e->status);
+        }
     }
 
     /**

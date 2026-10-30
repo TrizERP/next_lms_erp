@@ -180,6 +180,7 @@ class GeminiClient implements ModelClient, SupportsImageGeneration, SupportsVisi
         ?float $temperature = null,
         bool $expectJson = false,
         ?int $timeout = null,
+        ?int $attempts = null,
     ): ?string {
         $key = $this->resolveApiKey();
 
@@ -187,6 +188,7 @@ class GeminiClient implements ModelClient, SupportsImageGeneration, SupportsVisi
             throw new RuntimeException('No usable AI API key is configured.');
         }
 
+        $model = $this->usableModel($model);
         [$system, $contents] = $this->split($messages);
 
         $generation = array_filter([
@@ -234,7 +236,8 @@ class GeminiClient implements ModelClient, SupportsImageGeneration, SupportsVisi
             // twenty-four requests, which tripped the per-minute limit that had not
             // been tripped before. A 429 surfaces immediately so the caller degrades
             // once rather than hammering. A 400 or 401 is a real fault and also surfaces.
-            ->retry(self::MAX_ATTEMPTS, self::backoff(...), function ($exception, $request): bool {
+            // `$attempts` lets a caller with a deadline own the retrying (the default is the client's usual three, with a backoff).
+            ->retry($attempts ?? self::MAX_ATTEMPTS, self::backoff(...), function ($exception, $request): bool {
                 // `response` is a public property on RequestException, not a method.
                 // This read `method_exists($exception, 'response')`, which is false for
                 // every exception Laravel hands this callback — so the status was always
@@ -256,6 +259,7 @@ class GeminiClient implements ModelClient, SupportsImageGeneration, SupportsVisi
         // so a sibling would only add load.
         if ($response->status() === 429 && $this->isDailyQuota($response)) {
             $exhausted = $model ?? $this->defaultModel();
+            $this->markSpent($exhausted);
 
             foreach ($this->alternateModels($exhausted) as $alternate) {
                 $retry = Http::withHeaders([
@@ -283,6 +287,143 @@ class GeminiClient implements ModelClient, SupportsImageGeneration, SupportsVisi
         return $this->textFrom($response->json());
     }
 
+    /**
+     * Several independent completions asked at the SAME time: one attempt each, no retry and no sibling-model fallback.
+     * A slot that did not answer (a provider error, a timeout, an empty or blocked answer) holds the reason instead of text, so the
+     * caller can ask that one again through chat(), which owns the retry and quota rules. One bad slot never costs the others.
+     *
+     * @param array<int,array{messages:array<int,array{role:string,content:string}>,max_tokens?:int,temperature?:float,expect_json?:bool}> $requests
+     * @return array<int,string|Throwable> the same keys: the answer text, or why there is none
+     */
+    public function chatMany(array $requests, ?int $timeout = null, ?string $model = null): array
+    {
+        if ($requests === []) {
+            return [];
+        }
+        $key = $this->resolveApiKey();
+        if ($key === null) {
+            throw new RuntimeException('No usable AI API key is configured.');
+        }
+        $model = $this->usableModel($model);
+        $timeout ??= (int) config('ai.provider.gemini.timeout', self::DEFAULT_TIMEOUT);
+
+        $bodies = [];
+        foreach ($requests as $i => $r) {
+            [$system, $contents] = $this->split($r['messages']);
+            $generation = array_filter([
+                'maxOutputTokens' => $r['max_tokens'] ?? (int) config('ai.provider.gemini.max_output_tokens', self::DEFAULT_MAX_TOKENS),
+                'temperature' => $r['temperature'] ?? null,
+                'responseMimeType' => !empty($r['expect_json']) ? 'application/json' : null,
+            ], static fn ($value) => $value !== null);
+            $bodies[$i] = array_filter([
+                'contents' => $contents,
+                'systemInstruction' => $system === null ? null : ['parts' => [['text' => $system]]],
+                'generationConfig' => $generation === [] ? null : $generation,
+            ], static fn ($value) => $value !== null);
+        }
+
+        // One parallel round on the model in use. A slot answered with the model's DAILY quota spent is asked again, still in parallel, on the
+        // next model (and the model is remembered as spent): asking the failed slots one by one afterwards is what made a whole generation crawl.
+        $run = fn (string $m, array $slots) => Http::pool(function (\Illuminate\Http\Client\Pool $pool) use ($slots, $key, $m, $timeout) {
+            $endpoint = $this->endpoint($m);
+            $calls = [];
+            foreach ($slots as $i => $body) {
+                $calls[] = $pool->as((string) $i)->withHeaders(['x-goog-api-key' => $key['api_key'], 'Content-Type' => 'application/json'])->timeout($timeout)->post($endpoint, $body);
+            }
+
+            return $calls;
+        });
+        $responses = $run($model, $bodies);
+        $spent = fn ($r) => $r instanceof \Illuminate\Http\Client\Response && $r->status() === 429 && $this->isDailyQuota($r);
+        $retry = array_filter($bodies, fn ($body, $i) => $spent($responses[(string) $i] ?? null), ARRAY_FILTER_USE_BOTH);
+        if ($retry !== []) {
+            $this->markSpent($model);
+            foreach ($this->alternateModels($model) as $alternate) {
+                if ($retry === [] || $this->isSpent($alternate)) {
+                    continue;
+                }
+                $second = $run($alternate, $retry);
+                foreach (array_keys($retry) as $i) {
+                    $r = $second[(string) $i] ?? null;
+                    if ($r instanceof \Illuminate\Http\Client\Response && $r->successful()) {
+                        $responses[(string) $i] = $r;
+                        unset($retry[$i]);
+                    } elseif ($spent($r)) {
+                        $this->markSpent($alternate);
+                    }
+                }
+            }
+        }
+
+        $out = [];
+        foreach (array_keys($bodies) as $i) {
+            $response = $responses[(string) $i] ?? null;
+            if ($response instanceof Throwable) {
+                $out[$i] = $response;
+            } elseif ($response === null || !$response->successful()) {
+                $out[$i] = $response === null ? new RuntimeException('No answer.') : $this->failure($response);
+            } else {
+                $text = $this->textFrom($response->json());
+                $out[$i] = is_string($text) && trim($text) !== '' ? $text : new RuntimeException('Gemini returned no usable text.');
+            }
+        }
+
+        return $out;
+    }
+
+    private function spentKey(string $model): string
+    {
+        // Tied to the key as well as the model: a different key has its own quota, so changing the key lifts the mark at once.
+        $key = $this->resolveApiKey();
+
+        return 'gemini:daily-spent:' . sha1($model . '|' . (string) $this->subInstituteId . '|' . (string) ($key['id'] ?? '') . '|' . substr(sha1((string) ($key['api_key'] ?? '')), 0, 12));
+    }
+
+    /** Remember that a model's daily quota is used up, so the next calls start on another model instead of failing first. */
+    private function markSpent(string $model): void
+    {
+        try {
+            \Illuminate\Support\Facades\Cache::put($this->spentKey($model), 1, now()->addHours(4));
+        } catch (Throwable) {
+        }
+    }
+
+    private function isSpent(string $model): bool
+    {
+        try {
+            return (bool) \Illuminate\Support\Facades\Cache::get($this->spentKey($model), false);
+        } catch (Throwable) {
+            return false;
+        }
+    }
+
+    /** The model to ask: the one named (or the default), unless its daily quota is known to be spent and another model is available. */
+    private function usableModel(?string $model): string
+    {
+        $wanted = $model ?? $this->defaultModel();
+        if (! $this->isSpent($wanted)) {
+            return $wanted;
+        }
+        foreach ($this->alternateModels($wanted) as $alternate) {
+            if (! $this->isSpent($alternate)) {
+                return $alternate;
+            }
+        }
+
+        return $wanted;
+    }
+
+    /**
+     * The fallback models this platform already has configured for the configured model (the model catalogue, then GEMINI_FALLBACK_MODELS), in
+     * the order they would be tried. Nothing is added here and no other key is involved.
+     *
+     * @return array<int,string>
+     */
+    public function fallbackModels(): array
+    {
+        return $this->alternateModels($this->defaultModel());
+    }
+
     /** Whether a 429 is the per-model DAILY allowance (the only one a sibling model can help with). */
     private function isDailyQuota(\Illuminate\Http\Client\Response $response): bool
     {
@@ -300,7 +441,8 @@ class GeminiClient implements ModelClient, SupportsImageGeneration, SupportsVisi
             $models = app(\App\Domain\AI\Configuration\ModelCatalog::class)
                 ->forProvider('gemini', $this->subInstituteId);
         } catch (\Throwable) {
-            return [];
+            // A catalogue that cannot be read must not remove the configured last-resort models.
+            $models = [];
         }
 
         // The catalogue first, then the configured last-resort models: a model can be live at the
@@ -569,7 +711,9 @@ class GeminiClient implements ModelClient, SupportsImageGeneration, SupportsVisi
                 temperature: $temperature,
                 expectJson: true,
             );
-        } catch (Throwable) {
+        } catch (Throwable $e) {
+            report($e);
+
             return null;
         }
 
@@ -706,13 +850,11 @@ class GeminiClient implements ModelClient, SupportsImageGeneration, SupportsVisi
     private function normalizeModel(string $model): string
     {
         $map = [
-            'gemini-3.6-flash' => 'gemini-3-flash-preview',
-            'gemini-3.6-pro'   => 'gemini-3-flash-preview',
-            'gemini-2.5-flash' => 'gemini-3-flash-preview',
-            'gemini-2.5-pro'   => 'gemini-3-flash-preview',
-            'gemini-1.5-flash' => 'gemini-3-flash-preview',
-            'gemini-1.5-pro'   => 'gemini-3-flash-preview',
-            'gemini-1.0-pro'   => 'gemini-3-flash-preview',
+            'gemini-1.5-flash'    => 'gemini-2.5-flash',
+            'gemini-1.5-pro'      => 'gemini-2.5-flash',
+            'gemini-1.0-pro'      => 'gemini-2.5-flash',
+            'gemini-3.6-pro'      => 'gemini-2.5-flash',
+            'gemini-flash-latest' => 'gemini-2.5-flash',
         ];
 
         return $map[$model] ?? $model;

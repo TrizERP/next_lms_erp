@@ -143,9 +143,28 @@ class StudyDeckService
         $content = $this->contentGenerator->generate($context, $map, $plan, fn ($done, $total) => $say('content', "$done/$total slides written"));
 
         $say('images', 'Finding openly licensed images');
+        // Pictures are the optional part of the budget: the search runs until the target time less what the interactions and checks
+        // still need, but always long enough for a few real searches. What it did not reach falls to the textbook picture, a stored
+        // one or a drawn diagram, as the ladder below already does for a slide with no suitable photograph. Nothing is invented.
+        // Under the fast picture policy the stage has its own budget (one for the whole stage), so the run's target does not shorten it again.
+        $fast = is_array($options['fast_images'] ?? null) ? $options['fast_images'] : null;
+        if ($fast !== null) {
+            $this->imagePlanner->withFastPolicy($fast + ['tenant' => (int) ($options['tenant'] ?? 0), 'scope' => 't' . (int) ($options['tenant'] ?? 0)]);
+        }
+        $target = $fast !== null ? 0.0 : (float) ($options['target_seconds'] ?? 0);
+        if ($target > 0) {
+            $this->imagePlanner->withDeadline(max(microtime(true) + 8, (float) ($options['started_at'] ?? microtime(true)) + $target - 20));
+        }
         $images = $this->imagePlanner->plan($plan['slides'], $content, function ($n, $r) use ($say) {
             $say('images', isset($r['missing']) ? "slide $n: none ({$r['missing']})" : "slide $n: " . (($r['type'] ?? 'photo') === 'diagram' ? 'drawn diagram' : $r['licence']));
         });
+        if ($target > 0) {
+            $this->imagePlanner->withDeadline(null);
+        }
+        if ($fast !== null && $this->imagePlanner->fastReport !== []) {
+            $r = $this->imagePlanner->fastReport;
+            $say('images', sprintf('picture stage: %d reused, %d first acceptable, %d textbook, %d drawn, %d without a picture, in %s s%s', $r['reused'], $r['first_acceptable'], $r['textbook'], $r['diagram'], $r['missing'], $r['seconds'], $r['deadline_reached'] ? ' (time limit reached)' : ''));
+        }
         if (!empty($map['limits']['require_every_slide_image'])) {
             $images = $this->imagePlanner->fillMissingWithDiagrams($plan['slides'], $map, $images, function ($n) use ($say) {
                 $say('images', "slide $n: generated fallback diagram");

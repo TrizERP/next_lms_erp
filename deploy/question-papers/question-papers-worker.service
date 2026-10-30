@@ -1,0 +1,36 @@
+# systemd alternative to Supervisor. Use ONE of the two, not both.
+#
+# TEMPLATE: values marked __LIKE_THIS__ are UNCONFIRMED. The repository does not say where or how the
+# production backend runs; fill them from the real host (docs/QUESTION_PAPER_DEPLOYMENT_RUNBOOK.md,
+# "Host discovery"):
+#   __APP_PATH__  directory that contains `artisan` and the production .env
+#   __PHP_BIN__   the PHP 8.2+ CLI the web app uses (absolute path)
+#   __RUN_USER__ / __RUN_GROUP__  the OS user/group that owns the app files
+#
+# Install: copy to /etc/systemd/system/, fill the placeholders, then
+#   systemctl daemon-reload && systemctl enable --now question-papers-worker
+#   systemctl status question-papers-worker
+# After every deploy: __PHP_BIN__ artisan queue:restart
+#
+# Same rules as the Supervisor file: only the question_papers connection/queue, same .env as the web app,
+# --timeout (900) below retry_after (1000), stop timeout above --timeout.
+
+[Unit]
+Description=Question Paper extraction queue worker
+After=network-online.target
+Wants=network-online.target
+# Restart=always with RestartSec=5 starts at most twice in the default 10 s start-limit window, so a worker that dies at
+# boot (database not reachable yet) is retried for ever and never trips the limit.
+
+[Service]
+User=__RUN_USER__
+Group=__RUN_GROUP__
+WorkingDirectory=__APP_PATH__
+ExecStart=__PHP_BIN__ artisan queue:work question_papers --queue=question-papers --sleep=3 --tries=6 --timeout=900 --max-time=3600
+Restart=always
+RestartSec=5
+TimeoutStopSec=960
+KillMode=mixed
+
+[Install]
+WantedBy=multi-user.target

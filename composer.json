@@ -74,7 +74,14 @@
         ],
         "post-create-project-cmd": [
             "@php artisan key:generate --ansi"
+        ],
+        "dev:question-papers": [
+            "Composer\\Config::disableProcessTimeout",
+            "powershell -NoProfile -ExecutionPolicy Bypass -File ./dev-question-papers.ps1"
         ]
+    },
+    "scripts-descriptions": {
+        "dev:question-papers": "Local development: start the HTTP server AND the question-papers queue worker together (Windows)."
     },
     "extra": {
         "laravel": {

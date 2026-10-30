@@ -64,6 +64,19 @@ return [
             'after_commit' => false,
         ],
 
+        // Question Paper extraction. Same `jobs` table as `database`, but its own queue name and a
+        // retry_after ABOVE the job's 900s timeout: with the default 90s a still-running extraction
+        // would be handed to a second worker. A worker started with
+        //   php artisan queue:work question_papers --queue=question-papers
+        // runs only these jobs and never anything else waiting in `default`.
+        'question_papers' => [
+            'driver' => 'database',
+            'table' => 'jobs',
+            'queue' => 'question-papers',
+            'retry_after' => 1000,
+            'after_commit' => false,
+        ],
+
         'beanstalkd' => [
             'driver' => 'beanstalkd',
             'host' => 'localhost',

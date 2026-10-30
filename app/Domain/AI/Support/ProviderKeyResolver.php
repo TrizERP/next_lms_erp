@@ -122,10 +122,13 @@ class ProviderKeyResolver
                 return null;
             }
 
+            $rawKey = trim((string) $row->api_key);
+            $apiKey = self::decryptIfEncrypted($rawKey);
+
             $rowInstitute = $hasTenantColumn ? ($row->sub_institute_id ?? null) : null;
 
             return [
-                'api_key' => \App\Support\KeyVault::reveal(trim((string) $row->api_key)),
+                'api_key' => $apiKey,
                 'api_limit' => isset($row->api_limit) ? (int) $row->api_limit : null,
                 'id' => $row->id ?? null,
                 'scope' => $rowInstitute === null || $rowInstitute === '' ? 'platform' : 'institute',
@@ -136,5 +139,32 @@ class ProviderKeyResolver
             // than failing the generation outright.
             return null;
         }
+    }
+
+    /**
+     * Decrypt encrypted keys stored in the database with standard Laravel Crypt prefix enc: or enc:v1:
+     */
+    public static function decryptIfEncrypted(?string $value): ?string
+    {
+        if ($value === null) {
+            return null;
+        }
+        $trimmed = trim($value);
+        if (str_starts_with($trimmed, 'enc:v1:')) {
+            try {
+                return \Illuminate\Support\Facades\Crypt::decryptString(substr($trimmed, 7));
+            } catch (Throwable) {
+                return $trimmed;
+            }
+        }
+        if (str_starts_with($trimmed, 'enc:')) {
+            try {
+                return \Illuminate\Support\Facades\Crypt::decryptString(substr($trimmed, 4));
+            } catch (Throwable) {
+                return $trimmed;
+            }
+        }
+
+        return $trimmed;
     }
 }

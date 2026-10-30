@@ -61,6 +61,10 @@ class Kernel extends ConsoleKernel
         // than the interval bounds the damage to one skipped pass.
         $schedule->command('neo4j:drain')->everyMinute()->withoutOverlapping(5);
 
+        // Question Paper uploads: re-dispatch jobs no worker is running. Only enqueues, so the run is short;
+        // the expiry matches the interval for the reason given above.
+        $schedule->command('idms:dispatch-question-papers')->everyMinute()->withoutOverlapping(5);
+
         // Alumni module. Each task is idempotent (messages are de-duplicated by unique keys), so a missed or doubled run is
         // harmless. The overlap expiry is kept about as long as the interval, for the reason given above: a run killed
         // part-way must not silence the task for a day. Times follow config('app.timezone') - one clock per installation.
