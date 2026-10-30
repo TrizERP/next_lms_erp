@@ -43,7 +43,7 @@ class MyNotificationsController extends PlatformController
 
         $rows = $isStudent
             ? array_merge($this->appNotices($tenant, $userId), $this->palNotices($userId))
-            : array_merge($this->brainNotices($tenant, $userId), $this->platformNotices($tenant, $userId));
+            : array_merge($this->userNotices($tenant, $userId), $this->brainNotices($tenant, $userId), $this->platformNotices($tenant, $userId));
 
         usort($rows, fn (array $a, array $b) => strcmp($b['created_at'], $a['created_at']));
 
@@ -84,6 +84,24 @@ class MyNotificationsController extends PlatformController
             ->all();
     }
 
+    /**
+     * Notices raised for this person by background work (Question Paper processing). The only source
+     * here with read state the bell can write back (POST /notifications/user/{id}/read).
+     */
+    private function userNotices(int $tenant, int $userId): array
+    {
+        if (! Schema::hasTable('user_notifications')) {
+            return [];
+        }
+
+        return DB::table('user_notifications')
+            ->where('sub_institute_id', $tenant)->where('user_id', $userId)
+            ->orderByDesc('id')->limit(self::PER_SOURCE)
+            ->get(['id', 'title', 'body', 'link', 'read_at', 'created_at'])
+            ->map(fn ($r) => $this->row('user:' . $r->id, 'user', (string) $r->title, (string) $r->body, (string) $r->created_at, $r->read_at !== null, $r->link))
+            ->all();
+    }
+
     private function brainNotices(int $tenant, int $userId): array
     {
         if (! Schema::hasTable('hpbrain_notifications')) {
@@ -117,7 +135,7 @@ class MyNotificationsController extends PlatformController
             ->all();
     }
 
-    private function row(string $key, string $source, string $subject, string $body, string $createdAt, ?bool $read): array
+    private function row(string $key, string $source, string $subject, string $body, string $createdAt, ?bool $read, ?string $link = null): array
     {
         return [
             'key' => $key,
@@ -126,6 +144,7 @@ class MyNotificationsController extends PlatformController
             'body' => Str::limit(trim(strip_tags($body)), 300),
             'created_at' => $createdAt,
             'read' => $read,
+            'link' => $link,
         ];
     }
 }

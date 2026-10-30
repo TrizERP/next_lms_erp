@@ -17,6 +17,27 @@ define('LARAVEL_START', microtime(true));
 
 require __DIR__.'/vendor/autoload.php';
 
+// `artisan test` boots the application before PHPUnit starts. In this project that boot can
+// query application metadata, so point the command process at a throwaway SQLite file first.
+// Never let the test runner inherit the developer's configured MySQL connection.
+if (PHP_SAPI === 'cli' && isset($argv[1]) && $argv[1] === 'test') {
+    $testDatabase = tempnam(sys_get_temp_dir(), 'lms-artisan-test-');
+    if ($testDatabase === false) {
+        fwrite(STDERR, "Could not create isolated SQLite database for tests.\n");
+        exit(1);
+    }
+    $pdo = new PDO('sqlite:'.$testDatabase);
+    $pdo->exec('CREATE TABLE custom_module_tables (id INTEGER PRIMARY KEY, sub_institute_id INTEGER, module_name TEXT, table_name TEXT, module_type TEXT)');
+    unset($pdo);
+    putenv('DB_CONNECTION=sqlite');
+    putenv('DB_DATABASE='.$testDatabase);
+    $_ENV['DB_CONNECTION'] = $_SERVER['DB_CONNECTION'] = 'sqlite';
+    $_ENV['DB_DATABASE'] = $_SERVER['DB_DATABASE'] = $testDatabase;
+    register_shutdown_function(static function () use ($testDatabase): void {
+        if (is_file($testDatabase)) @unlink($testDatabase);
+    });
+}
+
 $app = require_once __DIR__.'/bootstrap/app.php';
 
 /*

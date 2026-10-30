@@ -86,10 +86,16 @@ class DocumentController extends Controller
         $validator = Validator::make($request->all(), [
             'file' => 'required|file|max:' . config('idms.max_upload_size_kb', 51200),
             'visibility' => 'nullable|in:private,department,organization',
+            'declared_type' => 'nullable|in:question_paper,curriculum,general,textbook',
         ]);
 
         if ($validator->fails()) {
             return response()->json(['status' => 0, 'message' => $validator->errors()->first()], 422);
+        }
+
+        // Question papers have their own endpoint (token-authenticated, background extraction).
+        if ($request->input('declared_type') === 'question_paper') {
+            return response()->json(['status' => 0, 'message' => 'Question papers must be uploaded through the question paper endpoint.'], 422);
         }
 
         $ctx = $this->getContext($request);
@@ -119,6 +125,11 @@ class DocumentController extends Controller
 
             $document->recomputeViewPrincipals();
             $document->save();
+
+            // What the uploader said it is. Recorded only; the pipeline below is the same for every type.
+            if ($request->filled('declared_type') && \Illuminate\Support\Facades\Schema::hasColumn('document_master', 'declared_type')) {
+                DB::table('document_master')->where('id', $document->id)->update(['declared_type' => $request->input('declared_type')]);
+            }
 
             // Record version and audit in document_history
             DocumentAuditService::logVersion(

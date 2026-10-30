@@ -711,7 +711,9 @@ class GeminiClient implements ModelClient, SupportsImageGeneration, SupportsVisi
                 temperature: $temperature,
                 expectJson: true,
             );
-        } catch (Throwable) {
+        } catch (Throwable $e) {
+            report($e);
+
             return null;
         }
 
@@ -848,13 +850,11 @@ class GeminiClient implements ModelClient, SupportsImageGeneration, SupportsVisi
     private function normalizeModel(string $model): string
     {
         $map = [
-            'gemini-3.6-flash' => 'gemini-3-flash-preview',
-            'gemini-3.6-pro'   => 'gemini-3-flash-preview',
-            'gemini-2.5-flash' => 'gemini-3-flash-preview',
-            'gemini-2.5-pro'   => 'gemini-3-flash-preview',
-            'gemini-1.5-flash' => 'gemini-3-flash-preview',
-            'gemini-1.5-pro'   => 'gemini-3-flash-preview',
-            'gemini-1.0-pro'   => 'gemini-3-flash-preview',
+            'gemini-1.5-flash'    => 'gemini-2.5-flash',
+            'gemini-1.5-pro'      => 'gemini-2.5-flash',
+            'gemini-1.0-pro'      => 'gemini-2.5-flash',
+            'gemini-3.6-pro'      => 'gemini-2.5-flash',
+            'gemini-flash-latest' => 'gemini-2.5-flash',
         ];
 
         return $map[$model] ?? $model;
