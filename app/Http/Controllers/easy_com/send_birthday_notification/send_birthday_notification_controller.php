@@ -10,8 +10,14 @@ use function App\Helpers\sendNotification;
 class send_birthday_notification_controller extends Controller
 {
     // send Birthday Notification
-    public function send_birthday_notification()
+    public function send_birthday_notification(\Illuminate\Http\Request $request)
     {
+        // Cron endpoint: once CRON_SECRET is set the caller must present it (header or ?secret=).
+        $cronSecret = (string) env('CRON_SECRET', '');
+        if ($cronSecret !== '' && !hash_equals($cronSecret, (string) ($request->header('X-Cron-Secret') ?: $request->query('secret', '')))) {
+            return response()->json(['message' => 'Unauthorized'], 401);
+        }
+
 
         // get student Data
         $students = DB::table('tblstudent')

@@ -65,7 +65,7 @@ $loginpage_backgrond = session()->get('loginpage_backgrond');
                             <div class="img-content">
                                 @endif
                                 @if(!empty($loginpage_backgrond))
-                                {!!$loginpage_logo!!}
+                                {!! \App\Support\SafeHtml::clean($loginpage_logo) !!}
                                 <!-- <div class="lg-info-panel h-100 d-flex align-items-center p-3" style="background:url({{$loginpage_backgrond}}) center;"> -->
                                 @else
                                 <img src="{{ asset('/Images/login-page-image.svg')}}" style="width:100%">
@@ -74,13 +74,13 @@ $loginpage_backgrond = session()->get('loginpage_backgrond');
 
                                 <div class="img-heading hide-imgheading">
                                     @if(!empty($loginpage_title))
-                                    {!!$loginpage_title!!}
+                                    {!! \App\Support\SafeHtml::clean($loginpage_title) !!}
                                     @else
                                    <h2 class="text-light">Own Institute of Maximize Learning</h2>
                                     @endif
 
                                     @if(!empty($loginpage_description))
-                                    {!!$loginpage_description!!}
+                                    {!! \App\Support\SafeHtml::clean($loginpage_description) !!}
                                     @else
                                     <p class="text-light">Integrated Solution for Digital Needs</p>
                                     @endif

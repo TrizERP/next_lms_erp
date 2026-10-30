@@ -1109,7 +1109,16 @@ class NewLMS_ApiController extends Controller
 
     public function Resend_otp(Request $request)
     {
-        $mobile_no = $request->get('mobile');
+        $mobile_no = preg_replace('/\D+/', '', (string) $request->get('mobile'));
+        // Anonymous endpoint that spends SMS credit: valid-looking number, and at most 3 sends per number per hour.
+        if (strlen($mobile_no) < 10 || strlen($mobile_no) > 13) {
+            return response()->json(['error' => 1, 'message' => 'Invalid mobile number.'], 422);
+        }
+        $otpKey = 'resend_otp:' . $mobile_no;
+        if (\Illuminate\Support\Facades\Cache::get($otpKey, 0) >= 3) {
+            return response()->json(['error' => 1, 'message' => 'Too many OTP requests. Try again later.'], 429);
+        }
+        \Illuminate\Support\Facades\Cache::put($otpKey, \Illuminate\Support\Facades\Cache::get($otpKey, 0) + 1, now()->addHour());
         $otp = rand(100000, 999999);
         $sub_institute_id = 1; // Triz Innovation
         $text = "Dear Parent, Your OTP is ".$otp.".";

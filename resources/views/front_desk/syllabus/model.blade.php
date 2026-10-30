@@ -44,7 +44,7 @@
             <td class="VerticalText">{{$val->months}}</td>
             <td class="VerticalText">{{$val->no_of_days}}</td>
             <td class="VerticalText">{{$val->no_of_periods}}</td>
-            <td>{!!$val->message!!}</td>
+            <td>{!! \App\Support\SafeHtml::clean($val->message) !!}</td>
             <td>{{$val->assesment_tool}}</td>
           </tr>
         </table>

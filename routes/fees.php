@@ -313,7 +313,7 @@ Route::controller(online_fees_collect_controller::class)->group(function () {
 
     Route::post('fees/abcmapp/online_fees_abcmappResponseHandler', 'abcmapp_response_handler')->name("abcmapp_response_handler")->middleware('check_permissions');
 
-    Route::post('fees/get_online_receipt', 'OnlineReceipt')->name("get_online_receipt")->middleware('check_permissions');
+    Route::post('fees/get_online_receipt', 'OnlineReceipt')->name("get_online_receipt")->middleware(['api.session', 'staff.only', 'check_permissions']); // posts a receipt from a client-supplied amount and transaction id: a signed-in staff member only, never the payer's own token
 
 });
 

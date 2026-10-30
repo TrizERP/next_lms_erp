@@ -28,6 +28,19 @@ use RuntimeException;
  * ATTEMPTED is emitted directly rather than derived by the post-pass in
  * k12_cypher.txt ("12.linked student to Assessment"), so a new attempt is
  * complete the moment it drains instead of waiting for a batch job.
+ *
+ * DECIDED 2026-10-28 (ERP_SQL_Neo4j_Complete_Synchronization_Audit.docx, tracked as
+ * defect D10 in neo4j-graph-audit-and-rebuild-prompt.md): this fan-out is confirmed
+ * intentional, not a live defect — kept as-is for continuity with the behavior above.
+ * `neo4j:verify`'s G4 check reports it informationally and no longer fails on it.
+ * Revisit only if the Result/enrolment modeling decision itself changes.
+ *
+ * Separately (same audit): 149,051 :Result nodes carry no sub_institute_id at all — a
+ * G1 gap, not related to D10. 116,799 are safely backfillable from their connected
+ * :Student's own tenant (see g1_result_tenant_backup_execute.php in that audit's
+ * working files). The remaining 32,252 have no HAS_RESULT edge from any :Student
+ * whatsoever, so there is nothing to derive a tenant from — these are orphaned k12-ingest
+ * rows with no safe fix, accepted as a known, permanent gap rather than guessed at.
  */
 class ResultGraphProjection implements GraphProjection
 {

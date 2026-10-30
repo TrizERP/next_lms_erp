@@ -20,6 +20,10 @@ class LogRouteMiddleware
      */
     public function handle($request, Closure $next)
     {
+        // The "can only update your own school's student/user" check below used to run only for browser
+        // requests, so adding type=API to the same request skipped it. It now runs for every request.
+        $this->assertOwnSchoolRecord($request);
+
         if ($request->get('type') != "API" &&  $request->get('type') != "JSON") {
 //            Log::info($request->fullUrl());
 
@@ -97,4 +101,31 @@ class LogRouteMiddleware
 
         return $next($request);
     }
+
+    private function assertOwnSchoolRecord($request): void
+    {
+        $isUpdate = $request->isMethod('PUT') || $request->isMethod('PATCH') || $request->get('_method') == 'PUT';
+        if (! $isUpdate || strtolower((string) session()->get('user_profile_name')) === 'super admin') {
+            return;
+        }
+
+        $uri = explode('/', $request->getRequestUri());
+        $tables = ['add_student' => 'tblstudent', 'add_user' => 'tbluser'];
+        $segment = $uri[2] ?? null;
+        if ($segment === null || ! isset($tables[$segment]) || ! isset($uri[3])) {
+            return;
+        }
+
+        $recordId = (int) $uri[3];
+        $school = session()->get('sub_institute_id');
+        if ($recordId <= 0 || empty($school)) {
+            return;
+        }
+
+        $owned = DB::table($tables[$segment])->where(['sub_institute_id' => $school, 'id' => $recordId])->exists();
+        if (! $owned) {
+            throw new AuthorizationException('Can not Update this user! Institute Not Matched.');
+        }
+    }
+
 }

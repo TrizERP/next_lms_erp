@@ -89,15 +89,15 @@ use App\Http\Controllers\FileController;
 
 // Other pedagogy routes...
 Route::get('/lms/student-profile', [PedagogyEngineController::class, 'buildStudentProfile'])->name('student.profile');
-Route::get('/lms/forgetting-curve', [PedagogyEngineController::class, 'getForgettingCurve'])->name('forgetting.curve');
-Route::post('/lms/update-forgetting-curve', [PedagogyEngineController::class, 'updateForgettingCurve'])->name('update.forgetting.curve');
+Route::get('/lms/forgetting-curve', [PedagogyEngineController::class, 'getForgettingCurve'])->name('forgetting.curve')->middleware('api.session');
+Route::post('/lms/update-forgetting-curve', [PedagogyEngineController::class, 'updateForgettingCurve'])->name('update.forgetting.curve')->middleware('session');
 Route::get('/lms/class-insights', [PedagogyEngineController::class, 'generateClassInsights'])->name('class.insights');
 Route::get('/lms/teacher-dashboard', [PedagogyEngineController::class, 'teacherDashboard'])->name('teacher.dashboard');
 Route::get('/lms/knowledge-graph', [PedagogyEngineController::class, 'buildKnowledgeGraph'])->name('knowledge.graph');
-Route::get('/lms/concept-prerequisites', [PedagogyEngineController::class, 'getConceptPrerequisites'])->name('concept.prerequisites');
+Route::get('/lms/concept-prerequisites', [PedagogyEngineController::class, 'getConceptPrerequisites'])->name('concept.prerequisites')->middleware('api.session');
 Route::get('/lms/recommend-content', [PedagogyEngineController::class, 'recommendContent'])->name('recommend.content');
-Route::post('/lms/track-content-view', [PedagogyEngineController::class, 'trackContentView'])->name('track.content.view');
-Route::get('/lms/pedagogy-recommendations', [PedagogyEngineController::class, 'getPedagogyRecommendations'])->name('pedagogy.recommendations');
+Route::post('/lms/track-content-view', [PedagogyEngineController::class, 'trackContentView'])->name('track.content.view')->middleware('session');
+Route::get('/lms/pedagogy-recommendations', [PedagogyEngineController::class, 'getPedagogyRecommendations'])->name('pedagogy.recommendations')->middleware('api.session');
 
 
 // PHASE 3: Adaptive Practice Routes
@@ -131,7 +131,7 @@ Route::get('/lms/practice-history', [App\Http\Controllers\lms\assessmentQuestion
 
 // Spaced Repetition
 Route::get('/lms/spaced-repetition', [App\Http\Controllers\lms\assessmentQuestionController::class, 'getSpacedRepetition'])
-    ->name('spaced.repetition');
+    ->name('spaced.repetition')->middleware('api.session');
 
 // ============================================================
 // PHASE 4: PEDAGOGY ENGINE ROUTES
@@ -296,12 +296,14 @@ Route::get('/whatsapp-show-reply/{wid}', [WhatsappController::class, 'whatsappSh
     
 });
 
-Route::get('/import-data',[ImportController::class,'getImport'])->name('import.data');
-Route::get('/marks-import',[ImportController::class,'Import']);
-Route::post('/custom_import_parse', [ImportController::class,'customParseImport'])->name('custom_import_parse');
-Route::post('/import_parse', [ImportController::class,'parseImport'])->name('import_parse');
-Route::post('/import_parse_fields', [ImportController::class,'matchFields'])->name('update.match_fields');
-Route::post('/import_process', [ImportController::class,'processImport'])->name('import_process');
+Route::middleware(['session', 'check_permissions'])->group(function () {
+    Route::get('/import-data',[ImportController::class,'getImport'])->name('import.data');
+    Route::get('/marks-import',[ImportController::class,'Import']);
+    Route::post('/custom_import_parse', [ImportController::class,'customParseImport'])->name('custom_import_parse');
+    Route::post('/import_parse', [ImportController::class,'parseImport'])->name('import_parse');
+    Route::post('/import_parse_fields', [ImportController::class,'matchFields'])->name('update.match_fields');
+    Route::post('/import_process', [ImportController::class,'processImport'])->name('import_process');
+});
 
 Route::any('/knowledge-base', [dashboardController::class, 'knowledge_base'])->name('knowledge_base')->middleware('session', 'menu');
 
@@ -310,8 +312,8 @@ Route::any('/knowledge-base-detail/{id}/{title}', [dashboardController::class, '
 Route::get('dashboard', [dashboardController::class, 'index'])->name('dashboard')->middleware('session', 'menu', 'logRoute');
 Route::get('dashboard/communication-details', [dashboardController::class, 'getCommunicationDetails'])->name('dashboard.communication.details')->middleware('session');
 // add by uma 
-Route::resource('norm-clature', normClatureController::class);
-Route::resource('add-institute-details', institute_detail::class);
+Route::resource('norm-clature', normClatureController::class)->middleware('session');
+Route::resource('add-institute-details', institute_detail::class)->middleware('session');
 
 // From Build
 Route::get('formbuilder/list', [UserFormbuilderController::class, 'index'])->name('formbuild.list')->middleware('session', 'menu', 'logRoute');
@@ -340,17 +342,17 @@ Route::get('schoolList', [dashboardController::class, 'schoolList'])->name('scho
 Route::get('siteMap', [dashboardController::class, 'siteMap'])->name('siteMap')->middleware('session', 'menu', 'logRoute');
 
 Route::any('login', [loginController::class, 'index'])->name('login');
-Route::any('signup', [signupController::class, 'index'])->name('signup');
+Route::any('signup', [signupController::class, 'index'])->name('signup')->middleware('throttle:20,1');
 //Route::get('aftersignuplogin', 'loginController@aftersignuplogin');
 
-Route::any('superAdmin', [superAdminController::class, 'index'])->name('superAdmin');
-Route::post('superAdmin-store', [superAdminController::class, 'store'])->name('superAdmin.store');
+Route::any('superAdmin', [superAdminController::class, 'index'])->name('superAdmin')->middleware(['session', 'super.admin']);
+Route::post('superAdmin-store', [superAdminController::class, 'store'])->name('superAdmin.store')->middleware(['session', 'super.admin']);
 
 Route::any('ajaxMenuSession', [loginController::class, 'ajaxMenuSession'])->name('ajaxMenuSession');
 
 Route::any('/logout', [loginController::class, 'logout']);
 
-Route::any('/profileAPI', [loginController::class, 'profileAPI']);
+Route::any('/profileAPI', [loginController::class, 'profileAPI'])->middleware('session');
 
 Route::any('/tourUpdate', [tourController::class, 'index'])->name('tourUpdate');
 
@@ -484,8 +486,8 @@ Route::post('collectsct', [AJAXController::class, 'collectsct'])->name('collects
 
 Route::get('studentLists', [AJAXController::class, 'studentLists'])->name('studentLists');
 
-Route::get('ckeditor/create', [CkeditorFileUploadController::class, 'create'])->name('ckeditor.create');
-Route::post('ckeditor', [CkeditorFileUploadController::class, 'store'])->name('uploadimage');
+Route::get('ckeditor/create', [CkeditorFileUploadController::class, 'create'])->name('ckeditor.create')->middleware('session');
+Route::post('ckeditor', [CkeditorFileUploadController::class, 'store'])->name('uploadimage')->middleware('session');
 
 // Route::get('exception/index', 'ExceptionController@index');
 
@@ -495,30 +497,30 @@ Route::post('ckeditor', [CkeditorFileUploadController::class, 'store'])->name('u
 
 // Forgot Password Routes
 Route::get('forget-password', [ForgotPasswordController::class, 'showForgetPasswordForm'])->name('forget.password.get');
-Route::post('forget-password', [ForgotPasswordController::class, 'submitForgetPasswordForm'])->name('forget.password.post');
+Route::post('forget-password', [ForgotPasswordController::class, 'submitForgetPasswordForm'])->name('forget.password.post')->middleware('throttle:5,1');
 Route::get('reset-password/{token}/{email}', [ForgotPasswordController::class, 'showResetPasswordForm'])->name('reset.password.get');
-Route::post('reset-password', [ForgotPasswordController::class, 'submitResetPasswordForm'])->name('reset.password.post');
+Route::post('reset-password', [ForgotPasswordController::class, 'submitResetPasswordForm'])->name('reset.password.post')->middleware('throttle:10,1');
 
 
-Route::post('NewLMS_temp_signup', [NewLMS_ApiController::class, 'NewLMS_temp_signup'])->name("NewLMS_temp_signup");
-Route::post('NewLMS_signup', [NewLMS_ApiController::class, 'NewLMS_signup'])->name("NewLMS_signup");
-Route::get('Resend_otp', [NewLMS_ApiController::class, 'Resend_otp'])->name("Resend_otp");
-Route::post('preload-institute', [NewLMS_ApiController::Class, 'Preload_institute'])->name("preload-institute");
-Route::post('add-institute', [NewLMS_ApiController::Class, 'add_institute'])->name("add-institute");
+Route::post('NewLMS_temp_signup', [NewLMS_ApiController::class, 'NewLMS_temp_signup'])->name("NewLMS_temp_signup")->middleware('throttle:20,1');
+Route::post('NewLMS_signup', [NewLMS_ApiController::class, 'NewLMS_signup'])->name("NewLMS_signup")->middleware('throttle:20,1');
+Route::get('Resend_otp', [NewLMS_ApiController::class, 'Resend_otp'])->name("Resend_otp")->middleware('throttle:3,10');
+Route::post('preload-institute', [NewLMS_ApiController::Class, 'Preload_institute'])->name("preload-institute")->middleware('throttle:20,1');
+Route::post('add-institute', [NewLMS_ApiController::Class, 'add_institute'])->name("add-institute")->middleware('throttle:20,1');
 
-Route::post('NewLMS_temp_signup_student', [NewLMS_StudentApiController::class, 'NewLMS_temp_signup_student'])->name("NewLMS_temp_signup_student");
-Route::post('NewLMS_signup_student', [NewLMS_StudentApiController::class, 'NewLMS_signup_student'])->name("NewLMS_signup_student");
+Route::post('NewLMS_temp_signup_student', [NewLMS_StudentApiController::class, 'NewLMS_temp_signup_student'])->name("NewLMS_temp_signup_student")->middleware('throttle:20,1');
+Route::post('NewLMS_signup_student', [NewLMS_StudentApiController::class, 'NewLMS_signup_student'])->name("NewLMS_signup_student")->middleware('throttle:20,1');
 
 
 Route::get('get_trizStandard', [signupController::class, 'get_trizStandard'])->name("get_trizStandard");
 
 Route::post('searching_menu', [AJAXController::class, 'searchMenu'])->name("searching_menu");
-Route::post('get_search_url', [AJAXController::class, 'get_search_url'])->name("get_search_url");
+Route::post('get_search_url', [AJAXController::class, 'get_search_url'])->name("get_search_url")->middleware('session');
 
 
 // send birthday notification
 Route::get('send_birthday_notification',
-    [send_birthday_notification_controller::class, 'send_birthday_notification'])->name('send_birthday_notification');
+    [send_birthday_notification_controller::class, 'send_birthday_notification'])->name('send_birthday_notification')->middleware('throttle:2,60');
 
 // Question Wise Report
 Route::get('/questionReport', [questionWiseReportController::class, 'index'])->name('question_wise_report');
@@ -629,15 +631,15 @@ Route::get('otherPolicy', [dashboardController::class, 'otherPolicy'])->name('ot
 Route::any('check_permissions',[AJAXController::class, 'check_access'])->name('check_permissions');
 Route::any('check_access',[AJAXController::class, 'check_access'])->name('check_access');
 
-Route::any('chat',[AJAXController::class, 'chat'])->name('chat');
-Route::post('/lms_chat', [App\Http\Controllers\lms\assessmentQuestionController::class, 'chat'])->name('lms_chat');
-Route::match(['get', 'post'], '/preview_distribution', [App\Http\Controllers\lms\assessmentQuestionController::class, 'previewDistribution'])->name('preview_distribution');
+Route::any('chat',[AJAXController::class, 'chat'])->name('chat')->middleware('session');
+Route::post('/lms_chat', [App\Http\Controllers\lms\assessmentQuestionController::class, 'chat'])->name('lms_chat')->middleware('session');
+Route::match(['get', 'post'], '/preview_distribution', [App\Http\Controllers\lms\assessmentQuestionController::class, 'previewDistribution'])->name('preview_distribution')->middleware('session');
 Route::get('/assessment_question/concepts', [\App\Http\Controllers\lms\assessmentQuestionController::class, 'concepts'])->name('assessment_question.concepts');
 Route::post('assessment_question/store', [\App\Http\Controllers\lms\assessmentQuestionController::class, 'store'])->name('assessment_question.store');
-Route::any('geminiAI',[AJAXController::class, 'geminiAI'])->name('geminiAI');
-Route::get('lms_data',[AJAXController::class, 'lmsDataApi'])->name('lms_data');
-Route::get('table_data',[AJAXController::class, 'lmsDataApi'])->name('table_data');
-Route::any('python_timetable',[AJAXController::class, 'pythonTimetable'])->name('python_timetable');
+Route::any('geminiAI',[AJAXController::class, 'geminiAI'])->name('geminiAI')->middleware('session');
+Route::get('lms_data',[AJAXController::class, 'lmsDataApi'])->name('lms_data')->middleware('api.session');
+Route::get('table_data',[AJAXController::class, 'lmsDataApi'])->name('table_data')->middleware('api.session');
+Route::any('python_timetable',[AJAXController::class, 'pythonTimetable'])->name('python_timetable')->middleware(['session', 'super.admin']);
 
 // Task Management "New Assignment" modal: bare-host legacy endpoints the
 // ported frontend calls via its non-`/api` webClient (see
@@ -648,17 +650,17 @@ Route::any('python_timetable',[AJAXController::class, 'pythonTimetable'])->name(
 // registered, but only under `frontdesk/task` (routes/frontdesk.php), which
 // 404s for the legacy client. Named distinctly from the `frontdesk.*`
 // resource's `task.*` names so the two registrations don't collide.
-Route::get('getSupervisor', [AJAXController::class, 'getSupervisor'])->name('legacy.getSupervisor');
-Route::post('task', [\App\Http\Controllers\frontdesk\taskController::class, 'store'])->name('legacy.task.store');
+Route::get('getSupervisor', [AJAXController::class, 'getSupervisor'])->name('legacy.getSupervisor')->middleware('api.session');
+Route::post('task', [\App\Http\Controllers\frontdesk\taskController::class, 'store'])->name('legacy.task.store')->middleware('api.session');
 
 // to transfer files to digital ocean
-Route::post('transferDocs', [oldDocumentTransfer::class, 'storeImagesToDigitalOcean']);
-Route::get('convertDoc',[oldDocumentTransfer::class, 'ConvertBinaryData']);
+Route::post('transferDocs', [oldDocumentTransfer::class, 'storeImagesToDigitalOcean'])->middleware(['session', 'super.admin']);
+Route::get('convertDoc',[oldDocumentTransfer::class, 'ConvertBinaryData'])->middleware(['session', 'super.admin']);
 Route::get('transport_Onboarding', [tourController::class, 'transportOnboarding'])->name('transportOnboarding');
-Route::match(['get', 'post'], '/chatbot', [ChatbotController::class, 'handle']);
+Route::match(['get', 'post'], '/chatbot', [ChatbotController::class, 'handle'])->middleware('session');
 // 03-06-24
-Route::resource('requirements', reuirementController::class);
-Route::get('customers_requirement', [reuirementController::class, 'ReportData'])->name('customers_requirement');
+Route::resource('requirements', reuirementController::class)->middleware('session');
+Route::get('customers_requirement', [reuirementController::class, 'ReportData'])->name('customers_requirement')->middleware(['session', 'super.admin']);
 Route::post('/paraphrase',[LmsChapterController::class,'paraphraseContentAjax'])->name('paraphrase.ajax');
 Route::post('/paraphrase-file', [LmsChapterController::class, 'paraphraseFile'])->name('paraphrase.file');
 Route::post('/flush-session', function () {
@@ -783,7 +785,10 @@ Route::get('/get-fields', function (Request $request) {
     ]);
 });
 
-Route::resource('blogs', BlogController::class);
+// Reading the blog is public; writing it needs a login.
+// Registered first so that /blogs/create is not swallowed by the public /blogs/{blog} below.
+Route::resource('blogs', BlogController::class)->except(['index', 'show'])->middleware('session');
+Route::resource('blogs', BlogController::class)->only(['index', 'show']);
 // REMOVED 2026-09-04 — DataMigrationController and its /migrate-data route are gone. It keyed
 // nodes on NAME via Neo4jService::createOrGetNode and built OFFERS edges with unparameterised
 // Cypher; the route had been disabled since 2026-08-10.
@@ -803,7 +808,7 @@ Route::group(['prefix' => 'agent', 'middleware' => ['session', 'menu', 'logRoute
     route::resource('multi_agent', multiAgentController::class);
 });
 
-route::get('geminiChat', [AJAXController::class, 'geminiChat']);
+route::get('geminiChat', [AJAXController::class, 'geminiChat'])->middleware('session');
 Route::get('ajaxQuestionLists', [AJAXController::class, 'ajaxQuestionListsFunction'])->name('ajaxQuestionLists');
 
 Route::get('/suggested-content', [palController::class, 'suggestedContent'])->name('pal.suggested.content');
@@ -859,7 +864,7 @@ Route::group(['middleware' => ['session', 'menu', 'logRoute', 'check_permissions
     Route::post('/lms/misconception/generate-content', [\App\Http\Controllers\lms\pal\palController::class, 'generateMisconceptionContent'])->name('misconception.generate.content');
     Route::post('/lms/increment-content-visit', [palController::class, 'incrementContentVisit'])->name('increment.content.visit');
 });
-Route::get('/download-folder', [FileController::class, 'downloadFolder']);
+Route::get('/download-folder', [FileController::class, 'downloadFolder'])->middleware(['session', 'super.admin']);
 
 /*
 | The AI Journey console used to be served from here as a Blade page. It now lives in

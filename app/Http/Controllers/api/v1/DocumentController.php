@@ -43,8 +43,12 @@ class DocumentController extends Controller
      */
     protected function getContext(Request $request): array
     {
-        $userId = $request->header('X-User-Id') ?: $request->input('user_id') ?: session()->get('user_id') ?: 1;
-        $subInstituteId = $request->header('X-Sub-Institute-Id') ?: $request->input('sub_institute_id') ?: session()->get('sub_institute_id') ?: 1;
+        // Identity comes only from the verified token (api.session); never from client headers or input.
+        $userId = (int) session()->get('user_id');
+        $subInstituteId = (int) session()->get('sub_institute_id');
+        if ($userId <= 0 || $subInstituteId <= 0) {
+            abort(401, 'Unauthenticated.');
+        }
 
         $user = DB::table('tbluser as u')
             ->leftJoin('tbluserprofilemaster as p', 'p.id', '=', 'u.user_profile_id')
@@ -681,6 +685,10 @@ class DocumentController extends Controller
 
         $query = DocumentHistory::with(['document', 'user'])
             ->orderBy('created_at', 'desc');
+
+        $query->whereHas('document', function ($q) use ($ctx) {
+            $q->where('sub_institute_id', $ctx['sub_institute_id']);
+        });
 
         if ($request->has('document_id')) {
             $query->where('document_id', $request->input('document_id'));

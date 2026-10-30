@@ -54,3 +54,7 @@ public
 
 # laravel application
 /app/Exceptions/Handler.php
+# env backups must never be tracked
+.env.bak*
+.env.*.bak
+!.env.example

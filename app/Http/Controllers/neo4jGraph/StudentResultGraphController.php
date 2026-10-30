@@ -68,6 +68,11 @@ class StudentResultGraphController extends Controller
      */
     public function show($stuId)
     {
+        // A student or parent may only open their own results; staff only their own school's students.
+        if (! \App\Support\StudentAccess::allows($stuId)) {
+            return response()->json(['success' => false, 'error' => 'Not allowed for this student.'], 403);
+        }
+
         $client = $this->neo4jService->getClient();
 
         $result = $client->run(

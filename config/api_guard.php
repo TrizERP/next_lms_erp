@@ -53,6 +53,7 @@ return [
     // 403. Student-facing reads (homework list, courses, dropdowns, menu) are deliberately
     // not here, so they keep working for any logged-in user.
     'staff' => [
+        'migration-modules/*',
         'admission_enquiry', 'admission_enquiry/*',
         'admission_registration', 'admission_registration/*',
         'admission_student', 'ajax_getDivision',
@@ -91,6 +92,7 @@ return [
     ],
 
     'protect' => [
+        'migration-modules/*',
         'academic-terms',
         'admission_enquiry', 'admission_enquiry/*',
         'admission_registration', 'admission_registration/*',

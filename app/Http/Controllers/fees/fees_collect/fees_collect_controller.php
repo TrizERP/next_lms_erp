@@ -2025,6 +2025,29 @@ uksort($other_bk_off_month_head_wise, function($a, $b) {
      * @return false|string|JsonResponse
      */
 
+    /**
+     * The school a fee lookup may use, from the verified session only, or null when the
+     * caller may not see this student: a student or parent sees only their own record, and
+     * staff only students of their own school.
+     */
+    private function feesTenantForStudent($studentId): ?int
+    {
+        $tenant = (int) session()->get('sub_institute_id');
+        $callerId = (int) session()->get('user_id');
+        if ($tenant <= 0 || $callerId <= 0 || (int) $studentId <= 0) {
+            return null;
+        }
+
+        $profile = strtolower((string) session()->get('user_profile_name'));
+        if (session()->get('is_student') || in_array($profile, ['student', 'parent'], true)) {
+            return (int) $studentId === $callerId ? $tenant : null;
+        }
+
+        $inSchool = DB::table('tblstudent')->where('id', (int) $studentId)->where('sub_institute_id', $tenant)->exists();
+
+        return $inSchool ? $tenant : null;
+    }
+
     public function PaidUnpaid(Request $request)
     {
         // for api chek for token first
@@ -2049,8 +2072,11 @@ uksort($other_bk_off_month_head_wise, function($a, $b) {
             $response['message'] = $validator->messages();
         } else {
             //process the request
-            $sub_institute_id = $_REQUEST['sub_institute_id'];
             $student_id = $_REQUEST['student_id'];
+            $sub_institute_id = $this->feesTenantForStudent($student_id);
+            if ($sub_institute_id === null) {
+                return response()->json(['response' => '', 'status' => '0', 'message' => 'Not allowed for this student.'], 403);
+            }
             $syear = $_REQUEST['syear'];
 
             $data = map_year::where([
@@ -3321,7 +3347,11 @@ foreach ($previous_standard as $item) {
 */
         $student_id = $request->input("student_id");
         $type = $request->input("type");
-        $sub_institute_id = $request->input("sub_institute_id");
+        // The school comes from the verified session; the request cannot choose another one.
+        $sub_institute_id = $this->feesTenantForStudent($student_id);
+        if ($sub_institute_id === null) {
+            return response()->json(['status' => '0', 'message' => 'Not allowed for this student.', 'data' => []], 403);
+        }
         $syear = $request->input("syear");
 
         if ($student_id != "" && $sub_institute_id != "" && $syear != "") {
@@ -3463,6 +3493,13 @@ if (!empty($fees_data['previous_fees']['Previous Fees'])
         $syear = $request->syear ?? session()->get('syear');
         // sub_institute_id now always comes from the verified session, never the client.
         $sub_institute_id = session()->get('sub_institute_id') ?? $request->sub_institute_id;
+
+        // The filters below are concatenated into raw SQL strings, so each value is escaped for a
+        // quoted literal first (a quote or backslash in a name or date can no longer end it).
+        $esc = static fn ($v) => substr(\DB::getPdo()->quote((string) $v), 1, -1);
+        foreach (['syear', 'sub_institute_id', 'division', 'enrollment_no', 'stud_id', 'name', 'mb_no', 'from_date', 'to_date', 'receipt_no'] as $__f) {
+            $$__f = $$__f === null ? null : $esc($$__f);
+        }
 
         $extra_fp = "  AND fp.syear = '" . $syear . "' AND te.syear = '" . $syear . "' AND t.sub_institute_id = '" . $sub_institute_id . "' AND fp.sub_institute_id = '" . $sub_institute_id . "' AND fp.is_deleted = 'N' ";
 

@@ -47,7 +47,7 @@ $loginpage_backgrond = session()->get('loginpage_backgrond');
           <div class="inner-panel">
             <div class="lg-content">
                 @if(!empty($loginpage_logo))
-                    {!!$loginpage_logo!!}
+                    {!! \App\Support\SafeHtml::clean($loginpage_logo) !!}
                 @else
                   <center>
                     <img src="http://dev.triz.co.in/admin_dep/images/triz.png" width="250px">
@@ -55,13 +55,13 @@ $loginpage_backgrond = session()->get('loginpage_backgrond');
                 @endif
 
                 @if(!empty($loginpage_title))
-                  {!!$loginpage_title!!}
+                  {!! \App\Support\SafeHtml::clean($loginpage_title) !!}
                 @else
                   <h2 class="text-light">OWN INSTITUTE MAXIMIZE LEARNING</h2>                
                 @endif 
 
                 @if(!empty($loginpage_description))
-                  {!!$loginpage_description!!}
+                  {!! \App\Support\SafeHtml::clean($loginpage_description) !!}
                 @else
                   <p class="text-light">Integrated solution for institutes need-DIGITAL!!!</p>
                 @endif

@@ -632,7 +632,8 @@ class assessmentQuestionController extends Controller
     {
         // return $request;
         // Log the incoming request for debugging
-        \Log::info('Assessment Question Store Request:', $request->all());
+        // Field names only: the body can carry tokens and personal data.
+        \Log::info('Assessment Question Store Request:', ['fields' => array_keys($request->all())]);
         
         $sub_institute_id = $request->session()->get('sub_institute_id');
         $user_id = $request->session()->get('user_id');
@@ -2875,6 +2876,9 @@ private function getStudentMastery($student_id, $standard_id, $subject_id, $chap
                 'status_code' => 0,
                 'message' => 'Student ID is required'
             ]);
+        }
+        if ($student_id && !\App\Support\StudentAccess::allows($student_id)) {
+            return response()->json(['status_code' => 0, 'message' => 'Not allowed'], 403);
         }
 
         // Get concepts that need review based on Ebbinghaus forgetting curve

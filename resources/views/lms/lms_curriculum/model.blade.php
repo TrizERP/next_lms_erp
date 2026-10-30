@@ -68,11 +68,11 @@
             <div class="columns">
                 <div class="column">
                     <h2>OBJECTIVE</h2>
-                    <p>{!! $value->objective !!}</p>
+                    <p>{!! \App\Support\SafeHtml::clean($value->objective) !!}</p>
                 </div>
                 <!--<div class="column">
                     <h2>OUTCOME</h2>
-                    <p>{!! $value->outcome !!}</p>
+                    <p>{!! \App\Support\SafeHtml::clean($value->outcome) !!}</p>
                 </div>
                 -->
             </div>
@@ -80,25 +80,25 @@
             <div class="columns">
                 <div class="column">
                     <h2>CURRICULUM ALIGNMENT</h2>
-                    <p>{!! $value->curriculum_alignment !!}</p>
+                    <p>{!! \App\Support\SafeHtml::clean($value->curriculum_alignment) !!}</p>
                 </div>
             </div>
             <br/>
             <div class="columns">
                 <div class="column">
                     <h2>HOLISTIC CURRICULUM</h2>
-                    <p>{!! $value->holistic_curriculum !!}</p>
+                    <p>{!! \App\Support\SafeHtml::clean($value->holistic_curriculum) !!}</p>
                 </div>
             </div>
             <br/>
             <div class="columns">
                 <div class="column">
                     <h2>CHAPTER</h2>
-                    <p>{!! $value->chapter !!}</p>
+                    <p>{!! \App\Support\SafeHtml::clean($value->chapter) !!}</p>
                 </div>
                 <div class="column">
                     <h2>ASSESSMENT TOOL</h2>
-                    <p>{!! $value->assessment_tool !!}</p>
+                    <p>{!! \App\Support\SafeHtml::clean($value->assessment_tool) !!}</p>
                 </div>
             </div>
         </div>

@@ -1,9 +1,11 @@
 <?php
+if (PHP_SAPI !== 'cli') { http_response_code(404); exit; } // one-off maintenance script, not web-reachable
 set_time_limit(0);
-$host = '150.129.172.214';
-$username = 'triz_erp';
-$password = 'Triz@2019$04';
-$database = 'triz_erp_2';
+require_once __DIR__ . '/../bootstrap/legacy_env.php';
+$host = legacy_env('LEGACY_DB_HOST');
+$username = legacy_env('LEGACY_DB_USER');
+$password = legacy_env('LEGACY_DB_PASSWORD');
+$database = legacy_env('LEGACY_DB_NAME');
 $syear = "2019";
 
 $cn = mysqli_connect($host, $username, $password) or die("asd");

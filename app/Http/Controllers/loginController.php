@@ -10,6 +10,7 @@ use App\Models\tourModel;
 use App\Models\user\tbluserprofilemasterModel;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Validator;
 use function App\Helpers\is_mobile;
 
@@ -50,7 +51,23 @@ class loginController extends Controller
            $captchaText = $request->input("captchaText");
 //        $hid_captcha = $request->input("hid_captcha");
 
-           if ($captchaText != env('CAPTCHA')) {
+           // Slow down guessing: 10 tries per email and address in 5 minutes. Cleared on success.
+           $loginLimiterKey = 'web-login:' . sha1(strtolower((string) $email) . '|' . $request->ip());
+           if (RateLimiter::tooManyAttempts($loginLimiterKey, 10)) {
+               $res['status_code'] = 0;
+               $res['message'] = "Too many login attempts. Please try again in a few minutes.";
+
+               return redirect('/login')->withInput()->with(['data' => $res]);
+           }
+           RateLimiter::hit($loginLimiterKey, 300);
+           $request->attributes->set('login_limiter_key', $loginLimiterKey);
+
+           // The CAPTCHA env value is an internal bypass code. An empty value must never
+           // match an empty form field, which previously switched the captcha off entirely.
+           $captchaBypass = (string) env('CAPTCHA') !== ''
+               && hash_equals((string) env('CAPTCHA'), (string) $captchaText);
+
+           if (! $captchaBypass) {
                $validator = Validator::make($request->all(), [
                    'captchaText' => 'required|captcha',
                ]);
@@ -98,14 +115,22 @@ class loginController extends Controller
 
         $a = loginModel::select(DB::raw('id,user_name,password,name_suffix,first_name,middle_name,last_name,email,mobile,gender,
 		birthdate,address,city,state,pincode,user_profile_id,join_year,image,plain_password,sub_institute_id,client_id,is_admin,status,created_on as last_login,expire_date'))
-            ->where(['email' => $email, 'password' => $password, 'status' => "1"]);
+            ->where(['email' => $email, 'status' => "1"]);
 
         $data = tblstudentModel::select(DB::raw('id,username as user_name,password,"" as name_suffix,first_name,middle_name,last_name,email,
             mobile, gender,dob as birthdate,address,city,state,pincode,user_profile_id,admission_year as join_year,image,"student" as plain_password,
             sub_institute_id,"" as client_id,"" as is_admin,status,created_on as last_login,expire_date'))
-            ->where(['email' => $email, 'password' => md5($password), 'status' => "1"])
+            ->where(['email' => $email, 'status' => "1"])
             ->union($a)
             ->get();
+
+        // The password is checked here rather than inside the SQL, so plain text, MD5 (students) and
+        // bcrypt (accounts already upgraded by the JSON login) all work, in constant time.
+        $data = $data->filter(function ($row) use ($password) {
+            $isStudent = in_array(strtolower((string) $row['plain_password']), ['student'], true);
+
+            return \App\Support\PasswordVerifier::matches((string) $row['password'], (string) $password, $isStudent);
+        })->values();
 
 
         // $result = DB::select("SELECT id,user_name,email,password,user_profile_id
@@ -398,6 +423,11 @@ class loginController extends Controller
                         $request->session()->put('erpTour', $inTour);
                     }
 
+                    if ($request->attributes->has('login_limiter_key')) {
+                        RateLimiter::clear($request->attributes->get('login_limiter_key'));
+                    }
+                    // A fresh session id at login, so an id planted before login (session fixation) is useless.
+                    $request->session()->regenerate();
                     $request->session()->put('user_id', $user['id']);
                     $request->session()->put('user_profile_id', $user['user_profile_id']);
                     $request->session()->put('DUSER_ID', $user['user_name']);
@@ -423,7 +453,12 @@ class loginController extends Controller
                     $res['status_code'] = 1;
                     $res['message'] = "User Successfully Login";
                     $user['user_profile'] = $userprofiledetails[0]['name'];
-                    $res['data'] = $user;
+                    // The response must never carry the stored password or the plain-text copy. Clients only
+                    // need to know whether the account is a student's, which the marker value says.
+                    $safeUser = is_array($user) ? $user : (method_exists($user, 'toArray') ? $user->toArray() : (array) $user);
+                    unset($safeUser['password']);
+                    $safeUser['plain_password'] = strtolower((string) ($safeUser['plain_password'] ?? '')) === 'student' ? 'student' : '';
+                    $res['data'] = $safeUser;
                     $res['academicTerms'] = $getAcademicTerms;
                     $res['academicYears'] = $getAcademicYear;
 
@@ -463,6 +498,14 @@ class loginController extends Controller
     }
     public function logout(Request $request)
     {
+        // /logout answers every method, so another site could sign a user out with an <img> or a link.
+        // A request that names a different site as its origin is ignored; one from this site, or with no
+        // Origin/Referer at all (a typed address, a bookmark, the mobile web view), logs out as before.
+        $source = $request->headers->get('Origin') ?: $request->headers->get('Referer');
+        if ($source && ($sourceHost = parse_url((string) $source, PHP_URL_HOST)) && strcasecmp($sourceHost, $request->getHost()) !== 0) {
+            return redirect('/');
+        }
+
         //logout user
         $request->session()->flush();
 
@@ -480,8 +523,11 @@ class loginController extends Controller
                 ->join('tbluserprofilemaster as um', function ($join) {
                     $join->on('u.user_profile_id', '=', 'um.id');
                 })->join('school_setup as s', function ($join) {
-                    $join->on('.sub_institute_id', '=', 's.Id');
-                })->selectRaw('u.*,um.name AS profile,s.SchoolName AS school_name')
+                    $join->on('u.sub_institute_id', '=', 's.Id');
+                })->select('u.id', 'u.user_name', 'u.first_name', 'u.middle_name', 'u.last_name', 'u.email', 'u.mobile',
+                    'u.user_profile_id', 'u.sub_institute_id', 'u.status', 'um.name AS profile', 's.SchoolName AS school_name')
+                // Never u.*: that carries the plaintext password. Only the caller's own school.
+                ->where('u.sub_institute_id', (int) $request->session()->get('sub_institute_id'))
                 ->where('u.mobile', $mobile_number)->where('u.status',1)->get()->toArray(); // 23-04-24 by uma
 
             $data = array_map(function ($value) {

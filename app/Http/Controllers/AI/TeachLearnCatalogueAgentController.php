@@ -4,6 +4,7 @@ namespace App\Http\Controllers\AI;
 
 use App\Services\Lms\ContentAgentService;
 use App\Services\Lms\CourseCatalogueHierarchyValidator;
+use App\Services\Lms\TeachLearnAgentPipelineService;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -23,6 +24,7 @@ class TeachLearnCatalogueAgentController extends AiController
     public function __construct(
         private readonly CourseCatalogueHierarchyValidator $validator,
         private readonly ContentAgentService $contentAgentService,
+        private readonly TeachLearnAgentPipelineService $pipelineService,
     ) {
     }
 
@@ -246,6 +248,57 @@ class TeachLearnCatalogueAgentController extends AiController
                 'report' => $report,
                 'state' => $state,
                 'content_stats' => $contentStats,
+                'server_time' => Carbon::now()->toIso8601String(),
+            ]);
+        } catch (Throwable $e) {
+            return $this->handle($e);
+        }
+    }
+
+    /**
+     * POST /api/ai/teach-learn/catalogue-agent/pipeline
+     * Executes the synchronized 3-agent pipeline:
+     *   Step 1: Course Catalogue Agent -> Gate 1
+     *   Step 2: Activity Timeline Agent -> Gate 2
+     *   Step 3: Content Model Coverage Agent -> Gate 3 -> Unified Report.
+     */
+    public function pipeline(Request $request): JsonResponse
+    {
+        try {
+            $instituteId = $this->resolveInstituteId($request);
+            $options = $request->all();
+
+            $report = $this->pipelineService->runPipeline($instituteId, $options);
+
+            if (!($report['success'] ?? false)) {
+                return $this->failure(
+                    $report['error'] ?? 'Pipeline execution failed at validation gate.',
+                    422,
+                    $report
+                );
+            }
+
+            return $this->success('Teach/Learn 3-agent synchronized pipeline completed successfully.', [
+                'report' => $report,
+                'server_time' => Carbon::now()->toIso8601String(),
+            ]);
+        } catch (Throwable $e) {
+            return $this->handle($e);
+        }
+    }
+
+    /**
+     * GET /api/ai/teach-learn/catalogue-agent/eso
+     * Returns the complete Expert System Overview (ESO) for all three agents.
+     */
+    public function eso(Request $request): JsonResponse
+    {
+        try {
+            $instituteId = $this->resolveInstituteId($request);
+            $eso = $this->pipelineService->getExpertSystemOverview($instituteId);
+
+            return $this->success('Teach/Learn Expert System Overview loaded successfully.', [
+                'eso' => $eso,
                 'server_time' => Carbon::now()->toIso8601String(),
             ]);
         } catch (Throwable $e) {

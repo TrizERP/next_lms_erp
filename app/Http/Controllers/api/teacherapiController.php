@@ -73,6 +73,12 @@ class teacherapiController extends Controller
         }
 
         $actorId = (int) ($payload['id'] ?? 0);
+
+        // This is a staff API. A student or parent token's `id` is a tblstudent id, and must never be
+        // looked up as a tbluser id (it could match an admin's id in the same school).
+        if (! empty($payload['is_student']) || ! empty($payload['student_id'])) {
+            return response()->json(['status_code' => 2, 'message' => 'Not available to this account.', 'data' => []], 403);
+        }
         $tenantId = (int) ($payload['sub_institute_id'] ?? 0);
 
         if ($actorId <= 0) {
@@ -751,7 +757,10 @@ class teacherapiController extends Controller
 
             //START Add Dynamic Field data
             $dataCustomFields = tblcustomfieldsModel::where(['status' => "1", 'table_name' => "lms_teacher_resource"])
-                ->whereRaw('(sub_institute_id = '.$request->get('sub_institute_id').' OR common_to_all = 1)  and user_type="" ')
+                ->where(function ($q) use ($request) {
+                    $q->where('sub_institute_id', $request->get('sub_institute_id'))->orWhere('common_to_all', 1);
+                })
+                ->where('user_type', '')
                 ->orderBy('sort_order', 'ASC')
                 ->get();
 

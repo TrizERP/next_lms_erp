@@ -63,14 +63,14 @@ Route::middleware('api.session')->get('/student-results/{stuId}/graph', [Student
 
 Route::post('whats-send-app',function (Request $request) {
     \Illuminate\Support\Facades\Log::info(json_encode($request->all()));
-});
+})->middleware('webhook.secret');
 
 Route::post('whats-comming-app',function (Request $request) {
     \Illuminate\Support\Facades\Log::info(json_encode($request->all()));
-});
+})->middleware('webhook.secret');
 
-Route::post('update-message',[\App\Http\Controllers\WhatsappController::class,'updateDeliveryStatus']);
-Route::post('incoming-message',[\App\Http\Controllers\WhatsappController::class,'incomingMessage']);
+Route::post('update-message',[\App\Http\Controllers\WhatsappController::class,'updateDeliveryStatus'])->middleware('webhook.secret');
+Route::post('incoming-message',[\App\Http\Controllers\WhatsappController::class,'incomingMessage'])->middleware('webhook.secret');
 
 
 Route::controller(apiController::class)->group(function () {
@@ -744,6 +744,33 @@ Route::middleware(['api.session'])->prefix('lms/prayogshala')->group(function ()
     });
 });
 
+// Prayogshala Simulation Learning - 3D / physics simulations linked to curriculum concepts.
+// Same gate as the group above: `api.session` takes the tenant and user from the verified JWT, reads are
+// open to any authenticated role (a learner sees published simulations through published links only),
+// and every write runs `lms.auth` + `perm:lms.content,create` AND is re-checked in the controller: not a
+// learner, and the session tenant must be a platform tenant (config lms_content.platform_sub_institute_ids).
+// See PrayogshalaSimulationApiController and docs/simulation-learning/CONTRACT.md.
+Route::middleware(['api.session'])->prefix('lms/prayogshala/simulations')->group(function () {
+    $c = \App\Http\Controllers\api\lms\PrayogshalaSimulationApiController::class;
+    Route::get('/', [$c, 'index']);
+    Route::middleware(['lms.auth', 'perm:lms.content,create'])->group(function () use ($c) {
+        Route::get('limits', [$c, 'limits']);
+        Route::get('concepts', [$c, 'concepts']);
+        Route::post('assets', [$c, 'uploadAsset'])->middleware('throttle:simulation-assets');
+        Route::post('/', [$c, 'store']);
+        Route::get('{id}/versions', [$c, 'versions'])->whereNumber('id');
+        Route::put('{id}', [$c, 'update'])->whereNumber('id');
+        Route::delete('{id}', [$c, 'destroy'])->whereNumber('id');
+        Route::post('{id}/restore', [$c, 'restore'])->whereNumber('id');
+        Route::put('{id}/links', [$c, 'putLinks'])->whereNumber('id');
+        Route::post('{id}/links/{linkId}/review', [$c, 'reviewLink'])->whereNumber(['id', 'linkId']);
+    });
+    Route::get('{id}', [$c, 'show'])->whereNumber('id');
+    Route::get('{id}/assets/{sha256}', [$c, 'asset'])->whereNumber('id')->where('sha256', '[a-f0-9]{64}');
+    Route::get('{id}/links', [$c, 'links'])->whereNumber('id');
+    Route::post('{id}/progress', [$c, 'progress'])->whereNumber('id');
+});
+
 // The question formats a teacher can generate: present in question_type_catalog AND
 // implemented in QuestionFormatRegistry. It spends nothing, so it sits behind the
 // same session and staff gates as generate but NOT behind throttle.qgen -- listing
@@ -1104,7 +1131,7 @@ Route::prefix('attendance')->group(function () {
 | Intelligent Document Management System (IDMS) API v1
 |--------------------------------------------------------------------------
 */
-Route::prefix('v1')->group(function () {
+Route::prefix('v1')->middleware('api.session')->group(function () {
     Route::get('documents', [\App\Http\Controllers\api\v1\DocumentController::class, 'index']);
     Route::post('documents', [\App\Http\Controllers\api\v1\DocumentController::class, 'store']);
     Route::get('documents/{id}', [\App\Http\Controllers\api\v1\DocumentController::class, 'show']);
@@ -1155,7 +1182,7 @@ Route::middleware('api.session')->prefix('capture-photo')->group(function () {
 // ------------------------------------------------------------------
 // Live Admin & Student Support Chat (real-time synchronized)
 // ------------------------------------------------------------------
-Route::prefix('live-chat')->group(function () {
+Route::prefix('live-chat')->middleware(['api.session', 'livechat.identity'])->group(function () {
     Route::get('session', [\App\Http\Controllers\AI\AiLiveChatController::class, 'sessionGet']);
     Route::post('session', [\App\Http\Controllers\AI\AiLiveChatController::class, 'sessionPost']);
     Route::get('messages', [\App\Http\Controllers\AI\AiLiveChatController::class, 'messagesGet']);

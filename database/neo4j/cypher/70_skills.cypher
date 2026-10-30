@@ -400,18 +400,25 @@ MERGE (parent)-[:PARENT_OF_STANDARD]->(child)
 RETURN count(*) AS parentOfStandard;
 
 
+// FIXED 2026-10-29 (ERP_SQL_Neo4j_Complete_Synchronization_Audit.docx): both MATCHes were
+// bare-pk — 100% wrong, live-measured (1,534 of 1,534, same severity class as LIABLE_FOR).
+// Scoped by the row's own tenant on both sides now.
 LOAD CSV WITH HEADERS FROM 'file:///sqaa_documant_master.csv' AS row
 WITH row WHERE row.menu_id IS NOT NULL AND trim(row.menu_id) <> '' AND trim(row.menu_id) <> '0'
-MATCH (sd:SQAADocument {sqaadocumentId: toInteger(trim(row.id))})
-MATCH (sq:SQAAStandard {sqaastandardId: toInteger(trim(row.menu_id))})
+MATCH (sd:SQAADocument {sqaadocumentId: toInteger(trim(row.id)), sub_institute_id: toInteger(trim(row.sub_institute_id))})
+MATCH (sq:SQAAStandard {sqaastandardId: toInteger(trim(row.menu_id)), sub_institute_id: toInteger(trim(row.sub_institute_id))})
 MERGE (sq)-[:REQUIRES_DOCUMENT]->(sd)
 RETURN count(*) AS requiresDocument;
 
 
+// FIXED 2026-10-28 (ERP_SQL_Neo4j_Complete_Synchronization_Audit.docx): SQAADocument side
+// was bare-pk (46% wrong, live-measured) — scoped by the row's own tenant now. Only safe
+// today because all 1,534 live SQAADocument nodes happen to be single-tenant; fixing the
+// pattern regardless so a future multi-tenant load doesn't reintroduce the same bug.
 LOAD CSV WITH HEADERS FROM 'file:///sqaa_documents.csv' AS row
-WITH row, toString(toInteger(trim(row.sub_institute_id))) AS T
+WITH row, toString(toInteger(trim(row.sub_institute_id))) AS T, toInteger(trim(row.sub_institute_id)) AS tenantInt
 WHERE row.document_id IS NOT NULL AND trim(row.document_id) <> '' AND trim(row.document_id) <> '0'
-MATCH (sd:SQAADocument {sqaadocumentId: toInteger(trim(row.document_id))})
+MATCH (sd:SQAADocument {sqaadocumentId: toInteger(trim(row.document_id)), sub_institute_id: tenantInt})
 MATCH (i:Institute {uid: 'Institute:' + T + ':0:' + T})
 MERGE (i)-[r:SUBMITTED {submissionId: toInteger(trim(row.id))}]->(sd)
 ON CREATE SET

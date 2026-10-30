@@ -166,7 +166,7 @@ class online_fees_collect_controller extends Controller
 
         $searchArr = array(' ','"',"\'",',',"'");
         $replaceArr = array('','',"",' ',"");
-        $student_id = $_REQUEST["student_id"];
+        $student_id = (int) ($_REQUEST["student_id"]);
         $fine = isset($_REQUEST["fees_data"]["fine"]) ? $_REQUEST["fees_data"]["fine"] : 0;
         $discount = isset($_REQUEST["totalDis"]) ? $_REQUEST["totalDis"] : 0;
         $medium_data = DB::select("SELECT a.*,e.grade_id,s.name AS standard, d.name AS division,CONCAT_WS('_',t.first_name,t.middle_name,t.last_name) AS student_name,t.address,t.state,t.city,t.pincode,t.mobile,t.enrollment_no, t.email,ifnull(b.title,0) AS batch 
@@ -349,7 +349,7 @@ class online_fees_collect_controller extends Controller
             } else if ($i == 10) {
                 $amount = $information[1];
             } else if ($i == 26) {
-                $student_id = $information[1];
+                $student_id = (int) ($information[1]);
             } else if ($i == 27) {
                 $syear = $information[1];
             } else if ($i == 28) {
@@ -723,7 +723,7 @@ class online_fees_collect_controller extends Controller
         // exit;
         $searchArr = array(' ','"',"\'",',',"'");
         $replaceArr = array('','',"",' ',"");
-        $student_id = $_REQUEST["student_id"];
+        $student_id = (int) ($_REQUEST["student_id"]);
         $fine = isset($_REQUEST["fees_data"]["fine"]) ? $_REQUEST["fees_data"]["fine"] : 0;
         $discount = isset($_REQUEST["totalDis"]) ? $_REQUEST["totalDis"] : 0;
         $medium_data = DB::select("SELECT a.*,e.grade_id,s.name AS standard, d.name AS division,CONCAT_WS('_',t.first_name,t.middle_name,t.last_name) AS student_name,t.address,t.state,t.city,t.pincode,t.mobile,t.enrollment_no, t.email,ifnull(b.title,0) AS batch 
@@ -948,7 +948,7 @@ class online_fees_collect_controller extends Controller
             } else if ($i == 10) {
                 $amount = $information[1];
             } else if ($i == 26) {
-                $student_id = $information[1];
+                $student_id = (int) ($information[1]);
             } else if ($i == 27) {
                 $syear = $information[1];
             } else if ($i == 28) {
@@ -1189,7 +1189,7 @@ class online_fees_collect_controller extends Controller
     public function icici_request_handler(Request $request)
     {
         // echo '<pre>'; print_r($_REQUEST); exit;
-        $student_id = $_REQUEST["student_id"];
+        $student_id = (int) ($_REQUEST["student_id"]);
         $fine = isset($_REQUEST["fees_data"]["fine"]) ? $_REQUEST["fees_data"]["fine"] : 0;
         $discount = isset($_REQUEST["totalDis"]) ? $_REQUEST["totalDis"] : 0;
         //echo '<pre>'; print_r($fine); exit;
@@ -1525,7 +1525,7 @@ exit; */
      */
     public function icici_orange_request_handler(Request $request)
     {
-        $student_id = $_REQUEST["student_id"];
+        $student_id = (int) ($_REQUEST["student_id"]);
         $fine       = isset($_REQUEST["fees_data"]["fine"]) ? $_REQUEST["fees_data"]["fine"] : 0;
         $discount   = isset($_REQUEST["totalDis"])          ? $_REQUEST["totalDis"]          : 0;
 
@@ -1746,9 +1746,11 @@ exit; */
         $responseCode   = $response["responseCode"] ?? "";
         $payment_status = ($responseCode === "0000" || $responseCode === "000") ? "PS" : "PF";
 
-        // ── (Optional) Verify response secureHash ─────────────────────────────
-        // You should verify the returned securehash here using the same HMAC logic
-        // with the response fields. Omitted for brevity — implement as per ICICI docs.
+        // The callback arrives through the customer's browser, so responseCode is only a claim.
+        // A success is accepted only after the gateway itself confirms it for this order.
+        if ($payment_status === "PS" && !$this->orangeStatusConfirmsSuccess($get_all_data[0])) {
+            $payment_status = "PF";
+        }
 
         // ── Update DB ─────────────────────────────────────────────────────────
         DB::table("fees_payment")
@@ -1782,6 +1784,65 @@ exit; */
         }
 
         return \App\Helpers\is_mobile($type, "fees/online_fees_collect/show_error", [], "view");
+    }
+
+    /**
+     * Asks the Orange PG STATUS API whether this stored order was really paid, and for
+     * the amount we recorded. Any failure to confirm counts as "not confirmed"; the
+     * reconciliation cron books the payment later if it did succeed.
+     */
+    private function orangeStatusConfirmsSuccess(object $payment): bool
+    {
+        $cfg = DB::table('tblstudent_enrollment AS tse')
+            ->join('academic_section AS a', 'a.id', '=', 'tse.grade_id')
+            ->join('fees_icici AS fi', function ($join) {
+                $join->on('fi.medium', '=', 'a.medium')
+                     ->on('fi.sub_institute_id', '=', 'tse.sub_institute_id');
+            })
+            ->where('tse.student_id', $payment->student_id)
+            ->where('tse.syear', $payment->syear)
+            ->where('tse.sub_institute_id', $payment->sub_institute_id)
+            ->select('fi.merchant_id', 'fi.enc_key', 'fi.sub_merchant_id')
+            ->first();
+        if (empty($cfg)) {
+            return false;
+        }
+
+        $merchantTxnNo = $payment->icici_order_id;
+        $payload = [
+            "merchantId"      => $cfg->merchant_id,
+            "aggregatorID"    => $cfg->sub_merchant_id,
+            "merchantTxnNo"   => $merchantTxnNo,
+            "transactionType" => "STATUS",
+            "originalTxnNo"   => $merchantTxnNo,
+        ];
+
+        $ch = curl_init("https://pgpay.icicibank.com/pg/api/command");
+        curl_setopt_array($ch, [
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_POST           => true,
+            CURLOPT_HTTPHEADER     => ['Content-Type: application/json'],
+            CURLOPT_POSTFIELDS     => json_encode($payload),
+            CURLOPT_TIMEOUT        => 15,
+        ]);
+        $apiResponse = curl_exec($ch);
+        $curlError = curl_error($ch);
+        curl_close($ch);
+        if ($curlError || empty($apiResponse)) {
+            return false;
+        }
+
+        $status = json_decode($apiResponse, true);
+        if (empty($status) || !in_array($status['txnResponseCode'] ?? null, ['0000', '000'], true)) {
+            return false;
+        }
+
+        // When the gateway reports an amount it must match what we asked the payer to pay.
+        if (isset($status['amount']) && abs((float) $status['amount'] - (float) $payment->amount) > 0.01) {
+            return false;
+        }
+
+        return true;
     }
 
     /**
@@ -1968,7 +2029,7 @@ exit; */
         } else {
             $amount = number_format(floatval($_REQUEST["pay_amount"]), 0, '.', '');
         }
-        $student_id = $_REQUEST["student_id"];
+        $student_id = (int) ($_REQUEST["student_id"]);
         $where_arr = array(
             "sub_institute_id" => session()->get("sub_institute_id"),
             "id" => $student_id
@@ -2132,7 +2193,7 @@ exit; */
         } else {
             $amount = number_format(floatval($_REQUEST["pay_amount"]), 0, '.', '');
         }
-        $student_id = $_REQUEST["student_id"];
+        $student_id = (int) ($_REQUEST["student_id"]);
         $where_arr = array(
             "sub_institute_id" => session()->get("sub_institute_id"),
             "id" => $student_id
@@ -2501,9 +2562,10 @@ exit; */
     // gpay fees
     public function OnlineReceipt(Request $request)
     {
-        $student_id = $request->student_id;
+        $student_id = (int) ($request->student_id);
         $syear = $request->syear;
-        $sub_institute_id= $request->sub_institute_id;
+        $sub_institute_id = session()->get('sub_institute_id') ?: $request->sub_institute_id; // the caller's school, not the body's
+        $request->merge(['sub_institute_id' => $sub_institute_id]);
         $amount= $request->amount;
         $transactionid= $request->transactionid;
         $fine= $request->fine;  
@@ -2851,7 +2913,7 @@ exit; */
             $amount = number_format(floatval($_REQUEST["pay_amount"]) * 100, 0, '.', '');
         }
 
-        $student_id = $_REQUEST["student_id"];
+        $student_id = (int) ($_REQUEST["student_id"]);
         $medium_data = DB::select("SELECT a.*,e.grade_id,CONCAT_WS('_',t.first_name,t.middle_name,t.last_name) AS student_name, t.mobile,CONCAT_WS('_',t.first_name,t.middle_name,t.last_name,t.uniqueid) AS uniqueid FROM tblstudent_enrollment e
         inner join academic_section a on e.grade_id = a.id
         INNER JOIN tblstudent t ON t.id=e.student_id
@@ -3056,7 +3118,7 @@ if (Str::startsWith($order_id, 'pay_')) {
         // print_r($input);
         // exit;
 
-        $student_id = $input['student_id'];
+        $student_id = (int) ($input['student_id']);
         FeeAuditService::logCallbackReceived('razorpay', $input['razorpay_order_id'], $student_id, session()->get('sub_institute_id'));
         $medium_data = DB::table('tblstudent_enrollment as e')
             ->join('academic_section as a', 'e.grade_id', '=', 'a.id')
@@ -3216,7 +3278,7 @@ if (Str::startsWith($order_id, 'pay_')) {
     public function hdfcrazorpay_request_handler(Request $request)
 {
     try {
-        $student_id = $_REQUEST["student_id"];
+        $student_id = (int) ($_REQUEST["student_id"]);
         $fine = isset($_REQUEST["fees_data"]["fine"]) ? $_REQUEST["fees_data"]["fine"] : 0;
         $discount = isset($_REQUEST["totalDis"]) ? $_REQUEST["totalDis"] : 0;
 
@@ -3352,7 +3414,7 @@ if (Str::startsWith($order_id, 'pay_')) {
         try {
             $input = $request->all();
             
-            $student_id = $request->student_id;
+            $student_id = (int) ($request->student_id);
             $inserted_id = $request->inserted_id;
             FeeAuditService::logCallbackReceived('hdfcrazorpay', $request->razorpay_order_id ?? null, $student_id, session()->get('sub_institute_id'));
 
@@ -3449,7 +3511,7 @@ if (Str::startsWith($order_id, 'pay_')) {
         $input = $request->all();
 
         // STEP 1: Get basic parameters (same as first function)
-        $student_id = $_REQUEST["student_id"] ?? $request->input('student_id');
+        $student_id = (int) ($_REQUEST["student_id"] ?? $request->input('student_id'));
         $inserted_id = $_REQUEST["inserted_id"] ?? $request->input('inserted_id');
         
         if (empty($student_id) || empty($inserted_id)) {
@@ -3682,7 +3744,7 @@ if (isset($input['error'])) {
 
     public function payphi_request_handler(Request $request)
     {
-        $student_id = $_REQUEST["student_id"];
+        $student_id = (int) ($_REQUEST["student_id"]);
         $fine = isset($_REQUEST["fees_data"]["fine"]) ? $_REQUEST["fees_data"]["fine"] : 0;
         $medium_data = DB::select("SELECT a.*,e.grade_id,s.name AS standard, d.name AS division,CONCAT_WS('_',t.first_name,t.middle_name,t.last_name) AS student_name, t.mobile, t.enrollment_no, t.email,ifnull(b.title,0) AS batch FROM tblstudent_enrollment e
             inner join academic_section a on e.grade_id = a.id

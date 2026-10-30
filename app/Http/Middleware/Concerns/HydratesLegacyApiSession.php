@@ -69,6 +69,11 @@ trait HydratesLegacyApiSession
             return $this->unauthorizedApiSession('Invalid token payload');
         }
 
+        // Do not rely on the JWT library to enforce expiry: reject an expired token here.
+        if (isset($payload['exp']) && (int) $payload['exp'] < time()) {
+            return $this->unauthorizedApiSession('Token expired');
+        }
+
         $userId         = $payload['id'] ?? null;
         $subInstituteId = $payload['sub_institute_id'] ?? null;
         $userProfileId  = $payload['user_profile_id'] ?? null;
@@ -160,6 +165,16 @@ trait HydratesLegacyApiSession
             $user = $this->rememberLookup('user:'.$userId, function () use ($userId) {
                 return DB::table('tbluser')->where('id', $userId)->first();
             });
+            // The token is a signed claim from login time. Re-check the account so a deleted or
+            // deactivated user, or a token naming another school's id, stops working (within the
+            // five-minute lookup cache) instead of staying valid for the token's whole life.
+            if (! $user
+                || (isset($user->status) && (string) $user->status !== '1')
+                || (isset($user->sub_institute_id) && (int) $user->sub_institute_id !== (int) $subInstituteId)) {
+                $store->flush();
+
+                return $this->unauthorizedApiSession('Account is not active');
+            }
             $store->put('user_name', $user->user_name ?? '');
             $store->put('name', trim(($user->first_name ?? '') . ' ' . ($user->last_name ?? '')));
             $store->put('email', $user->email ?? '');

@@ -72,15 +72,15 @@ class apiController extends Controller
 
             if (isset($data[0])) {
             	if($data[0]->otp == null || $data[0]->otp == ''){
-                	$otp = rand(100000, 999999);
+                	$otp = random_int(100000, 999999);
             	}else{
             		$otp = $data[0]->otp;
             	}
                 
                 $sub_institute_id = $data[0]->sub_institute_id;
                 $sub_Array = [328,329,330,331,333,61,336,337,338,339,340,341];
-                if ($mobile == '9979176562' || $mobile == '9824154142') {
-                    $otp = "123456";
+                if (\App\Support\ReviewOtp::matches($mobile)) {
+                    $otp = \App\Support\ReviewOtp::code();
                 } else if(in_array($sub_institute_id, $sub_Array)){
                     $otp = date('dmy', strtotime($data[0]->dob));
                 }else{
@@ -158,12 +158,12 @@ class apiController extends Controller
             $data = $data[0];
 
             if (isset($data['id']) && $data['id'] != '') {
-                $otp = rand(100000, 999999);
+                $otp = random_int(100000, 999999);
 
                 $sub_institute_id = $data['sub_institute_id'];
                 $sub_Array = [328,329,330,331,333,61,336,337,338,339,340,341];
-                if ($_REQUEST['mobile'] == '9979176562' || $_REQUEST['mobile'] == '9824154142') {
-                    $otp = "123456";
+                if (\App\Support\ReviewOtp::matches($_REQUEST['mobile'])) {
+                    $otp = \App\Support\ReviewOtp::code();
                 }else if(in_array($sub_institute_id, $sub_Array)){
                     $otp = date('dmy', strtotime($data['birthdate']));
                 } else {
@@ -180,7 +180,7 @@ class apiController extends Controller
                     if ($res["error"] == 1) {
                         $errorMessage = "Please add api details first.";
                         if ($res["error"] == $errorMessage) {
-                            $otp = "123456";
+                            // no fixed fallback OTP: a failed SMS must not make the login code guessable
                         }
 
                     }
@@ -334,7 +334,7 @@ class apiController extends Controller
                     }
                     $time = time() + (60 * 60 * 24 * 30);
                     $payload = [
-                        //'exp'              => $time,
+                        'exp'              => $time,
                         'student_id'       => $arr->id,
                         'sub_institute_id' => $arr->sub_institute_id,
                         //'mobile'           => $arr->mobile,
@@ -360,7 +360,6 @@ class apiController extends Controller
                         'enrollment_no'     => $arr->enrollment_no,
                         'sub_institute_id'  => strtoupper($arr->sub_institute_id),
                         'mobile'            => $arr->mobile,
-                        'otp'               => $arr->otp,
                         'first_name'        => $arr->first_name,
                         'middle_name'       => $arr->middle_name,
                         'father_name'       => isset($arr->father_name) ? 'Mr.' . $arr->father_name : '-',
@@ -529,7 +528,7 @@ public function studentData($is_exist,$request,$student_id, $sub_institute_id){
 
                 $time = time() + (60 * 60 * 24 * 30);
                 $payload = [
-                    //'exp'              => $time,
+                    'exp'              => $time,
                     'teacher_id'       => $data['id'],
                     'sub_institute_id' => $data['sub_institute_id'],
                     //'mobile'           => $data['mobile'],
@@ -554,7 +553,6 @@ public function studentData($is_exist,$request,$student_id, $sub_institute_id){
                     'standard_division_title' => $data['standard_division_title'],
                     'email'                   => $data['email'],
                     'mobile'                  => $data['mobile'],
-                    'otp'                  => $data['otp'],
                     'birthdate'               => $data['birthdate'],
                     'address'                 => $data['address'],
                     'gender'                  => $data['gender'],
@@ -988,15 +986,15 @@ if(in_array($sub_institute_id, $cn))
 
             if (isset($data[0])) {
                 if($data[0]->otp == null || $data[0]->otp == ''){
-                    $otp = rand(100000, 999999);
+                    $otp = random_int(100000, 999999);
                 }else{
                     $otp = $data[0]->otp;
                 }
                 
                 $sub_institute_id = $data[0]->sub_institute_id;
 
-                if ($mobile == '9979176562' || $mobile == '9974463770') {
-                    $otp = "123456";
+                if (\App\Support\ReviewOtp::matches($mobile)) {
+                    $otp = \App\Support\ReviewOtp::code();
                 }else{
                     $text = "OTP for login is ".$otp." and is valid for 5 minutes";
                     $res = $this->sendSMS($mobile,$text,$sub_institute_id);

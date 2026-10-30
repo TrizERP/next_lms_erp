@@ -33,6 +33,11 @@ class checkPermission
             $userProfileId = session()->get('user_profile_id');
             $sub_institute_id = session()->get('sub_institute_id');
             $user_id = session()->get('user_id');
+
+            // Legacy destroy($id) actions delete by id alone; refuse another school's record.
+            if (\App\Support\TenantDeleteGuard::crossesTenant($request)) {
+                throw new AuthorizationException('This record belongs to another school.');
+            }
             // $menu_id = session()->get('right_menu_id');
             $permissions = [];
             
@@ -41,6 +46,26 @@ class checkPermission
             $menu_id = Cache::remember('perm_menu_id:'.$currentRouteName, 300, function () use ($currentRouteName) {
                 return DB::table('tblmenumaster')->where('status',1)->where('link',$currentRouteName)->value('id');
             });
+            // A write route with no menu row is not rights-checked at all. Failing it closed would
+            // block every such screen at once, so first make the gap visible: one warning per
+            // route per hour, listing exactly which routes need a menu row (or an explicit guard).
+            if (empty($menu_id) && ! $request->isMethodSafe()) {
+                if (Cache::add('perm_unmapped_logged:'.$currentRouteName, 1, 3600)) {
+                    \Illuminate\Support\Facades\Log::channel('daily')->warning('perm: write route has no menu row, rights not checked', [
+                        'route' => $currentRouteName,
+                        'method' => $request->method(),
+                        'path' => $request->path(),
+                        'profile' => session()->get('user_profile_name'),
+                    ]);
+                }
+
+                // Opt-in (config/permissions.php): once the routes are mapped, an unmapped write is refused
+                // instead of allowed, except the route names listed as deliberate exceptions.
+                if (config('permissions.fail_closed', false)
+                    && ! in_array((string) $currentRouteName, (array) config('permissions.unmapped_allow', []), true)) {
+                    throw new AuthorizationException('No rights are defined for this action.');
+                }
+            }
             // echo "<pre>";print_r($currentRouteName);exit;
             // 02-01-2025 end
 
@@ -84,7 +109,14 @@ class checkPermission
                 // }
                 // echo "<pre>";print_r($permissions);exit;
                     
-                if (!Str::contains($request->submit, 'Search')) {
+                // Legacy search forms POST submit=Search and have no write rights of their own, so a
+                // search skips the rights check. A client-chosen value must never unlock a write,
+                // so the skip does not apply to write verbs or to write-looking paths.
+                $isReadOnlySearch = Str::contains($request->submit, 'Search')
+                    && in_array($request->method(), ['GET', 'HEAD', 'POST'], true)
+                    && !preg_match('/delete|destroy|update|store|save/i', $request->path());
+
+                if (!$isReadOnlySearch) {
                     // for route not with resource
                     if ((str_contains(request()->path(), 'delete') || str_contains(request()->path(), 'destroy'))  && $can_delete != 1 && !in_array($menu_id,[200])) 
                     {

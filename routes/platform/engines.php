@@ -19,7 +19,7 @@ Route::middleware('lms.auth')->group(function () {
         ->where(['id' => '[0-9]+', 'action' => 'approve|reject|delegate'])
         ->middleware('perm:platform.workflow,update');
 
-    Route::get('/notifications/log', [EngineController::class, 'notificationLog']);
+    Route::get('/notifications/log', [EngineController::class, 'notificationLog'])->middleware('perm:platform.notification,update');
     Route::get('/notifications/inbox', [EngineController::class, 'notificationInbox'])->middleware('perm:platform.notification,update');
     Route::get('/notifications/mine', [MyNotificationsController::class, 'index']);
     Route::post('/notifications/test-send', [EngineController::class, 'sendTest'])->middleware('perm:platform.notification,update');

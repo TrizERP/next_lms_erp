@@ -424,8 +424,8 @@ if ($staffData) {
         ];
 
         // Tokens carried no expiry, so a leaked one worked forever. Set JWT_TTL_MINUTES
-        // (for example 720) to make them expire; unset keeps the old behaviour.
-        $ttlMinutes = (int) env('JWT_TTL_MINUTES', 0);
+        // to change the lifetime (default 30 days); 0 disables expiry and is not recommended.
+        $ttlMinutes = (int) env('JWT_TTL_MINUTES', 43200);
         if ($ttlMinutes > 0) {
             $payload['iat'] = time();
             $payload['exp'] = time() + ($ttlMinutes * 60);

@@ -42,6 +42,22 @@ class PerformanceGoalController extends Controller
         'manager_comments' => 'Manager Comments',
     ];
 
+    /**
+     * Admins manage any goal in their school. Everyone else works only on goals that are their
+     * own: a teacher or librarian must not read or change a colleague's goals.
+     */
+    private function goalActorIsAdmin(): bool
+    {
+        $profile = strtolower((string) session()->get('user_profile_name'));
+
+        return (int) session()->get('is_admin') >= 1 || str_contains($profile, 'admin');
+    }
+
+    private function actorMayManageGoalOf(array $context, int $ownerId): bool
+    {
+        return $this->goalActorIsAdmin() || (int) $context['user_id'] === $ownerId;
+    }
+
     /** GET /api/performance/goals */
     public function index(Request $request)
     {
@@ -52,6 +68,9 @@ class PerformanceGoalController extends Controller
 
         $tenant = $context['sub_institute_id'];
         $filters = $this->performanceFilters($request);
+        if (!$this->goalActorIsAdmin()) {
+            $filters['user_id_filter'] = (int) $context['user_id'];
+        }
         ['page' => $page, 'per_page' => $perPage] = $this->performancePaging($request);
         [$sortBy, $sortDir] = $this->performanceSort($request, self::SORTABLE, 'due_date', 'asc');
 
@@ -119,6 +138,9 @@ class PerformanceGoalController extends Controller
         ]);
 
         $ownerId = (int) $validated['user_id_target'];
+        if (!$this->actorMayManageGoalOf($context, $ownerId)) {
+            return $this->performanceError('You can only create goals for yourself.', 403);
+        }
 
         // THE COMPETENCY MUST BE THE CALLER'S OWN. An id is unique to the table,
         // not to a tenant, so an unchecked value here would let one organisation
@@ -196,6 +218,9 @@ class PerformanceGoalController extends Controller
         if (!$goal) {
             return $this->performanceError('Goal not found', 404);
         }
+        if (!$this->actorMayManageGoalOf($context, (int) $goal->user_id)) {
+            return $this->performanceError('You can only change your own goals.', 403);
+        }
 
         $validated = $request->validate([
             'title'          => 'sometimes|required|string|max:191',
@@ -214,6 +239,11 @@ class PerformanceGoalController extends Controller
             'manager_rating' => 'nullable|numeric|min:0|max:10',
             'manager_comments' => 'nullable|string',
         ]);
+
+        // Only a manager or admin rates a goal; the owner cannot score or comment on their own.
+        if (!$this->goalActorIsAdmin()) {
+            unset($validated['manager_rating'], $validated['manager_comments']);
+        }
 
         // The owner is never reassigned by an edit: accepting a user column here
         // is exactly how a record gets silently transferred to the actor.
@@ -262,6 +292,9 @@ class PerformanceGoalController extends Controller
 
         if (!$goal) {
             return $this->performanceError('Goal not found', 404);
+        }
+        if (!$this->actorMayManageGoalOf($context, (int) $goal->user_id)) {
+            return $this->performanceError('You can only delete your own goals.', 403);
         }
 
         $title = $goal->title;

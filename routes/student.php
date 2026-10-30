@@ -225,24 +225,24 @@ Route::post('front_desk/leave_application/add_leave_application', [leaveApplicat
 Route::post('circular/fetchData', [circularController::class, 'fetchData']);
 Route::post('circular/TeacherFetchData', [circularController::class, 'TeacherFetchData']);
 Route::get('circular/circular-types', [circularTypeApiController::class, 'index']);
-Route::post('homework/fetchData', [studentHomeworkController::class, 'fetchData']);
+Route::post('homework/fetchData', [studentHomeworkController::class, 'fetchData'])->middleware('api.session');
 Route::post('photo_video_gallary/fetchData', [photo_video_gallaryController::class, 'fetchData']);
 Route::post('photo_video_gallary/TeacherFetchData', [photo_video_gallaryController::class, 'TeacherFetchData']);
-Route::post('/notificationHubAPI', [tblstudentController::class, 'notificationHubAPI']);
-Route::post('/teacherAnnoucementAPI', [tblstudentController::class, 'teacherAnnoucementAPI']);
-Route::post('/teacherHomeworkAssignmentAPI', [studentHomeworkController::class, 'teacherHomeworkAssignmentAPI']);
-Route::post('/studentHomeworkAssignmentAPI', [studentHomeworkController::class, 'studentHomeworkAssignmentAPI']);
-Route::post('/add_communicationAPI', [parentCommunicationController::class, 'add_communicationAPI']);
+Route::post('/notificationHubAPI', [tblstudentController::class, 'notificationHubAPI'])->middleware('mobile.identity:student');
+Route::post('/teacherAnnoucementAPI', [tblstudentController::class, 'teacherAnnoucementAPI'])->middleware('mobile.identity:teacher');
+Route::post('/teacherHomeworkAssignmentAPI', [studentHomeworkController::class, 'teacherHomeworkAssignmentAPI'])->middleware('mobile.identity:teacher');
+Route::post('/studentHomeworkAssignmentAPI', [studentHomeworkController::class, 'studentHomeworkAssignmentAPI'])->middleware('mobile.identity:student');
+Route::post('/add_communicationAPI', [parentCommunicationController::class, 'add_communicationAPI'])->middleware('mobile.identity:student');
 
-Route::post('/studentSubjectAPI', [studentHomeworkController::class, 'studentSubjectAPI']);
+Route::post('/studentSubjectAPI', [studentHomeworkController::class, 'studentSubjectAPI'])->middleware('mobile.identity:student');
 
-Route::post('/teacherStudentListAPI', [tblstudentController::class, 'teacherStudentListAPI']);
-Route::post('/allStudentListAPI', [tblstudentController::class, 'allStudentListAPI']);
-Route::post('/teacherParentcommunicationListAPI', [parentCommunicationController::class, 'teacherParentcommunicationListAPI']);
-Route::post('/teacherParentcommunicationSaveAPI', [parentCommunicationController::class, 'teacherParentcommunicationSaveAPI']);
-Route::post('/studentParentcommunicationListAPI', [parentCommunicationController::class, 'studentParentcommunicationListAPI']);
+Route::post('/teacherStudentListAPI', [tblstudentController::class, 'teacherStudentListAPI'])->middleware('mobile.identity:teacher');
+Route::post('/allStudentListAPI', [tblstudentController::class, 'allStudentListAPI'])->middleware('mobile.identity:teacher');
+Route::post('/teacherParentcommunicationListAPI', [parentCommunicationController::class, 'teacherParentcommunicationListAPI'])->middleware('mobile.identity:teacher');
+Route::post('/teacherParentcommunicationSaveAPI', [parentCommunicationController::class, 'teacherParentcommunicationSaveAPI'])->middleware('mobile.identity:teacher');
+Route::post('/studentParentcommunicationListAPI', [parentCommunicationController::class, 'studentParentcommunicationListAPI'])->middleware('mobile.identity:student');
 
-Route::get('ajax_checkEmailExist', [tblstudentController::Class, 'ajax_checkEmailExist'])->name('ajax_checkEmailExist');
+Route::get('ajax_checkEmailExist', [tblstudentController::Class, 'ajax_checkEmailExist'])->name('ajax_checkEmailExist')->middleware('throttle:20,1');
 Route::get('ajax_checkDivisionCapacity', [tblstudentController::class, 'ajax_checkDivisionCapacity'])->name('ajax_checkDivisionCapacity');
 Route::get('ajax_StatewiseCity', [tblstudentController::class, 'ajax_StatewiseCity'])->name('ajax_StatewiseCity');
 Route::get('get_batch', [studentAttendanceController::class, 'get_batch'])->name('get_batch');
@@ -263,7 +263,7 @@ Route::post('dicipline_alone/store', [diciplineController::class,'store'])->name
 
 Route::get('search_students', [studentSearchController::class,'searchBydata'])->name('search_students.search');
 
-Route::prefix('student/api/student_certificate')->group(function () {
+Route::prefix('student/api/student_certificate')->middleware(['api.session', 'staff.only'])->group(function () {
     Route::get('templates', [StudentCertificateApiController::class, 'templates']);
     Route::post('search', [StudentCertificateApiController::class, 'search']);
     Route::post('preview', [StudentCertificateApiController::class, 'preview']);
@@ -271,13 +271,13 @@ Route::prefix('student/api/student_certificate')->group(function () {
     Route::get('history', [StudentCertificateApiController::class, 'history']);
 });
 
-Route::prefix('student/api/student_icard')->group(function () {
+Route::prefix('student/api/student_icard')->middleware(['api.session', 'staff.only'])->group(function () {
     Route::get('metadata', [StudentIcardApiController::class, 'metadata']);
     Route::post('search', [StudentIcardApiController::class, 'search']);
     Route::post('preview', [StudentIcardApiController::class, 'preview']);
 });
 
-Route::prefix('student/api/teacher_icard')->group(function () {
+Route::prefix('student/api/teacher_icard')->middleware(['api.session', 'staff.only'])->group(function () {
     Route::get('metadata', [\App\Http\Controllers\student\TeacherIcardApiController::class, 'metadata']);
     Route::post('search', [\App\Http\Controllers\student\TeacherIcardApiController::class, 'search']);
     Route::post('preview', [\App\Http\Controllers\student\TeacherIcardApiController::class, 'preview']);

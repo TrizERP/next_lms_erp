@@ -2,17 +2,18 @@
 
 include("auth/auth.php");
 
-$host = "192.168.0.2";//"150.129.172.214";
-$username = "root";//"triz_erp";
-$password = "Tr!zLMS@123#";//"Triz@2019$04";
-$database = "triz_erp_2";//"triz_erp_2";
+require_once __DIR__ . '/../bootstrap/legacy_env.php';
+$host = legacy_env('LEGACY_LOCAL_DB_HOST');
+$username = legacy_env('LEGACY_LOCAL_DB_USER');
+$password = legacy_env('LEGACY_LOCAL_DB_PASSWORD');
+$database = legacy_env('LEGACY_DB_NAME');
 
 $cn = mysqli_connect($host, $username, $password) or die("Database Not Connected");
 mysqli_select_db($cn, $database) or die("database");
 
 $type = $_REQUEST['type'];
 $teacher_id = $_REQUEST['teacher_id'];
-$sub_institute_id = $_REQUEST['sub_institute_id'];
+$sub_institute_id = (int) $_REQUEST['sub_institute_id'];
 $syear = $_REQUEST['syear'];
 $action = $_REQUEST['action'];
 
@@ -34,9 +35,9 @@ if($syear != "" && $sub_institute_id != "" && $teacher_id != "" && $action != ""
 	// $username1 = $client_data['db_user'];
 	// $password1 = $client_data['db_password'];
 	$library_db = $client_data['db_library'];
-	$library_host = '192.168.0.2';
-    $library_user = 'root';
-    $library_password = 'Tr!zLMS@123#';
+	$library_host = legacy_env('LEGACY_LOCAL_DB_HOST');
+    $library_user = legacy_env('LEGACY_LOCAL_DB_USER');
+    $library_password = legacy_env('LEGACY_LOCAL_DB_PASSWORD');
 	 
 	$cn1 = mysqli_connect($library_host, $library_user, $library_password) or die("College Database Not Connected");	
 	mysqli_select_db($cn1, $library_db) or die("College database not found");

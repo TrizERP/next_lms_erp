@@ -405,7 +405,7 @@ class AiLiveChatController extends Controller
             $senderRole = (string)($data['senderRole'] ?? 'user');
             $text = (string)($data['text'] ?? '');
             $type = (string)($data['type'] ?? 'text');
-            $meetUrl = isset($data['meetUrl']) ? (string)$data['meetUrl'] : null;
+            $meetUrl = isset($data['meetUrl']) ? $this->safeMeetUrl((string)$data['meetUrl']) : null;
             $bookingDetails = isset($data['bookingDetails']) ? json_encode($data['bookingDetails']) : null;
 
             $messageId = (string)Str::uuid();
@@ -592,7 +592,7 @@ class AiLiveChatController extends Controller
             $subInstituteId = (string)($data['subInstituteId'] ?? '1');
             $date = (string)($data['date'] ?? Carbon::today()->format('Y-m-d'));
             $slotsList = $data['slots'] ?? [];
-            $defaultMeetUrl = isset($data['defaultMeetUrl']) ? trim((string)$data['defaultMeetUrl']) : null;
+            $defaultMeetUrl = isset($data['defaultMeetUrl']) ? $this->safeMeetUrl(trim((string)$data['defaultMeetUrl'])) : null;
             $overwrite = !empty($data['overwrite']);
 
             if ($defaultMeetUrl !== null && $defaultMeetUrl !== '') {
@@ -862,7 +862,7 @@ class AiLiveChatController extends Controller
                 return response()->json(['error' => 'Session not found'], 404);
             }
 
-            $customMeetUrl = isset($data['customMeetUrl']) ? trim((string)$data['customMeetUrl']) : null;
+            $customMeetUrl = isset($data['customMeetUrl']) ? $this->safeMeetUrl(trim((string)$data['customMeetUrl'])) : null;
             $defaultMeetUrl = DB::table('ai_live_chat_settings')->where('setting_key', 'default_meet_url')->value('setting_value');
             $meetUrl = $customMeetUrl ?: ($defaultMeetUrl ?: 'https://meet.google.com/' . $this->generateMeetCode());
 
@@ -1021,13 +1021,46 @@ class AiLiveChatController extends Controller
         }
     }
 
+    /**
+     * A meeting link is shown to students as a "Join" button, so only a real video-meeting address is
+     * stored: https, no credentials, and a host on the allow-list (LIVE_CHAT_MEET_HOSTS, comma separated;
+     * default Google Meet, Zoom, Microsoft Teams and Webex). Anything else becomes null.
+     */
+    private function safeMeetUrl(string $url): ?string
+    {
+        $url = trim($url);
+        if ($url === '' || strlen($url) > 300) {
+            return null;
+        }
+        $parts = parse_url($url);
+        if (! $parts || strtolower((string) ($parts['scheme'] ?? '')) !== 'https' || empty($parts['host']) || isset($parts['user']) || isset($parts['pass'])) {
+            return null;
+        }
+
+        $allowed = array_filter(array_map('trim', explode(',', strtolower((string) env('LIVE_CHAT_MEET_HOSTS', 'meet.google.com,zoom.us,teams.microsoft.com,teams.live.com,webex.com')))));
+        $host = strtolower($parts['host']);
+        foreach ($allowed as $ok) {
+            if ($host === $ok || str_ends_with($host, '.' . $ok)) {
+                return $url;
+            }
+        }
+
+        return null;
+    }
+
     private function generateMeetCode(): string
     {
         $chars = 'abcdefghijklmnopqrstuvwxyz';
-        $p1 = substr(str_shuffle($chars), 0, 3);
-        $p2 = substr(str_shuffle($chars), 0, 4);
-        $p3 = substr(str_shuffle($chars), 0, 3);
-        return "{$p1}-{$p2}-{$p3}";
+        $pick = static function (int $len) use ($chars): string {
+            $out = '';
+            for ($i = 0; $i < $len; $i++) {
+                $out .= $chars[random_int(0, strlen($chars) - 1)];
+            }
+
+            return $out;
+        };
+
+        return $pick(3) . '-' . $pick(4) . '-' . $pick(3);
     }
 
     private function formatSession(object $row): array

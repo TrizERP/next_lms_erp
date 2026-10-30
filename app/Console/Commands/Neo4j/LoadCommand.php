@@ -51,6 +51,24 @@ class LoadCommand extends Command
             $this->error('Pass --module= or --table=.');
             return 1;
         }
+        // GUARD added 2026-10-28 (ERP_SQL_Neo4j_Complete_Synchronization_Audit.docx §Phase 2):
+        // `standard`, `lms_lesson_plan`, `sub_std_map` are ALSO live-synced by Pipeline A
+        // (config/neo4j.php's trigger outbox), which MERGEs on the native key (stId/lessonId/
+        // subId), not `uid`. Loading them here creates a SECOND, uid-keyed population under
+        // the same label that Pipeline A's MERGE can never see — this is exactly the defect
+        // that was just found (live-measured as an exact 2x node count) and cleaned up. Running
+        // this command for these tables again would recreate it. Blocked until GraphSchema's
+        // key convention for these three labels is unified — see the audit's Phase 2 notes for
+        // the repair mechanics if that unification work starts.
+        $dualKeyRisk = array_intersect_key($tables, array_flip(['standard', 'lms_lesson_plan', 'sub_std_map']));
+        if ($dualKeyRisk) {
+            $this->error('Refusing to load: ' . implode(', ', array_keys($dualKeyRisk))
+                . ' — these are live-synced by Pipeline A under a different key convention.');
+            $this->line('Loading them here would recreate a known duplicate-node defect (see the');
+            $this->line('2026-10-28 sync audit). Do not run this without first reading that section.');
+            return 1;
+        }
+
         // nodes before edges — an edge cannot MERGE onto a node that does not exist yet
         uasort($tables, fn ($a, $b) => [($a['decision'] === 'NODE' ? 0 : 1), $a['phase'] ?? 99]
             <=> [($b['decision'] === 'NODE' ? 0 : 1), $b['phase'] ?? 99]);

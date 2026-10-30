@@ -574,8 +574,24 @@ class WhatsappController extends Controller
         return is_mobile($type, "whatsapp/whatsapp_reply/index", $whatsappChats, "view");
     }
 
+    /**
+     * The CRM endpoints are called server-to-server without a user session, so
+     * they are guarded by a shared secret instead. Fails closed when unset.
+     */
+    private function crmRequestAuthorized(Request $request): bool
+    {
+        $secret = (string) env('CRM_WHATSAPP_SECRET', '');
+        $given = (string) ($request->header('X-CRM-Key') ?: '');
+
+        return $secret !== '' && hash_equals($secret, $given);
+    }
+
     public function whatsappCRM(Request $request)
     {
+        if (!$this->crmRequestAuthorized($request)) {
+            return response()->json(['message' => 'Unauthorized'], 401);
+        }
+
         $numbers = $request->get('number');
         $message = $request->get('message');
         $file_url = $request->get('file_url');
@@ -585,15 +601,14 @@ class WhatsappController extends Controller
             return response()->json([]);
         }
 
+        // The URL is only handed to WhatsApp, which fetches it itself. The server
+        // must not fetch it (SSRF) or write it under public/ (executable upload).
         $imageUrl = null;
         if (!empty($file_url)) {
-            $fileContents = file_get_contents($file_url);
-            $fileName = basename($file_url);
-            $filePath = public_path('whatsapp/wp_sent_files/' . $fileName);
-            if (!file_exists(dirname($filePath))) {
-                mkdir(dirname($filePath), 0755, true);
+            $scheme = strtolower((string) parse_url((string) $file_url, PHP_URL_SCHEME));
+            if (!in_array($scheme, ['http', 'https'], true)) {
+                return response()->json(['message' => 'Invalid file_url'], 422);
             }
-            file_put_contents($filePath, $fileContents);
             $imageUrl = $file_url;
         }
 
@@ -621,6 +636,10 @@ class WhatsappController extends Controller
 
     public function updateCRMWhatsappStatus(Request $request)
     {
+        if (!$this->crmRequestAuthorized($request)) {
+            return response()->json(['message' => 'Unauthorized'], 401);
+        }
+
         $response = [];
         $token = WhatappUserDetail::where('sub_institute_id', 1)->orderBy('id', 'DESC')->first();
         if (empty($token) || empty($token->cloud_api_access_token) || empty($token->cloud_api_phone_number_id)) {

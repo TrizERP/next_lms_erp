@@ -1,0 +1,122 @@
+{
+    "format": "k12.sim-package/1",
+    "slug": "pendulum-lab",
+    "title": "Pendulum Lab",
+    "subtitle": "How long is one swing?",
+    "summary": "Swing a pendulum on Earth, the Moon and Mars, find out what sets the time of one swing, and set the length to make a clock tick on time.",
+    "category": "Science",
+    "tags": "physics,pendulum,oscillation",
+    "audience": "Students of physics, class 9 to 12",
+    "minutes": 15,
+    "difficulty": "intro",
+    "missions": 2,
+    "cover": "simulations/covers/pendulum-lab.webp",
+    "spec_json": "{\"schema\":\"g2g.sim/2\",\"id\":\"pendulum-lab\",\"version\":2,\"title\":\"Pendulum Lab\",\"subtitle\":\"How long is one swing?\",\"summary\":\"Swing a pendulum on Earth, the Moon and Mars, find out what sets the time of one swing, and set the length to make a clock tick on time.\",\"engine\":\"formula\",\"meta\":{\"minutes\":15,\"audience\":\"Students of physics, class 9 to 12\",\"authors\":[\"Your name here\"],\"category\":\"Science\",\"tags\":[\"physics\",\"pendulum\",\"oscillation\"],\"difficulty\":\"intro\"},\"knobs\":[{\"id\":\"length\",\"label\":\"String length\",\"kind\":\"number\",\"unit\":\"m\",\"min\":0.1,\"max\":0.42,\"step\":0.01,\"default\":0.28,\"help\":\"How long the string is, from the pivot to the middle of the ball.\"},{\"id\":\"angle\",\"label\":\"Start angle\",\"kind\":\"number\",\"unit\":\"deg\",\"min\":5,\"max\":60,\"step\":1,\"default\":20,\"help\":\"How far the ball is pulled to the side before you let go.\"},{\"id\":\"planet\",\"label\":\"Where\",\"kind\":\"choice\",\"default\":0,\"choices\":[{\"value\":0,\"label\":\"Earth\"},{\"value\":1,\"label\":\"Moon\"},{\"value\":2,\"label\":\"Mars\"}],\"help\":\"Gravity pulls less on the Moon and on Mars than on Earth.\"},{\"id\":\"mass\",\"label\":\"Bob mass\",\"kind\":\"number\",\"unit\":\"kg\",\"min\":0.1,\"max\":5,\"step\":0.1,\"default\":1,\"help\":\"How heavy the ball is. A heavier ball is drawn bigger.\"},{\"id\":\"friction\",\"label\":\"Friction\",\"kind\":\"number\",\"unit\":\"1/s\",\"min\":0,\"max\":1,\"step\":0.05,\"default\":0,\"help\":\"Rubbing at the pivot. With none (0) the swing never dies down.\"}],\"model\":{\"constants\":{\"hang\":1.4956,\"rb\":0.0377},\"derived\":[{\"id\":\"g\",\"expr\":\"planet == 0 ? 9.81 : (planet == 1 ? 1.62 : 3.71)\"},{\"id\":\"bs\",\"expr\":\"0.9 + 0.1 * mass\"},{\"id\":\"top\",\"expr\":\"rb * bs\"}],\"state\":[{\"id\":\"th\",\"label\":\"Angle\",\"unit\":\"rad\",\"init\":\"rad(angle)\"},{\"id\":\"om\",\"label\":\"Turning speed\",\"unit\":\"rad/s\",\"init\":\"0\"},{\"id\":\"px\",\"label\":\"Bob sideways\",\"unit\":\"m\",\"init\":\"length * sin(rad(angle))\"},{\"id\":\"py\",\"label\":\"Bob height\",\"unit\":\"m\",\"init\":\"hang - length * cos(rad(angle))\"}],\"ode\":{\"th\":\"om\",\"om\":\"-(g / length) * sin(th) - friction * om\",\"px\":\"length * cos(th) * om\",\"py\":\"length * sin(th) * om\"},\"aux\":[{\"id\":\"angdeg\",\"label\":\"Angle\",\"unit\":\"deg\",\"expr\":\"deg(th)\"},{\"id\":\"spd\",\"label\":\"Bob speed\",\"unit\":\"m/s\",\"expr\":\"length * abs(om)\"},{\"id\":\"ke\",\"label\":\"Movement energy\",\"unit\":\"J\",\"expr\":\"0.5 * mass * spd * spd\"},{\"id\":\"pe\",\"label\":\"Height energy\",\"unit\":\"J\",\"expr\":\"mass * g * length * (1 - cos(th))\"},{\"id\":\"etot\",\"label\":\"Total energy\",\"unit\":\"J\",\"expr\":\"ke + pe\"}],\"dt\":0.005,\"tMax\":12,\"sampleEvery\":4,\"events\":[{\"id\":\"low\",\"label\":\"Passes the lowest point\",\"when\":\"low.count % 2 == 0 ? th <= 0 : th >= 0\",\"crossing\":\"th\",\"set\":{\"om\":\"om\"},\"max\":12}],\"outputs\":[{\"id\":\"period\",\"label\":\"Time of one swing\",\"unit\":\"s\",\"fmt\":\"s\",\"expr\":\"2 * (low.2.t - low.1.t)\"},{\"id\":\"fastest\",\"label\":\"Top speed of the bob\",\"unit\":\"m/s\",\"fmt\":\"num\",\"digits\":2,\"expr\":\"max.spd\"},{\"id\":\"energy\",\"label\":\"Energy of the swing\",\"unit\":\"J\",\"fmt\":\"j\",\"expr\":\"start.etot\"},{\"id\":\"lost\",\"label\":\"Energy lost to friction\",\"unit\":\"J\",\"fmt\":\"j\",\"expr\":\"start.etot - end.etot\"},{\"id\":\"rise\",\"label\":\"Height of the swing\",\"unit\":\"m\",\"fmt\":\"m\",\"expr\":\"max.py - min.py\"}]},\"charts\":[{\"id\":\"angle-time\",\"title\":\"Angle over time\",\"x\":{\"var\":\"t\",\"label\":\"Time\",\"unit\":\"s\"},\"series\":[{\"var\":\"angdeg\",\"label\":\"Angle\",\"unit\":\"deg\",\"colour\":\"primary\"}],\"yLabel\":\"Angle\",\"yUnit\":\"deg\"},{\"id\":\"energy-time\",\"title\":\"Energy over time\",\"x\":{\"var\":\"t\",\"label\":\"Time\",\"unit\":\"s\"},\"series\":[{\"var\":\"ke\",\"label\":\"Movement\",\"unit\":\"J\",\"colour\":\"warn\"},{\"var\":\"pe\",\"label\":\"Height\",\"unit\":\"J\",\"colour\":\"ok\"},{\"var\":\"etot\",\"label\":\"Total\",\"unit\":\"J\",\"colour\":\"purple\"}],\"yLabel\":\"Energy\",\"yUnit\":\"J\"}],\"assets\":{\"models\":[{\"id\":\"table\",\"name\":\"Workshop table\",\"kind\":\"model\",\"sha256\":\"3ac7e8132808ab9ec580fcaf77ef679a0ac4b543e739f7fa4c76d155d0279466\"},{\"id\":\"stand\",\"name\":\"Retort stand\",\"kind\":\"model\",\"sha256\":\"2de6b0fa555b0eadf5da17f0ad2d278e4d6cd470c69ee29bd54f79f59ea610d2\"},{\"id\":\"ball\",\"name\":\"Baseball\",\"kind\":\"model\",\"sha256\":\"9ee0ed682932a0969f21c266aa8b7bafc7c8a35b75a397423612198377617d7f\"},{\"id\":\"floor\",\"name\":\"Wooden floor\",\"kind\":\"image\",\"sha256\":\"3155739afe25880a83ecb84b4482768db67b0fb0f5e2acfb7d832f6b9f5d3ff7\"},{\"id\":\"floor-n\",\"name\":\"Wooden floor, bumps\",\"kind\":\"image\",\"sha256\":\"1c336f5c0d9a775f963f9ed7c6ea1172c4e611a92416d51082edad434661371b\"},{\"id\":\"floor-r\",\"name\":\"Wooden floor, shininess\",\"kind\":\"image\",\"sha256\":\"c233dd73dba74bfd20a3f9eda66bc6cde225b9fb3069b922246b251a07c5b2d0\"},{\"id\":\"floor-ao\",\"name\":\"Wooden floor, crevices\",\"kind\":\"image\",\"sha256\":\"4d1f976270d72305af26f6bbc6d0893bd56595efd8df454c002e5f15891b8e92\"},{\"id\":\"sky\",\"name\":\"Soft studio light\",\"kind\":\"image\",\"sha256\":\"d793a708e06195d1641616853063d9b4d5744a7679ebe191a28fb9812ac71e0a\"},{\"id\":\"sky-hdr\",\"name\":\"Soft studio light (HDR)\",\"kind\":\"hdr\",\"sha256\":\"30933d55e45f0795daf49f3cbefbe0e5ebcb821ee04fb0a2818c02ffc3938817\"}]},\"views\":[{\"kind\":\"scene3d\",\"background\":\"light\",\"cameras\":[{\"id\":\"front\",\"label\":\"Front\",\"position\":[0.6,1.5,1.8],\"target\":[0,1.22,0],\"fov\":34},{\"id\":\"corner\",\"label\":\"Corner\",\"position\":[1.7,1.9,2.6],\"target\":[0,1.2,0],\"fov\":36},{\"id\":\"follow\",\"label\":\"Follow the ball\",\"position\":[0.2,0.06,0.6],\"target\":[0,0,0],\"fov\":40,\"follow\":\"bob\"}],\"scenes\":[{\"theme\":\"lab\",\"label\":\"Workshop\",\"ground\":{\"texture\":\"floor\",\"normal\":\"floor-n\",\"rough\":\"floor-r\",\"ao\":\"floor-ao\",\"tile\":1.5,\"roughness\":1,\"normalScale\":1,\"grid\":false},\"sky\":\"sky\",\"light\":{\"tone\":\"neutral\",\"exposure\":1,\"sun\":5,\"ambient\":0.1,\"environment\":1,\"azimuth\":-35,\"ao\":0.9},\"environment\":\"sky-hdr\"}],\"objects\":[{\"id\":\"table\",\"label\":\"Workshop table\",\"asset\":\"table\",\"position\":{\"x\":\"0\",\"y\":\"0\",\"z\":\"0\"}},{\"id\":\"stand\",\"label\":\"Retort stand\",\"asset\":\"stand\",\"position\":{\"x\":\"0.077\",\"y\":\"0.9586\",\"z\":\"-0.003\"},\"scale\":\"1.5\"},{\"id\":\"bob\",\"label\":\"Ball\",\"asset\":\"ball\",\"position\":{\"x\":\"px\",\"y\":\"py\",\"z\":\"0\"},\"scale\":\"bs\"}],\"trails\":[{\"id\":\"path\",\"label\":\"Path\",\"colour\":\"primary\",\"width\":2,\"x\":\"px\",\"y\":\"py\",\"z\":\"0\"}],\"parts\":[{\"id\":\"stand\",\"label\":\"Retort stand\",\"text\":\"A laboratory stand: a heavy foot, a rod and a clamp. The string is tied to the end of the clamp, which does not move, so the pivot stays exactly where it is. Only the ball moves, and that is all the equations describe.\",\"match\":\"retort_stand\"},{\"id\":\"ball\",\"label\":\"Baseball\",\"text\":\"The bob. For a small swing it makes no difference how heavy it is: gravity pulls a heavy ball harder, but a heavy ball is also harder to move, and the two cancel.\",\"match\":\"ball_baseball\"},{\"id\":\"table\",\"label\":\"Workshop table\",\"text\":\"A solid table, so nothing in the room shakes the pivot.\",\"match\":\"workbench_wood\"}],\"rays\":[{\"id\":\"string\",\"label\":\"String\",\"colour\":\"muted\",\"width\":2,\"points\":[{\"x\":\"0\",\"y\":\"hang\",\"z\":\"0\"},{\"x\":\"px - top * sin(th)\",\"y\":\"py + top * cos(th)\",\"z\":\"0\"}]},{\"id\":\"rest\",\"label\":\"Hanging straight down\",\"colour\":\"muted\",\"width\":1,\"dashed\":true,\"points\":[{\"x\":\"0\",\"y\":\"hang\",\"z\":\"0\"},{\"x\":\"0\",\"y\":\"hang - length\",\"z\":\"0\"}]}],\"markers\":[{\"id\":\"speed-card\",\"label\":\"Speed\",\"at\":{\"x\":\"px\",\"y\":\"py + 0.1\",\"z\":\"0\"},\"shape\":\"card\",\"colour\":\"purple\",\"value\":\"spd\",\"unit\":\"m/s\",\"digits\":2},{\"id\":\"pivot\",\"label\":\"Pivot\",\"at\":{\"x\":\"0\",\"y\":\"hang\",\"z\":\"0\"},\"shape\":\"ring\",\"colour\":\"primary\"}]},{\"kind\":\"trajectory\",\"scenes\":[{\"theme\":\"lab\",\"label\":\"Lab\"}],\"body\":{\"x\":\"px\",\"y\":\"py\",\"label\":\"Bob\",\"radius\":0.04},\"vectors\":[{\"id\":\"velocity\",\"label\":\"Velocity\",\"dx\":\"length * cos(th) * om\",\"dy\":\"length * sin(th) * om\",\"scale\":0.3,\"colour\":\"ok\"}],\"dotEverySec\":0.25,\"xLabel\":\"sideways\",\"yLabel\":\"height\",\"unit\":\"m\",\"pad\":0.1}],\"flow\":{\"steps\":[{\"type\":\"intro\",\"id\":\"intro\",\"text\":\"A weight on a string swings back and forth. How long does one swing take? Does it depend on the string, the weight, how far you pull it, or where you are? You will swing the pendulum, make a prediction, set the length of a clock pendulum, and then take it to the Moon.\"},{\"type\":\"play\",\"id\":\"play\",\"title\":\"Play first\",\"text\":\"Pull the ball aside, let go and watch it swing. Nothing is marked and nothing is scored. Change anything you like and press Launch again. When you start to wonder why, begin the lesson.\",\"tips\":[\"Make the string longer and launch again. Does one swing take more time or less?\",\"Make the ball heavier. Is the time of one swing different?\",\"Pull the ball a long way (60 degrees), then only a little (10 degrees). Compare the time of one swing.\",\"Switch the world to the Moon. Is the swing quicker or slower?\",\"Turn the friction up and watch the energy chart. Where does the energy go?\"],\"start\":{\"length\":0.28,\"angle\":25,\"planet\":0,\"mass\":1,\"friction\":0},\"cta\":\"Start the lesson\"},{\"type\":\"predict\",\"id\":\"predict\",\"mission\":\"m1-length\",\"setup\":\"A pendulum on a string 0.1 m long swings once in about 0.63 seconds. You now make the string 4 times longer, 0.4 m, and change nothing else.\",\"question\":\"How does the time of one swing change?\",\"options\":[{\"id\":\"same\",\"text\":\"It stays the same\"},{\"id\":\"x2\",\"text\":\"It takes 2 times as long\"},{\"id\":\"x4\",\"text\":\"It takes 4 times as long\"}],\"correct\":\"x2\",\"follow\":\"Now watch three real swings: 0.1 m, 0.2 m and 0.4 m. A string 4 times longer takes only 2 times as long.\",\"reveal\":[{\"id\":\"r-short\",\"label\":\"0.1 m string\",\"set\":{\"length\":0.1}},{\"id\":\"r-mid\",\"label\":\"0.2 m string\",\"set\":{\"length\":0.2}},{\"id\":\"r-long\",\"label\":\"0.4 m string\",\"set\":{\"length\":0.4}}],\"cta\":\"Start the first mission\"},{\"type\":\"mission\",\"id\":\"m1-length\",\"kind\":\"explore\",\"title\":\"Make a clock pendulum\",\"brief\":\"A clock needs a pendulum that swings once in 1 second, give or take 0.04 s. The pull of gravity is Earth's, the ball is 1 kg and the swing is small. Only the string length is yours to choose.\",\"scenario\":\"A clockmaker needs a 1 second pendulum.\",\"start\":{\"length\":0.14,\"angle\":10,\"planet\":0,\"mass\":1,\"friction\":0},\"locked\":[\"angle\",\"planet\",\"mass\",\"friction\"],\"goals\":[{\"id\":\"beat\",\"label\":\"One swing takes 0.96 to 1.04 s\",\"value\":\"period\",\"unit\":\"s\",\"fmt\":\"s\",\"pass\":\"period >= 0.96 && period <= 1.04\"}],\"starLaunches\":[3,6],\"lesson\":\"The time of one swing depends on the length of the string and on gravity, and on nothing else for a small swing. It grows with the square root of the length: to make a swing take twice as long you need a string four times as long.\",\"reference\":{\"length\":0.25},\"hints\":[\"Change only the string length and launch again. Read the time of one swing in the results, and compare it with 1 s.\",\"Your first try swings too quickly. A longer string swings more slowly, so lengthen the string.\",\"The time of one swing grows with the square root of the length. To go from 0.75 s to 1 s you need a string about 1.8 times as long, not 1.3 times as long.\",\"A string of about {= ref.length} m swings once in {= refout.period} seconds.\"]},{\"type\":\"mission\",\"id\":\"m2-moon\",\"kind\":\"transfer\",\"title\":\"A slow clock on the Moon\",\"brief\":\"Astronauts on the Moon want a pendulum that swings once in 3 seconds, give or take 0.1 s. Gravity there is 6 times weaker than on Earth. Only the string length is yours to choose.\",\"scenario\":\"A Moon base needs a 3 second pendulum.\",\"start\":{\"length\":0.2,\"angle\":10,\"planet\":1,\"mass\":1,\"friction\":0},\"locked\":[\"angle\",\"planet\",\"mass\",\"friction\"],\"goals\":[{\"id\":\"beat-moon\",\"label\":\"One swing takes 2.9 to 3.1 s\",\"value\":\"period\",\"unit\":\"s\",\"fmt\":\"s\",\"pass\":\"period >= 2.9 && period <= 3.1\"}],\"starLaunches\":[3,6],\"lesson\":\"With weaker gravity the same string swings more slowly, so on the Moon you need a shorter string for the same beat. The time of one swing depends on the length divided by gravity.\",\"reference\":{\"length\":0.37},\"hints\":[\"Only the length is yours to change. Launch and compare the time of one swing with 3 s.\",\"Your first try is too slow. On the Moon gravity is weak, so a shorter string gives the same beat as a longer one on Earth.\",\"A string of about {= ref.length} m swings once in {= refout.period} seconds.\"]},{\"type\":\"explain\",\"id\":\"explain\",\"lead\":\"Now say why. Three quick questions.\",\"cta\":\"Finish\",\"questions\":[{\"id\":\"q-length\",\"text\":\"What makes the time of one swing longer?\",\"options\":[{\"id\":\"a\",\"text\":\"A longer string.\"},{\"id\":\"b\",\"text\":\"A heavier bob.\"},{\"id\":\"c\",\"text\":\"Pulling the bob further to the side (for a small swing).\"}],\"correct\":\"a\",\"why\":\"For a small swing the time depends only on the length of the string and on gravity: it is 2 times pi times the square root of length divided by gravity.\"},{\"id\":\"q-mass\",\"text\":\"You hang a heavier bob on the same string. One swing now takes...\",\"options\":[{\"id\":\"a\",\"text\":\"longer.\"},{\"id\":\"b\",\"text\":\"less time.\"},{\"id\":\"c\",\"text\":\"the same time.\"}],\"correct\":\"c\",\"why\":\"A heavier bob is pulled down harder, but it is also harder to move, and the two effects cancel exactly. This is why heavy and light things fall together.\"},{\"id\":\"q-moon\",\"text\":\"The same pendulum swings more slowly on the Moon because...\",\"options\":[{\"id\":\"a\",\"text\":\"gravity is weaker, so the bob is pulled back more gently.\"},{\"id\":\"b\",\"text\":\"the Moon has no air.\"},{\"id\":\"c\",\"text\":\"the bob weighs the same but is lighter to carry.\"}],\"correct\":\"a\",\"why\":\"The pull that brings the bob back to the middle is gravity. On the Moon it is about 6 times weaker, so the swing is about 2.4 times slower.\"}]}]}}",
+    "spec_sha256": "c1184ed7902fc4ba91ec505191548dff22b901ea63742c1d1f3a7736cb6084d2",
+    "assets": [
+        {
+            "sha256": "3ac7e8132808ab9ec580fcaf77ef679a0ac4b543e739f7fa4c76d155d0279466",
+            "kind": "model",
+            "mime": "model/gltf-binary",
+            "bytes": 519232,
+            "name": "Workshop table",
+            "licence": "CC0 1.0 Universal",
+            "credit": "Painted wooden table by Kirill Sannikov, CC0 1.0 (Poly Haven licence), https://polyhaven.com/a/painted_wooden_table (source: Painted Wooden Table)",
+            "source_url": "https://polyhaven.com/a/painted_wooden_table",
+            "source_key": "sim_assets/platform/3ac7e8132808ab9ec580fcaf77ef679a0ac4b543e739f7fa4c76d155d0279466.glb"
+        },
+        {
+            "sha256": "2de6b0fa555b0eadf5da17f0ad2d278e4d6cd470c69ee29bd54f79f59ea610d2",
+            "kind": "model",
+            "mime": "model/gltf-binary",
+            "bytes": 760664,
+            "name": "Retort stand",
+            "licence": "CC0 1.0 Universal",
+            "credit": "Retort stand with clamp by Jiří Ptáček, CC0 1.0 (Poly Haven licence), https://polyhaven.com/a/chemistry_set (source: Chemistry Set)",
+            "source_url": "https://polyhaven.com/a/chemistry_set",
+            "source_key": "sim_assets/platform/2de6b0fa555b0eadf5da17f0ad2d278e4d6cd470c69ee29bd54f79f59ea610d2.glb"
+        },
+        {
+            "sha256": "9ee0ed682932a0969f21c266aa8b7bafc7c8a35b75a397423612198377617d7f",
+            "kind": "model",
+            "mime": "model/gltf-binary",
+            "bytes": 1203420,
+            "name": "Baseball",
+            "licence": "CC0 1.0 Universal",
+            "credit": "Baseball by Rico Cilliers, CC0 1.0 (Poly Haven licence), https://polyhaven.com/a/baseball_01 (source: Baseball 01)",
+            "source_url": "https://polyhaven.com/a/baseball_01",
+            "source_key": "sim_assets/platform/9ee0ed682932a0969f21c266aa8b7bafc7c8a35b75a397423612198377617d7f.glb"
+        },
+        {
+            "sha256": "3155739afe25880a83ecb84b4482768db67b0fb0f5e2acfb7d832f6b9f5d3ff7",
+            "kind": "image",
+            "mime": "image/jpeg",
+            "bytes": 1091643,
+            "name": "Wooden floor",
+            "licence": "CC0 1.0 Universal",
+            "credit": "Wooden floor / deck boards by Dimitrios Savva, CC0 1.0, https://polyhaven.com/a/wood_floor_deck (Poly Haven)",
+            "source_url": "https://polyhaven.com/a/wood_floor_deck",
+            "source_key": "sim_assets/platform/3155739afe25880a83ecb84b4482768db67b0fb0f5e2acfb7d832f6b9f5d3ff7.jpg"
+        },
+        {
+            "sha256": "1c336f5c0d9a775f963f9ed7c6ea1172c4e611a92416d51082edad434661371b",
+            "kind": "image",
+            "mime": "image/jpeg",
+            "bytes": 844135,
+            "name": "Wooden floor, bumps",
+            "licence": "CC0 1.0 Universal",
+            "credit": "Wooden floor / deck boards by Dimitrios Savva, CC0 1.0, https://polyhaven.com/a/wood_floor_deck (Poly Haven)",
+            "source_url": "https://polyhaven.com/a/wood_floor_deck",
+            "source_key": "sim_assets/platform/1c336f5c0d9a775f963f9ed7c6ea1172c4e611a92416d51082edad434661371b.jpg"
+        },
+        {
+            "sha256": "c233dd73dba74bfd20a3f9eda66bc6cde225b9fb3069b922246b251a07c5b2d0",
+            "kind": "image",
+            "mime": "image/jpeg",
+            "bytes": 191257,
+            "name": "Wooden floor, shininess",
+            "licence": "CC0 1.0 Universal",
+            "credit": "Wooden floor / deck boards by Dimitrios Savva, CC0 1.0, https://polyhaven.com/a/wood_floor_deck (Poly Haven)",
+            "source_url": "https://polyhaven.com/a/wood_floor_deck",
+            "source_key": "sim_assets/platform/c233dd73dba74bfd20a3f9eda66bc6cde225b9fb3069b922246b251a07c5b2d0.jpg"
+        },
+        {
+            "sha256": "4d1f976270d72305af26f6bbc6d0893bd56595efd8df454c002e5f15891b8e92",
+            "kind": "image",
+            "mime": "image/jpeg",
+            "bytes": 165339,
+            "name": "Wooden floor, crevices",
+            "licence": "CC0 1.0 Universal",
+            "credit": "Wooden floor / deck boards by Dimitrios Savva, CC0 1.0, https://polyhaven.com/a/wood_floor_deck (Poly Haven)",
+            "source_url": "https://polyhaven.com/a/wood_floor_deck",
+            "source_key": "sim_assets/platform/4d1f976270d72305af26f6bbc6d0893bd56595efd8df454c002e5f15891b8e92.jpg"
+        },
+        {
+            "sha256": "d793a708e06195d1641616853063d9b4d5744a7679ebe191a28fb9812ac71e0a",
+            "kind": "image",
+            "mime": "image/jpeg",
+            "bytes": 334270,
+            "name": "Soft studio light",
+            "licence": "CC0 1.0 Universal",
+            "credit": "Neutral studio HDRI \"Studio Small 03\" by Greg Zaal, CC0 1.0, https://polyhaven.com/a/studio_small_03 (Poly Haven)",
+            "source_url": "https://polyhaven.com/a/studio_small_03",
+            "source_key": "sim_assets/platform/d793a708e06195d1641616853063d9b4d5744a7679ebe191a28fb9812ac71e0a.jpg"
+        },
+        {
+            "sha256": "30933d55e45f0795daf49f3cbefbe0e5ebcb821ee04fb0a2818c02ffc3938817",
+            "kind": "hdr",
+            "mime": "image/vnd.radiance",
+            "bytes": 1686299,
+            "name": "Soft studio light (HDR)",
+            "licence": "CC0 1.0 Universal",
+            "credit": "Neutral studio HDRI \"Studio Small 03\" by Greg Zaal, CC0 1.0, https://polyhaven.com/a/studio_small_03 (Poly Haven)",
+            "source_url": "https://polyhaven.com/a/studio_small_03",
+            "source_key": "sim_assets/platform/30933d55e45f0795daf49f3cbefbe0e5ebcb821ee04fb0a2818c02ffc3938817.hdr"
+        }
+    ],
+    "source": {
+        "host": "dev",
+        "simulation_id": 11,
+        "version": 4
+    }
+}

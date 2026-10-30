@@ -27,9 +27,22 @@ class FailedQueueTriageCommand extends Command
         {--requeue : reset a batch of failed rows back to pending for neo4j:drain to retry}
         {--limit=500 : max rows to requeue in one run}
         {--source= : only requeue rows for this source_table}
-        {--rel= : only requeue rows for this rel_type}';
+        {--rel= : only requeue rows for this rel_type}
+        {--force-unrecoverable : allow --requeue to touch rows in the UNRECOVERABLE list below — off by default}';
 
     protected $description = 'Report on permanently-failed neo4j_sync_queue rows; optionally requeue a bounded batch for neo4j:drain';
+
+    /**
+     * (source_table, rel_type, target_table) combinations confirmed, by direct investigation,
+     * to be permanently unfixable by retrying — the target genuinely does not exist and no
+     * mapping survives to find the correct one. Added 2026-10-29
+     * (ERP_SQL_Neo4j_Complete_Synchronization_Audit.docx §11): requeuing these wastes a drain
+     * cycle every time, identically, forever — see config/neo4j.php's HAS_CONTENT comment for
+     * the full analysis of why no legacy chapter-id mapping can be reconstructed.
+     */
+    private const UNRECOVERABLE = [
+        ['Chapter', 'HAS_CONTENT', 'TeachingResource'],
+    ];
 
     public function handle(): int
     {
@@ -68,12 +81,28 @@ class FailedQueueTriageCommand extends Command
             ->limit(30)
             ->get();
 
+        $isUnrecoverable = fn ($r) => collect(self::UNRECOVERABLE)->contains(
+            fn ($u) => $u[0] === $r->source_table && $u[1] === $r->rel_type && $u[2] === $r->target_table
+        );
+        [$unrecoverable, $other] = $breakdown->partition($isUnrecoverable);
+
         $this->newLine();
         $this->warn(number_format($failedTotal) . ' permanently-failed row(s), top 30 by (source_table, rel_type, target_table):');
-        $this->table(
-            ['source_table', 'rel_type', 'target_table', 'count', 'max retry_count'],
-            $breakdown->map(fn ($r) => [$r->source_table, $r->rel_type, $r->target_table, number_format($r->c), $r->max_retries])->all()
-        );
+
+        if ($unrecoverable->isNotEmpty()) {
+            $this->line('<fg=red>UNRECOVERABLE — requeuing will not help, the target genuinely does not exist:</>');
+            $this->table(
+                ['source_table', 'rel_type', 'target_table', 'count', 'max retry_count'],
+                $unrecoverable->map(fn ($r) => [$r->source_table, $r->rel_type, $r->target_table, number_format($r->c), $r->max_retries])->all()
+            );
+        }
+        if ($other->isNotEmpty()) {
+            $this->line($unrecoverable->isNotEmpty() ? 'Other failures — requeue may help once the underlying cause is addressed:' : '');
+            $this->table(
+                ['source_table', 'rel_type', 'target_table', 'count', 'max retry_count'],
+                $other->map(fn ($r) => [$r->source_table, $r->rel_type, $r->target_table, number_format($r->c), $r->max_retries])->all()
+            );
+        }
 
         if (! $this->option('requeue')) {
             $this->newLine();
@@ -92,6 +121,15 @@ class FailedQueueTriageCommand extends Command
             $query->where('rel_type', $rel);
         }
 
+        if (! $this->option('force-unrecoverable')) {
+            foreach (self::UNRECOVERABLE as [$st, $rt, $tt]) {
+                $query->where(fn ($q) => $q
+                    ->where('source_table', '!=', $st)
+                    ->orWhere('rel_type', '!=', $rt)
+                    ->orWhere('target_table', '!=', $tt));
+            }
+        }
+
         $limit = (int) $this->option('limit');
         $ids = $query->orderBy('id')->limit($limit)->pluck('id');
 
@@ -106,6 +144,9 @@ class FailedQueueTriageCommand extends Command
             ->update(['status' => 'pending', 'retry_count' => 0, 'processed_at' => null]);
 
         $this->info(count($ids) . ' row(s) reset to pending. Run `php artisan neo4j:drain` (or wait for the schedule) to retry them.');
+        if (! $this->option('force-unrecoverable') && $unrecoverable->isNotEmpty()) {
+            $this->line('(' . number_format($unrecoverable->sum('c')) . ' known-unrecoverable row(s) were excluded from this requeue — pass --force-unrecoverable to override.)');
+        }
 
         return self::SUCCESS;
     }

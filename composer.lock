@@ -2870,16 +2870,16 @@
         },
         {
             "name": "league/commonmark",
-            "version": "2.10.1",
+            "version": "2.10.4",
             "source": {
                 "type": "git",
                 "url": "https://github.com/thephpleague/commonmark.git",
-                "reference": "9d489ab67a02960fd8ffe624d93f751daf95439e"
+                "reference": "40821b7606d8d946bac57dbd2290076c722e3a65"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/thephpleague/commonmark/zipball/9d489ab67a02960fd8ffe624d93f751daf95439e",
-                "reference": "9d489ab67a02960fd8ffe624d93f751daf95439e",
+                "url": "https://api.github.com/repos/thephpleague/commonmark/zipball/40821b7606d8d946bac57dbd2290076c722e3a65",
+                "reference": "40821b7606d8d946bac57dbd2290076c722e3a65",
                 "shasum": ""
             },
             "require": {
@@ -2973,7 +2973,7 @@
                     "type": "tidelift"
                 }
             ],
-            "time": "2026-09-07T13:44:26+00:00"
+            "time": "2026-10-17T19:59:50+00:00"
         },
         {
             "name": "league/config",
@@ -5133,16 +5133,16 @@
         },
         {
             "name": "phpoffice/phpspreadsheet",
-            "version": "1.30.6",
+            "version": "1.30.7",
             "source": {
                 "type": "git",
                 "url": "https://github.com/PHPOffice/PhpSpreadsheet.git",
-                "reference": "a416375ffc8bf5b661c1bb4e6c60d8f3fddbe5ce"
+                "reference": "f5dd9c1f084d336ea63cf53099533e061a9c157a"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/PHPOffice/PhpSpreadsheet/zipball/a416375ffc8bf5b661c1bb4e6c60d8f3fddbe5ce",
-                "reference": "a416375ffc8bf5b661c1bb4e6c60d8f3fddbe5ce",
+                "url": "https://api.github.com/repos/PHPOffice/PhpSpreadsheet/zipball/f5dd9c1f084d336ea63cf53099533e061a9c157a",
+                "reference": "f5dd9c1f084d336ea63cf53099533e061a9c157a",
                 "shasum": ""
             },
             "require": {
@@ -5235,9 +5235,9 @@
             ],
             "support": {
                 "issues": "https://github.com/PHPOffice/PhpSpreadsheet/issues",
-                "source": "https://github.com/PHPOffice/PhpSpreadsheet/tree/1.30.6"
+                "source": "https://github.com/PHPOffice/PhpSpreadsheet/tree/1.30.7"
             },
-            "time": "2026-07-12T19:59:31+00:00"
+            "time": "2026-09-17T03:56:23+00:00"
         },
         {
             "name": "phpoffice/phpword",

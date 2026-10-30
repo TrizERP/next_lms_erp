@@ -123,7 +123,8 @@ class studentHomeworkController extends Controller
         } else {
             //process the request
 
-            $sub_institute_id = $_REQUEST['sub_institute_id'];
+            // Tenant comes from the verified token (api.session), not the request.
+            $sub_institute_id = session()->get('sub_institute_id') ?: $_REQUEST['sub_institute_id'];
             $syear = $_REQUEST['syear'];
             $student_id = $_REQUEST['student_id'];
 

@@ -1,3 +1,4 @@
 <?php
 
-$secrateKey    = 'b6bpRQ92jy9ty16FilMW54dsH9le3KhE';
+require_once __DIR__ . '/../../bootstrap/legacy_env.php';
+$secrateKey    = legacy_env('LEGACY_API_SECRET_KEY');
