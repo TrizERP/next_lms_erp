@@ -166,11 +166,15 @@ class QuestionPaperAutoProcessingTest extends QuestionPaperTestCase
         return in_array(DB::table('question_paper_jobs')->where('uuid', $uuid)->value('status'), ['completed', 'completed_with_warnings', 'failed'], true);
     }
 
-    private function uploadPaper(string $name = 'Science paper.pdf'): array
+    private function uploadPaper(string $name = 'Science paper.pdf', ?string $scheduledAt = null): array
     {
         $path = $this->scratch . DIRECTORY_SEPARATOR . 'upload-' . bin2hex(random_bytes(3)) . '.pdf';
         file_put_contents($path, TinyPdf::make(['Class 9 Science question paper with enough text to be a real document, page one.']));
-        $request = $this->authed('POST', ['standard_id' => 9, 'subject_id' => 3, 'chapter_id' => 101]);
+        $params = ['standard_id' => 9, 'subject_id' => 3, 'chapter_id' => 101];
+        if ($scheduledAt !== null) {
+            $params['scheduled_at'] = $scheduledAt;
+        }
+        $request = $this->authed('POST', $params);
         $request->files->set('file', new UploadedFile($path, $name, 'application/pdf', null, true));
 
         $response = app(QuestionPaperController::class)->store($request);
@@ -216,15 +220,43 @@ class QuestionPaperAutoProcessingTest extends QuestionPaperTestCase
 
         $this->assertSame('completed', DB::table('question_paper_jobs')->where('uuid', $second['id'])->value('status'));
         $this->assertSame(6, DB::table('lms_question_master')->count());
+        $this->waitFor(fn () => DB::table('user_notifications')->count() === 2, 10, 'the second completion notice was not saved');
         $this->assertSame(2, DB::table('user_notifications')->count(), 'one completion notice per paper');
         $this->assertTrue(proc_get_status($worker['process'])['running'], 'the same worker process handled both uploads');
 
         // Only this feature's queue was consumed.
+        $this->waitFor(fn () => DB::table('jobs')->where('queue', 'question-papers')->doesntExist(), 10, 'the queue row was not deleted after processing');
         $this->assertSame(0, DB::table('jobs')->where('queue', 'question-papers')->count(), 'no question paper job is left waiting');
         $left = DB::table('jobs')->where('id', $sentinel)->first();
         $this->assertNotNull($left, 'the default-queue job was not consumed');
         $this->assertSame([0, null], [(int) $left->attempts, $left->reserved_at], 'the default-queue job was not even reserved');
         $this->assertSame(0, DB::table('failed_jobs')->count());
+    }
+
+    public function test_a_worker_drains_multiple_papers_queued_before_it_starts(): void
+    {
+        $this->fixture($this->questions('Batch'));
+        $uploads = [
+            $this->uploadPaper('batch-one.pdf'),
+            $this->uploadPaper('batch-two.pdf'),
+            $this->uploadPaper('batch-three.pdf'),
+        ];
+        $this->assertSame(3, DB::table('jobs')->where('queue', 'question-papers')->count());
+
+        $worker = $this->startWorker();
+        $this->waitFor(
+            fn () => DB::table('question_paper_jobs')->whereIn('uuid', array_column($uploads, 'id'))
+                ->whereIn('status', ['queued', 'processing', 'retrying'])->doesntExist(),
+            90,
+            'the worker did not drain all queued uploads'
+        );
+
+        $this->assertSame(3, DB::table('question_paper_jobs')->whereIn('uuid', array_column($uploads, 'id'))->count());
+        $this->assertSame(3, DB::table('lms_question_master')->count(), 'the same question bank items are not duplicated by later papers');
+        $this->assertSame(3, DB::table('user_notifications')->count(), 'every upload receives its own outcome notice');
+        $this->waitFor(fn () => DB::table('jobs')->where('queue', 'question-papers')->doesntExist(), 10, 'the queue rows were not deleted after processing');
+        $this->assertSame(0, DB::table('jobs')->where('queue', 'question-papers')->count());
+        $this->assertTrue(proc_get_status($worker['process'])['running']);
     }
 
     public function test_the_screen_can_tell_a_missing_worker_from_a_running_one(): void
@@ -315,7 +347,33 @@ class QuestionPaperAutoProcessingTest extends QuestionPaperTestCase
 
         // A finished job is never dispatched again.
         $this->artisan('idms:dispatch-question-papers')->expectsOutput('Dispatched 0 question paper job(s).')->assertExitCode(0);
+        $this->waitFor(fn () => DB::table('jobs')->doesntExist(), 10, 'the completed queue message was not removed');
         $this->assertSame(0, DB::table('jobs')->count());
+    }
+
+    public function test_a_scheduled_upload_waits_until_due_then_dispatches_to_the_worker_automatically(): void
+    {
+        $this->fixture($this->questions('Scheduled'));
+        $future = now()->addHour()->utc()->format('Y-m-d\TH:i:s.v\Z');
+        $upload = $this->uploadPaper('scheduled-paper.pdf', $future);
+        $this->assertSame('queued', $upload['status']);
+        $this->assertNotNull($upload['scheduled_at']);
+        $this->assertSame(0, DB::table('jobs')->count(), 'future uploads are not put on the extraction queue early');
+
+        $worker = $this->startWorker();
+        $this->artisan('idms:dispatch-question-papers')->expectsOutput('Dispatched 0 question paper job(s).')->assertExitCode(0);
+        $this->assertSame(0, DB::table('lms_question_master')->count());
+
+        DB::table('question_paper_jobs')->where('uuid', $upload['id'])->update(['scheduled_at' => now('UTC')->subSecond()]);
+        $this->artisan('idms:dispatch-question-papers')->expectsOutput('Dispatched 1 question paper job(s).')->assertExitCode(0);
+        $this->waitFor(fn () => $this->jobIsFinished($upload['id']), 60, 'the worker did not process the due scheduled upload');
+
+        $job = DB::table('question_paper_jobs')->where('uuid', $upload['id'])->first();
+        $this->assertSame('completed', $job->status);
+        $this->assertSame([3, 3], [(int) $job->questions_extracted, (int) $job->questions_saved]);
+        $this->assertSame(3, DB::table('lms_question_master')->count());
+        $this->assertSame(8, DB::table('answer_master')->count());
+        $this->assertTrue(proc_get_status($worker['process'])['running']);
     }
 
     public function test_every_shipped_worker_definition_runs_only_the_question_papers_queue(): void

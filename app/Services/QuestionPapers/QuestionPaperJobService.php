@@ -3,6 +3,7 @@
 namespace App\Services\QuestionPapers;
 
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 
 /**
@@ -23,7 +24,7 @@ class QuestionPaperJobService
         $uuid = (string) Str::uuid();
         $now = now();
 
-        $id = DB::table('question_paper_jobs')->insertGetId([
+        $fields = [
             'uuid' => $uuid,
             'document_id' => $documentId,
             'sub_institute_id' => $tenant,
@@ -36,7 +37,12 @@ class QuestionPaperJobService
             'academic_year' => $academic['academic_year'] ?? null,
             'created_at' => $now,
             'updated_at' => $now,
-        ]);
+        ];
+        if (Schema::hasColumn('question_paper_jobs', 'scheduled_at')) {
+            $fields['scheduled_at'] = $academic['scheduled_at'] ?? null;
+        }
+
+        $id = DB::table('question_paper_jobs')->insertGetId($fields);
 
         return $this->find($id);
     }
@@ -67,21 +73,27 @@ class QuestionPaperJobService
     {
         $token = (string) Str::uuid();
         $now = now();
+        $scheduleNow = now('UTC');
 
-        $taken = DB::table('question_paper_jobs')
+        $query = DB::table('question_paper_jobs')
             ->where('id', $id)
             ->whereNotIn('status', self::TERMINAL)
             ->where(function ($q) use ($now) {
                 $q->whereNull('lease_token')->orWhere('lease_expires_at', '<', $now);
-            })
-            ->update([
-                'lease_token' => $token,
-                'lease_expires_at' => $now->copy()->addSeconds(self::LEASE_SECONDS),
-                'status' => 'processing',
-                'attempts' => DB::raw('attempts + 1'),
-                'started_at' => DB::raw('COALESCE(started_at, ' . DB::getPdo()->quote($now->toDateTimeString()) . ')'),
-                'updated_at' => $now,
-            ]);
+            });
+        if (Schema::hasColumn('question_paper_jobs', 'scheduled_at')) {
+            $query->where(function ($q) use ($scheduleNow) {
+                $q->whereNull('scheduled_at')->orWhere('scheduled_at', '<=', $scheduleNow);
+            });
+        }
+        $taken = $query->update([
+            'lease_token' => $token,
+            'lease_expires_at' => $now->copy()->addSeconds(self::LEASE_SECONDS),
+            'status' => 'processing',
+            'attempts' => DB::raw('attempts + 1'),
+            'started_at' => DB::raw('COALESCE(started_at, ' . DB::getPdo()->quote($now->toDateTimeString()) . ')'),
+            'updated_at' => $now,
+        ]);
 
         return $taken === 1 ? $token : null;
     }
@@ -200,22 +212,28 @@ class QuestionPaperJobService
     public function dispatchable(int $limit): array
     {
         $now = now();
+        $scheduleNow = now('UTC');
 
-        return DB::table('question_paper_jobs')
+        $query = DB::table('question_paper_jobs')
             ->whereNotIn('status', self::TERMINAL)
             ->where(function ($q) use ($now) {
                 $q->whereNull('lease_token')->orWhere('lease_expires_at', '<', $now);
-            })
-            ->where(function ($q) use ($now) {
-                $q->whereNull('last_dispatched_at')
-                    ->orWhere(function ($w) use ($now) {
-                        $w->where('status', 'queued')->where('last_dispatched_at', '<', $now->copy()->subMinutes(3));
-                    })
-                    ->orWhere(function ($w) use ($now) {
-                        $w->whereIn('status', ['processing', 'retrying'])->where('last_dispatched_at', '<', $now->copy()->subMinutes(10));
-                    });
-            })
-            ->orderBy('id')->limit($limit)->get()->all();
+            });
+        if (Schema::hasColumn('question_paper_jobs', 'scheduled_at')) {
+            $query->where(function ($q) use ($scheduleNow) {
+                $q->whereNull('scheduled_at')->orWhere('scheduled_at', '<=', $scheduleNow);
+            });
+        }
+
+        return $query->where(function ($q) use ($now) {
+            $q->whereNull('last_dispatched_at')
+                ->orWhere(function ($w) use ($now) {
+                    $w->where('status', 'queued')->where('last_dispatched_at', '<', $now->copy()->subMinutes(3));
+                })
+                ->orWhere(function ($w) use ($now) {
+                    $w->whereIn('status', ['processing', 'retrying'])->where('last_dispatched_at', '<', $now->copy()->subMinutes(10));
+                });
+        })->orderBy('id')->limit($limit)->get()->all();
     }
 
     public function markDispatched(int $id): void
@@ -328,6 +346,9 @@ class QuestionPaperJobService
     {
         $running = in_array($job->status, ['queued', 'processing', 'retrying'], true);
         $pagesKnown = $job->total_pages !== null && (int) $job->total_pages > 0;
+        $scheduledAt = $job->scheduled_at ?? null;
+        $scheduledForLater = $scheduledAt !== null
+            && \Illuminate\Support\Carbon::parse($scheduledAt, 'UTC')->isFuture();
 
         return [
             'id' => $job->uuid,
@@ -349,18 +370,23 @@ class QuestionPaperJobService
             'questions_saved' => (int) $job->questions_saved,
             'questions_needing_review' => (int) $job->questions_needing_review,
             'questions_skipped' => (int) $job->questions_skipped,
+            'questions_duplicates' => $states === null ? null : (int) ($states['duplicate'] ?? 0),
+            'questions_failed' => $states === null ? null : (int) ($states['skipped'] ?? 0),
             // Per-state item counts straight from question_paper_items (null when the caller did not load them).
             'breakdown' => $states === null ? null : self::shapeBreakdown($states),
             'used_ocr' => (bool) $job->used_ocr,
             // Real progress only: pages read so far out of the pages the file has, once known.
             'progress_percent' => $this->percent($job, $running),
             'attempts' => (int) $job->attempts,
+            'scheduled_at' => $scheduledAt !== null
+                ? \Illuminate\Support\Carbon::parse($scheduledAt, 'UTC')->toIso8601String()
+                : null,
             // Seconds a queued job has gone unpicked, by the SERVER clock (so browser clock skew cannot matter). The screen
             // uses it to say "no worker has started this" instead of showing "Waiting" for ever.
-            'queued_seconds' => $job->status === 'queued' ? max(0, (int) \Illuminate\Support\Carbon::parse($job->updated_at ?? $job->created_at)->diffInSeconds(now(), true)) : null,
+            'queued_seconds' => $job->status === 'queued' && !$scheduledForLater ? max(0, (int) \Illuminate\Support\Carbon::parse($job->updated_at ?? $job->created_at)->diffInSeconds(now(), true)) : null,
             // For a queued job only: is the question-papers worker alive (active|busy|not_detected|inline), or null when
             // that cannot be known. The screen uses it to say WHY nothing has started, instead of waiting in silence.
-            'worker_state' => $job->status === 'queued' ? QuestionPaperWorkerHeartbeat::state() : null,
+            'worker_state' => $job->status === 'queued' && !$scheduledForLater ? QuestionPaperWorkerHeartbeat::state() : null,
             'last_error' => $job->last_error,
             'can_retry' => (in_array($job->status, ['failed', 'completed_with_warnings', 'retrying'], true) || ($job->status === 'processing' && $job->lease_expires_at !== null && \Illuminate\Support\Carbon::parse($job->lease_expires_at)->isPast())) && (bool) $job->retryable,
             'created_at' => $job->created_at,

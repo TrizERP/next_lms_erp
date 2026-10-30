@@ -8,9 +8,9 @@ use Illuminate\Support\Facades\Schema;
  * Persistent state for Question Paper uploads from the Document Library.
  *
  * question_paper_jobs  one row per uploaded paper: lifecycle, stage, real counters, lease, retry state.
- * question_paper_items one row per question found in the paper: the provenance link between a source
- *                      page/number and the lms_question_master row it became. Its UNIQUE
- *                      (job_id, content_hash) is what makes a retry unable to insert a question twice.
+ * question_paper_items one row per question occurrence in the paper: the provenance link between a source
+ *                      page/number and the lms_question_master row it became. UNIQUE (job_id, source_key)
+ *                      makes retries idempotent while retaining repeated questions as countable duplicates.
  *
  * Nothing here alters lms_question_master or answer_master.
  */
@@ -83,7 +83,7 @@ return new class extends Migration
                 // saved      written to the bank, active
                 // needs_review written to the bank INACTIVE (status 0): chapter or answer key unresolved
                 // unresolved not written: standard or subject unknown (waits for a retry with metadata)
-                // duplicate  identical question already in the bank for this school/standard/subject
+                // duplicate  matching question already exists in this question's resolved chapter
                 // skipped    not a usable question (reason says why)
                 $table->string('state', 16)->default('parsed');
                 $table->string('reason', 255)->nullable();
