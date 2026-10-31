@@ -104,6 +104,13 @@ class onlineExamController extends Controller
 
     public function store(Request $request)
     {
+        if ($request->session()->get('is_student') && ! $request->attributes->get('proctoring_authorized')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Submit this examination through its proctoring session.',
+            ], 409);
+        }
+
         //Clear session for timer
         Session::forget('session_quiz');
 
@@ -113,7 +120,7 @@ class onlineExamController extends Controller
         $syear = $request->get('syear') ?: $request->session()->get('syear');
 
         //$questionpaper_details = $this->get_questionpaper_details($request->get('questionpaper_id'));
-        $result = $this->get_calculate_marks($request);
+        $result = $this->calculateOnlineExamMarks($request, (int) $sub_institute_id);
 
         //START Insert into lms_online_exam table
         $online_exam = [
@@ -137,83 +144,48 @@ class onlineExamController extends Controller
 
         // Concept lookup for misconception detection below — one query instead of
         // one per wrong answer.
-        $answeredQuestionIds = array_merge(
-            is_array($answer_single) ? array_keys($answer_single) : [],
-            is_array($answer_multiple) ? array_keys($answer_multiple) : []
-        );
+        $answeredQuestionIds = array_keys($result['selected_answer_ids_by_question']);
         $conceptByQuestionId = empty($answeredQuestionIds)
             ? collect()
             : lmsQuestionMasterModel::whereIn('id', $answeredQuestionIds)->pluck('concept_id', 'id');
 
-        if (is_array($answer_single)) {
-            foreach ($answer_single as $single_question_id => $single_answer_ids) {
-                $ans_status = "wrong";
-                $single_ans_arr = explode("##", $single_answer_ids);
-                if ($single_ans_arr[1] == 1) {
-                    $ans_status = "right";
-                }
-                $single = [
-                    'question_paper_id' => $request->get('questionpaper_id'),
-                    'online_exam_id'    => $online_exam_id,
-                    'student_id'        => $user_id,
-                    'question_id'       => $single_question_id,
-                    'answer_id'         => $single_ans_arr[0],
-                    'ans_status'        => $ans_status,
-                ];
-                lmsOnlineExamAnswerModel::insert($single);
-
-                if ($ans_status === 'wrong') {
-                    $this->recordMisconceptionOnWrongAnswer(
-                        $user_id,
-                        $conceptByQuestionId->get($single_question_id),
-                        $single_ans_arr[0] ?? null
-                    );
-                }
+        foreach ($result['question_statuses'] as $questionId => $status) {
+            if (! in_array($status, ['right', 'wrong'], true)) {
+                continue;
             }
-        }
+            $selectedIds = $result['selected_answer_ids_by_question'][$questionId] ?? [];
+            foreach ($selectedIds ?: [null] as $answerId) {
+                lmsOnlineExamAnswerModel::insert([
+                    'question_paper_id' => $request->get('questionpaper_id'),
+                    'online_exam_id' => $online_exam_id,
+                    'student_id' => $user_id,
+                    'question_id' => $questionId,
+                    'answer_id' => $answerId,
+                    'ans_status' => $status,
+                ]);
+            }
 
-        if (is_array($answer_multiple)) {
-            foreach ($answer_multiple as $multiple_question_id => $multiple_answer_ids) {
-                if (is_array($multiple_answer_ids))//Insert MCQ Answers
-                {
-                    foreach ($multiple_answer_ids as $key => $val) {
-                        $ans_status = "wrong";
-                        $multiple_ans_arr = explode("##", $val);
-                        if ($multiple_ans_arr[1] == 1) {
-                            $ans_status = "right";
-                        }
-                        $multiple = [
-                            'question_paper_id' => $request->get('questionpaper_id'),
-                            'online_exam_id'    => $online_exam_id,
-                            'student_id'        => $user_id,
-                            'question_id'       => $multiple_question_id,
-                            'answer_id'         => $multiple_ans_arr[0],
-                            'ans_status'        => $ans_status,
-                        ];
-                        lmsOnlineExamAnswerModel::insert($multiple);
-
-                        if ($ans_status === 'wrong') {
-                            $this->recordMisconceptionOnWrongAnswer(
-                                $user_id,
-                                $conceptByQuestionId->get($multiple_question_id),
-                                $multiple_ans_arr[0] ?? null
-                            );
-                        }
-                    }
-                }
+            if ($status === 'wrong') {
+                $this->recordMisconceptionOnWrongAnswer(
+                    $user_id,
+                    $conceptByQuestionId->get($questionId),
+                    $selectedIds[0] ?? null
+                );
             }
         }
 
         if (is_array($answer_narrative)) {
             foreach ($answer_narrative as $narrative_question_id => $narrative_answer_ids) {
-                $ans_status = "right";
+                if (! is_string($narrative_answer_ids) || trim($narrative_answer_ids) === '') {
+                    continue;
+                }
                 $narrative = [
                     'question_paper_id' => $request->get('questionpaper_id'),
                     'online_exam_id'    => $online_exam_id,
                     'student_id'        => $user_id,
                     'question_id'       => $narrative_question_id,
                     'narrative_answer'  => $narrative_answer_ids,
-                    'ans_status'        => $ans_status,
+                    'ans_status'        => 'pending_review',
                 ];
                 lmsOnlineExamAnswerModel::insert($narrative);
             }
@@ -265,6 +237,128 @@ class onlineExamController extends Controller
 
         //return is_mobile($type,'lms/online_exam_result',$res,"view");
         return redirect()->route('online_exam.show',[$request->get('questionpaper_id'),"online_exam_id"=> $online_exam_id]);
+    }
+
+    private function calculateOnlineExamMarks(Request $request, int $subInstituteId): array
+    {
+        $paper = DB::table('question_paper')
+            ->where('id', $request->input('questionpaper_id'))
+            ->where('sub_institute_id', $subInstituteId)
+            ->first(['question_ids']);
+        if (! $paper) {
+            throw new \RuntimeException('The examination paper could not be found.');
+        }
+
+        $questionIds = array_values(array_filter(array_map(
+            'intval',
+            explode(',', (string) $paper->question_ids)
+        )));
+        $questions = DB::table('lms_question_master')
+            ->whereIn('id', $questionIds)
+            ->get(['id', 'question_type_id', 'points'])
+            ->keyBy('id');
+        $questionIds = $questions->keys()->map(fn ($id) => (int) $id)->all();
+
+        $optionsByQuestion = DB::table('answer_master')
+            ->whereIn('question_id', $questionIds)
+            ->where('sub_institute_id', $subInstituteId)
+            ->get(['id', 'question_id', 'correct_answer'])
+            ->groupBy('question_id');
+        $correctAnswerIds = $optionsByQuestion->map(
+            fn ($options) => $options->where('correct_answer', 1)
+                ->pluck('id')
+                ->map(fn ($id) => (string) $id)
+                ->sort()
+                ->values()
+                ->all()
+        );
+
+        $rawSelections = [];
+        foreach (['answer_single', 'answer_multiple'] as $field) {
+            $answers = $request->input($field, []);
+            if (! is_array($answers)) {
+                continue;
+            }
+            foreach ($answers as $questionId => $values) {
+                $values = is_array($values) ? $values : [$values];
+                foreach ($values as $value) {
+                    if (! is_string($value) && ! is_numeric($value)) {
+                        continue;
+                    }
+                    $answerId = trim(explode('##', (string) $value, 2)[0]);
+                    if ($answerId !== '') {
+                        $rawSelections[(int) $questionId][] = $answerId;
+                    }
+                }
+            }
+        }
+
+        $narrativeAnswers = $request->input('answer_narrative', []);
+        $questionStatuses = [];
+        $selectedAnswerIdsByQuestion = [];
+        $totalRight = 0;
+        $totalWrong = 0;
+        $totalUnanswered = 0;
+        $totalPendingReview = 0;
+        $obtainMarks = 0.0;
+        $totalMarks = 0.0;
+
+        foreach ($questions as $question) {
+            $questionId = (int) $question->id;
+            $totalMarks += (float) ($question->points ?? 0);
+
+            if ((int) $question->question_type_id === 2) {
+                $narrative = is_array($narrativeAnswers)
+                    ? ($narrativeAnswers[$questionId] ?? '')
+                    : '';
+                if (is_string($narrative) && trim($narrative) !== '') {
+                    $questionStatuses[$questionId] = 'pending_review';
+                    $totalPendingReview++;
+                } else {
+                    $questionStatuses[$questionId] = 'unanswered';
+                    $totalUnanswered++;
+                }
+                continue;
+            }
+
+            $submitted = array_values(array_unique($rawSelections[$questionId] ?? []));
+            if ($submitted === []) {
+                $questionStatuses[$questionId] = 'unanswered';
+                $totalUnanswered++;
+                continue;
+            }
+
+            $validIds = ($optionsByQuestion->get($questionId) ?? collect())
+                ->whereIn('id', $submitted)
+                ->pluck('id')
+                ->map(fn ($id) => (string) $id)
+                ->unique()
+                ->sort()
+                ->values()
+                ->all();
+            $selectedAnswerIdsByQuestion[$questionId] = $validIds;
+            $expected = $correctAnswerIds->get($questionId, []);
+
+            if ($validIds !== [] && count($validIds) === count($submitted) && $validIds === $expected) {
+                $questionStatuses[$questionId] = 'right';
+                $totalRight++;
+                $obtainMarks += (float) ($question->points ?? 0);
+            } else {
+                $questionStatuses[$questionId] = 'wrong';
+                $totalWrong++;
+            }
+        }
+
+        return [
+            'total_right_ans' => $totalRight,
+            'total_wrong_ans' => $totalWrong,
+            'total_unanswered' => $totalUnanswered,
+            'total_pending_review' => $totalPendingReview,
+            'obtain_marks' => $obtainMarks,
+            'total_marks' => $totalMarks,
+            'question_statuses' => $questionStatuses,
+            'selected_answer_ids_by_question' => $selectedAnswerIdsByQuestion,
+        ];
     }
 
     public function get_calculate_marks(Request $request)
@@ -538,44 +632,83 @@ class onlineExamController extends Controller
         $data['mapping_arr'] = $lmsmapping;
         $data['answer_arr'] = $answer;
         
-        // $data['online_exam_data'] =DB::SELECT("SELECT * FROM lms_online_exam  where id ='$online_exam_id' and student_id=95634 AND question_paper_id = '$user_id'");
-
         $data['online_exam_data'] = lmsOnlineExamModel::where([
             'id'=>$online_exam_id,'student_id'=>$user_id
         ])->get()->toArray();
-        // print_r($data['online_exam_data']);exit;
-        $data['online_exam_data'] = $data['online_exam_data'][0] ?? $data['online_exam_data'];
+        $onlineExamSummary = $data['online_exam_data'][0] ?? [];
+        $attemptAnswers = DB::table('lms_online_exam_answer')
+            ->where('online_exam_id', $online_exam_id)
+            ->where('student_id', $user_id)
+            ->get(['question_id', 'answer_id', 'narrative_answer'])
+            ->groupBy('question_id');
 
-        // $online_answer_data = lmsOnlineExamAnswerModel::where(['online_exam_id'=>$online_exam_id,'student_id'=>$user_id])->get()->toArray();
-        // foreach($online_answer_data as $key => $val)
-        // {
-        //     $data['online_answer_data'][$val['question_id']][] = $val; 
-        // }
+        $totalRight = 0;
+        $totalWrong = 0;
+        $totalUnanswered = 0;
+        $totalPendingReview = 0;
+        $totalMarks = 0.0;
+        $obtainMarks = 0.0;
+        foreach ($data['question_arr'] as $question) {
+            $questionId = (int) $question['id'];
+            $totalMarks += (float) ($question['points'] ?? 0);
+            $answersForQuestion = $attemptAnswers->get($questionId, collect());
+            $narrativeAnswer = trim((string) ($answersForQuestion->first()->narrative_answer ?? ''));
+            $givenAnswerIds = $answersForQuestion->pluck('answer_id')
+                ->filter(fn ($id) => $id !== null && $id !== '')
+                ->map(fn ($id) => (string) $id)
+                ->unique()
+                ->sort()
+                ->values()
+                ->all();
+            $actualAnswerIds = collect($answer[$questionId] ?? [])
+                ->filter(fn ($option) => (int) ($option['correct_answer'] ?? 0) === 1)
+                ->pluck('id')
+                ->map(fn ($id) => (string) $id)
+                ->sort()
+                ->values()
+                ->all();
 
-        $online_answer_data = DB::select("SELECT a.*, GROUP_CONCAT(am.id) AS actual_answer,q.question_type_id,q.multiple_answer,
-                (
-                CASE 
-                WHEN question_type_id = 2 THEN IF(given_answer is null,'wrong','right') 
-                WHEN question_type_id = 1 AND multiple_answer = 0 THEN IF(given_answer=GROUP_CONCAT(am.id),'right','wrong') 
-                WHEN question_type_id = 1 AND multiple_answer = 1 THEN IF(given_answer=GROUP_CONCAT(am.id),'right','wrong') 
-                END
-                ) AS right_wrong 
-                FROM (
-                SELECT question_id,ans_status, IFNULL(narrative_answer, GROUP_CONCAT(answer_id)) AS given_answer
-                FROM lms_online_exam_answer
-                WHERE online_exam_id = '".$online_exam_id."' AND student_id = '".$user_id."'
-                GROUP BY question_id) AS a
-                INNER JOIN lms_question_master q ON q.id = a.question_id
-                LEFT JOIN answer_master am ON a.question_id = am.question_id AND correct_answer = 1
-                GROUP BY am.question_id,a.question_id
-            ");
-        //dd($online_answer_data);
-        foreach ($online_answer_data as $key => $val) {
-            $data['online_answer_data'][$val->question_id]['RIGHT_WRONG'] = $val->right_wrong;
-            $data['online_answer_data'][$val->question_id]['ACTUAL_ANSWER'] = $val->actual_answer;
-            $data['online_answer_data'][$val->question_id]['GIVEN_ANSWER'] = $val->given_answer;
+            if ((int) ($question['question_type_id'] ?? 0) === 2) {
+                if ($narrativeAnswer !== '') {
+                    $rightWrong = 'pending_review';
+                    $totalPendingReview++;
+                } else {
+                    $rightWrong = 'unanswered';
+                    $totalUnanswered++;
+                }
+                $givenAnswer = $narrativeAnswer;
+            } elseif ($givenAnswerIds === []) {
+                $rightWrong = 'unanswered';
+                $givenAnswer = '';
+                $totalUnanswered++;
+            } elseif ($givenAnswerIds !== [] && $givenAnswerIds === $actualAnswerIds) {
+                $rightWrong = 'right';
+                $givenAnswer = implode(',', $givenAnswerIds);
+                $totalRight++;
+                $obtainMarks += (float) ($question['points'] ?? 0);
+            } else {
+                $rightWrong = 'wrong';
+                $givenAnswer = implode(',', $givenAnswerIds);
+                $totalWrong++;
+            }
+
+            $data['online_answer_data'][$questionId] = [
+                'RIGHT_WRONG' => $rightWrong,
+                'ACTUAL_ANSWER' => implode(',', $actualAnswerIds),
+                'GIVEN_ANSWER' => $givenAnswer,
+            ];
         }
-        //dd($online_answer_data);
+
+        $data['online_exam_data'] = array_merge($onlineExamSummary, [
+            'total_right' => $totalRight,
+            'total_wrong' => $totalWrong,
+            'total_unanswered' => $totalUnanswered,
+            'total_pending_review' => $totalPendingReview,
+            'obtain_marks' => $obtainMarks,
+        ]);
+        if ($totalMarks > 0) {
+            $data['questionpaper_data']['total_marks'] = $totalMarks;
+        }
 
         $type = $request->input('type');
         $data['status_code'] = 1;
@@ -597,24 +730,44 @@ class onlineExamController extends Controller
         ])->orderby('start_time')->get()->toArray();
         $progressbar_data = array();
         foreach ($data['attempted_data'] as $key => $val) {
-            $pdata = DB::select("SELECT *,'100' as total_percentage,
-                round(((a.right_answer*100)/total_question),2) as obtained_percentage from (
-                SELECT lt.parent_id,plt.name as parent_name,lt.id,lt.name,COUNT(mapping_type_id) as total_question,group_concat(e.question_id) as ques_list,
-                sum((case when e.ans_status = 'right' then '1' end)) as right_answer
-                FROM lms_question_mapping l
-                INNER JOIN lms_mapping_type lt ON lt.id = l.mapping_value_id
-                INNER JOIN lms_mapping_type plt ON plt.id = lt.parent_id
-                LEFT JOIN lms_online_exam_answer e on e.question_id = l.questionmaster_id and e.question_paper_id = '".$val['question_paper_id']."' AND 
-                e.student_id = '".$val['student_id']."' and e.online_exam_id = '".$val['id']."'
-                WHERE questionmaster_id IN (
-                        SELECT question_id
-                        FROM lms_online_exam_answer
-                        WHERE question_paper_id = '".$val['question_paper_id']."' AND student_id = '".$val['student_id']."' 
-                        AND online_exam_id = '".$val['id']."'
-                    ) 
-                GROUP BY mapping_value_id
-                ORDER BY mapping_type_id,mapping_value_id) as a
-            ");
+            $paperQuestionIds = array_values(array_filter(array_map(
+                'intval',
+                explode(',', (string) ($data['questionpaper_data']['question_ids'] ?? ''))
+            )));
+            $pdata = DB::table('lms_question_mapping as l')
+                ->join('lms_mapping_type as lt', 'lt.id', '=', 'l.mapping_value_id')
+                ->join('lms_mapping_type as plt', 'plt.id', '=', 'lt.parent_id')
+                ->leftJoin('lms_question_master as q', 'q.id', '=', 'l.questionmaster_id')
+                ->leftJoin('lms_online_exam_answer as e', function ($join) use ($val) {
+                    $join->on('e.question_id', '=', 'l.questionmaster_id')
+                        ->where('e.question_paper_id', '=', $val['question_paper_id'])
+                        ->where('e.student_id', '=', $val['student_id'])
+                        ->where('e.online_exam_id', '=', $val['id']);
+                })
+                ->whereIn('l.questionmaster_id', $paperQuestionIds)
+                ->select([
+                    'lt.parent_id',
+                    'plt.name as parent_name',
+                    'lt.id',
+                    'lt.name',
+                ])
+                ->selectRaw('GROUP_CONCAT(DISTINCT l.questionmaster_id) as ques_list')
+                ->selectRaw('COUNT(DISTINCT l.questionmaster_id) as total_question')
+                ->selectRaw(
+                    "COUNT(DISTINCT CASE WHEN q.question_type_id <> 2 AND e.ans_status = 'right' "
+                    . 'THEN l.questionmaster_id END) as right_answer'
+                )
+                ->selectRaw("'100' as total_percentage")
+                ->selectRaw(
+                    'ROUND((COUNT(DISTINCT CASE WHEN q.question_type_id <> 2 AND e.ans_status = '
+                    . "'right' THEN l.questionmaster_id END) * 100) / "
+                    . 'NULLIF(COUNT(DISTINCT l.questionmaster_id), 0), 2) as obtained_percentage'
+                )
+                ->groupBy('lt.parent_id', 'plt.name', 'lt.id', 'lt.name')
+                ->orderBy('lt.id')
+                ->get()
+                ->map(fn ($row) => (array) $row)
+                ->all();
             $progressbar_data[$val['id']] = json_decode(json_encode($pdata), true);
         }
         $data['progressbar_data'] = $progressbar_data;
