@@ -662,10 +662,14 @@ return [
             'engagement' => [
                 // Widens the ai_modules row's patterns for screens it predates (see ModuleResolver::fromRoute).
                 'route_patterns' => ['/lmsLeaderboard', '/lmsLeaderboard/**', '/lmsSocialCollabrotive', '/lmsSocialCollabrotive/**', '/lmsPortfolio', '/lmsPortfolio/**', '/lmsVirtualClassroom', '/lmsVirtualClassroom/**', '/lmsActivityStream', '/lmsActivityStream/**'],
+                'agent_key' => 'k12_engagement',
+                'workflow_key' => 'engagement_intervention_review',
+                'case_type' => 'engagement_follow_up',
                 'detail_tools' => ['student_id' => 'engagement.student_summary'],
                 'mcp_tools' => [
                     'engagement.student_summary',
                     'engagement.students_needing_attention',
+                    'engagement.draft_intervention_note',
                     'students.directory',
                     'academics.structure',
                     'ai.templates.list',

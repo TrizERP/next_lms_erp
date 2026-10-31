@@ -247,4 +247,220 @@ class EngagementReportService
             (int) $r->user_id => $r->avg_progress !== null ? round((float) $r->avg_progress, 1) : 0.0,
         ])->all();
     }
+
+    /**
+     * Enriched activity diagnostic profile for a cohort or list of flagged students.
+     * Consumes Agent 1's flagged student list to diagnose specific participation barriers.
+     */
+    public function profileEngagement(McpRequestContext $context, array $args): array
+    {
+        $tenant = (int) $context->selectedInstituteId;
+        $studentIds = (array) ($args['student_ids'] ?? []);
+        $daysBack = (int) ($args['days_back'] ?? 30);
+        $since = Carbon::now()->subDays($daysBack)->toDateString();
+
+        if (empty($studentIds) && !empty($args['student_id'])) {
+            $studentIds = [(int) $args['student_id']];
+        }
+
+        if (empty($studentIds)) {
+            return [
+                'sub_institute_id' => $tenant,
+                'window_days' => $daysBack,
+                'total_profiled' => 0,
+                'profiles' => [],
+            ];
+        }
+
+        $names = DB::table('tblstudent')
+            ->whereIn('id', $studentIds)
+            ->pluck(DB::raw("CONCAT(first_name, ' ', last_name)"), 'id');
+
+        $attendance = $this->attendanceRate($tenant, $studentIds, $since);
+        $homework = $this->homeworkRate($tenant, $studentIds, $since);
+        $assignments = $this->assignmentRate($tenant, $studentIds, $since);
+
+        // Activity log counts from lms_student_engagement
+        $activityCounts = [];
+        if (\Illuminate\Support\Facades\Schema::hasTable('lms_student_engagement')) {
+            $activityRows = DB::table('lms_student_engagement')
+                ->whereIn('student_id', $studentIds)
+                ->where('created_at', '>=', $since)
+                ->where(function ($q) use ($tenant) {
+                    $q->where('sub_institute_id', $tenant)->orWhereNull('sub_institute_id');
+                })
+                ->selectRaw('student_id, activity_type, COUNT(*) as c, SUM(time_spent_seconds) as total_time')
+                ->groupBy('student_id', 'activity_type')
+                ->get();
+
+            foreach ($activityRows as $row) {
+                $sid = (int) $row->student_id;
+                $activityCounts[$sid][$row->activity_type] = (int) $row->c;
+                $activityCounts[$sid]['total_time_spent'] = ($activityCounts[$sid]['total_time_spent'] ?? 0) + (int) $row->total_time;
+                $activityCounts[$sid]['total_events'] = ($activityCounts[$sid]['total_events'] ?? 0) + (int) $row->c;
+            }
+        }
+
+        // Doubt / Discussion participation from lms_doubt & lms_doubt_conversation
+        $doubtsByStudent = [];
+        if (\Illuminate\Support\Facades\Schema::hasTable('lms_doubt')) {
+            $doubtRows = DB::table('lms_doubt')
+                ->where('sub_institute_id', $tenant)
+                ->whereIn('user_id', $studentIds)
+                ->where('created_at', '>=', $since)
+                ->selectRaw('id, user_id, title, created_at')
+                ->get();
+
+            $doubtIds = $doubtRows->pluck('id')->all();
+            $repliedDoubtIds = [];
+            if (!empty($doubtIds) && \Illuminate\Support\Facades\Schema::hasTable('lms_doubt_conversation')) {
+                $repliedDoubtIds = DB::table('lms_doubt_conversation')
+                    ->whereIn('doubt_id', $doubtIds)
+                    ->distinct()
+                    ->pluck('doubt_id')
+                    ->all();
+            }
+
+            foreach ($doubtRows as $d) {
+                $sid = (int) $d->user_id;
+                $hasReply = in_array($d->id, $repliedDoubtIds, true);
+                $doubtsByStudent[$sid]['total_doubts'] = ($doubtsByStudent[$sid]['total_doubts'] ?? 0) + 1;
+                if (!$hasReply) {
+                    $doubtsByStudent[$sid]['unanswered_doubts'] = ($doubtsByStudent[$sid]['unanswered_doubts'] ?? 0) + 1;
+                }
+            }
+        }
+
+        $profiles = [];
+        foreach ($studentIds as $id) {
+            $att = $attendance[$id] ?? null;
+            $hw = $homework[$id] ?? null;
+            $assign = $assignments[$id] ?? null;
+            $act = $activityCounts[$id] ?? ['total_events' => 0, 'total_time_spent' => 0];
+            $dbt = $doubtsByStudent[$id] ?? ['total_doubts' => 0, 'unanswered_doubts' => 0];
+
+            $deficits = [];
+            if ($att !== null && $att < 75) {
+                $deficits[] = "Attendance below benchmark ({$att}%)";
+            }
+            if ($hw !== null && $hw < 60) {
+                $deficits[] = "Homework completion critical ({$hw}%)";
+            }
+            if ($assign !== null && $assign < 50) {
+                $deficits[] = "Assignment progress lagging ({$assign}%)";
+            }
+            if (($act['total_events'] ?? 0) === 0) {
+                $deficits[] = "Zero digital content activity recorded in window";
+            }
+            if (($dbt['unanswered_doubts'] ?? 0) > 0) {
+                $deficits[] = "{$dbt['unanswered_doubts']} unanswered doubt(s) in discussion feed";
+            }
+
+            $primaryRisk = !empty($deficits) ? $deficits[0] : 'General engagement observation';
+
+            $profiles[] = [
+                'student_id' => $id,
+                'student_name' => $names[$id] ?? "Student #{$id}",
+                'attendance_percent' => $att,
+                'homework_percent' => $hw,
+                'assignments_percent' => $assign,
+                'total_activity_events' => $act['total_events'] ?? 0,
+                'total_time_spent_seconds' => $act['total_time_spent'] ?? 0,
+                'activity_by_type' => array_filter($act, fn ($k) => !in_array($k, ['total_events', 'total_time_spent']), ARRAY_FILTER_USE_KEY),
+                'total_doubts' => $dbt['total_doubts'] ?? 0,
+                'unanswered_doubts' => $dbt['unanswered_doubts'] ?? 0,
+                'detected_deficits' => $deficits,
+                'primary_disengagement_vector' => $primaryRisk,
+                'profiled_at' => Carbon::now()->toIso8601String(),
+            ];
+        }
+
+        return [
+            'sub_institute_id' => $tenant,
+            'window_days' => $daysBack,
+            'total_profiled' => count($profiles),
+            'profiles' => $profiles,
+        ];
+    }
+
+    /**
+     * Drafts a neutral, factual re-engagement intervention note for educator review and approval.
+     */
+    public function draftIntervention(McpRequestContext $context, array $args): array
+    {
+        $tenant = (int) $context->selectedInstituteId;
+        $studentId = (int) ($args['student_id'] ?? 0);
+        $studentName = (string) ($args['student_name'] ?? '');
+
+        if (!$studentName && $studentId > 0) {
+            $resolved = DB::table('tblstudent')->where('id', $studentId)->first();
+            if ($resolved) {
+                $studentName = trim($resolved->first_name . ' ' . $resolved->last_name);
+            }
+        }
+        if (!$studentName) {
+            $studentName = "Student #{$studentId}";
+        }
+
+        $att = isset($args['attendance_percent']) && is_numeric($args['attendance_percent']) ? (float) $args['attendance_percent'] : null;
+        $hw = isset($args['homework_percent']) && is_numeric($args['homework_percent']) ? (float) $args['homework_percent'] : null;
+        $assign = isset($args['assignments_percent']) && is_numeric($args['assignments_percent']) ? (float) $args['assignments_percent'] : null;
+        $unansweredDoubts = (int) ($args['unanswered_doubts_count'] ?? 0);
+        $deficits = (array) ($args['deficiency_reasons'] ?? []);
+
+        // Compose evidence narrative
+        $evidencePoints = [];
+        if ($att !== null) {
+            $evidencePoints[] = "Attendance rate: {$att}%";
+        }
+        if ($hw !== null) {
+            $evidencePoints[] = "Homework submission rate: {$hw}%";
+        }
+        if ($assign !== null) {
+            $evidencePoints[] = "LMS assignment progress: {$assign}%";
+        }
+        if ($unansweredDoubts > 0) {
+            $evidencePoints[] = "{$unansweredDoubts} unanswered question(s) posted in social discussions";
+        }
+
+        // Recommend educator action
+        $recommendedActions = [];
+        if ($hw !== null && $hw < 60) {
+            $recommendedActions[] = "Schedule homework check-in to review barriers with recent assignments";
+        }
+        if ($att !== null && $att < 75) {
+            $recommendedActions[] = "Consult class attendance coordinator to confirm verified absence reasons";
+        }
+        if ($unansweredDoubts > 0) {
+            $recommendedActions[] = "Prompt subject teacher or assigned teaching assistant to reply to open doubts";
+        }
+        if (empty($recommendedActions)) {
+            $recommendedActions[] = "Conduct informal check-in regarding recent learning module progress";
+        }
+
+        $evidenceText = implode('; ', $evidencePoints) ?: 'Engagement signals scanned over window';
+        $actionsText = implode("\n- ", $recommendedActions);
+
+        $draftBody = "Re-Engagement Intervention Proposal for {$studentName} (ID: {$studentId}):\n\n"
+            . "Recorded Platform Evidence:\n"
+            . "- {$evidenceText}\n\n"
+            . "Recommended Educator Actions:\n"
+            . "- {$actionsText}\n\n"
+            . "Policy Compliance: Gated Draft Only. No automated communication has been sent to the student or family. Human educator review and approval required before execution.";
+
+        return [
+            'sub_institute_id' => $tenant,
+            'student_id' => $studentId,
+            'student_name' => $studentName,
+            'category' => 're_engagement_intervention',
+            'subject' => "Re-Engagement Plan: {$studentName}",
+            'evidence_summary' => $evidenceText,
+            'recommended_actions' => $recommendedActions,
+            'draft_body' => $draftBody,
+            'status' => 'draft_pending_human_approval',
+            'max_verb' => 'recommend',
+            'may_execute_actions' => 0,
+            'created_at' => Carbon::now()->toIso8601String(),
+        ];
+    }
 }

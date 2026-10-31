@@ -47,6 +47,7 @@ use App\Mcp\Tools\CurriculumPlanningOutcomesTool;
 use App\Mcp\Tools\CurriculumPlanningStatusTool;
 use App\Mcp\Tools\DocumentTemplateVersionsTool;
 use App\Mcp\Tools\DocumentTemplatesListTool;
+use App\Mcp\Tools\EngagementDraftInterventionTool;
 use App\Mcp\Tools\EngagementStudentSummaryTool;
 use App\Mcp\Tools\EngagementStudentsNeedingAttentionTool;
 use App\Mcp\Tools\ExamsListTool;
@@ -177,6 +178,7 @@ class McpServiceProvider extends ServiceProvider
         CurriculumPlanningOutcomesTool::class,
         EngagementStudentSummaryTool::class,
         EngagementStudentsNeedingAttentionTool::class,
+        EngagementDraftInterventionTool::class,
         InteractionsListTool::class,
         InteractionsSummaryTool::class,
         NewPalGamificationSummaryTool::class,
