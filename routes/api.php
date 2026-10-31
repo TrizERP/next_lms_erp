@@ -61,6 +61,22 @@ Route::middleware('api.session')->group(function () { Route::post('teacher/assig
 
 Route::middleware('api.session')->get('/student-results/{stuId}/graph', [StudentResultGraphController::class, 'show']);
 
+// Browser-based monitoring for online LMS exam attempts. Student writes are
+// bound to the identity hydrated from the verified JWT; operational reads are
+// restricted to staff accounts.
+Route::middleware('api.session')->prefix('exam-proctoring')->group(function () {
+    Route::post('sessions', [\App\Http\Controllers\api\ExamProctoringApiController::class, 'start']);
+    Route::post('sessions/{sessionId}/events', [\App\Http\Controllers\api\ExamProctoringApiController::class, 'recordEvent']);
+    Route::put('sessions/{sessionId}/draft', [\App\Http\Controllers\api\ExamProctoringApiController::class, 'saveDraft']);
+    Route::get('sessions/{sessionId}/heartbeat', [\App\Http\Controllers\api\ExamProctoringApiController::class, 'heartbeat']);
+    Route::post('sessions/{sessionId}/submit', [\App\Http\Controllers\api\ExamProctoringApiController::class, 'submit']);
+    Route::post('sessions/{sessionId}/complete', [\App\Http\Controllers\api\ExamProctoringApiController::class, 'complete']);
+});
+Route::middleware(['api.session', 'staff.only'])->prefix('exam-proctoring')->group(function () {
+    Route::get('sessions', [\App\Http\Controllers\api\ExamProctoringApiController::class, 'index']);
+    Route::get('sessions/{sessionId}/events', [\App\Http\Controllers\api\ExamProctoringApiController::class, 'events']);
+});
+
 Route::post('whats-send-app',function (Request $request) {
     \Illuminate\Support\Facades\Log::info(json_encode($request->all()));
 })->middleware('webhook.secret');
