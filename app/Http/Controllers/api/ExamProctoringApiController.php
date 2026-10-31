@@ -311,6 +311,7 @@ class ExamProctoringApiController extends Controller
                 ! $autoSubmitReason
                 && $validated['event_type'] === 'tab_hidden'
                 && config('exam_proctoring.auto_submit_on_tab_switch', true)
+                && $tabSwitchCount >= $settings['tab_switch_limit']
             ) {
                 $autoSubmitReason = 'tab_switch';
             } elseif (! $autoSubmitReason && $criticalViolationCount >= $settings['critical_violation_limit']) {
@@ -338,7 +339,7 @@ class ExamProctoringApiController extends Controller
 
             $warningMessage = $this->warningMessage($validated['event_type']);
             $tabLimitExceeded = $validated['event_type'] === 'tab_hidden'
-                && $tabSwitchCount > $settings['tab_switch_limit'];
+                && $tabSwitchCount >= $settings['tab_switch_limit'];
 
             return [
                 'state' => 'recorded',
@@ -759,7 +760,7 @@ class ExamProctoringApiController extends Controller
     private function settings(): array
     {
         return [
-            'tab_switch_limit' => max(1, (int) config('exam_proctoring.tab_switch_limit', 3)),
+            'tab_switch_limit' => max(1, (int) config('exam_proctoring.tab_switch_limit', 5)),
             'auto_submit_on_tab_switch' => (bool) config('exam_proctoring.auto_submit_on_tab_switch', true),
             'critical_violation_limit' => max(1, (int) config('exam_proctoring.critical_violation_limit', 5)),
             'inactivity_seconds' => max(60, (int) config('exam_proctoring.inactivity_seconds', 300)),
