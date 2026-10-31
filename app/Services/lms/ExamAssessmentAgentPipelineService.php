@@ -147,7 +147,7 @@ class ExamAssessmentAgentPipelineService
             $steps['step_1'] = [
                 'step' => 1,
                 'agent_name' => 'Online exam summary reader',
-                'agent_id' => 'agt_online_exam_summary',
+                'agent_id' => 'agt_exam_summary_reader',
                 'tool' => 'exam_assessment.online_exam_summary',
                 'status' => 'success',
                 'duration_ms' => $step1Duration,
@@ -162,6 +162,19 @@ class ExamAssessmentAgentPipelineService
                     $atRiskPercent
                 ),
             ];
+
+            $this->logPipelineRunStep(
+                $subInstituteId,
+                $context,
+                1,
+                'exam_assessment.online_exam_summary',
+                'agt_exam_summary_reader',
+                'Online exam summary reader',
+                $step1Input,
+                'success',
+                $step1Duration,
+                ['summary' => $steps['step_1']['output_summary']]
+            );
 
             $gates['gate_1'] = [
                 'gate' => 1,
@@ -221,7 +234,7 @@ class ExamAssessmentAgentPipelineService
             $steps['step_2'] = [
                 'step' => 2,
                 'agent_name' => 'Assignment status reader',
-                'agent_id' => 'agt_assignment_status',
+                'agent_id' => 'agt_assignment_status_reader',
                 'tool' => 'exam_assessment.assignment_status',
                 'status' => 'success',
                 'duration_ms' => $step2Duration,
@@ -234,6 +247,19 @@ class ExamAssessmentAgentPipelineService
                     $totalNotSubmitted
                 ),
             ];
+
+            $this->logPipelineRunStep(
+                $subInstituteId,
+                $context,
+                2,
+                'exam_assessment.assignment_status',
+                'agt_assignment_status_reader',
+                'Assignment status reader',
+                $step2Input,
+                'success',
+                $step2Duration,
+                ['summary' => $steps['step_2']['output_summary']]
+            );
 
             $gates['gate_2'] = [
                 'gate' => 2,
@@ -342,7 +368,7 @@ class ExamAssessmentAgentPipelineService
             $steps['step_3'] = [
                 'step' => 3,
                 'agent_name' => 'Assessment review drafter',
-                'agent_id' => 'agt_assessment_review_drafter',
+                'agent_id' => 'agt_review_note_drafter',
                 'tool' => 'exam_assessment.draft_review_note',
                 'status' => 'success',
                 'duration_ms' => $step3Duration,
@@ -355,6 +381,19 @@ class ExamAssessmentAgentPipelineService
                     count($draftNotes)
                 ),
             ];
+
+            $this->logPipelineRunStep(
+                $subInstituteId,
+                $context,
+                3,
+                'exam_assessment.draft_review_note',
+                'agt_review_note_drafter',
+                'Assessment review drafter',
+                $steps['step_3']['input'] ?? [],
+                'success',
+                $step3Duration,
+                ['summary' => $steps['step_3']['output_summary']]
+            );
 
             $gates['gate_3'] = [
                 'gate' => 3,
@@ -550,6 +589,53 @@ class ExamAssessmentAgentPipelineService
     }
 
     /**
+     * Persist an individual agent run executed during the pipeline to ai_agent_runs table.
+     */
+    private function logPipelineRunStep(
+        int $subInstituteId,
+        McpRequestContext $context,
+        int $stepNumber,
+        string $toolKey,
+        string $agentId,
+        string $agentName,
+        array $input,
+        string $status,
+        int $durationMs,
+        array $output
+    ): void {
+        if (!Schema::hasTable('ai_agent_runs')) {
+            return;
+        }
+
+        try {
+            DB::table('ai_agent_runs')->insert([
+                'run_reference' => 'ea_pipe_' . date('Ymd_His') . '_' . $stepNumber . '_' . substr(md5(uniqid()), 0, 6),
+                'agent_id' => 8, // Exam & Assessment Master Agent in ai_agents
+                'agent_key' => $toolKey,
+                'trigger_type' => 'pipeline',
+                'trigger_reference' => 'exam_assessment_pipeline_step_' . $stepNumber,
+                'triggered_by' => $context->userId ?? 1,
+                'subject_entity_key' => 'standard',
+                'subject_id' => $input['standard_id'] ?? null,
+                'input' => json_encode($input),
+                'output' => json_encode($output),
+                'tool_calls' => json_encode([['tool' => $toolKey, 'arguments' => $input]]),
+                'status' => $status,
+                'started_at' => Carbon::now()->subMilliseconds($durationMs),
+                'finished_at' => Carbon::now(),
+                'duration_ms' => $durationMs,
+                'sub_institute_id' => $subInstituteId,
+                'client_id' => $context->clientId ?? 1,
+                'actor_role' => $context->role ?? 'admin',
+                'created_at' => Carbon::now(),
+                'updated_at' => Carbon::now(),
+            ]);
+        } catch (\Throwable $e) {
+            Log::warning('Failed to log pipeline step to ai_agent_runs: ' . $e->getMessage());
+        }
+    }
+
+    /**
      * Graceful gate failure helper.
      */
     private function gateFailure(int $gateNumber, string $reason, array $extra = []): array
@@ -598,7 +684,79 @@ class ExamAssessmentAgentPipelineService
             $row = DB::table('lms_exam_assessment_agent_state')->where('id', $id)->first();
         }
 
+        if ($row && empty($row->summary_counts)) {
+            $row->summary_counts = $this->calculateLiveSummaryCounts($subInstituteId);
+        } elseif ($row && is_string($row->summary_counts)) {
+            $decoded = json_decode($row->summary_counts, true);
+            $row->summary_counts = is_array($decoded) ? $decoded : $this->calculateLiveSummaryCounts($subInstituteId);
+        }
+
         return $row;
+    }
+
+    /**
+     * Compute real-time live database metrics for this institute.
+     */
+    public function calculateLiveSummaryCounts(int $subInstituteId): array
+    {
+        $examsPublished = Schema::hasTable('question_paper')
+            ? DB::table('question_paper')->where('sub_institute_id', $subInstituteId)->count()
+            : 0;
+
+        $attemptsRecorded = (Schema::hasTable('question_paper') && Schema::hasTable('lms_online_exam'))
+            ? DB::table('question_paper as qp')
+                ->join('lms_online_exam as oe', 'oe.question_paper_id', '=', 'qp.id')
+                ->where('qp.sub_institute_id', $subInstituteId)
+                ->count('oe.id')
+            : 0;
+
+        $studentsAssessed = (Schema::hasTable('question_paper') && Schema::hasTable('lms_online_exam'))
+            ? DB::table('question_paper as qp')
+                ->join('lms_online_exam as oe', 'oe.question_paper_id', '=', 'qp.id')
+                ->where('qp.sub_institute_id', $subInstituteId)
+                ->distinct('oe.student_id')
+                ->count('oe.student_id')
+            : 0;
+
+        $avgScore = (Schema::hasTable('question_paper') && Schema::hasTable('lms_online_exam'))
+            ? DB::table('question_paper as qp')
+                ->join('lms_online_exam as oe', 'oe.question_paper_id', '=', 'qp.id')
+                ->where('qp.sub_institute_id', $subInstituteId)
+                ->selectRaw('AVG(oe.obtain_marks / NULLIF(qp.total_marks, 0) * 100) as avg')
+                ->value('avg')
+            : null;
+
+        $needsAttention = (Schema::hasTable('question_paper') && Schema::hasTable('lms_online_exam'))
+            ? DB::table('question_paper as qp')
+                ->join('lms_online_exam as oe', 'oe.question_paper_id', '=', 'qp.id')
+                ->where('qp.sub_institute_id', $subInstituteId)
+                ->whereRaw('(oe.obtain_marks / NULLIF(qp.total_marks, 0) * 100) < 40')
+                ->count('oe.id')
+            : 0;
+
+        $totalAssignments = Schema::hasTable('lms_assignment')
+            ? DB::table('lms_assignment')->where('sub_institute_id', $subInstituteId)->count()
+            : 0;
+
+        $notSubmitted = Schema::hasTable('lms_assignment')
+            ? DB::table('lms_assignment')
+                ->where('sub_institute_id', $subInstituteId)
+                ->where(function ($q) {
+                    $q->whereNull('student_submission_status')->orWhere('student_submission_status', '<>', 'Y');
+                })
+                ->count()
+            : 0;
+
+        return [
+            'exams_published' => $examsPublished,
+            'attempts_recorded' => $attemptsRecorded,
+            'students_assessed' => $studentsAssessed,
+            'average_score' => $avgScore !== null ? round((float) $avgScore, 1) : null,
+            'needs_attention' => $needsAttention,
+            'total_assignments' => $totalAssignments,
+            'not_submitted' => $notSubmitted,
+            'draft_notes_count' => min(50, $needsAttention + min(5, $notSubmitted)),
+        ];
     }
 
     /**
@@ -670,7 +828,7 @@ class ExamAssessmentAgentPipelineService
     }
 
     /**
-     * Generate the complete Expert System Overview (ESO) for all three Exam & Assessment agents.
+     * Generate the complete Executive Skill Object (ESO) for all three Exam & Assessment agents.
      */
     public function getExpertSystemOverview(int $subInstituteId): array
     {
@@ -727,11 +885,60 @@ class ExamAssessmentAgentPipelineService
                     'backend_key' => 'exam_assessment.online_exam_summary',
                     'module' => 'exam_assessment',
                     'role_description' => 'Reads real online exam attempts from question_paper & lms_online_exam, excludes PAL papers, calculates average cohort scores, and identifies at-risk students below passing threshold.',
-                    'primary_tables' => ['question_paper', 'lms_online_exam'],
+                    'primary_tables' => ['question_paper', 'lms_online_exam', 'tblstudent', 'standard', 'subject'],
                     'validation_gate' => [
                         'gate' => 1,
                         'name' => 'Online Exam Performance Evaluation',
                         'enforcement' => 'Excludes PAL exams; verifies tenant institute boundary; calculates actual obtain_marks / total_marks * 100.',
+                    ],
+                    'eso' => [
+                        'knowledge' => [
+                            'summary' => 'Teacher-published online question papers, recorded student exam attempts, obtained marks, passing benchmarks (40%), and PAL test segregation rules.',
+                            'items' => [
+                                'Teacher-published exam master papers, marks, and configurations from question_paper',
+                                'Student attempt records, obtained marks, total marks, and timestamps from lms_online_exam',
+                                'Student directory and enrollment records from tblstudent',
+                                'Academic passing benchmark criteria (default 40%, matching the LMS Result Dashboard)',
+                                'PAL paper exclusion rule: strictly disregards papers where exam_type = "PAL"',
+                            ],
+                            'tables_and_sources' => ['question_paper', 'lms_online_exam', 'tblstudent', 'standard', 'subject'],
+                        ],
+                        'activities' => [
+                            'summary' => 'Scans published teacher online exams, filters out PAL tests, computes attempt metrics and average cohort scores, and isolates at-risk students below the passing bar.',
+                            'items' => [
+                                'Scanning published teacher exams scoped to the institute and target standard',
+                                'Strict exclusion of PAL-generated practice tests',
+                                'Calculation of attempt counts, total students assessed, and cohort average score (obtain_marks / total_marks * 100)',
+                                'Identification and extraction of at-risk student attempts scoring below the 40% threshold',
+                                'Gate 1 validation and formatting of at-risk student records for downstream intervention drafting',
+                            ],
+                        ],
+                        'abilities' => [
+                            'summary' => 'Deterministic score calculation, PAL test segregation, tenant boundary isolation, and read-only extraction.',
+                            'skills' => [
+                                'Accurate percentage calculation and threshold filtering',
+                                'Selective filtering separating formal teacher exams from automated practice papers',
+                                'Safe student name resolution with graceful fallback for unmapped profiles',
+                                'At-risk attempt cohort packaging',
+                            ],
+                            'constraints_and_safeguards' => [
+                                'Read-only operations (zero modifications to student marks or exam status)',
+                                'Tenant institute boundary enforcement (sub_institute_id)',
+                                'Gate 1 validation pass requires valid exam attempt calculations',
+                            ],
+                        ],
+                        'usage' => [
+                            'summary' => 'Executes as Step 1 of the Exam & Assessment pipeline, establishing the baseline exam performance and feeding at-risk student records to Agent 3.',
+                            'step_by_step_flow' => [
+                                'Step 1: Receives institute ID and standard parameter (or runs all-standards sweep)',
+                                'Step 2: Queries question_paper joined with lms_online_exam, filtering by institute and excluding PAL papers',
+                                'Step 3: Aggregates attempt counts and cohort average marks, then filters attempts scoring under at_risk_percent (40%)',
+                                'Step 4: Resolves student names from tblstudent and structures at-risk records',
+                                'Step 5: Validates Gate 1 and delivers at-risk exam records to Gate 1 output and downstream to Agent 3',
+                            ],
+                            'upstream_dependencies' => 'None (initiates the Exam & Assessment pipeline via manual click or continuous loop).',
+                            'downstream_handoff' => 'Passes at-risk student list and exam score gaps to Agent 3 (Assessment Review Drafter) via Gate 1.',
+                        ],
                     ],
                 ],
                 'agent_2' => [
@@ -741,11 +948,59 @@ class ExamAssessmentAgentPipelineService
                     'backend_key' => 'exam_assessment.assignment_status',
                     'module' => 'exam_assessment',
                     'role_description' => 'Reads assignment, worksheet, and project submissions from lms_assignment, reporting submitted, reviewed, pending review, and specific unsubmitted student records.',
-                    'primary_tables' => ['lms_assignment', 'tblstudent'],
+                    'primary_tables' => ['lms_assignment', 'tblstudent', 'standard', 'subject'],
                     'validation_gate' => [
                         'gate' => 2,
                         'name' => 'Assignment & Work Status Verification',
                         'enforcement' => 'Distinguishes assignment vs worksheet vs project; verifies submission flags; reports unsubmitted student details.',
+                    ],
+                    'eso' => [
+                        'knowledge' => [
+                            'summary' => 'Assigned coursework records across assignments, worksheets, and projects, submission statuses, teacher review logs, due dates, and student class rosters.',
+                            'items' => [
+                                'Coursework records, instructions, due dates, and standard bindings from lms_assignment',
+                                'Work type taxonomy: differentiation between assignment, worksheet, and project stored in the same table',
+                                'Student submission and review status flags: submitted, reviewed by teacher, pending review, and not submitted',
+                                'Student directory and enrollment rosters from tblstudent for delinquent submission reconciliation',
+                            ],
+                            'tables_and_sources' => ['lms_assignment', 'tblstudent', 'standard', 'subject'],
+                        ],
+                        'activities' => [
+                            'summary' => 'Scans all coursework allocated to a standard, categorizes by work type, tracks submission and review counts, and compiles the delinquent not-submitted list.',
+                            'items' => [
+                                'Institute and standard-scoped querying of lms_assignment',
+                                'Taxonomic grouping and counting by work type (assignment, worksheet, project)',
+                                'Auditing submission completeness and teacher evaluation rates',
+                                'Compiling detailed list of students with unsubmitted coursework past scheduled due dates',
+                                'Gate 2 validation ensuring coursework integrity across the target standard',
+                            ],
+                        ],
+                        'abilities' => [
+                            'summary' => 'Unified coursework schema disambiguation, class roster cross-referencing, and non-submitted student isolation.',
+                            'skills' => [
+                                'Multi-work-type aggregation over unified coursework storage',
+                                'Cross-table join between assignments and student enrollment rosters',
+                                'Accurate overdue status tracking without timezone drift',
+                                'Coursework delinquency ledger formatting',
+                            ],
+                            'constraints_and_safeguards' => [
+                                'Read-only execution with zero updates to student submission states',
+                                'Tenant institute boundary enforcement (sub_institute_id)',
+                                'Gate 2 validation ensures work status is fully accounted for',
+                            ],
+                        ],
+                        'usage' => [
+                            'summary' => 'Executes as Step 2 of the Exam & Assessment pipeline, providing comprehensive coursework submission and review data to complement exam performance.',
+                            'step_by_step_flow' => [
+                                'Step 1: Receives standard scope from Gate 1',
+                                'Step 2: Queries lms_assignment filtered by institute ID, standard ID, and division',
+                                'Step 3: Breaks down coursework totals by work type (assignment, worksheet, project)',
+                                'Step 4: Tallies submitted, reviewed, and unsubmitted counts, isolating delinquent student records',
+                                'Step 5: Validates Gate 2 and delivers the unsubmitted coursework ledger to Gate 2 and Agent 3',
+                            ],
+                            'upstream_dependencies' => 'Requires standard scope confirmed by Gate 1.',
+                            'downstream_handoff' => 'Hands off the unsubmitted coursework ledger and review counts to Agent 3 (Assessment Review Drafter) via Gate 2.',
+                        ],
                     ],
                 ],
                 'agent_3' => [
@@ -755,11 +1010,60 @@ class ExamAssessmentAgentPipelineService
                     'backend_key' => 'exam_assessment.draft_review_note',
                     'module' => 'exam_assessment',
                     'role_description' => 'Synthesizes at-risk attempt findings and missing submissions to prepare factual, evidence-backed draft review notes and follow-up guidance for educators.',
-                    'primary_tables' => ['ai_cases', 'ai_evidence', 'ai_recommendations'],
+                    'primary_tables' => ['ai_cases', 'ai_evidence', 'ai_recommendations', 'question_paper', 'lms_assignment'],
                     'validation_gate' => [
                         'gate' => 3,
                         'name' => 'Assessment Review Drafting & Safety Validation',
                         'enforcement' => 'Strict draft-only policy; cites factual exam & submission evidence; forbids external auto-sending; enforces human approval step.',
+                    ],
+                    'eso' => [
+                        'knowledge' => [
+                            'summary' => 'Fused multi-source academic evidence: at-risk exam scores from Agent 1, unsubmitted coursework from Agent 2, pedagogical intervention strategies, and draft safety rules.',
+                            'items' => [
+                                'At-risk exam attempt scores, percentages, and exam names received from Agent 1 (Gate 1)',
+                                'Unsubmitted coursework items, due dates, and work types received from Agent 2 (Gate 2)',
+                                'Pedagogical intervention guidelines (1-on-1 concept reinforcement, submission extensions, guided practice)',
+                                'Safety and governance guardrails: mandatory draft status, no automated external dispatching, objective and supportive wording standards',
+                            ],
+                            'tables_and_sources' => ['ai_cases', 'ai_evidence', 'ai_recommendations', 'question_paper', 'lms_assignment'],
+                        ],
+                        'activities' => [
+                            'summary' => 'Synthesizes exam gaps and missing coursework to draft individualized educator review notes, prepares a comprehensive cohort executive summary, and applies human sign-off guardrails.',
+                            'items' => [
+                                'Synthesizing at-risk attempts from Agent 1 into individualized exam review notes citing exact scores and percentages',
+                                'Synthesizing unsubmitted coursework from Agent 2 into coursework follow-up notes citing exact assignment titles',
+                                'Compiling the overall Cohort Executive Review Summary with participation metrics, average scores, and recommended interventions',
+                                'Applying the strict draft_pending_human_approval status tag to all drafted notes',
+                                'Gate 3 safety validation ensuring zero external communication was dispatched',
+                            ],
+                        ],
+                        'abilities' => [
+                            'summary' => 'Multi-agent evidence fusion, grounded factual synthesis, human-in-the-loop guardrail enforcement, and pedagogical recommendation generation.',
+                            'skills' => [
+                                'Correlating multi-agent performance deficits per student into a single cohesive profile',
+                                'Grounded factual drafting citing exact scores, benchmarks, and dates with zero fabricated numbers',
+                                'Pedagogical remediation mapping (linking specific failure modes to actionable teacher follow-ups)',
+                                'Cohort-level strategic intervention synthesis',
+                            ],
+                            'constraints_and_safeguards' => [
+                                'Strict draft-only policy: zero external messages, SMS, or emails are ever dispatched automatically',
+                                'Human-in-the-loop requirement: notes remain pending until approved by an authorized educator',
+                                'Objective, constructive pedagogical language with zero disparaging comments',
+                                'All drafts recorded in pipeline audit logs',
+                            ],
+                        ],
+                        'usage' => [
+                            'summary' => 'Acts as the final synthesis step (Step 3) of the Exam & Assessment pipeline, converting raw exam and assignment data from Agents 1 & 2 into actionable, safe draft review notes ready for teacher sign-off.',
+                            'step_by_step_flow' => [
+                                'Step 1: Consumes at-risk exam records from Agent 1 (Gate 1) and unsubmitted coursework records from Agent 2 (Gate 2)',
+                                'Step 2: Drafts individual student review notes for low exam attempts (citing student name, exam title, score, total marks, percentage, and 1-on-1 reinforcement recommendation)',
+                                'Step 3: Drafts individual student follow-up notes for missing assignments (citing student name, work title, work type, and extension recommendation)',
+                                'Step 4: Compiles the Cohort Executive Review Summary consolidating institute stats, exams published, attempts, pass rates, and action items',
+                                'Step 5: Enforces Gate 3 safety validation, confirms no external dispatch, marks drafts as draft_pending_human_approval, and returns the final report',
+                            ],
+                            'upstream_dependencies' => 'Requires at-risk exam attempts from Agent 1 (Gate 1) and missing coursework records from Agent 2 (Gate 2).',
+                            'downstream_handoff' => 'Outputs student draft review notes and cohort summary to the Exam & Assessment dashboard for educator review, approval, and execution.',
+                        ],
                     ],
                 ],
             ],

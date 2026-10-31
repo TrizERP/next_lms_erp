@@ -289,7 +289,7 @@ class TeachLearnCatalogueAgentController extends AiController
 
     /**
      * GET /api/ai/teach-learn/catalogue-agent/eso
-     * Returns the complete Expert System Overview (ESO) for all three agents.
+     * Returns the complete Executive Skill Object (ESO) for all three agents.
      */
     public function eso(Request $request): JsonResponse
     {
@@ -297,7 +297,7 @@ class TeachLearnCatalogueAgentController extends AiController
             $instituteId = $this->resolveInstituteId($request);
             $eso = $this->pipelineService->getExpertSystemOverview($instituteId);
 
-            return $this->success('Teach/Learn Expert System Overview loaded successfully.', [
+            return $this->success('Teach/Learn Executive Skill Object (ESO) loaded successfully.', [
                 'eso' => $eso,
                 'server_time' => Carbon::now()->toIso8601String(),
             ]);

@@ -17,7 +17,7 @@ use Throwable;
  *   3. Assessment Review Drafter
  *
  * Supports continuous monitoring, on-demand execution, full 3-agent pipeline synchronization,
- * and live Expert System Overview (ESO).
+ * and live Executive Skill Object (ESO).
  */
 class ExamAssessmentAgentController extends AiController
 {
@@ -189,7 +189,7 @@ class ExamAssessmentAgentController extends AiController
 
     /**
      * GET /api/ai/exam-assessment/agent/eso
-     * Returns the complete Expert System Overview (ESO) for all three agents.
+     * Returns the complete Executive Skill Object (ESO) for all three agents.
      */
     public function eso(Request $request): JsonResponse
     {
@@ -197,7 +197,7 @@ class ExamAssessmentAgentController extends AiController
             $instituteId = $this->resolveInstituteId($request);
             $eso = $this->pipelineService->getExpertSystemOverview($instituteId);
 
-            return $this->success('Exam & Assessment Expert System Overview loaded successfully.', [
+            return $this->success('Exam & Assessment Executive Skill Object (ESO) loaded successfully.', [
                 'eso' => $eso,
                 'server_time' => Carbon::now()->toIso8601String(),
             ]);

@@ -14,8 +14,12 @@ class McpRateLimit
 
     public function handle(Request $request, Closure $next)
     {
-        $key = $this->resolveKey($request);
-        $maxAttempts = (int) config('mcp.rate_limit.per_minute', 60);
+        $path = $request->path();
+        $isMonitoring = str_ends_with($path, 'state') || str_ends_with($path, 'content-tasks') || str_ends_with($path, 'eso');
+        $key = $this->resolveKey($request) . ($isMonitoring ? ':mon' : '');
+        $maxAttempts = $isMonitoring
+            ? (int) config('mcp.rate_limit.monitoring_per_minute', 300)
+            : (int) config('mcp.rate_limit.per_minute', 60);
 
         if ($this->rateLimiter->tooManyAttempts($key, $maxAttempts)) {
             $retryAfter = $this->rateLimiter->availableIn($key);
