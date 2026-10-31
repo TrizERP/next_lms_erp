@@ -176,6 +176,8 @@ again: it must work without anyone starting anything.
 - One worker per job (database lease, 20 min, renewed on every progress write). A killed worker's job is picked up
   by the scheduler after the lease expires and resumes from saved progress (parsed chunks, saved questions).
 - Retries: 4 attempts, waits of 60 s, 300 s, 900 s, then `failed` with `retryable` kept so the owner can retry.
+- Exact duplicate PDF uploads are blocked by SHA-256 checksum within the same school and Question Paper document type,
+  even if the filename changes; the upload UI warns that the duplicate was blocked. Other schools are not compared.
 - Duplicate questions are matched by normalized question text only inside the resolved `chapter_id` for the same school.
   Other chapters never participate. A match is marked as a skipped duplicate before question or answer rows are written;
   remaining questions continue normally. The UI reports extracted, stored, duplicate, and failed question counts.

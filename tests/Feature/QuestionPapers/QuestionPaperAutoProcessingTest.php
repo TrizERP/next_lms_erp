@@ -169,7 +169,7 @@ class QuestionPaperAutoProcessingTest extends QuestionPaperTestCase
     private function uploadPaper(string $name = 'Science paper.pdf', ?string $scheduledAt = null): array
     {
         $path = $this->scratch . DIRECTORY_SEPARATOR . 'upload-' . bin2hex(random_bytes(3)) . '.pdf';
-        file_put_contents($path, TinyPdf::make(['Class 9 Science question paper with enough text to be a real document, page one.']));
+        file_put_contents($path, TinyPdf::make(["Class 9 Science question paper with enough text to be a real document, page one: {$name}."]));
         $params = ['standard_id' => 9, 'subject_id' => 3, 'chapter_id' => 101];
         if ($scheduledAt !== null) {
             $params['scheduled_at'] = $scheduledAt;

@@ -101,6 +101,21 @@ class QuestionPaperController extends PlatformController
             }
         }
 
+        $checksum = hash_file('sha256', $file->getRealPath());
+        $duplicate = DocumentMaster::withTrashed()
+            ->where('sub_institute_id', $tenant)
+            ->where('checksum_sha256', $checksum)
+            ->where(function ($query) {
+                $query->where('document_type', 'Question Paper');
+                if (Schema::hasColumn('document_master', 'declared_type')) {
+                    $query->orWhere('declared_type', 'question_paper');
+                }
+            })
+            ->exists();
+        if ($duplicate) {
+            return $this->fail('This question paper has already been uploaded. Duplicate uploads are not allowed.', 409);
+        }
+
         $stored = $this->storage->storeUpload($file);
 
         try {

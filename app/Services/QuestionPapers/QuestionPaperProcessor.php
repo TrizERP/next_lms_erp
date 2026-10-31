@@ -22,6 +22,11 @@ class QuestionPaperProcessor
 
     private const CHUNK_CHARS = 8000;
 
+    /** @var array<string, true> */
+    private array $questionTextIndex = [];
+
+    private bool $questionTextIndexLoaded = false;
+
     public function __construct(
         private QuestionPaperJobService $jobs,
         private QuestionPaperParser $parser,
@@ -50,6 +55,8 @@ class QuestionPaperProcessor
         }
 
         $temp = null;
+        $this->questionTextIndex = [];
+        $this->questionTextIndexLoaded = false;
         try {
             $job = $this->jobs->find((int) $job->id);
             if ((int) $job->attempts > self::MAX_ATTEMPTS) {
@@ -245,6 +252,11 @@ class QuestionPaperProcessor
 
     private function storeItems(object $job, array $questions, int $chunkIndex): void
     {
+        if (!$this->questionTextIndexLoaded) {
+            $this->questionTextIndex = $this->persistence->questionBankTextIndex((int) $job->sub_institute_id);
+            $this->questionTextIndexLoaded = true;
+        }
+
         $ordinal = (int) DB::table('question_paper_items')->where('job_id', $job->id)->max('ordinal');
 
         foreach ($questions as $questionIndex => $raw) {
@@ -255,14 +267,21 @@ class QuestionPaperProcessor
 
             if ($result['ok']) {
                 $item = $result['item'];
+                if (DB::table('question_paper_items')->where('job_id', $job->id)->where('source_key', $sourceKey)->exists()) {
+                    continue;
+                }
+
+                $normalizedText = $this->normaliser->normaliseQuestionText($item['question_text']);
+                $duplicate = isset($this->questionTextIndex[$normalizedText]);
+                $this->questionTextIndex[$normalizedText] = true;
                 $row = [
                     'item_number' => $item['item_number'],
                     'source_page' => $item['source_page'],
                     'format_code' => $item['format_code'],
                     'content_hash' => $item['content_hash'],
                     'source_key' => $sourceKey,
-                    'state' => 'parsed',
-                    'reason' => null,
+                    'state' => $duplicate ? 'duplicate' : 'parsed',
+                    'reason' => $duplicate ? 'This question already exists in the question bank and was not stored again.' : null,
                     'payload' => json_encode($item, JSON_UNESCAPED_UNICODE),
                 ];
             } else {
