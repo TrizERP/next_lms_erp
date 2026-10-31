@@ -317,6 +317,16 @@ Route::prefix(config('ai.route_prefix', 'api/ai'))
                 Route::get('eso', [\App\Http\Controllers\AI\ExamAssessmentAgentController::class, 'eso']);
             });
 
+            Route::prefix('engagement/agent')->group(function () {
+                Route::get('state', [\App\Http\Controllers\AI\EngagementAgentController::class, 'state']);
+                Route::post('start', [\App\Http\Controllers\AI\EngagementAgentController::class, 'start']);
+                Route::post('stop', [\App\Http\Controllers\AI\EngagementAgentController::class, 'stop']);
+                Route::post('run-now', [\App\Http\Controllers\AI\EngagementAgentController::class, 'runNow']);
+                Route::post('interval', [\App\Http\Controllers\AI\EngagementAgentController::class, 'setInterval']);
+                Route::post('pipeline', [\App\Http\Controllers\AI\EngagementAgentController::class, 'pipeline']);
+                Route::get('eso', [\App\Http\Controllers\AI\EngagementAgentController::class, 'eso']);
+            });
+
             Route::prefix('teach-learn/catalogue-agent')->group(function () {
                 Route::get('state', [\App\Http\Controllers\AI\TeachLearnCatalogueAgentController::class, 'state']);
                 Route::get('content-tasks', [\App\Http\Controllers\AI\TeachLearnCatalogueAgentController::class, 'contentTasks']);
