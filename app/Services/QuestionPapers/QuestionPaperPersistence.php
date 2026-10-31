@@ -15,7 +15,7 @@ use Illuminate\Support\Facades\Schema;
  *
  * Idempotency has three layers: the item row is locked and skipped once it holds a question_id;
  * each extracted occurrence has a stable (job_id, source_key); and a normalized question title
- * already in the same resolved chapter is recorded as a duplicate instead of inserted.
+ * already in the school's question bank is recorded as a duplicate instead of inserted.
  * Each write is one transaction, so a crash leaves either a complete question or none.
  */
 class QuestionPaperPersistence
@@ -42,18 +42,32 @@ class QuestionPaperPersistence
                 return 'already';
             }
 
-            // Without a standard and subject the question has no home in the bank: hold it, do not guess.
-            if ($job->standard_id === null || $job->subject_id === null) {
-                $this->setState($itemId, 'unresolved', 'Standard or subject could not be determined.');
-
-                return 'unresolved';
-            }
-
             $item = json_decode($row->payload, true);
             if (!is_array($item)) {
                 $this->setState($itemId, 'skipped', 'Stored question data could not be read.');
 
                 return 'skipped';
+            }
+
+            // Serialize question-bank writes per school so concurrent background jobs recheck
+            // after the preceding job commits instead of inserting the same question together.
+            DB::table('question_paper_jobs')
+                ->where('sub_institute_id', $job->sub_institute_id)
+                ->orderBy('id')
+                ->lockForUpdate()
+                ->first(['id']);
+
+            if ($this->existsInQuestionBank($job, (string) $item['question_text'])) {
+                $this->setState($itemId, 'duplicate', 'This question already exists in the question bank and was not stored again.');
+
+                return 'duplicate';
+            }
+
+            // Without a standard and subject the question has no home in the bank: hold it, do not guess.
+            if ($job->standard_id === null || $job->subject_id === null) {
+                $this->setState($itemId, 'unresolved', 'Standard or subject could not be determined.');
+
+                return 'unresolved';
             }
 
             $explicitChapterId = !empty($item['chapter_text'])
@@ -76,12 +90,6 @@ class QuestionPaperPersistence
                     ->where('subject_id', $job->subject_id)
                     ->lockForUpdate()
                     ->first(['id']);
-
-                if ($chapter && $this->existsInChapter($job, $chapterId, (string) $item['question_text'])) {
-                    $this->setState($itemId, 'duplicate', 'A matching question already exists in this chapter.');
-
-                    return 'duplicate';
-                }
 
                 if (!$chapter) {
                     $chapterId = null;
@@ -117,26 +125,45 @@ class QuestionPaperPersistence
         DB::table('question_paper_items')->where('id', $itemId)->update(['state' => $state, 'reason' => $reason, 'updated_at' => now()]);
     }
 
-    private function existsInChapter(object $job, int $chapterId, string $questionText): bool
+    public function existsInQuestionBank(object $job, string $questionText): bool
     {
         $normaliser = app(QuestionPaperItemNormaliser::class);
         $normalized = $normaliser->normaliseQuestionText($questionText);
 
+        foreach ($this->questionBankTitles((int) $job->sub_institute_id) as $existing) {
+            if ($existing === $normalized) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /** @return array<string, true> normalized question text => present */
+    public function questionBankTextIndex(int $tenantId): array
+    {
+        $index = [];
+        foreach ($this->questionBankTitles($tenantId) as $title) {
+            $index[$title] = true;
+        }
+
+        return $index;
+    }
+
+    /** @return \Generator<int, string> */
+    private function questionBankTitles(int $tenantId): \Generator
+    {
+        $normaliser = app(QuestionPaperItemNormaliser::class);
         $questions = DB::table('lms_question_master')
-            ->where('sub_institute_id', $job->sub_institute_id)
-            ->where('chapter_id', $chapterId)
+            ->where('sub_institute_id', $tenantId)
             ->whereNotNull('question_title')
             ->when($this->hasColumn('lms_question_master', 'deleted_at'), fn ($q) => $q->whereNull('deleted_at'))
             ->orderBy('id')
             ->cursor(['question_title']);
 
         foreach ($questions as $question) {
-            if ($normaliser->normaliseQuestionText((string) $question->question_title) === $normalized) {
-                return true;
-            }
+            yield $normaliser->normaliseQuestionText((string) $question->question_title);
         }
-
-        return false;
     }
 
     /** @return array<string, mixed> */

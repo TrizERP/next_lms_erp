@@ -88,6 +88,52 @@ class QuestionPaperApiTest extends QuestionPaperTestCase
         $this->assertSame(0, DB::table('lms_question_master')->count(), 'nothing is extracted inside the request');
     }
 
+    public function test_an_identical_question_paper_upload_is_blocked_by_checksum_within_the_same_school(): void
+    {
+        Queue::fake();
+        $bytes = TinyPdf::make(['Class 9 Science question paper with enough text to be real.']);
+
+        $first = $this->upload([], $this->pdfUpload('Science paper.pdf', $bytes));
+        $this->assertSame(201, $first->getStatusCode());
+
+        $duplicate = $this->upload([], $this->pdfUpload('renamed-paper.pdf', $bytes));
+
+        $this->assertSame(409, $duplicate->getStatusCode());
+        $this->assertStringContainsString('already been uploaded', $duplicate->getData(true)['message']);
+        $this->assertSame(1, DB::table('document_master')->count());
+        $this->assertSame(1, DB::table('question_paper_jobs')->count());
+        Queue::assertPushed(QuestionPaperExtractionJob::class, 1);
+    }
+
+    public function test_identical_question_papers_in_another_school_and_different_bytes_are_allowed(): void
+    {
+        Queue::fake();
+        $bytes = TinyPdf::make(['Class 9 Science question paper with enough text to be real.']);
+
+        $this->assertSame(201, $this->upload([], $this->pdfUpload('Science paper.pdf', $bytes))->getStatusCode());
+        $this->assertSame(201, $this->upload([], $this->pdfUpload('different-paper.pdf', TinyPdf::make(['A different question paper with different text.'])))->getStatusCode());
+        $this->assertSame(201, $this->upload([], $this->pdfUpload('Science paper.pdf', $bytes), self::OTHER_TENANT, self::OWNER)->getStatusCode());
+
+        $this->assertSame(3, DB::table('document_master')->count());
+        $this->assertSame(3, DB::table('question_paper_jobs')->count());
+        Queue::assertPushed(QuestionPaperExtractionJob::class, 3);
+    }
+
+    public function test_a_soft_deleted_question_paper_still_blocks_an_identical_upload(): void
+    {
+        Queue::fake();
+        $bytes = TinyPdf::make(['Class 9 Science question paper with enough text to be real.']);
+        $this->assertSame(201, $this->upload([], $this->pdfUpload('Science paper.pdf', $bytes))->getStatusCode());
+
+        DB::table('document_master')->update(['deleted_at' => now()]);
+        $duplicate = $this->upload([], $this->pdfUpload('renamed-paper.pdf', $bytes));
+
+        $this->assertSame(409, $duplicate->getStatusCode());
+        $this->assertSame(1, DB::table('document_master')->count());
+        $this->assertSame(1, DB::table('question_paper_jobs')->count());
+        Queue::assertPushed(QuestionPaperExtractionJob::class, 1);
+    }
+
     public function test_a_scheduled_upload_is_not_queued_until_its_scheduled_time(): void
     {
         Queue::fake();

@@ -181,7 +181,7 @@ class QuestionPaperPipelineTest extends QuestionPaperTestCase
         $this->assertSame(0, (int) $this->job($second)->questions_saved);
     }
 
-    public function test_duplicate_text_is_normalized_and_only_skips_that_question_in_the_same_chapter(): void
+    public function test_duplicate_text_is_normalized_across_papers_and_within_the_current_paper(): void
     {
         $this->fakeParser([
             ['header' => self::HEADER, 'questions' => [$this->mcq('What is matter made of?', 'A')]],
@@ -208,10 +208,32 @@ class QuestionPaperPipelineTest extends QuestionPaperTestCase
         $this->assertSame(2, DB::table('lms_question_master')->count());
         $this->assertSame(8, DB::table('answer_master')->count(), 'the duplicate produced no answer rows; the new question did');
         $this->assertSame(2, DB::table('question_paper_items')->where('job_id', $second->id)->where('state', 'duplicate')->count());
+        $this->assertStringContainsString(
+            'already exists in the question bank',
+            (string) DB::table('question_paper_items')->where('job_id', $second->id)->where('state', 'duplicate')->value('reason')
+        );
         $this->assertSame(1, DB::table('question_paper_items')->where('job_id', $second->id)->where('state', 'skipped')->count());
     }
 
-    public function test_a_matching_question_in_another_chapter_is_not_a_duplicate(): void
+    public function test_duplicate_questions_in_one_pdf_are_not_written_to_the_question_bank(): void
+    {
+        $this->fakeParser([['header' => self::HEADER, 'questions' => [
+            $this->mcq('What is matter made of?', 'A'),
+            $this->mcq("  WHAT is matter\nmade of!!! ", 'A'),
+        ]]]);
+        $job = $this->makeJob();
+
+        $this->process($job);
+
+        $this->assertSame(1, DB::table('lms_question_master')->count());
+        $this->assertSame(4, DB::table('answer_master')->count());
+        $this->assertSame(1, DB::table('question_paper_items')->where('job_id', $job->id)->where('state', 'duplicate')->count());
+        $this->assertSame(1, DB::table('question_paper_items')->where('job_id', $job->id)->where('state', 'saved')->count());
+        $duplicate = DB::table('question_paper_items')->where('job_id', $job->id)->where('state', 'duplicate')->first();
+        $this->assertNull($duplicate->question_id);
+    }
+
+    public function test_duplicate_question_detection_spans_chapters_and_uploaded_papers(): void
     {
         $question = $this->mcq('Which state of matter has a definite shape?', 'A');
         DB::table('chapter_master')->insert([
@@ -231,10 +253,30 @@ class QuestionPaperPipelineTest extends QuestionPaperTestCase
         $currentChapter = $this->makeJob(academic: ['standard_id' => 9, 'subject_id' => 3, 'chapter_id' => 101]);
         $this->process($currentChapter);
 
+        $this->assertSame(1, DB::table('lms_question_master')->count());
+        $this->assertSame(102, (int) DB::table('lms_question_master')->value('chapter_id'));
+        $this->assertSame(1, DB::table('question_paper_items')->where('job_id', $currentChapter->id)->where('state', 'duplicate')->count());
+        $this->assertSame(1, (int) $this->job($currentChapter)->questions_skipped);
+    }
+
+    public function test_question_duplicate_detection_does_not_cross_school_boundaries(): void
+    {
+        $question = $this->mcq('Which state of matter has a definite shape?', 'A');
+        $this->fakeParser([
+            ['header' => self::HEADER, 'questions' => [$question]],
+            ['header' => self::HEADER, 'questions' => [$question]],
+        ]);
+        $first = $this->makeJob(academic: ['standard_id' => 9, 'subject_id' => 3, 'chapter_id' => 101]);
+        $this->process($first);
+
+        $second = $this->makeJob(
+            academic: ['standard_id' => 19, 'subject_id' => 13, 'chapter_id' => 201],
+            tenant: self::OTHER_TENANT
+        );
+        $this->process($second);
+
         $this->assertSame(2, DB::table('lms_question_master')->count());
-        $this->assertSame([102, 101], DB::table('lms_question_master')->orderBy('id')->pluck('chapter_id')->map(fn ($id) => (int) $id)->all());
-        $this->assertSame(0, DB::table('question_paper_items')->where('job_id', $currentChapter->id)->where('state', 'duplicate')->count());
-        $this->assertSame(0, (int) $this->job($currentChapter)->questions_skipped);
+        $this->assertSame(0, DB::table('question_paper_items')->where('job_id', $second->id)->where('state', 'duplicate')->count());
     }
 
     public function test_unresolved_standard_holds_questions_instead_of_guessing_then_a_retry_with_metadata_saves_them(): void
