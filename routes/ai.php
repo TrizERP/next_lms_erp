@@ -339,6 +339,25 @@ Route::prefix(config('ai.route_prefix', 'api/ai'))
                 Route::post('pipeline', [\App\Http\Controllers\AI\TeachLearnCatalogueAgentController::class, 'pipeline']);
                 Route::get('eso', [\App\Http\Controllers\AI\TeachLearnCatalogueAgentController::class, 'eso']);
             });
+            Route::prefix('curriculum-planning/agent')->group(function () {
+                Route::get('state', [\App\Http\Controllers\AI\CurriculumPlanningAgentController::class, 'state']);
+                Route::post('start', [\App\Http\Controllers\AI\CurriculumPlanningAgentController::class, 'start']);
+                Route::post('stop', [\App\Http\Controllers\AI\CurriculumPlanningAgentController::class, 'stop']);
+                Route::post('run-now', [\App\Http\Controllers\AI\CurriculumPlanningAgentController::class, 'runNow']);
+                Route::post('interval', [\App\Http\Controllers\AI\CurriculumPlanningAgentController::class, 'setInterval']);
+                Route::post('pipeline', [\App\Http\Controllers\AI\CurriculumPlanningAgentController::class, 'pipeline']);
+                Route::get('eso', [\App\Http\Controllers\AI\CurriculumPlanningAgentController::class, 'eso']);
+            });
+
+            Route::prefix('pal/agent')->group(function () {
+                Route::get('state', [\App\Http\Controllers\AI\PalAgentController::class, 'state']);
+                Route::post('start', [\App\Http\Controllers\AI\PalAgentController::class, 'start']);
+                Route::post('stop', [\App\Http\Controllers\AI\PalAgentController::class, 'stop']);
+                Route::post('run-now', [\App\Http\Controllers\AI\PalAgentController::class, 'runNow']);
+                Route::post('interval', [\App\Http\Controllers\AI\PalAgentController::class, 'setInterval']);
+                Route::post('pipeline', [\App\Http\Controllers\AI\PalAgentController::class, 'pipeline']);
+                Route::get('eso', [\App\Http\Controllers\AI\PalAgentController::class, 'eso']);
+            });
 
             /*
             | Workflows. Note there is no "run this step" route: a run advances only
