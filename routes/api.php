@@ -1217,6 +1217,7 @@ Route::prefix('live-chat')->middleware(['api.session', 'livechat.identity'])->gr
 Route::middleware(['api.session', 'staff.only'])->prefix('lms/course-presentation')->group(function () {
     Route::get('options', [\App\Http\Controllers\api\lms\CoursePresentationController::class, 'options']);
     Route::get('fit', [\App\Http\Controllers\api\lms\CoursePresentationController::class, 'fit']);
+    Route::get('workflow', [\App\Http\Controllers\api\lms\CoursePresentationController::class, 'workflow']);
     Route::get('preflight', [\App\Http\Controllers\api\lms\CoursePresentationController::class, 'preflight']);
     Route::get('status', [\App\Http\Controllers\api\lms\CoursePresentationController::class, 'status']);
     Route::get('draft', [\App\Http\Controllers\api\lms\CoursePresentationController::class, 'draft']);
@@ -1234,4 +1235,9 @@ Route::middleware(['api.session', 'lms.auth', 'perm:lms.content,create'])->prefi
     Route::post('draft-image/remove', [\App\Http\Controllers\api\lms\CoursePresentationController::class, 'draftImageRemove'])->middleware('throttle:20,1');
     Route::get('draft-image/access', [\App\Http\Controllers\api\lms\CoursePresentationController::class, 'draftImageAccess']);
     Route::post('draft-image/restore', [\App\Http\Controllers\api\lms\CoursePresentationController::class, 'draftImageRestore'])->middleware('throttle:20,1');
+    // The same for a presentation that is already approved and stored (pilot chapter only): the change is saved with it.
+    Route::get('stored-image/states', [\App\Http\Controllers\api\lms\CoursePresentationController::class, 'storedImageStates']);
+    Route::get('stored-image/search', [\App\Http\Controllers\api\lms\CoursePresentationController::class, 'storedImageSearch'])->middleware('throttle:30,1');
+    Route::post('stored-image/replace', [\App\Http\Controllers\api\lms\CoursePresentationController::class, 'storedImageReplace'])->middleware('throttle:20,1');
+    Route::post('stored-image/restore', [\App\Http\Controllers\api\lms\CoursePresentationController::class, 'storedImageRestore'])->middleware('throttle:20,1');
 });

@@ -78,6 +78,8 @@ class DeckValidator
         }
 
         $this->teaching($map, $deck, $errors);
+        // The pilot's staged workflow, judged on the finished deck by the same rules the planner was repaired with (off without a workflow).
+        array_push($errors, ...WorkflowRules::errors($map['workflow'] ?? null, $deck['slides'], $map));
         $this->questionRules($deck, $eligible, $flagged, $errors, $warnings, SlidePlanner::limits($map));
         $this->activityRules($deck, $eligible, $errors);
         $this->patternRules($deck, $errors);

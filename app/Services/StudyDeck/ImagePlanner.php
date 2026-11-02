@@ -155,6 +155,22 @@ class ImagePlanner
         return $this;
     }
 
+    /** True when a slide that needs a photograph and has none is left without a picture, never given a drawn diagram in its place. */
+    private bool $photosOnly = false;
+
+    /**
+     * Photograph-first picture policy (the pilot's): the search also asks Wikimedia Commons directly (see ConceptImageSearchService::useCommons),
+     * and a photograph slide that finds none keeps the plain "no suitable picture" state instead of a diagram that stands in for a photograph.
+     * A slide the plan itself marks as a diagram (reasoning or structure) is still drawn: that is not a substitute, it is the picture asked for.
+     */
+    public function photosFirst(bool $on = true): static
+    {
+        $this->photosOnly = $on;
+        $this->search->useCommons($on);
+
+        return $this;
+    }
+
     /** @param array<string,callable(string,int):array<int,array<string,mixed>>> $providers */
     public function withProviders(array $providers): static
     {
@@ -262,7 +278,7 @@ class ImagePlanner
                     if ($book !== null) {
                         $usedUrls[] = $book['source_image_url'];
                         $out[$n] = $book + ['purpose' => $visual['purpose'], 'web_search' => $found['missing']];
-                    } elseif ($spec) {
+                    } elseif ($spec && !$this->photosOnly) {
                         $out[$n] = $this->diagram($spec) + ['purpose' => $visual['purpose'], 'photo_missing' => $found['missing']];
                     } else {
                         $out[$n] = $found + ['query' => $visual['query'], 'purpose' => $visual['purpose'], 'source_kind' => self::KIND_NONE];
@@ -372,6 +388,14 @@ class ImagePlanner
                 $this->stats['rejected_title']++;
                 continue;
             }
+            // A photograph is placed on a slide with no one looking, so most of what the slide asked for must be in the picture's own title, tags or
+            // categories: every word of a short query, three quarters of a longer one. "Mummy Mask of a Woman" shares one word of "face mask layers" and
+            // "Rubber Ducky Roundup Pool Party" two of "rubber party balloon": neither is placed. A slide left without one says so, and the teacher
+            // can choose from the ranked photographs in Change image.
+            if ($this->photosOnly && $match['shared'] < max(1, $match['of'] <= 2 ? $match['of'] : (int) ceil(0.75 * $match['of']))) {
+                $this->stats['rejected_title']++;
+                continue;
+            }
             if (preg_match(self::NEEDS_CREDIT, $licence) && $this->credit($image) === '') {
                 continue;   // cannot be shown lawfully without a credit
             }
@@ -400,11 +424,19 @@ class ImagePlanner
                 $pending[$n] = $image;
             }
         }
-        foreach (array_chunk($pending, max(1, (int) $this->fast['concurrency']), true) as $group) {
+        // Wikimedia answers a burst of parallel downloads with HTTP 429 (its robot policy), and a throttled slide then loses its photograph. A small
+        // batch and a short pause between batches stay inside its limits; the photograph-first mode needs this, the ordinary ladder keeps its speed.
+        $batch = $this->photosOnly ? min(6, max(1, (int) $this->fast['concurrency'])) : max(1, (int) $this->fast['concurrency']);
+        $first = true;
+        foreach (array_chunk($pending, $batch, true) as $group) {
             $left = $deadline - microtime(true);
             if ($left < 0.8) {
                 break;   // no time for another round of downloads: those slides take a fallback
             }
+            if ($this->photosOnly && !$first) {
+                usleep(600_000);
+            }
+            $first = false;
             $timeout = max(1, min((int) $this->fast['download_timeout'], (int) ceil($left)));
             $responses = Http::pool(function (\Illuminate\Http\Client\Pool $pool) use ($group, $timeout) {
                 $calls = [];
@@ -448,7 +480,13 @@ class ImagePlanner
     private function planFast(array $slides, array $content, ?callable $progress): array
     {
         $started = microtime(true);
-        $deadline = $started + (float) $this->fast['stage_seconds'];
+        $seconds = (float) $this->fast['stage_seconds'];
+        if ($this->photosOnly) {
+            // Finding real photographs is the point of this mode, and a cold Wikimedia search for a whole deck takes 5 to 18 s before a single
+            // download starts: the ordinary 20 s stage would end with every slide "not downloaded in time". Only this mode gets the longer stage.
+            $seconds = max($seconds, (float) config('course_presentation_pilot.generation.images.photo_stage_seconds', 75));
+        }
+        $deadline = $started + $seconds;
         if ($this->deadline !== null) {
             $deadline = min($deadline, $this->deadline);
         }
@@ -500,7 +538,8 @@ class ImagePlanner
         if ($todo !== [] && microtime(true) < $deadline - 1.0) {
             $this->search->searches = [];
             $all = array_values(array_unique(array_merge(...array_values($asked))));
-            $ranked = $this->search->rankedMany($all, (int) $this->fast['candidates'], $this->minScore, (string) $this->fast['source'], (int) $this->fast['search_timeout'], (int) $this->fast['concurrency'], $deadline);
+            // The score floor of 2 is unreachable for a one-word query ("bicycle" scores at most 1.5); the stricter word match below stands guard instead.
+            $ranked = $this->search->rankedMany($all, (int) $this->fast['candidates'], $this->photosOnly ? 1.0 : $this->minScore, (string) $this->fast['source'], (int) $this->fast['search_timeout'], (int) $this->fast['concurrency'], $deadline);
             $report['searched'] = count($all);
             $this->stats['searches'] += $report['searched'];
         }
@@ -527,7 +566,8 @@ class ImagePlanner
 
         // 3. The first acceptable picture of each slide: the best-ranked candidate that downloads and passes the byte checks, nothing better sought.
         $tried = [];
-        for ($round = 0; $round < (int) $this->fast['rounds'] && $todo !== []; $round++) {
+        // A photograph-first run tries a third candidate for a slide whose first two were throttled or unreadable.
+        for ($round = 0; $round < max((int) $this->fast['rounds'], $this->photosOnly ? 3 : 0) && $todo !== []; $round++) {
             if (microtime(true) >= $deadline - 0.8) {
                 $report['deadline_reached'] = true;
                 break;
@@ -583,7 +623,7 @@ class ImagePlanner
                 $used[] = (string) $book['source_image_url'];
                 $out[$n] = $book + ['purpose' => $job['visual']['purpose'], 'web_search' => $why];
                 $report['textbook']++;
-            } elseif ($job['spec']) {
+            } elseif ($job['spec'] && !$this->photosOnly) {
                 $out[$n] = $this->diagram($job['spec']) + ['purpose' => $job['visual']['purpose'], 'photo_missing' => $why];
                 $report['diagram']++;
             } else {

@@ -238,7 +238,7 @@ class TeachingMethodProfile
     }
 
     /** The planner's paragraph for the method, or '' for no method (so a default prompt is unchanged). */
-    public static function plannerRule(?string $key): string
+    public static function plannerRule(?string $key, ?array $workflow = null): string
     {
         $p = self::get($key);
         if ($p === null) {
@@ -254,22 +254,24 @@ class TeachingMethodProfile
         $order = array_map(fn ($o) => "{$o[0]} before {$o[1]}", (array) $p['order']);
 
         return "\n- TEACHING METHOD: {$p['label']}. Phases: " . implode(' -> ', $p['phases']) . ". {$p['directive']} For a full-length deck it must contain " . implode(', ', $min)
-            . ' slides; for a concept that has both, put ' . implode('; ', $order) . '. Set "teaching_strategy" to say how the deck follows this method. The chapter text is still the only source of facts.';
+            . ' slides; for a concept that has both, put ' . implode('; ', $order) . '. Set "teaching_strategy" to say how the deck follows this method. The chapter text is still the only source of facts.'
+            . \App\Services\CoursePresentation\PedagogicalWorkflow::rule($workflow, 'planner');
     }
 
     /** One paragraph for the slide-text prompt. */
-    public static function contentRule(?string $key): string
+    public static function contentRule(?string $key, ?array $workflow = null): string
     {
         $p = self::get($key);
 
-        return $p === null ? '' : "\n- TEACHING METHOD: {$p['label']}. {$p['content']}" . (empty($p['markers']) ? '' : ' Across the deck, the written slides must include: ' . implode('; ', array_map(fn ($m) => $m[0] . ' on at least ' . $m[2] . ' slide(s)', (array) $p['markers'])) . '.');
+        return $p === null ? '' : "\n- TEACHING METHOD: {$p['label']}. {$p['content']}" . (empty($p['markers']) ? '' : ' Across the deck, the written slides must include: ' . implode('; ', array_map(fn ($m) => $m[0] . ' on at least ' . $m[2] . ' slide(s)', (array) $p['markers'])) . '.')
+            . \App\Services\CoursePresentation\PedagogicalWorkflow::rule($workflow, 'content');
     }
 
     /** One paragraph for the interaction prompt. */
-    public static function interactionRule(?string $key): string
+    public static function interactionRule(?string $key, ?array $workflow = null): string
     {
         $p = self::get($key);
 
-        return $p === null ? '' : "\n- TEACHING METHOD: {$p['label']}. {$p['interaction']}";
+        return $p === null ? '' : "\n- TEACHING METHOD: {$p['label']}. {$p['interaction']}" . \App\Services\CoursePresentation\PedagogicalWorkflow::rule($workflow, 'interaction');
     }
 }

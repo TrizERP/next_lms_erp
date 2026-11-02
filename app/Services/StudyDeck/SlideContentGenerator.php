@@ -336,6 +336,22 @@ class SlideContentGenerator
         ];
     }
 
+    /**
+     * The stage and outcomes a slide was planned for (pilot workflow only; [] otherwise, so other prompts are unchanged).
+     *
+     * @param array<string,mixed> $plan @param array<string,mixed> $slide @return array<string,mixed>
+     */
+    private function workflowFields(array $plan, array $slide): array
+    {
+        if (!WorkflowRules::active($plan['workflow'] ?? null) || WorkflowRules::stageOf($slide) === null) {
+            return [];
+        }
+        $stage = WorkflowRules::stageOf($slide);
+        $names = array_column((array) $plan['workflow']['stages'], 'name', 'number');
+
+        return ['workflow_stage' => $stage, 'workflow_stage_name' => $names[$stage] ?? null, 'outcome_refs' => WorkflowRules::refsOf($slide)];
+    }
+
     /** @param array<int,array<string,mixed>> $chunk */
     private function prompt(array $context, array $map, array $plan, array $chunk): string
     {
@@ -368,14 +384,14 @@ class SlideContentGenerator
                 'bank_question_attached' => !empty($s['question_ids']),
                 'concepts_to_explain' => $taught,
                 'related_concepts_not_explained_here' => $related,
-            ];
+            ] + $this->workflowFields($plan, $s);
         }
 
         $input = json_encode($work, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
         $outlineText = implode("\n", $outline);
         $words = self::EXPLANATION_WORDS;
         $min = self::MIN_EXPLANATION_WORDS;
-        $methodRule = TeachingMethodProfile::contentRule($plan['teaching_method'] ?? null);
+        $methodRule = TeachingMethodProfile::contentRule($plan['teaching_method'] ?? null, $plan['workflow'] ?? null);
 
         return <<<PROMPT
 Write the slide text for the slides listed under SLIDES TO WRITE. The whole deck is outlined first so you keep the flow; write only the listed slides.

@@ -94,7 +94,7 @@ class SlideHtmlRenderer
                     'question_bank' => $slide['question_ids'] !== [],
                     'h5p_pattern_reference' => $slide['h5p_pattern'] !== null,
                 ],
-            ];
+            ] + $this->workflowFields(empty($map['story_mode']) ? ($plan['workflow'] ?? null) : null, $slide);
         }
 
         $credits = [];
@@ -166,8 +166,51 @@ class SlideHtmlRenderer
                 'concept_slides' => $conceptSlides,
                 'taught_by' => $taughtBy,
                 'concept_questions' => $conceptQuestions,
-            ],
+            ] + $this->workflowBlock($plan['workflow'] ?? null, $deckSlides, $map),
         ];
+    }
+
+    /**
+     * The stage a slide belongs to and the outcomes it addresses (pilot workflow only; [] for every other deck, so their shape is unchanged).
+     *
+     * @param array<string,mixed>|null $workflow @param array<string,mixed> $slide @return array<string,mixed>
+     */
+    private function workflowFields(?array $workflow, array $slide): array
+    {
+        if (!WorkflowRules::active($workflow)) {
+            return [];
+        }
+        $stage = WorkflowRules::stageOf($slide);
+        $names = array_column((array) $workflow['stages'], 'name', 'number');
+
+        return ['workflow_stage' => $stage, 'workflow_stage_name' => $stage !== null ? ($names[$stage] ?? null) : null, 'outcome_refs' => WorkflowRules::refsOf($slide)];
+    }
+
+    /**
+     * What the deck says about its workflow: the method, the stages, the outcomes, and the result of the SAME rules the validator applies
+     * (`validation.validated` is true only when they all passed on these slides). Facts only; nothing here is a claim the rules did not check.
+     *
+     * @param array<string,mixed>|null $workflow @param array<int,array<string,mixed>> $deckSlides @param array<string,mixed> $map
+     * @return array<string,mixed>
+     */
+    private function workflowBlock(?array $workflow, array $deckSlides, array $map): array
+    {
+        if (!WorkflowRules::active($workflow)) {
+            return [];
+        }
+        // A story lesson is built act by act, not from plan slides with stages: its stage order and outcome coverage are NOT validated, and it says so.
+        $validation = empty($map['story_mode'])
+            ? WorkflowRules::summary($workflow, $deckSlides, $map)
+            : ['validated' => false, 'errors' => [], 'outcomes_checked' => false, 'reason' => 'Stage order and outcome coverage are not validated for a branching scenario.'];
+
+        return ['workflow' => [
+            'method' => ['key' => $workflow['method']['key'], 'name' => $workflow['method']['name'], 'source' => $workflow['method']['source'] ?? 'config'],
+            'format' => ['key' => $workflow['format']['key'], 'name' => $workflow['format']['name']],
+            'stages' => array_map(fn ($s) => ['number' => $s['number'], 'name' => $s['name'], 'minutes' => $s['minutes'], 'objective' => $s['objective'], 'outcome' => $s['outcome']], (array) $workflow['stages']),
+            'outcomes' => array_map(fn ($o) => ['ref' => $o['ref'], 'type' => $o['type'], 'description' => $o['description']], WorkflowRules::outcomes($workflow)),
+            'outcomes_note' => $workflow['outcomes_note'] ?? null,
+            'validation' => $validation,
+        ]];
     }
 
     private function cover(array $context, array $c): string

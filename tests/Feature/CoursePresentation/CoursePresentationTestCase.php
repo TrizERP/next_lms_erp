@@ -95,7 +95,14 @@ abstract class CoursePresentationTestCase extends TestCase
         // Draft folders go to a scratch folder of this test run, never beside real drafts or stored decks.
         $this->runDir = 'framework/testing/course-presentation-' . getmypid() . '-' . uniqid();
         config(['course_presentation_pilot.generation.run_dir' => $this->runDir]);
+        // The staged-workflow pilot enforces method/format compatibility on chapter 8592. These suites test the card without it
+        // (the behaviour every other chapter keeps); PedagogicalWorkflow*Test switch it on.
+        if (!$this->workflowPilot) {
+            config(['pedagogical_workflow.scope.chapter_id' => 0]);
+        }
     }
+
+    protected bool $workflowPilot = false;
 
     private function createTables(): void
     {

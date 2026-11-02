@@ -215,6 +215,9 @@ return [
         'images' => [
             'fast' => (bool) env('COURSE_PRESENTATION_FAST_IMAGES', true),
             'stage_seconds' => (int) env('COURSE_PRESENTATION_IMAGE_SECONDS', 20),
+            // The pilot's photograph-first mode (ImagePlanner::photosFirst) searches Wikimedia Commons for every slide, and a cold search of a
+            // whole deck takes 5-18 s before any download starts, so that mode alone gets this longer picture stage.
+            'photo_stage_seconds' => (int) env('COURSE_PRESENTATION_PHOTO_IMAGE_SECONDS', 75),
             'search_timeout' => (int) env('COURSE_PRESENTATION_IMAGE_SEARCH_TIMEOUT', 12),
             'download_timeout' => (int) env('COURSE_PRESENTATION_IMAGE_DOWNLOAD_TIMEOUT', 5),
             'concurrency' => (int) env('COURSE_PRESENTATION_IMAGE_CONCURRENCY', 40),

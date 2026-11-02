@@ -204,14 +204,43 @@ class DraftImageEditor
         if (!$rules['can_add'] && !$rules['can_replace']) {
             throw new DraftImageException($rules['reason'] ?? 'This picture cannot be changed.', 422);
         }
+
+        return $this->candidates($tenant, $chapterId, $run, self::key($n, $node), $deck, $slide, $scene, $query);
+    }
+
+    /** The relevance floor for the pilot's pictures: at least one real keyword hit in the picture's own title, tags or categories. The teacher then looks at each one. */
+    public const PILOT_FLOOR = 1.0;
+
+    /** The pilot chapter's pictures are searched on Wikimedia Commons too (see ConceptImageSearchService::useCommons). */
+    private function isPilot(int $chapterId, int $tenant): bool
+    {
+        return app(PedagogicalWorkflow::class)->appliesToIds($chapterId, $tenant);
+    }
+
+    /**
+     * The candidates for one picture, kept on the server under `$scope` (a draft's run, or a stored deck's content item) and named by an id.
+     * Shared by the draft editor and the stored-deck editor: both offer the same pictures, checked the same way.
+     *
+     * @param array<string,mixed> $deck
+     * @param array<string,mixed> $slide
+     * @param array<string,mixed>|null $scene
+     * @return array{query:string,candidates:array<int,array<string,mixed>>,note:?string}
+     */
+    public function candidates(int $tenant, int $chapterId, string $scope, string $key, array $deck, array $slide, ?array $scene, ?string $query): array
+    {
+        $pilot = $this->isPilot($chapterId, $tenant);
         $service = $this->search ?? app(ConceptImageSearchService::class);
+        if ($pilot) {
+            // A copy: the shared search service is never switched over for anyone else.
+            $service = (clone $service)->useCommons();
+        }
         $query = trim((string) $query) !== '' ? trim((string) $query) : $this->defaultQuery($deck, $slide, $scene, $service);
-        if (!$service->available()) {
+        if (!$service->available() && !$pilot) {
             return ['query' => $query, 'candidates' => [], 'note' => 'Picture search is not available right now. You can upload a picture instead.'];
         }
 
         try {
-            $rows = $service->rankedImagesFor($query, self::CANDIDATES);
+            $rows = $service->rankedImagesFor($query, self::CANDIDATES, $pilot ? self::PILOT_FLOOR : null);
         } catch (\Throwable) {
             return ['query' => $query, 'candidates' => [], 'note' => 'The picture search did not answer. Try again in a moment, or upload a picture instead.'];
         }
@@ -234,11 +263,15 @@ class DraftImageEditor
                 'licence' => $licence,
                 'provider' => (string) ($row['provider'] ?? 'openverse'),
                 'source_url' => (string) ($row['source_url'] ?? ''),
+                'width' => (int) ($row['width'] ?? 0),
+                'height' => (int) ($row['height'] ?? 0),
+                // The words the picture's own title, tags or categories share with the search: the evidence it was listed for.
+                'matches' => $gate->matchEvidence($query, ['title' => (string) ($row['title'] ?? ''), 'tags' => (array) ($row['tags'] ?? [])])['terms'],
             ];
         }
-        Cache::put($this->cacheKey($tenant, $run, self::key($n, $node)), ['query' => $query, 'rows' => $keep], now()->addMinutes(self::CACHE_MINUTES));
+        Cache::put($this->cacheKey($tenant, $scope, $key), ['query' => $query, 'rows' => $keep], now()->addMinutes(self::CACHE_MINUTES));
 
-        return ['query' => $query, 'candidates' => $out, 'note' => $out === [] ? 'No openly licensed picture was found for this search. Change the words, or upload a picture.' : null];
+        return ['query' => $query, 'candidates' => $out, 'note' => $out === [] ? 'No suitable openly licensed photograph was found for this search. Change the words, or upload a picture.' : null, 'suggestions' => $this->suggestions($deck, $slide, $scene)];
     }
 
     private function cacheKey(int $tenant, string $run, string $key): string
@@ -246,9 +279,39 @@ class DraftImageEditor
         return "cp-image-candidates:$tenant:$run:$key";
     }
 
-    /** The title and the concepts it teaches, in the search service's own phrasing. */
+    /**
+     * Ready-made alternatives to the default words: what the slide's picture was planned to show, the slide's title, and the concept it teaches.
+     * Each is a search the teacher can run in one click; the search box stays free for any other words.
+     *
+     * @return array<int,array{label:string,query:string}>
+     */
+    private function suggestions(array $deck, array $slide, ?array $scene): array
+    {
+        $concept = '';
+        foreach ((array) ($scene['concept_ids'] ?? $slide['taught_concept_ids'] ?? $slide['concept_ids'] ?? []) as $id) {
+            if (!empty($deck['concepts'][$id]['name'])) {
+                $concept = (string) $deck['concepts'][$id]['name'];
+                break;
+            }
+        }
+        $out = [];
+        foreach ([['Planned picture', $scene === null ? ($slide['visual']['query'] ?? '') : ''], ['Slide title', $scene['title'] ?? $slide['title'] ?? ''], ['Concept', $concept]] as [$label, $q]) {
+            $q = trim((string) preg_replace('/\s+/', ' ', (string) $q));
+            if ($q !== '' && !in_array(mb_strtolower($q), array_map(fn ($s) => mb_strtolower($s['query']), $out), true)) {
+                $out[] = ['label' => $label, 'query' => mb_substr($q, 0, 200)];
+            }
+        }
+
+        return $out;
+    }
+
+    /** The slide's own picture plan when it has one (concrete: "cricket ball"), else its title and the concepts it teaches, in the search service's phrasing. */
     private function defaultQuery(array $deck, array $slide, ?array $scene, ConceptImageSearchService $service): string
     {
+        $planned = $scene === null ? trim((string) ($slide['visual']['query'] ?? '')) : '';
+        if ($planned !== '') {
+            return mb_substr($planned, 0, 200);
+        }
         $names = [];
         foreach ((array) ($scene['concept_ids'] ?? $slide['taught_concept_ids'] ?? $slide['concept_ids'] ?? []) as $id) {
             if (!empty($deck['concepts'][$id]['name'])) {
@@ -279,13 +342,25 @@ class DraftImageEditor
         if (!$rules['can_add'] && !$rules['can_replace']) {
             throw new DraftImageException($rules['reason'] ?? 'This picture cannot be changed.', 422);
         }
-        $kept = Cache::get($this->cacheKey($tenant, $run, self::key($n, $node)));
+        return $this->apply($chapterId, $tenant, $run, $n, $node, $userId, 'search', $this->pick($tenant, $chapterId, $run, self::key($n, $node), $candidateId));
+    }
+
+    /**
+     * What turns a candidate the search offered into the picture's record. Refuses at once when the candidate is no longer on the server's list.
+     * Shared by the draft editor and the stored-deck editor.
+     *
+     * @return Closure(?array<string,mixed> $old):array<string,mixed>
+     * @throws DraftImageException
+     */
+    public function pick(int $tenant, int $chapterId, string $scope, string $key, string $candidateId): Closure
+    {
+        $kept = Cache::get($this->cacheKey($tenant, $scope, $key));
         $row = is_array($kept) ? ($kept['rows'][$candidateId] ?? null) : null;
         if (!is_array($row)) {
             throw new DraftImageException('That picture is no longer on the list. Search again and choose one.', 422);
         }
 
-        return $this->apply($chapterId, $tenant, $run, $n, $node, $userId, 'search', function (?array $old) use ($row, $tenant, $chapterId, $kept): array {
+        return function (?array $old) use ($row, $tenant, $chapterId, $kept): array {
             // The teacher looked at the picture and chose it; the same checks a found picture faces still apply (licence, credit, a real
             // download, enough detail). The search words stand in for "what it shows", so the choice is not refused as off-topic.
             $pick = $row + ['license' => $row['license'] ?? '', 'image_url' => $row['url'], 'shows' => (string) ($kept['query'] ?? ''), 'accept_soft' => true];
@@ -296,7 +371,7 @@ class DraftImageEditor
             } catch (\RuntimeException $e) {
                 throw new DraftImageException('This picture could not be fetched: ' . $e->getMessage() . '. Choose another.', 422);
             }
-        });
+        };
     }
 
     /**
@@ -306,7 +381,18 @@ class DraftImageEditor
      */
     public function replaceFromUpload(int $chapterId, int $tenant, string $run, int $n, string $bytes, string $fileName, ?string $credit, ?string $alt, int $userId, ?string $node = null): array
     {
-        return $this->apply($chapterId, $tenant, $run, $n, $node, $userId, 'upload', function (?array $old) use ($bytes, $fileName, $credit, $alt, $tenant, $chapterId): array {
+        return $this->apply($chapterId, $tenant, $run, $n, $node, $userId, 'upload', $this->upload($tenant, $chapterId, $bytes, $fileName, $credit, $alt));
+    }
+
+    /**
+     * What turns an uploaded file into the picture's record: the file is checked and stored in the picture store, and its record names the
+     * teacher's credit and no source. Shared by the draft editor and the stored-deck editor.
+     *
+     * @return Closure(?array<string,mixed> $old):array<string,mixed>
+     */
+    public function upload(int $tenant, int $chapterId, string $bytes, string $fileName, ?string $credit, ?string $alt): Closure
+    {
+        return function (?array $old) use ($bytes, $fileName, $credit, $alt, $tenant, $chapterId): array {
             $store = $this->images();
             try {
                 $info = $store->inspect($bytes);
@@ -347,7 +433,7 @@ class DraftImageEditor
                 'purpose' => (string) ($old['purpose'] ?? ''),
                 'source_kind' => 'teacher_upload',
             ];
-        });
+        };
     }
 
     /**

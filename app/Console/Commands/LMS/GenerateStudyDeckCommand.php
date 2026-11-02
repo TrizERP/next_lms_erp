@@ -44,6 +44,7 @@ class GenerateStudyDeckCommand extends Command
         {--require-every-slide-image : every slide must carry a readable picture or diagram}
         {--out= : bundle directory (default storage/app/study-deck/chapter-<id>)}
         {--teaching-method= : shape the deck for a teaching method (explicit_instruction, inquiry_based, problem_based, project_based, experiential, collaborative, socratic, flipped_classroom, differentiated_mastery, gamified); none keeps the default deck}
+        {--workflow-file= : JSON written by PedagogicalWorkflow::generationContext for the pilot chapter; adds the method\'s staged workflow to the prompts (refused for any other chapter)}
         {--template= : build the lesson with a reusable template instead of the slide planner (story_branching_scenario: a story with an act per topic, in the study-deck story player)}
         {--pictures-from= : with --template: a finished story bundle (a directory with deck.json and story.json); its text is NOT rewritten, and the scenes without a picture are given the best relevant ones (the picture pass). The result goes to --out; the source bundle is not changed}
         {--picture-plan-file= : with --pictures-from: a JSON file of picture plans written by a person who read the scenes ({"a1/s3": {"image_queries": [...], "show": "what the photograph must show", "picture_caption": "what to notice", "process_step": "evidence", "priority": 10}}). It is the whole plan: no model call is made to plan pictures}
@@ -131,8 +132,22 @@ class GenerateStudyDeckCommand extends Command
             if ($method !== null && !in_array($method, TeachingMethodProfile::keys(), true)) {
                 throw new RuntimeException('--teaching-method must be one of: ' . implode(', ', TeachingMethodProfile::keys()) . '.');
             }
+            $workflow = null;
+            if (($workflowFile = (string) $this->option('workflow-file')) !== '') {
+                $workflow = json_decode((string) @file_get_contents($workflowFile), true);
+                if (!is_array($workflow) || $method === null || ($workflow['method']['key'] ?? null) !== $method
+                    || (int) ($workflow['chapter_id'] ?? 0) !== $chapterId
+                    || !app(\App\Services\CoursePresentation\PedagogicalWorkflow::class)->appliesToIds($chapterId, (int) $tenant)) {
+                    throw new RuntimeException('--workflow-file is valid only for the pilot chapter and the teaching method it was written for.');
+                }
+                // The workflow was written for one format; it must not steer the other one.
+                $isStory = $this->option('template') === \App\Services\StudyDeck\Story\StoryTemplate::KEY;
+                if (($workflow['format']['key'] ?? null) !== ($isStory ? 'branching_scenario' : 'interactive_slides')) {
+                    throw new RuntimeException('--workflow-file was written for a different content format than this run builds.');
+                }
+            }
             $template = $this->option('template') ?: null;
-            if ($template !== null && $template !== \App\Services\StudyDeck\Story\StoryTemplate::KEY) {
+            if ($template !== null && $template !==\App\Services\StudyDeck\Story\StoryTemplate::KEY) {
                 throw new RuntimeException('--template must be: ' . \App\Services\StudyDeck\Story\StoryTemplate::KEY . '.');
             }
             if ($template !== null && $replay) {
@@ -151,6 +166,7 @@ class GenerateStudyDeckCommand extends Command
                 // Finished acts are kept between runs of the same chapter, so a failure late in the story is resumed, not redone.
                 'story_checkpoint_dir' => $template !== null ? storage_path('app/study-deck/story-checkpoints/chapter-' . $chapterId . '-school-' . $tenant) : null,
                 'teaching_method' => $method,
+                'workflow' => $workflow,
                 'target_seconds' => (int) $this->option('target-seconds'),
                 'fast_images' => $this->option('fast-images') ? array_filter((array) config('course_presentation_pilot.generation.images', []), fn ($v) => $v !== null) : null,
                 'started_at' => $startedAt,

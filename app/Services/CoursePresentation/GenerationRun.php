@@ -300,6 +300,30 @@ class GenerationRun
         $this->write($status);
     }
 
+    /**
+     * Puts the chapter's stored learning outcomes and competencies into the workflow context. A read that fails is not hidden: the list is
+     * left empty and the context says so, so the deck reports "not checked" (and a warning) rather than passing.
+     *
+     * @param array<string,mixed> $context @return array<string,mixed>
+     */
+    private function withStoredOutcomes(PedagogicalWorkflow $workflows, array $context, int $chapterId, int $tenant): array
+    {
+        try {
+            $loader = app(SourceLoader::class);
+            $chapter = $loader->chapter($chapterId, $tenant);
+            if ($chapter === null) {
+                return $workflows->withOutcomes($context, [], 'The chapter could not be read, so its learning outcomes and competencies were not loaded; outcome coverage is not checked.');
+            }
+            $rows = (new SourceRegistry((int) config('course_presentation_pilot.min_text_chars', 2000)))->acceptedOutcomes($chapter, $loader->load($chapter));
+
+            return $workflows->withOutcomes($context, $rows);
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('Course presentation: outcomes could not be loaded', ['chapter' => $chapterId, 'error' => $e->getMessage()]);
+
+            return $workflows->withOutcomes($context, [], 'The learning outcomes and competencies could not be loaded; outcome coverage is not checked.');
+        }
+    }
+
     /** Runs the pipeline. Never throws: a failure becomes the run's state. */
     public function execute(int $chapterId, int $tenant, string $run): void
     {
@@ -340,6 +364,18 @@ class GenerationRun
         try {
             // The story format is the same pipeline built with the story template; the teaching method shapes the story.
             $args = ['chapter' => $chapterId, '--tenant' => $tenant, '--out' => $bundle, '--teaching-method' => $status['method']];
+            // Pedagogical workflow pilot: only the one configured chapter; every other chapter's arguments stay as they were.
+            $workflows = app(PedagogicalWorkflow::class);
+            if ($workflows->appliesToIds($chapterId, $tenant)) {
+                $context = $workflows->generationContext((string) $status['method'], (string) ($status['format'] ?? ''));
+                if ($context !== null) {
+                    // The chapter's own stored outcomes and competencies, as the pre-flight already counts them; none are invented.
+                    $context = $this->withStoredOutcomes($workflows, $context, $chapterId, $tenant);
+                    $file = $this->runDir($chapterId, $run) . '/workflow.json';
+                    file_put_contents($file, json_encode($context, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
+                    $args['--workflow-file'] = $file;
+                }
+            }
             if (($status['format'] ?? '') === 'branching_scenario') {
                 $args['--template'] = \App\Services\StudyDeck\Story\StoryTemplate::KEY;
             } else {
@@ -396,8 +432,16 @@ class GenerationRun
             // "Ready" means the draft is on disk and can be opened again, not that the model answered.
             $status['state'] = 'failed';
             $status['error'] = 'The draft was generated but could not be read back from where it was saved, so it was not offered for review.';
+        } elseif ($code === 0 && is_array($report) && !empty($report['ok']) && !empty($args['--workflow-file'] ?? null) && ($status['format'] ?? '') === 'interactive_slides' && empty($report['workflow']['validated'])) {
+            // A slides draft made with the staged workflow is offered only when the deck itself proves its stage order and outcome coverage.
+            $status['state'] = 'failed';
+            $status['error'] = 'The generated deck did not pass the workflow validation: ' . implode(' ', array_slice((array) ($report['workflow']['errors'] ?? ['it was not validated.']), 0, 3));
         } elseif ($code === 0 && is_array($report) && !empty($report['ok']) && !empty($report['teaching_method']['followed'])) {
             $status['state'] = 'ready';
+            if (!empty($report['workflow'])) {
+                // What was checked, never more: a story lesson reports validated=false here.
+                $status['workflow'] = array_intersect_key($report['workflow'], array_flip(['validated', 'stage_count', 'outcomes_checked', 'missing_outcomes', 'reason']));
+            }
             $status['images'] = array_diff_key($pictures ?? [], ['ids' => 1]);
             $status['report'] = [
                 'slides' => (int) ($report['stats']['slides'] ?? 0),
