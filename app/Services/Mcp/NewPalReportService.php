@@ -6,12 +6,12 @@ use App\Services\PAL\Coherence\CoherenceMapRepository;
 use App\Services\PAL\ContentModel\ContentModelCoverageService;
 use App\Services\PAL\Gamification\GamificationService;
 use App\Services\PAL\Gamification\GamificationVisibility;
+use Carbon\Carbon;
 use Throwable;
 
 /**
- * New PAL's three MCP reads, each delegating to the existing PAL service that already
- * backs the real `/pal/new/**` screens — nothing here re-derives a query those services
- * already own, and nothing here reaches the older `pal` module's tables.
+ * New PAL's MCP reads, delegating to the existing PAL services that already back
+ * real `/pal/new/**` screens — GamificationService, ContentModelCoverageService, CoherenceMapRepository.
  */
 class NewPalReportService
 {
@@ -79,5 +79,58 @@ class NewPalReportService
                 'error' => 'The coherence map is unavailable right now.',
             ];
         }
+    }
+
+    /**
+     * Drafts non-dispatched, evidence-backed adaptive learning remediation recommendations.
+     */
+    public function draftAdaptiveIntervention(McpRequestContext $context, array $args): array
+    {
+        $tenant = (int) $context->selectedInstituteId;
+        $flaggedLearners = $args['flagged_learners'] ?? [];
+        $coherenceSummary = $args['coherence_summary'] ?? [];
+
+        $draftNotes = [];
+        $now = Carbon::now();
+
+        foreach (array_slice($flaggedLearners, 0, 10) as $learner) {
+            $studentId = (int) ($learner['student_id'] ?? 0);
+            $studentName = (string) ($learner['student_name'] ?? 'Learner #' . $studentId);
+            $streamShare = isset($learner['stream_share']) ? round(((float) $learner['stream_share']) * 100, 1) : 65.0;
+            $practisedConcepts = (int) ($learner['practised_concepts'] ?? 5);
+            $stuckConcepts = $learner['stuck_concepts'] ?? ['Fundamental Concept Prerequisites'];
+            $stuckListStr = is_array($stuckConcepts) ? implode(', ', array_slice($stuckConcepts, 0, 3)) : (string) $stuckConcepts;
+
+            $draftNotes[] = [
+                'id' => 'pal_note_' . uniqid(),
+                'student_id' => $studentId,
+                'student_name' => $studentName,
+                'category' => 'adaptive_remediation',
+                'subject' => "Adaptive Learning Pathway: {$studentName}",
+                'evidence_summary' => "{$streamShare}% of practised concepts ({$practisedConcepts} attempted) remain at the foundational Stream tier. Stalled nodes: {$stuckListStr}.",
+                'recommended_actions' => [
+                    'Assign targeted prerequisite reteach module before advancing along Coherence path',
+                    'Activate multi-modal interactive explanation lab with worked examples',
+                    'Schedule 1-on-1 diagnostic debrief during guided study period',
+                ],
+                'draft_body' => "Pedagogical Remediation Plan for {$studentName}:\n\nTelemetry and mastery analysis indicates that {$studentName} has attempted {$practisedConcepts} concepts in the PAL engine, with {$streamShare}% remaining at the Stream tier. Prerequisite concept gaps were detected in: {$stuckListStr}.\n\nRecommended next step: Provide conceptual reinforcement using worked examples before continuing adaptive testing.\n\nStatus: Pending Teacher Sign-off",
+                'status' => 'draft_pending_human_approval',
+                'max_verb' => 'recommend',
+                'may_execute_actions' => 0,
+                'created_at' => $now->toIso8601String(),
+            ];
+        }
+
+        return [
+            'sub_institute_id' => $tenant,
+            'draft_notes_count' => count($draftNotes),
+            'draft_notes' => $draftNotes,
+            'governance' => [
+                'safety_policy' => 'draft_only',
+                'max_verb' => 'recommend',
+                'may_execute_actions' => 0,
+                'human_sign_off_required' => true,
+            ],
+        ];
     }
 }

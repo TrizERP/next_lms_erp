@@ -45,6 +45,9 @@ use App\Mcp\Tools\ConsentRecordsTool;
 use App\Mcp\Tools\ConsentSummaryTool;
 use App\Mcp\Tools\CurriculumPlanningOutcomesTool;
 use App\Mcp\Tools\CurriculumPlanningStatusTool;
+use App\Mcp\Tools\CurriculumPlanningLessonPaceTool;
+use App\Mcp\Tools\CurriculumPlanningDraftAlignmentTool;
+use App\Mcp\Tools\NewPalDraftAdaptiveInterventionTool;
 use App\Mcp\Tools\DocumentTemplateVersionsTool;
 use App\Mcp\Tools\DocumentTemplatesListTool;
 use App\Mcp\Tools\EngagementDraftInterventionTool;
@@ -175,7 +178,9 @@ class McpServiceProvider extends ServiceProvider
         // The five LMS + PAL modules. `LmsCoursesTool`/`LmsActivitiesTool` above already
         // serve Teach/Learn — no new tool class for that module. The nine below are new.
         CurriculumPlanningStatusTool::class,
+        CurriculumPlanningLessonPaceTool::class,
         CurriculumPlanningOutcomesTool::class,
+        CurriculumPlanningDraftAlignmentTool::class,
         EngagementStudentSummaryTool::class,
         EngagementStudentsNeedingAttentionTool::class,
         EngagementDraftInterventionTool::class,
@@ -184,6 +189,7 @@ class McpServiceProvider extends ServiceProvider
         NewPalGamificationSummaryTool::class,
         NewPalContentModelStatusTool::class,
         NewPalCoherenceGapsTool::class,
+        NewPalDraftAdaptiveInterventionTool::class,
 
         // Exam & Assessment — online exams, homework, assignments, worksheets and
         // projects. `HomeworkListTool` above already covers Homework/Homework
