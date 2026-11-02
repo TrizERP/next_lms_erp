@@ -343,7 +343,7 @@ class MenuRightsController extends Controller
                     'id' => null,
                     'name' => 'Excel Import/Export',
                     'type' => 'popup',
-                    'url' => env('APP_URL') . 'excel_upload/export_xlsx.php?sub_institute_iderp=' . $sub_institute_id,
+                    'url' => env('APP_URL') . 'excel_upload/export_xlsx.php?sub_institute_iderp=' . $sub_institute_id . '&xk=' . \App\Support\ExcelUploadLink::key((int) $sub_institute_id),
                 ];
 
                 $children[] = [
