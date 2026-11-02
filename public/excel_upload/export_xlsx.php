@@ -1,5 +1,6 @@
 <?php
-session_start();
+require_once __DIR__ . '/../../bootstrap/excel_upload_guard.php';
+if (session_status() !== PHP_SESSION_ACTIVE) { session_start(); }
 
 if (isset($_REQUEST['sub_institute_iderp']) && $_REQUEST['sub_institute_iderp'] != '') {
     $_SESSION['SUB_INSTITUTE_ID'] = $_REQUEST['sub_institute_iderp'];

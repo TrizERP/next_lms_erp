@@ -1,7 +1,8 @@
 <?php
+require_once __DIR__ . '/../../bootstrap/excel_upload_guard.php';
 include('db.php');
 require_once('PHPExcel.php');
-session_start();
+if (session_status() !== PHP_SESSION_ACTIVE) { session_start(); }
 
 $sub_institute_id = $_REQUEST['sub_institute_id'];
 $syear = $_REQUEST['syear'];
