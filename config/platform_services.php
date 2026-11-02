@@ -121,8 +121,20 @@ return [
         'transport'     => ['label' => 'Transport',     'group' => 'Operations',     'icon' => 'bus',                    'description' => 'Routes, vehicles, drivers and trip tracking.'],
         'inventory'     => ['label' => 'Inventory',     'group' => 'Operations',     'icon' => 'package',                'description' => 'Stock, purchase and issue of school material.'],
         'communication' => ['label' => 'Communication', 'group' => 'Administration', 'icon' => 'megaphone',              'description' => 'Circulars, campaigns and parent messaging.'],
+        'inward_outward' => ['label' => 'Inward Outward', 'group' => 'Administration', 'icon' => 'mail', 'description' => 'Letters, parcels and documents received and dispatched by the school office.'],
+        'alumni'        => ['label' => 'Alumni Management', 'group' => 'Administration', 'icon' => 'graduation-cap', 'description' => 'Former students: verification, mentoring, events and giving.'],
+        'document_templates' => ['label' => 'Document Templates', 'group' => 'Administration', 'icon' => 'file-text', 'description' => 'Printable certificates, ID cards, fee documents and letters designed for the school.'],
+        'utility'       => ['label' => 'Utility', 'group' => 'Administration', 'icon' => 'wrench', 'description' => 'Year rollover, student transfer and custom modules.'],
+        'complaint'     => ['label' => 'Complaint', 'group' => 'Administration', 'icon' => 'message-square-warning', 'description' => 'Complaints received from parents and others, and their resolution.'],
+        'visitor_management' => ['label' => 'Visitor Management', 'group' => 'Administration', 'icon' => 'door-open', 'description' => 'Visitors arriving at the school, who they meet and when they leave.'],
+        'ptm'           => ['label' => 'PTM', 'group' => 'Academics', 'icon' => 'users-round', 'description' => 'Parent-teacher meeting slots, bookings and attendance.'],
+        'consent'       => ['label' => 'Consent', 'group' => 'Administration', 'icon' => 'file-signature', 'description' => 'Consents collected from students and parents, accountable or not.'],
+        'petty_cash'    => ['label' => 'Petty Cash', 'group' => 'Administration', 'icon' => 'wallet', 'description' => 'Day-to-day cash expenses recorded against petty cash heads.'],
+        'timetable'     => ['label' => 'Timetable & Scheduling', 'group' => 'Academics', 'icon' => 'calendar-clock',         'description' => 'Class timetables, teacher workloads and proxy substitutions.'],
         'reports'       => ['label' => 'Reports',       'group' => 'Administration', 'icon' => 'bar-chart-3',            'description' => 'Scheduled reports, exports and statutory returns.'],
         'compliance'    => ['label' => 'Compliance',    'group' => 'Administration', 'icon' => 'shield-check',           'description' => 'Documents, accreditation evidence and retention.'],
+        'mobile-apps'   => ['label' => 'Users Mobile Apps', 'group' => 'Operations', 'icon' => 'smartphone',            'description' => 'The parent, student and teacher mobile apps.'],
+        'mobile_apps'   => ['label' => 'Users Mobile Apps', 'group' => 'Operations', 'icon' => 'smartphone',            'description' => 'The parent, student and teacher mobile apps.'],
 
         // People & Competency
         'organization'     => ['label' => 'Organization',     'group' => 'People', 'icon' => 'building-2',     'description' => 'Departments, headcount and organization structure.'],
@@ -205,6 +217,7 @@ return [
         // Hostel
         'hostel.allocation' => ['label' => 'Room allocation',   'description' => 'Rooms, beds and occupancy.'],
         'hostel.mess'       => ['label' => 'Mess',              'description' => 'Menu, attendance and mess charges.'],
+        'hostel.visitor'    => ['label' => 'Hostel visitor',    'description' => 'Visitors meeting hostel residents.'],
         'hostel.gate_pass'  => ['label' => 'Hostel gate pass',  'description' => 'Leaving and returning to the hostel.'],
 
         // Transport
@@ -216,6 +229,43 @@ return [
         'inventory.stock'    => ['label' => 'Stock',    'description' => 'Items, quantities and reorder levels.'],
         'inventory.purchase' => ['label' => 'Purchase', 'description' => 'Indents, purchase orders and receipt of goods.'],
         'inventory.issue'    => ['label' => 'Issue',    'description' => 'Material issued to a person or department.'],
+
+        // Inward Outward
+        'inward_outward.inward'  => ['label' => 'Inward',  'description' => 'Letters, parcels and documents received.'],
+        'inward_outward.outward' => ['label' => 'Outward', 'description' => 'Letters, parcels and documents dispatched.'],
+
+        // Alumni
+        'alumni.profile'     => ['label' => 'Alumni record',    'description' => 'A former student on the alumni register and its verification.'],
+        'alumni.opportunity' => ['label' => 'Opportunity',      'description' => 'Jobs and internships posted by or for alumni.'],
+        'alumni.donation'    => ['label' => 'Donation',         'description' => 'Gifts and pledges from alumni and their verification.'],
+        'alumni.event'       => ['label' => 'Event',            'description' => 'Alumni events and their registrations.'],
+        'alumni.campaign'    => ['label' => 'Campaign',         'description' => 'Messages and campaigns sent to alumni.'],
+
+        // Document Templates
+        'document_templates.template' => ['label' => 'Template', 'description' => 'A printable document template and its status.'],
+
+        // Utility
+        'utility.rollover'      => ['label' => 'Year rollover',  'description' => 'Moving students and data into the next academic year.'],
+        'utility.custom_module' => ['label' => 'Custom module',  'description' => 'Modules and tables created through the custom module builder.'],
+
+        // Complaint
+        'complaint.entry' => ['label' => 'Complaint entry', 'description' => 'A complaint logged and its recorded resolution.'],
+
+        // Visitor Management
+        'visitor_management.visit' => ['label' => 'Visitor visit', 'description' => 'A visitor checked in to meet someone, and their exit.'],
+
+        // PTM
+        'ptm.booking' => ['label' => 'PTM booking', 'description' => 'Parent bookings for a meeting slot and whether they attended.'],
+
+        // Consent
+        'consent.entry' => ['label' => 'Consent entry', 'description' => 'Consents recorded against a student.'],
+
+        // Petty Cash
+        'petty_cash.entry' => ['label' => 'Expense entry', 'description' => 'Cash expenses and their bills.'],
+
+        // Timetable
+        'timetable.scheduling' => ['label' => 'Class & Faculty Timetable', 'description' => 'Period scheduling, teacher allocations and clash detection.'],
+        'timetable.proxy'      => ['label' => 'Proxy & Substitution',     'description' => 'Daily absent teacher substitutions and proxy notices.'],
 
         // Communication
         'communication.circular' => ['label' => 'Circular',         'description' => 'School-wide or class-wide announcements.'],
@@ -240,6 +290,15 @@ return [
         // are catalogue and published-material components; this one is the
         // submission/engagement signal blended alongside them.
         'lms.activity'                     => ['label' => 'Learning activity',    'description' => 'Homework submission and content-usage signals.'],
+
+        // Mobile Apps
+        'mobile-apps.notifications' => ['label' => 'Push Notifications', 'description' => 'Automated push alerts to Parent, Student and Teacher apps.'],
+        'mobile-apps.device_sync'   => ['label' => 'App Sync & Device Tokens', 'description' => 'Mobile token registration, active session sync, and version checks.'],
+        'mobile-apps.digilocker'    => ['label' => 'Daily Diary & Timeline Digest', 'description' => 'Periodic daily digest of attendance, homework, and fee dues.'],
+
+        'mobile_apps.notifications' => ['label' => 'Push Notifications', 'description' => 'Automated push alerts to Parent, Student and Teacher apps.'],
+        'mobile_apps.device_sync'   => ['label' => 'App Sync & Device Tokens', 'description' => 'Mobile token registration, active session sync, and version checks.'],
+        'mobile_apps.digilocker'    => ['label' => 'Daily Diary & Timeline Digest', 'description' => 'Periodic daily digest of attendance, homework, and fee dues.'],
     ],
 
     /*
@@ -684,6 +743,16 @@ return [
             'description' => 'Finds enquiries past their follow-up date and raises the reminder.',
             'schedule' => ['minute' => '0', 'hour' => '9', 'day' => '*', 'month' => '*', 'day_of_week' => '*'],
         ],
+        'admissions.registration.pending_review' => [
+            'label' => 'Scan for pending registration reviews',
+            'description' => 'Finds submitted registration forms awaiting counsellor verification or interaction slot.',
+            'schedule' => ['minute' => '15', 'hour' => '10', 'day' => '*', 'month' => '*', 'day_of_week' => '1-6'],
+        ],
+        'admissions.confirmation.seat_allotment_sync' => [
+            'label' => 'Synchronize confirmed admissions with student records',
+            'description' => 'Verifies newly confirmed admissions have corresponding student roll entries generated.',
+            'schedule' => ['minute' => '0', 'hour' => '18', 'day' => '*', 'month' => '*', 'day_of_week' => '*'],
+        ],
         'admissions.application.document_chase' => [
             'label' => 'Chase missing application documents',
             'description' => 'Not yet available. Document tracking is per enrolled student, not per application.',
@@ -737,6 +806,16 @@ return [
             'label' => 'Remind teachers of pending marks',
             'description' => 'Reports exams already held that have no marks entered yet. It does not send reminders to teachers.',
             'schedule' => ['minute' => '0', 'hour' => '16', 'day' => '*', 'month' => '*', 'day_of_week' => '1-5'],
+        ],
+        'examination.schedule.upcoming_digest' => [
+            'label' => 'Upcoming exams digest',
+            'description' => 'Reports exams dated in the next 7 days, with the subjects and standards they cover. It does not send notices.',
+            'schedule' => ['minute' => '0', 'hour' => '8', 'day' => '*', 'month' => '*', 'day_of_week' => '1-6'],
+        ],
+        'examination.marks.approval_pending' => [
+            'label' => 'Scan marks awaiting approval',
+            'description' => 'Reports exams already held whose marks are entered but not yet approved (locked) for a standard and subject. It does not approve anything.',
+            'schedule' => ['minute' => '30', 'hour' => '17', 'day' => '*', 'month' => '*', 'day_of_week' => '1-5'],
         ],
         'examination.result.recompute' => [
             'label' => 'Recompute pending results',
@@ -836,6 +915,16 @@ return [
         ],
 
         // Front desk
+        'front_desk.visitor.daily_digest' => [
+            'label' => 'Daily front desk visitor digest',
+            'description' => 'Reports how many entries were recorded in the front desk register today and how many have no out time yet. It does not send anything.',
+            'schedule' => ['minute' => '0', 'hour' => '17', 'day' => '*', 'month' => '*', 'day_of_week' => '1-6'],
+        ],
+        'front_desk.visitor.monthly_total' => [
+            'label' => 'Previous month front desk visitor total',
+            'description' => 'Reports front desk register entries of the previous calendar month split by visitor type. It does not change anything.',
+            'schedule' => ['minute' => '30', 'hour' => '9', 'day' => '1', 'month' => '*', 'day_of_week' => '*'],
+        ],
         'front_desk.call_log.follow_up_scan' => [
             'label' => 'Scan for pending call follow-ups',
             'description' => 'Not yet available. Calls are not logged with a call-back promise.',
@@ -861,6 +950,21 @@ return [
         ],
 
         // Hostel
+        'hostel.visitor.daily_digest' => [
+            'label' => 'Daily hostel visitor digest',
+            'description' => 'Reports how many visitors were recorded today and how many have no out time yet. It does not send anything.',
+            'schedule' => ['minute' => '0', 'hour' => '19', 'day' => '*', 'month' => '*', 'day_of_week' => '*'],
+        ],
+        'hostel.visitor.open_visits_scan' => [
+            'label' => 'Scan visitors never checked out',
+            'description' => 'Reports visitors from earlier days with no out time recorded. It does not change any visit.',
+            'schedule' => ['minute' => '0', 'hour' => '9', 'day' => '*', 'month' => '*', 'day_of_week' => '*'],
+        ],
+        'hostel.allocation.occupancy_scan' => [
+            'label' => 'Hostel room occupancy summary',
+            'description' => 'Reports how many residents are allocated and how many rooms are in use against all rooms, for the latest academic year. It does not change any allocation.',
+            'schedule' => ['minute' => '0', 'hour' => '8', 'day' => '*', 'month' => '*', 'day_of_week' => '1'],
+        ],
         'hostel.mess.monthly_billing' => [
             'label' => 'Raise monthly mess bills',
             'description' => 'Not yet available. No mess charge or bill is recorded.',
@@ -875,6 +979,21 @@ return [
         ],
 
         // Transport
+        'transport.vehicle.capacity_scan' => [
+            'label' => 'Scan vehicles loaded beyond their seats',
+            'description' => 'Reports vehicles whose morning or evening riders in the latest academic year exceed their sitting capacity. It does not move any student.',
+            'schedule' => ['minute' => '0', 'hour' => '8', 'day' => '*', 'month' => '*', 'day_of_week' => '1'],
+        ],
+        'transport.route.setup_scan' => [
+            'label' => 'Scan routes with no stop or no vehicle',
+            'description' => 'Reports routes of the latest academic year that have no stops mapped or no vehicle mapped. It does not change any route.',
+            'schedule' => ['minute' => '15', 'hour' => '8', 'day' => '*', 'month' => '*', 'day_of_week' => '1'],
+        ],
+        'transport.route.mapping_summary' => [
+            'label' => 'Transport mapping summary',
+            'description' => 'Reports how many students are mapped to transport and how many vehicles are in use, for the latest academic year. It does not change any mapping.',
+            'schedule' => ['minute' => '0', 'hour' => '9', 'day' => '1', 'month' => '*', 'day_of_week' => '*'],
+        ],
         'transport.vehicle.document_expiry_scan' => [
             'label' => 'Scan vehicle documents for expiry',
             'description' => 'Not yet available. Vehicle fitness, insurance and permit dates are not recorded.',
@@ -889,6 +1008,21 @@ return [
         ],
 
         // Inventory
+        'inventory.purchase.pending_requisitions' => [
+            'label' => 'Scan requisitions pending approval',
+            'description' => 'Reports requisitions still pending for more than 7 days. It does not approve or remind anyone.',
+            'schedule' => ['minute' => '0', 'hour' => '9', 'day' => '*', 'month' => '*', 'day_of_week' => '1-6'],
+        ],
+        'inventory.purchase.pending_receipts' => [
+            'label' => 'Scan purchase orders with items still to receive',
+            'description' => 'Reports receipt entries that still show a pending quantity. It does not change any receipt.',
+            'schedule' => ['minute' => '15', 'hour' => '9', 'day' => '*', 'month' => '*', 'day_of_week' => '1'],
+        ],
+        'inventory.issue.defective_open' => [
+            'label' => 'Scan defective items not yet received back',
+            'description' => 'Reports defective items given out for repair or replacement that have no received date, and how many are past the estimated date. It does not change any item.',
+            'schedule' => ['minute' => '30', 'hour' => '9', 'day' => '*', 'month' => '*', 'day_of_week' => '1'],
+        ],
         'inventory.stock.reorder_scan' => [
             'label' => 'Scan stock for reorder',
             'description' => 'Not yet available. Current stock is not tracked against a reorder level.',
@@ -906,6 +1040,21 @@ return [
             'label' => 'Reconcile delivery receipts',
             'description' => 'Pulls delivery status back from the SMS and WhatsApp providers.',
             'schedule' => ['minute' => '*/30', 'hour' => '*', 'day' => '*', 'month' => '*', 'day_of_week' => '*'],
+        ],
+        'communication.circular.scheduled_publish' => [
+            'label' => 'Publish scheduled circulars and announcements',
+            'description' => 'Scans and releases pending circulars and official school notices due for publishing today.',
+            'schedule' => ['minute' => '0', 'hour' => '8', 'day' => '*', 'month' => '*', 'day_of_week' => '1-6'],
+        ],
+        'communication.campaign.delivery_failure_alert' => [
+            'label' => 'Scan failed broadcasts and gateway alerts',
+            'description' => 'Monitors undelivered WhatsApp and SMS messages from the last 24 hours and prepares delivery failure report.',
+            'schedule' => ['minute' => '0', 'hour' => '17', 'day' => '*', 'month' => '*', 'day_of_week' => '*'],
+        ],
+        'communication.message.unanswered_inquiry_scan' => [
+            'label' => 'Scan for unanswered parent messages and feedback',
+            'description' => 'Audits parent feedback and inquiries awaiting school response past 24 hours.',
+            'schedule' => ['minute' => '30', 'hour' => '10', 'day' => '*', 'month' => '*', 'day_of_week' => '1-6'],
         ],
 
         // Reports
@@ -931,6 +1080,233 @@ return [
             'description' => 'Not yet available. No retention periods are defined for records.',
             'schedule' => ['minute' => '0', 'hour' => '3', 'day' => '1', 'month' => '*', 'day_of_week' => '*'],
             'disabled_by_default' => true,
+        ],
+
+        // Inward Outward
+        'inward_outward.inward.daily_register_digest' => [
+            'label' => 'Daily inward and outward register digest',
+            'description' => 'Reports how many inward and outward entries were recorded today. It does not send anything.',
+            'schedule' => ['minute' => '0', 'hour' => '18', 'day' => '*', 'month' => '*', 'day_of_week' => '1-6'],
+        ],
+        'inward_outward.inward.unfiled_scan' => [
+            'label' => 'Scan inward entries with no file location',
+            'description' => 'Reports inward entries of the current academic year that have no physical file location recorded. It does not change any entry.',
+            'schedule' => ['minute' => '0', 'hour' => '10', 'day' => '*', 'month' => '*', 'day_of_week' => '1'],
+        ],
+        'inward_outward.outward.unfiled_scan' => [
+            'label' => 'Scan outward entries with no file location',
+            'description' => 'Reports outward entries of the current academic year that have no physical file location recorded. It does not change any entry.',
+            'schedule' => ['minute' => '15', 'hour' => '10', 'day' => '*', 'month' => '*', 'day_of_week' => '1'],
+        ],
+
+        // Alumni
+        'alumni.event.upcoming_digest' => [
+            'label' => 'Upcoming alumni events digest',
+            'description' => 'Reports published alumni events dated in the next 7 days and how many registrations they have. It does not send reminders.',
+            'schedule' => ['minute' => '0', 'hour' => '8', 'day' => '*', 'month' => '*', 'day_of_week' => '*'],
+        ],
+        'alumni.campaign.scheduled_due' => [
+            'label' => 'Scan campaigns due to start',
+            'description' => 'Reports scheduled campaigns whose start time has passed and that have not started. It does not start or send anything.',
+            'schedule' => ['minute' => '*/30', 'hour' => '*', 'day' => '*', 'month' => '*', 'day_of_week' => '*'],
+        ],
+        'alumni.opportunity.expiring' => [
+            'label' => 'Scan job and internship postings past their last date',
+            'description' => 'Reports published opportunities already past their last date, and those closing in the next 7 days. It does not expire or change any posting.',
+            'schedule' => ['minute' => '30', 'hour' => '8', 'day' => '*', 'month' => '*', 'day_of_week' => '*'],
+        ],
+        'alumni.profile.verification_waiting' => [
+            'label' => 'Scan alumni waiting over 7 days for verification',
+            'description' => 'Reports alumni records registered or pending verification for more than 7 days. It does not verify or reject anyone.',
+            'schedule' => ['minute' => '0', 'hour' => '9', 'day' => '*', 'month' => '*', 'day_of_week' => '1-6'],
+        ],
+        'alumni.profile.milestones_ahead' => [
+            'label' => 'Alumni birthdays in the next 7 days',
+            'description' => 'Counts alumni whose birthday falls in the next 7 days. It names nobody and sends nothing.',
+            'schedule' => ['minute' => '0', 'hour' => '7', 'day' => '*', 'month' => '*', 'day_of_week' => '*'],
+        ],
+
+        // Document Templates
+        'document_templates.template.draft_scan' => [
+            'label' => 'Scan templates left in draft',
+            'description' => 'Reports templates still in draft that were last edited more than 30 days ago. It does not publish or change any template.',
+            'schedule' => ['minute' => '0', 'hour' => '9', 'day' => '*', 'month' => '*', 'day_of_week' => '1'],
+        ],
+        'document_templates.template.missing_category_scan' => [
+            'label' => 'Scan categories with no published template',
+            'description' => 'Reports which of certificates, ID cards, fee documents and admission documents have no published template. It does not create any template.',
+            'schedule' => ['minute' => '15', 'hour' => '9', 'day' => '*', 'month' => '*', 'day_of_week' => '1'],
+        ],
+        'document_templates.template.summary' => [
+            'label' => 'Template summary',
+            'description' => 'Reports how many templates the school has, split by status and category. It does not change anything.',
+            'schedule' => ['minute' => '30', 'hour' => '9', 'day' => '1', 'month' => '*', 'day_of_week' => '*'],
+        ],
+
+        // Utility
+        'utility.rollover.next_year_check' => [
+            'label' => 'Check the next academic year is set up',
+            'description' => 'Reports the latest academic year, when it ends, and whether a later year exists to roll over into. It does not create or change any year.',
+            'schedule' => ['minute' => '0', 'hour' => '8', 'day' => '*', 'month' => '*', 'day_of_week' => '1'],
+        ],
+        'utility.rollover.enrolment_progress' => [
+            'label' => 'Rollover progress by enrolment',
+            'description' => 'Reports how many students enrolled in the previous academic year are already enrolled in the latest one. It does not roll anyone over.',
+            'schedule' => ['minute' => '15', 'hour' => '8', 'day' => '*', 'month' => '*', 'day_of_week' => '1'],
+        ],
+        'utility.custom_module.summary' => [
+            'label' => 'Custom module summary',
+            'description' => 'Reports how many custom modules have been created, split into entry and master modules. It does not change any module.',
+            'schedule' => ['minute' => '0', 'hour' => '9', 'day' => '1', 'month' => '*', 'day_of_week' => '*'],
+        ],
+
+        // Complaint
+        'complaint.entry.daily_digest' => [
+            'label' => 'Daily complaint digest',
+            'description' => 'Reports how many complaints were logged today and how many have no recorded resolution. It does not send anything.',
+            'schedule' => ['minute' => '0', 'hour' => '17', 'day' => '*', 'month' => '*', 'day_of_week' => '1-6'],
+        ],
+        'complaint.entry.ageing_scan' => [
+            'label' => 'Scan complaints unresolved for over 7 days',
+            'description' => 'Reports complaints logged more than 7 days ago with no recorded resolution. It does not escalate or change any complaint.',
+            'schedule' => ['minute' => '0', 'hour' => '9', 'day' => '*', 'month' => '*', 'day_of_week' => '1-6'],
+        ],
+        'complaint.entry.monthly_total' => [
+            'label' => 'Previous month complaint summary',
+            'description' => 'Reports complaints of the previous calendar month split into resolved and unresolved. It does not change anything.',
+            'schedule' => ['minute' => '45', 'hour' => '9', 'day' => '1', 'month' => '*', 'day_of_week' => '*'],
+        ],
+
+        // Visitor Management
+        'visitor_management.visit.daily_digest' => [
+            'label' => 'Daily visitor digest',
+            'description' => 'Reports how many visitors were recorded today and how many have no out time yet. It does not send anything.',
+            'schedule' => ['minute' => '0', 'hour' => '17', 'day' => '*', 'month' => '*', 'day_of_week' => '1-6'],
+        ],
+        'visitor_management.visit.open_visits_scan' => [
+            'label' => 'Scan visitors never checked out',
+            'description' => 'Reports visitors from earlier days with no out time recorded. It does not check anyone out.',
+            'schedule' => ['minute' => '0', 'hour' => '8', 'day' => '*', 'month' => '*', 'day_of_week' => '1-6'],
+        ],
+        'visitor_management.visit.monthly_total' => [
+            'label' => 'Previous month visitor total',
+            'description' => 'Reports visitors of the previous calendar month split by appointment type (prior, direct, pickup). It does not change anything.',
+            'schedule' => ['minute' => '15', 'hour' => '9', 'day' => '1', 'month' => '*', 'day_of_week' => '*'],
+        ],
+
+        // PTM
+        'ptm.booking.upcoming_digest' => [
+            'label' => 'Upcoming PTM bookings digest',
+            'description' => 'Reports confirmed parent bookings and meeting slots dated in the next 7 days. It does not send reminders.',
+            'schedule' => ['minute' => '0', 'hour' => '8', 'day' => '*', 'month' => '*', 'day_of_week' => '1-6'],
+        ],
+        'ptm.booking.attendance_pending' => [
+            'label' => 'Scan held meetings with no attendance marked',
+            'description' => 'Reports confirmed bookings of meetings already held whose attended status is not yet recorded. It does not change any booking.',
+            'schedule' => ['minute' => '30', 'hour' => '16', 'day' => '*', 'month' => '*', 'day_of_week' => '1-6'],
+        ],
+        'ptm.booking.monthly_summary' => [
+            'label' => 'Previous month PTM attendance summary',
+            'description' => 'Reports confirmed bookings of the previous calendar month split into attended, not attended and not recorded. It does not change anything.',
+            'schedule' => ['minute' => '0', 'hour' => '9', 'day' => '1', 'month' => '*', 'day_of_week' => '*'],
+        ],
+
+        // Consent
+        'consent.entry.daily_digest' => [
+            'label' => 'Daily consent digest',
+            'description' => 'Reports how many consents were recorded today. It does not send anything.',
+            'schedule' => ['minute' => '0', 'hour' => '18', 'day' => '*', 'month' => '*', 'day_of_week' => '1-6'],
+        ],
+        'consent.entry.accountable_summary' => [
+            'label' => 'Accountable consent summary',
+            'description' => 'Reports consents of the latest academic year split into accountable and non-accountable, with the accountable amount. It does not change any consent.',
+            'schedule' => ['minute' => '0', 'hour' => '9', 'day' => '*', 'month' => '*', 'day_of_week' => '1'],
+        ],
+        'consent.entry.monthly_total' => [
+            'label' => 'Previous month consent total',
+            'description' => 'Reports how many consents were recorded in the previous calendar month. It does not post or close anything.',
+            'schedule' => ['minute' => '30', 'hour' => '9', 'day' => '1', 'month' => '*', 'day_of_week' => '*'],
+        ],
+
+        // Petty Cash
+        'petty_cash.entry.daily_digest' => [
+            'label' => 'Daily petty cash digest',
+            'description' => 'Reports how many petty cash entries were recorded today and their total amount. It does not send anything.',
+            'schedule' => ['minute' => '0', 'hour' => '18', 'day' => '*', 'month' => '*', 'day_of_week' => '1-6'],
+        ],
+        'petty_cash.entry.missing_bill_scan' => [
+            'label' => 'Scan entries with no bill attached',
+            'description' => 'Reports petty cash entries of the last 30 days that have no bill image uploaded. It does not change any entry.',
+            'schedule' => ['minute' => '0', 'hour' => '10', 'day' => '*', 'month' => '*', 'day_of_week' => '1'],
+        ],
+        'petty_cash.entry.monthly_total' => [
+            'label' => 'Previous month petty cash total',
+            'description' => 'Reports the number of entries and the total amount spent in the previous calendar month. It does not post or close anything.',
+            'schedule' => ['minute' => '0', 'hour' => '9', 'day' => '1', 'month' => '*', 'day_of_week' => '*'],
+        ],
+
+        // Timetable
+        'timetable.scheduling.clash_detection_scan' => [
+            'label' => 'Scan timetable for teacher & room clashes',
+            'description' => 'Audits active class timetables for overlapping periods, teacher double-bookings, or unscheduled slots.',
+            'schedule' => ['minute' => '0', 'hour' => '6', 'day' => '*', 'month' => '*', 'day_of_week' => '1-6'],
+        ],
+        'timetable.proxy.daily_substitution_audit' => [
+            'label' => 'Audit daily absent teacher proxy allocations',
+            'description' => 'Verifies today\'s staff absences against assigned proxy periods and flags uncovered classes.',
+            'schedule' => ['minute' => '30', 'hour' => '7', 'day' => '*', 'month' => '*', 'day_of_week' => '1-6'],
+        ],
+        'timetable.scheduling.unassigned_class_alert' => [
+            'label' => 'Identify classes without published timetables',
+            'description' => 'Scans enrolled standards and sections to verify all classes have an active published weekly timetable.',
+            'schedule' => ['minute' => '0', 'hour' => '9', 'day' => '*', 'month' => '*', 'day_of_week' => '1'],
+        ],
+        'timetable.proxy.send_proxy_assignment_alerts' => [
+            'label' => 'Send morning substitute teacher duty reminders',
+            'description' => 'Dispatches proxy period assignment alerts and room details to substitute teachers.',
+            'schedule' => ['minute' => '45', 'hour' => '7', 'day' => '*', 'month' => '*', 'day_of_week' => '1-6'],
+        ],
+
+        // Mobile Apps
+        'mobile-apps.notifications.daily_morning_brief' => [
+            'label' => 'Send morning timetable & homework summary push',
+            'description' => 'Dispatches daily class schedule, pending homework reminders, and morning announcements to parent & student mobile apps.',
+            'schedule' => ['minute' => '30', 'hour' => '7', 'day' => '*', 'month' => '*', 'day_of_week' => '1-6'],
+        ],
+        'mobile-apps.notifications.invite_unregistered_parents' => [
+            'label' => 'Scan for parents yet to install mobile app',
+            'description' => 'Scans student enrollment records for parents who have not downloaded or logged into Scholar Mobile App and prepares install advisory.',
+            'schedule' => ['minute' => '0', 'hour' => '11', 'day' => '*', 'month' => '*', 'day_of_week' => '1'],
+        ],
+        'mobile-apps.device_sync.fcm_token_cleanup' => [
+            'label' => 'Clean expired mobile FCM push tokens',
+            'description' => 'Purges expired device push tokens and stale login sessions to optimize push delivery speed.',
+            'schedule' => ['minute' => '0', 'hour' => '2', 'day' => '*', 'month' => '*', 'day_of_week' => '0'],
+        ],
+        'mobile-apps.digilocker.daily_activity_sync' => [
+            'label' => 'Synchronize daily student diary & attendance timeline',
+            'description' => 'Compiles and publishes the day-end student activity log, teacher remarks, and attendance status to the mobile app timeline.',
+            'schedule' => ['minute' => '0', 'hour' => '18', 'day' => '*', 'month' => '*', 'day_of_week' => '1-6'],
+        ],
+        'mobile_apps.notifications.daily_morning_brief' => [
+            'label' => 'Send morning timetable & homework summary push',
+            'description' => 'Dispatches daily class schedule, pending homework reminders, and morning announcements to parent & student mobile apps.',
+            'schedule' => ['minute' => '30', 'hour' => '7', 'day' => '*', 'month' => '*', 'day_of_week' => '1-6'],
+        ],
+        'mobile_apps.notifications.invite_unregistered_parents' => [
+            'label' => 'Scan for parents yet to install mobile app',
+            'description' => 'Finds enrolled students whose parents have not downloaded or logged into Scholar Mobile App and prepares install advisory.',
+            'schedule' => ['minute' => '0', 'hour' => '11', 'day' => '*', 'month' => '*', 'day_of_week' => '1'],
+        ],
+        'mobile_apps.device_sync.fcm_token_cleanup' => [
+            'label' => 'Clean expired mobile FCM push tokens',
+            'description' => 'Purges expired device push tokens and stale login sessions to optimize push delivery speed.',
+            'schedule' => ['minute' => '0', 'hour' => '2', 'day' => '*', 'month' => '*', 'day_of_week' => '0'],
+        ],
+        'mobile_apps.digilocker.daily_activity_sync' => [
+            'label' => 'Synchronize daily student diary & attendance timeline',
+            'description' => 'Compiles and publishes the day-end student activity log, teacher remarks, and attendance status to the mobile app timeline.',
+            'schedule' => ['minute' => '0', 'hour' => '18', 'day' => '*', 'month' => '*', 'day_of_week' => '1-6'],
         ],
     ],
 
@@ -1070,6 +1446,25 @@ return [
             'suggested_steps' => [
                 ['name' => 'Warden', 'approver_type' => 'role', 'approver' => 'Warden', 'sla_hours' => 4],
                 ['name' => 'Guardian consent', 'approver_type' => 'role', 'approver' => 'Guardian', 'sla_hours' => 12],
+            ],
+        ],
+        'alumni.profile.flow' => [
+            'label' => 'Alumni verification', 'description' => 'Confirming a registered alumnus before they join the directory.', 'subject' => 'Alumni record',
+            'suggested_steps' => [
+                ['name' => 'Alumni coordinator', 'approver_type' => 'role', 'approver' => 'Alumni coordinator', 'sla_hours' => 48],
+            ],
+        ],
+        'alumni.opportunity.flow' => [
+            'label' => 'Job or internship posting', 'description' => 'Approving an opportunity before it is shown to students and alumni.', 'subject' => 'Opportunity',
+            'suggested_steps' => [
+                ['name' => 'Alumni coordinator', 'approver_type' => 'role', 'approver' => 'Alumni coordinator', 'sla_hours' => 24],
+            ],
+        ],
+        'alumni.donation.flow' => [
+            'label' => 'Donation verification', 'description' => 'Confirming a gift against a payment before a receipt is issued.', 'subject' => 'Donation',
+            'suggested_steps' => [
+                ['name' => 'Accounts', 'approver_type' => 'role', 'approver' => 'Accountant', 'sla_hours' => 48],
+                ['name' => 'Principal approval', 'approver_type' => 'principal', 'approver' => '', 'sla_hours' => 72],
             ],
         ],
         'hostel.allocation.flow' => [

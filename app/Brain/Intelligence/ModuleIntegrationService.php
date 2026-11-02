@@ -63,6 +63,7 @@ class ModuleIntegrationService
             'document-templates' => $this->getDocumentTemplateIntegrations($tenantId, $syear),
             'ptm' => $this->getPtmIntegrations($tenantId, $syear),
             'consent' => $this->getConsentIntegrations($tenantId, $syear),
+            'alumni' => $this->getAlumniIntegrations($tenantId, $syear),
             default => [],
         };
 
@@ -130,6 +131,7 @@ class ModuleIntegrationService
             'document-templates' => 'Document Templates',
             'ptm' => 'Parent-Teacher Meetings',
             'consent' => 'Student Consent',
+            'alumni' => 'Alumni Management',
             default => ucfirst($module),
         };
     }
@@ -1616,6 +1618,79 @@ class ModuleIntegrationService
                 'reason' => $classes === 0
                     ? 'No meeting slot names a class for the selected academic year.'
                     : null,
+            ],
+        ];
+    }
+
+    private function getAlumniIntegrations(int $tenantId, ?string $syear): array
+    {
+        $fromStudents = $this->countOf('alumni', $tenantId, null, function ($q) {
+            $q->whereNotNull('student_id')->where('student_id', '>', 0);
+        });
+        $askingStudents = $this->distinctOf('alumni_mentorship_requests', $tenantId, 'student_id');
+        $campaigns = $this->countOf('alumni_campaigns', $tenantId);
+        $messages = $this->countOf('alumni_message_log', $tenantId);
+        $careers = $this->countOf('alumni_career', $tenantId);
+
+        return [
+            [
+                'id' => 'alumni-students',
+                'target_module' => 'student',
+                'target_label' => 'Student Directory',
+                'relationship' => 'Alumni created from a student record',
+                'why_it_matters' => 'An alumnus who carries the student id keeps the full school history behind the '
+                    . 'record; one without it is just a name and a batch.',
+                'status' => $fromStudents > 0 ? 'available' : 'unavailable',
+                'record_count' => $fromStudents,
+                'metrics' => [['label' => 'Alumni linked to a student', 'value' => (string) $fromStudents]],
+                'shared_entities' => ['student_id'],
+                'route' => '/students/intelligence',
+                'reason' => $fromStudents === 0 ? 'No alumnus is linked to a student record.' : null,
+            ],
+            [
+                'id' => 'alumni-mentorship',
+                'target_module' => 'student',
+                'target_label' => 'Current Students',
+                'relationship' => 'Students who asked an alumnus for guidance',
+                'why_it_matters' => 'Mentoring is the one place current students and alumni meet, so a request names '
+                    . 'the student and can be read against who they are and what they asked for.',
+                'status' => $askingStudents > 0 ? 'available' : 'unavailable',
+                'record_count' => $askingStudents,
+                'metrics' => [['label' => 'Students with a request', 'value' => (string) $askingStudents]],
+                'shared_entities' => ['student_id'],
+                'route' => '/students/intelligence',
+                'reason' => $askingStudents === 0 ? 'No mentorship request names a student.' : null,
+            ],
+            [
+                'id' => 'alumni-communication',
+                'target_module' => 'communication',
+                'target_label' => 'Communication',
+                'relationship' => 'Campaigns and messages sent to alumni',
+                'why_it_matters' => 'Alumni are written to through campaigns, and each message is logged with whether '
+                    . 'it was sent or skipped for lack of consent - so reach is measured, not assumed.',
+                'status' => ($campaigns + $messages) > 0 ? 'available' : 'unavailable',
+                'record_count' => $messages,
+                'metrics' => [
+                    ['label' => 'Campaigns', 'value' => (string) $campaigns],
+                    ['label' => 'Messages logged', 'value' => (string) $messages],
+                ],
+                'shared_entities' => ['alumni_id', 'campaign_id'],
+                'route' => '/easy_com/intelligence',
+                'reason' => ($campaigns + $messages) === 0 ? 'No alumni campaign or message has been recorded.' : null,
+            ],
+            [
+                'id' => 'alumni-careers',
+                'target_module' => 'career',
+                'target_label' => 'Career Intelligence',
+                'relationship' => 'What alumni went on to do',
+                'why_it_matters' => 'Alumni career paths are the evidence for career guidance: where batches ended up '
+                    . 'is what a student asking for direction can be shown.',
+                'status' => $careers > 0 ? 'available' : 'unavailable',
+                'record_count' => $careers,
+                'metrics' => [['label' => 'Career records', 'value' => (string) $careers]],
+                'shared_entities' => ['alumni_id', 'industry'],
+                'route' => '/career-intelligence/intelligence',
+                'reason' => $careers === 0 ? 'No alumnus has a career record.' : null,
             ],
         ];
     }

@@ -24,6 +24,7 @@ use App\Http\Controllers\Brain\BrainConsentIntelligenceController;
 use App\Http\Controllers\Brain\BrainDocumentTemplateIntelligenceController;
 use App\Http\Controllers\Brain\BrainPettyCashIntelligenceController;
 use App\Http\Controllers\Brain\BrainPtmIntelligenceController;
+use App\Http\Controllers\Brain\BrainAlumniIntelligenceController;
 use App\Http\Controllers\Brain\BrainResultIntelligenceController;
 use App\Http\Controllers\Brain\BrainStaffAttendanceIntelligenceController;
 use App\Http\Controllers\Brain\BrainStudentIntelligenceController;
@@ -142,6 +143,8 @@ Route::middleware(['brain.auth', 'brain.tenant'])->group(function () {
         Route::get('petty-cash/intelligence', [BrainPettyCashIntelligenceController::class, 'index'])->middleware('brain.permission:read');
         Route::get('document-templates/intelligence', [BrainDocumentTemplateIntelligenceController::class, 'index'])->middleware('brain.permission:read');
         Route::get('ptm/intelligence', [BrainPtmIntelligenceController::class, 'index'])->middleware('brain.permission:read');
+        Route::get('alumni/intelligence', [BrainAlumniIntelligenceController::class, 'index'])->middleware('brain.permission:read');
+        Route::post('alumni/intelligence/run', [BrainAlumniIntelligenceController::class, 'run'])->middleware('brain.permission:create');
         Route::get('consent/intelligence', [BrainConsentIntelligenceController::class, 'index'])->middleware('brain.permission:read');
         Route::post('result/intelligence/run', [BrainResultIntelligenceController::class, 'run'])->middleware('brain.permission:create');
         Route::get('attendance/intelligence', [BrainAttendanceIntelligenceController::class, 'index'])->middleware('brain.permission:read');
