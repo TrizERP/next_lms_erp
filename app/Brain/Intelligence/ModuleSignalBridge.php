@@ -181,6 +181,12 @@ final class ModuleSignalBridge
             LmsActivitySignalRules::class,
             'vivek_erp.homework',
         ],
+        // The alumni register: verification, reachability, mentoring and giving.
+        'alumni' => [
+            AlumniIntelligence::class,
+            AlumniSignalRules::class,
+            'vivek_erp.alumni',
+        ],
     ];
 
     public function __construct(

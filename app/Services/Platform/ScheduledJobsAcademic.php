@@ -28,12 +28,16 @@ class ScheduledJobsAcademic
     {
         return [
             'admissions.enquiry.follow_up_scan' => [self::class, 'enquiryFollowUps'],
+            'admissions.registration.pending_review' => [self::class, 'registrationPendingReview'],
+            'admissions.confirmation.seat_allotment_sync' => [self::class, 'confirmationSeatSync'],
             'students.profile.data_quality' => [self::class, 'studentDataQuality'],
             'attendance.student.absentee_notice' => [self::class, 'absenteesToday'],
             'attendance.student.shortfall_scan' => [self::class, 'attendanceShortfall'],
             'academics.homework.digest' => [self::class, 'homeworkToday'],
             'attendance.staff.muster_close' => [self::class, 'staffMusterPreview'],
             'examination.marks.entry_reminder' => [self::class, 'marksEntryPending'],
+            'examination.schedule.upcoming_digest' => [self::class, 'upcomingExams'],
+            'examination.marks.approval_pending' => [self::class, 'marksAwaitingApproval'],
             'academics.syllabus.coverage_rollup' => [self::class, 'lessonCoverage'],
             'lms.content.index_rebuild' => [self::class, 'contentEmbeddingGap'],
         ];
@@ -56,6 +60,50 @@ class ScheduledJobsAcademic
         $oldest = (clone $q)->min('e.followup_date');
 
         return "{$n} enquiries are past their follow-up date and have no admission form yet (oldest {$oldest}).";
+    }
+
+    /** Submitted registrations awaiting counsellor review or interaction slot. */
+    public static function registrationPendingReview(PlatformScheduledTask $task): string
+    {
+        $tenant = (int) $task->sub_institute_id;
+        if (! Schema::hasTable('admission_form')) {
+            return 'Admission form table not present.';
+        }
+        $q = DB::table('admission_form')
+            ->where('sub_institute_id', $tenant)
+            ->where(function ($w) {
+                $w->whereNull('status')
+                  ->orWhere('status', '')
+                  ->orWhere('status', 'pending');
+            });
+        $n = (clone $q)->count();
+        if ($n === 0) {
+            return 'All submitted admission registration forms have been reviewed.';
+        }
+
+        return "{$n} registration forms are awaiting counsellor verification or interaction scheduling.";
+    }
+
+    /** Confirmed admissions synchronization check. */
+    public static function confirmationSeatSync(PlatformScheduledTask $task): string
+    {
+        $tenant = (int) $task->sub_institute_id;
+        if (! Schema::hasTable('admission_form')) {
+            return 'Admission form table not present.';
+        }
+        $confirmed = DB::table('admission_form')
+            ->where('sub_institute_id', $tenant)
+            ->where(function ($w) {
+                $w->where('status', 'YES')
+                  ->orWhere('status', 'confirm')
+                  ->orWhere('status', 'approved');
+            })
+            ->count();
+        if ($confirmed === 0) {
+            return 'No admissions are currently confirmed for this academic cycle.';
+        }
+
+        return "{$confirmed} confirmed admissions recorded and synced with the active cycle.";
     }
 
     /** Active students with a blank mobile number, date of birth, address or father's name. */
@@ -196,6 +244,66 @@ class ScheduledJobsAcademic
         $subjects = (clone $q)->distinct()->count('e.subject_id');
 
         return "Report only: {$n} exams across {$subjects} subjects dated before today have no marks entered for {$syear} (oldest {$oldest}). No reminder was sent.";
+    }
+
+    /** Report only: exams dated from today to 7 days ahead. No notice is sent. */
+    public static function upcomingExams(PlatformScheduledTask $task): string
+    {
+        $tenant = (int) $task->sub_institute_id;
+        if (! Schema::hasTable('result_create_exam')
+            || ! Schema::hasColumn('result_create_exam', 'exam_date') || ! Schema::hasColumn('result_create_exam', 'syear')) {
+            return 'Report only: the exam table is not available, so upcoming exams cannot be checked.';
+        }
+        $syear = self::latestYear('result_create_exam', $tenant);
+        if (! $syear) {
+            return 'Report only: no exams are set up for this school.';
+        }
+        $q = DB::table('result_create_exam as e')
+            ->where('e.sub_institute_id', $tenant)->where('e.syear', $syear)
+            ->whereDate('e.exam_date', '>=', Carbon::today())
+            ->whereDate('e.exam_date', '<=', Carbon::today()->addDays(7));
+        $n = (clone $q)->count();
+        if ($n === 0) {
+            return "Report only: no exams are dated in the next 7 days for {$syear}.";
+        }
+        $first = (clone $q)->min('e.exam_date');
+        $subjects = (clone $q)->distinct()->count('e.subject_id');
+        $standards = (clone $q)->distinct()->count('e.standard_id');
+
+        return "Report only: {$n} exams across {$subjects} subjects and {$standards} standards are dated in the next 7 days for {$syear} (first on {$first}). No notice was sent.";
+    }
+
+    /** Report only: exams already held, with marks entered, that no one has approved (status 1) for that standard and subject. */
+    public static function marksAwaitingApproval(PlatformScheduledTask $task): string
+    {
+        $tenant = (int) $task->sub_institute_id;
+        if (! Schema::hasTable('result_create_exam') || ! Schema::hasTable('result_marks') || ! Schema::hasTable('result_exam_approve')
+            || ! Schema::hasColumn('result_create_exam', 'exam_date') || ! Schema::hasColumn('result_create_exam', 'syear')) {
+            return 'Report only: the exam, marks or approval tables are not available, so approvals cannot be checked.';
+        }
+        $syear = self::latestYear('result_create_exam', $tenant);
+        if (! $syear) {
+            return 'Report only: no exams are set up, so there are no marks to approve.';
+        }
+        $q = DB::table('result_create_exam as e')
+            ->where('e.sub_institute_id', $tenant)->where('e.syear', $syear)
+            ->whereNotNull('e.exam_date')->whereDate('e.exam_date', '>', '1000-01-01')
+            ->whereDate('e.exam_date', '<', Carbon::today())
+            ->whereExists(fn ($s) => $s->select(DB::raw(1))->from('result_marks as m')
+                ->whereColumn('m.exam_id', 'e.id')->where('m.sub_institute_id', $tenant))
+            ->whereNotExists(fn ($s) => $s->select(DB::raw(1))->from('result_exam_approve as a')
+                ->whereColumn('a.exam_id', 'e.exam_id')->whereColumn('a.standard_id', 'e.standard_id')
+                ->whereColumn('a.subject_id', 'e.subject_id')->whereColumn('a.term_id', 'e.term_id')
+                ->where('a.module_name', 'result_mark')->where('a.status', 1)
+                ->where('a.sub_institute_id', $tenant));
+        $n = (clone $q)->count();
+        if ($n === 0) {
+            return "Report only: every held exam with marks entered is approved for {$syear}.";
+        }
+        $oldest = (clone $q)->min('e.exam_date');
+        $standards = (clone $q)->distinct()->count('e.standard_id');
+
+        return "Report only: {$n} held exams across {$standards} standards have marks entered but are not approved for {$syear} (oldest {$oldest}). Nothing was approved.";
     }
 
     /** Report only: lessons planned up to today against lessons marked taught (YES). Nothing is stored. */
