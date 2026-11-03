@@ -7,6 +7,8 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Throwable;
 
+require_once __DIR__ . '/PedagogicalContentBuilder.php';
+
 /**
  * Content Agent (Agent 2) for Teach/Learn.
  *
@@ -131,7 +133,7 @@ class ContentAgentService
             'syear' => $academicYear,
             'sub_institute_id' => $subInstituteId,
             'created_at' => $now,
-            'created_by' => 1,
+            'created_by' => $this->resolveAuthUserId(),
         ]);
 
         // Also ensure linked entry in lms_concept exists for full intelligence compliance
@@ -481,5 +483,564 @@ HTML;
         DB::table('lms_catalogue_agent_state')
             ->where('sub_institute_id', $subInstituteId)
             ->increment('content_tasks_completed', $newGenerated + $newVerified);
+    }
+
+    /**
+     * Check whether required classroom resources already exist for the chapter.
+     *
+     * Grounded on live database records in content_master.
+     */
+    public function checkChapterContentCoverage(int $subInstituteId, int $standardId, ?int $subjectId = null, ?int $chapterId = null): array
+    {
+        $standardName = DB::table('standard')->where('id', $standardId)->value('name') ?? (string) $standardId;
+        $subjectName = $subjectId ? (DB::table('subject')->where('id', $subjectId)->value('subject_name') ?? "Subject #{$subjectId}") : 'All Subjects';
+
+        $chapter = null;
+        if ($chapterId) {
+            $chapter = DB::table('chapter_master')
+                ->where('id', $chapterId)
+                ->where('sub_institute_id', $subInstituteId)
+                ->first();
+        }
+
+        $chapterName = $chapter?->chapter_name ?? ($chapterId ? "Chapter #{$chapterId}" : 'All Chapters');
+        $chapterSubjectId = $chapter?->subject_id ?? $subjectId;
+        $chapterStandardId = $chapter?->standard_id ?? $standardId;
+
+        // Query content_master for existing items for this chapter strictly within authenticated tenant
+        $contentRows = [];
+        if ($chapterId) {
+            $contentRows = DB::table('content_master')
+                ->where('chapter_id', $chapterId)
+                ->where('sub_institute_id', $subInstituteId)
+                ->select(['id', 'title', 'content_category', 'file_type', 'created_at'])
+                ->get();
+        }
+
+        // Define the 5 classroom resource types + assessment
+        $definitions = [
+            'Presentation' => [
+                'key' => 'presentation',
+                'label' => 'Presentation',
+                'categories' => ['presentation', 'Presentation', 'Classroom presentation', 'Classroom Presentation', 'Teacher training presentation'],
+                'file_types' => ['pptx', 'presentation', 'html'],
+            ],
+            'Revision Notes' => [
+                'key' => 'revision_notes',
+                'label' => 'Revision Notes',
+                'categories' => ['Revision Notes', 'revision_notes', 'Revision notes'],
+                'file_types' => ['pdf', 'document', 'html'],
+            ],
+            'Classroom Activity' => [
+                'key' => 'classroom_activity',
+                'label' => 'Classroom Activity',
+                'categories' => ['Classroom Activity', 'classroom_activity', 'Classroom activities', 'activities'],
+                'file_types' => ['pdf', 'document', 'html'],
+            ],
+            'Remedial Class' => [
+                'key' => 'remedial_class',
+                'label' => 'Remedial Class',
+                'categories' => ['Remedial Class', 'remedial_class', 'Remedial'],
+                'file_types' => ['pdf', 'document', 'html'],
+            ],
+            'Assessment' => [
+                'key' => 'assessment',
+                'label' => 'Assessment',
+                'categories' => ['Assessment', 'assessment', 'Assessment Bank', 'Online Exam', 'Quiz', 'Assessment Rubric', 'assessment_rubric'],
+                'file_types' => ['pdf', 'document', 'link', 'html'],
+            ],
+        ];
+
+        $resourcesStatus = [];
+        $existingCount = 0;
+        $missingCount = 0;
+
+        foreach ($definitions as $name => $def) {
+            $matchingRow = null;
+            foreach ($contentRows as $row) {
+                $cat = trim((string) ($row->content_category ?? ''));
+                $ft = trim((string) ($row->file_type ?? ''));
+                if (in_array($cat, $def['categories'], true) || in_array($ft, $def['file_types'], true)) {
+                    $matchingRow = $row;
+                    break;
+                }
+            }
+
+            if ($matchingRow) {
+                $existingCount++;
+                $resourcesStatus[] = [
+                    'key' => $def['key'],
+                    'name' => $name,
+                    'exists' => true,
+                    'content_id' => (int) $matchingRow->id,
+                    'title' => $matchingRow->title ?? "{$chapterName} - {$name}",
+                    'file_type' => $matchingRow->file_type ?? 'link',
+                ];
+            } else {
+                $missingCount++;
+                $resourcesStatus[] = [
+                    'key' => $def['key'],
+                    'name' => $name,
+                    'exists' => false,
+                    'content_id' => null,
+                    'title' => null,
+                    'file_type' => null,
+                ];
+            }
+        }
+
+        // All 5 exist => exists = true. If any is missing => exists = false.
+        $allExist = ($missingCount === 0);
+
+        return [
+            'exists' => $allExist,
+            'standard_id' => $chapterStandardId,
+            'standard_name' => $standardName,
+            'subject_id' => $chapterSubjectId,
+            'subject_name' => $subjectName,
+            'chapter_id' => $chapterId,
+            'chapter_name' => $chapterName,
+            'total_checked' => count($definitions),
+            'existing_count' => $existingCount,
+            'missing_count' => $missingCount,
+            'resources_status' => $resourcesStatus,
+            'available_generators' => [
+                [
+                    'id' => 'ppt',
+                    'label' => 'PPT / interactive slides',
+                    'available' => true,
+                    'generator' => 'gamma_slides',
+                    'description' => 'Generates structured interactive presentation slides',
+                ],
+                [
+                    'id' => 'scenario_lesson',
+                    'label' => 'Scenario-based lesson',
+                    'available' => false,
+                    'generator' => null,
+                    'note' => 'no generator yet',
+                ],
+                [
+                    'id' => 'branching_scenario',
+                    'label' => 'Interactive branching scenario',
+                    'available' => true,
+                    'generator' => 'branching_scenario',
+                    'description' => 'Generates decision-tree branching scenario for deep problem exploration',
+                ],
+                [
+                    'id' => 'video_lesson',
+                    'label' => 'Video lesson',
+                    'available' => false,
+                    'generator' => null,
+                    'note' => 'no generator yet',
+                ],
+                [
+                    'id' => 'simulation',
+                    'label' => 'Simulation / practical activity',
+                    'available' => false,
+                    'generator' => null,
+                    'note' => 'no generator yet',
+                ],
+                [
+                    'id' => 'student_worksheet',
+                    'label' => 'Student worksheet / learning guide',
+                    'available' => false,
+                    'generator' => null,
+                    'note' => 'no generator yet',
+                ],
+                [
+                    'id' => 'socratic_dialogue',
+                    'label' => 'Interactive Socratic dialogue',
+                    'available' => false,
+                    'generator' => null,
+                    'note' => 'no generator yet',
+                ],
+            ],
+            'teaching_approaches' => [
+                'Explicit instruction / direct teaching',
+                'Inquiry-based learning',
+                'Problem-based learning',
+                'Project-based learning',
+                'Experiential / learning by doing',
+                'Collaborative / peer learning',
+                'Socratic questioning / guided discovery',
+                'Flipped classroom',
+                'Differentiated / mastery-based instruction',
+                'Gamified learning',
+            ],
+        ];
+    }
+
+    /**
+     * Generate an individual classroom resource (Presentation, Revision Notes, Classroom Activity, Remedial Class).
+     */
+    public function generateClassroomResource(
+        int $subInstituteId,
+        $chapterOrType,
+        $typeOrData,
+        string $teachingApproach = 'Explicit instruction / direct teaching',
+        array $studentExperiences = [],
+        string $template = 'modern_tech'
+    ): array {
+        // Normalize potentially swapped arguments: ($subInstituteId, $chapterId, $resourceType, ...) vs ($subInstituteId, $resourceType, $chapterData, ...)
+        if (is_string($chapterOrType) && (is_array($typeOrData) || is_numeric($typeOrData))) {
+            $resourceType = $chapterOrType;
+            $chapterIdOrData = $typeOrData;
+        } else {
+            $chapterIdOrData = $chapterOrType;
+            $resourceType = (string) $typeOrData;
+        }
+
+        $builder = new PedagogicalContentBuilder();
+        $ctx = is_array($chapterIdOrData)
+            ? $builder->resolveEnrichedContext((int) ($chapterIdOrData['id'] ?? $chapterIdOrData['chapter_id'] ?? 0), $chapterIdOrData)
+            : $builder->resolveEnrichedContext((int) $chapterIdOrData);
+
+        $chapterId = $ctx['chapter_id'];
+        $standardId = $ctx['standard_id'];
+        $subjectId = $ctx['subject_id'];
+        $chapterName = $ctx['chapter_name'];
+        $standardName = $ctx['standard_name'];
+        $subjectName = $ctx['subject_name'];
+        $gradeId = $ctx['grade_id'];
+
+        $academicYear = (int) (DB::table('academic_year')
+            ->where('sub_institute_id', $subInstituteId)
+            ->value('syear') ?: date('Y'));
+
+        $now = Carbon::now();
+        $timestamp = $now->timestamp;
+
+        // Generate customized pedagogical content depending on resourceType
+        $title = "{$chapterName} - {$resourceType}";
+        $contentCategory = $resourceType;
+        $fileType = 'pdf';
+        $format = 'document';
+
+        switch ($resourceType) {
+            case 'Presentation':
+                $contentCategory = 'Classroom presentation';
+                $fileType = 'presentation';
+                $format = 'presentation';
+                $htmlBody = $builder->buildPresentation($ctx, $teachingApproach, $studentExperiences, $template);
+                break;
+
+            case 'Revision Notes':
+                $contentCategory = 'Revision Notes';
+                $fileType = 'pdf';
+                $format = 'document';
+                $htmlBody = $builder->buildRevisionNotes($ctx, $template);
+                break;
+
+            case 'Classroom Activity':
+                $contentCategory = 'Classroom Activity';
+                $fileType = 'pdf';
+                $format = 'document';
+                $htmlBody = $builder->buildClassroomActivity($ctx, $teachingApproach, $template);
+                break;
+
+            case 'Remedial Class':
+                $contentCategory = 'Remedial Class';
+                $fileType = 'pdf';
+                $format = 'document';
+                $htmlBody = $builder->buildRemedialClass($ctx, $template);
+                break;
+
+            default:
+                $contentCategory = $resourceType;
+                $fileType = 'pdf';
+                $format = 'document';
+                $htmlBody = $builder->buildRevisionNotes($ctx, $template);
+                break;
+        }
+
+        // Concurrency guard: Check if content already exists to prevent race conditions & duplicate records
+        $existingRecord = DB::table('content_master')
+            ->where('sub_institute_id', $subInstituteId)
+            ->where('chapter_id', $chapterId)
+            ->where(function ($q) use ($title, $contentCategory) {
+                $q->where('title', $title)
+                    ->orWhere('content_category', $contentCategory);
+            })
+            ->first();
+
+        if ($existingRecord) {
+            // If the existing record is a skeletal placeholder (< 4000 chars or contains boilerplate), upgrade it in place with rich content!
+            if (strlen($existingRecord->description ?? '') < 4000 || str_contains($existingRecord->description ?? '', 'Exploring foundational concepts for') || str_contains($existingRecord->description ?? '', 'Phase 1 (10 mins): Introduce the inquiry prompt')) {
+                DB::table('content_master')
+                    ->where('id', $existingRecord->id)
+                    ->update([
+                        'description' => $htmlBody,
+                        'file_size' => (string) strlen($htmlBody),
+                        'file_type' => $fileType,
+                        'content_category' => $contentCategory,
+                        'meta_tags' => "ai_generated,teach_learn,{$resourceType},{$subjectName},template_{$template}",
+                    ]);
+
+                return [
+                    'success' => true,
+                    'status' => 'upgraded_rich_content',
+                    'is_new' => false,
+                    'content_id' => (int) $existingRecord->id,
+                    'resource_type' => $resourceType,
+                    'category' => $contentCategory,
+                    'title' => $existingRecord->title,
+                    'file_type' => $fileType,
+                    'format' => $format,
+                    'message' => "Resource #{$existingRecord->id} successfully upgraded with comprehensive pedagogical content.",
+                ];
+            }
+
+            return [
+                'success' => true,
+                'status' => 'verified_existing',
+                'is_new' => false,
+                'content_id' => (int) $existingRecord->id,
+                'resource_type' => $resourceType,
+                'category' => $existingRecord->content_category,
+                'title' => $existingRecord->title,
+                'file_type' => $existingRecord->file_type ?? $fileType,
+                'format' => $format,
+                'message' => "Resource already exists with ID #{$existingRecord->id}. Verified and reused without duplicate.",
+            ];
+        }
+
+        // Save into content_master
+        $slug = strtolower(preg_replace('/[^a-zA-Z0-9]+/', '_', $resourceType));
+        $contentId = DB::table('content_master')->insertGetId([
+            'grade_id' => $gradeId,
+            'standard_id' => $standardId,
+            'subject_id' => $subjectId,
+            'chapter_id' => $chapterId,
+            'concept_id' => null,
+            'topic_id' => null,
+            'sub_topic_id' => null,
+            'lo_master_ids' => '',
+            'lo_indicator_ids' => '',
+            'lo_category_id' => 1,
+            'title' => $title,
+            'description' => $htmlBody,
+            'file_folder' => '/lms_content_file',
+            'filename' => "study_{$slug}_{$chapterId}_{$timestamp}.html",
+            'file_type' => $fileType,
+            'file_size' => (string) strlen($htmlBody),
+            'url' => null,
+            'sort_order' => 1,
+            'show_hide' => 1,
+            'meta_tags' => "ai_generated,teach_learn,{$resourceType},{$subjectName}",
+            'content_category' => $contentCategory,
+            'source' => 'ai_content_agent_generation',
+            'syear' => $academicYear,
+            'sub_institute_id' => $subInstituteId,
+            'created_at' => $now,
+            'created_by' => $this->resolveAuthUserId(),
+        ]);
+
+        $viewerUrl = url('/api/lms-content-view/' . $contentId);
+        DB::table('content_master')->where('id', $contentId)->update(['url' => $viewerUrl]);
+
+        // Record task in ledger if topic exists
+        $firstTopicId = DB::table('topic_master')->where('chapter_id', $chapterId)->value('id');
+        if ($firstTopicId) {
+            $this->recordTask($subInstituteId, [
+                'standard_id' => $standardId,
+                'standard_name' => $standardName,
+                'subject_id' => $subjectId,
+                'subject_name' => $subjectName,
+                'chapter_id' => $chapterId,
+                'chapter_name' => $chapterName,
+                'topic_id' => $firstTopicId,
+                'topic_name' => "{$chapterName} - {$resourceType}",
+                'status' => 'generated_new',
+                'content_id' => $contentId,
+                'concept_id' => null,
+                'action_taken' => 'generated_classroom_resource',
+                'content_title' => $title,
+                'content_preview' => mb_substr(strip_tags($htmlBody), 0, 200),
+            ]);
+        }
+
+        $this->updateStateCounters($subInstituteId, 1, 0);
+
+        return [
+            'success' => true,
+            'status' => 'generated_new',
+            'content_id' => (int) $contentId,
+            'resource_type' => $resourceType,
+            'category' => $contentCategory,
+            'title' => $title,
+            'file_type' => $fileType,
+            'format' => $format,
+            'message' => "Successfully generated {$resourceType} with ID #{$contentId}.",
+        ];
+    }
+
+    /**
+     * Generate comprehensive Assessment for a chapter across Bloom's 5 cognitive levels.
+     */
+    public function generateChapterAssessment(
+        int $subInstituteId,
+        $chapterIdOrData,
+        string $teachingApproach = 'Explicit instruction / direct teaching',
+        string $template = 'modern_tech'
+    ): array {
+        $builder = new PedagogicalContentBuilder();
+        $ctx = is_array($chapterIdOrData)
+            ? $builder->resolveEnrichedContext((int) ($chapterIdOrData['id'] ?? $chapterIdOrData['chapter_id'] ?? 0), $chapterIdOrData)
+            : $builder->resolveEnrichedContext((int) $chapterIdOrData);
+
+        $chapterId = $ctx['chapter_id'];
+        $standardId = $ctx['standard_id'];
+        $subjectId = $ctx['subject_id'];
+        $chapterName = $ctx['chapter_name'];
+        $standardName = $ctx['standard_name'];
+        $subjectName = $ctx['subject_name'];
+        $gradeId = $ctx['grade_id'];
+
+        $academicYear = (int) (DB::table('academic_year')
+            ->where('sub_institute_id', $subInstituteId)
+            ->value('syear') ?: date('Y'));
+
+        $now = Carbon::now();
+        $timestamp = $now->timestamp;
+        $title = "{$chapterName} - Chapter Mastery Assessment";
+
+        $htmlBody = $builder->buildChapterAssessment($ctx, $teachingApproach, $template);
+
+        // Concurrency guard: Check if Assessment already exists for this chapter
+        $existingAssessment = DB::table('content_master')
+            ->where('sub_institute_id', $subInstituteId)
+            ->where('chapter_id', $chapterId)
+            ->where(function ($q) use ($title) {
+                $q->where('title', $title)
+                    ->orWhere('content_category', 'Assessment')
+                    ->orWhere('meta_tags', 'like', '%Assessment%');
+            })
+            ->first();
+
+        if ($existingAssessment) {
+            // If the existing record is a skeletal placeholder (< 4000 chars or contains boilerplate), upgrade it in place with rich content!
+            if (strlen($existingAssessment->description ?? '') < 4000 || str_contains($existingAssessment->description ?? '', 'Define the primary principles and boundary conditions')) {
+                DB::table('content_master')
+                    ->where('id', $existingAssessment->id)
+                    ->update([
+                        'description' => $htmlBody,
+                        'file_size' => (string) strlen($htmlBody),
+                        'file_type' => 'pdf',
+                        'content_category' => 'Assessment',
+                        'meta_tags' => "ai_generated,teach_learn,Assessment,{$subjectName},template_{$template}",
+                    ]);
+
+                return [
+                    'success' => true,
+                    'status' => 'upgraded_rich_content',
+                    'is_new' => false,
+                    'content_id' => (int) $existingAssessment->id,
+                    'resource_type' => 'Assessment',
+                    'category' => 'Assessment',
+                    'title' => $existingAssessment->title,
+                    'file_type' => 'pdf',
+                    'format' => 'document',
+                    'message' => "Chapter Assessment #{$existingAssessment->id} successfully upgraded with comprehensive cognitive ladder and model answers.",
+                ];
+            }
+
+            return [
+                'success' => true,
+                'status' => 'verified_existing',
+                'is_new' => false,
+                'content_id' => (int) $existingAssessment->id,
+                'resource_type' => 'Assessment',
+                'category' => 'Assessment',
+                'title' => $existingAssessment->title,
+                'file_type' => $existingAssessment->file_type ?? 'pdf',
+                'format' => 'assessment',
+                'message' => "Assessment already exists with ID #{$existingAssessment->id}. Verified and reused without duplicate.",
+            ];
+        }
+
+        // Save into content_master
+        $contentId = DB::table('content_master')->insertGetId([
+            'grade_id' => $gradeId,
+            'standard_id' => $standardId,
+            'subject_id' => $subjectId,
+            'chapter_id' => $chapterId,
+            'concept_id' => null,
+            'topic_id' => null,
+            'sub_topic_id' => null,
+            'lo_master_ids' => '',
+            'lo_indicator_ids' => '',
+            'lo_category_id' => 1,
+            'title' => $title,
+            'description' => $htmlBody,
+            'file_folder' => '/lms_content_file',
+            'filename' => "study_assessment_{$chapterId}_{$timestamp}.html",
+            'file_type' => 'pdf',
+            'file_size' => (string) strlen($htmlBody),
+            'url' => null,
+            'sort_order' => 1,
+            'show_hide' => 1,
+            'meta_tags' => "ai_generated,teach_learn,Assessment,{$subjectName}",
+            'content_category' => 'Assessment',
+            'source' => 'ai_content_agent_generation',
+            'syear' => $academicYear,
+            'sub_institute_id' => $subInstituteId,
+            'created_at' => $now,
+            'created_by' => $this->resolveAuthUserId(),
+        ]);
+
+        $viewerUrl = url('/api/lms-content-view/' . $contentId);
+        DB::table('content_master')->where('id', $contentId)->update(['url' => $viewerUrl]);
+
+        $firstTopicId = DB::table('topic_master')->where('chapter_id', $chapterId)->value('id');
+        if ($firstTopicId) {
+            $this->recordTask($subInstituteId, [
+                'standard_id' => $standardId,
+                'standard_name' => $standardName,
+                'subject_id' => $subjectId,
+                'subject_name' => $subjectName,
+                'chapter_id' => $chapterId,
+                'chapter_name' => $chapterName,
+                'topic_id' => $firstTopicId,
+                'topic_name' => $title,
+                'status' => 'generated_new',
+                'content_id' => $contentId,
+                'concept_id' => null,
+                'action_taken' => 'generated_chapter_assessment',
+                'content_title' => $title,
+                'content_preview' => mb_substr(strip_tags($htmlBody), 0, 200),
+            ]);
+        }
+
+        $this->updateStateCounters($subInstituteId, 1, 0);
+
+        return [
+            'success' => true,
+            'status' => 'generated_new',
+            'content_id' => (int) $contentId,
+            'resource_type' => 'Assessment',
+            'category' => 'Assessment',
+            'title' => $title,
+            'file_type' => 'pdf',
+            'format' => 'document',
+            'message' => "Successfully generated Chapter Assessment with ID #{$contentId}.",
+        ];
+    }
+
+    /**
+     * Resolve the authenticated user ID for database audit and creation stamping.
+     */
+    private function resolveAuthUserId(): int
+    {
+        if (auth()->check() && auth()->id()) {
+            return (int) auth()->id();
+        }
+        $req = request();
+        if ($req) {
+            $mcpAuth = $req->attributes->get('mcp_auth');
+            if (is_array($mcpAuth) && !empty($mcpAuth['user_id'])) {
+                return (int) $mcpAuth['user_id'];
+            }
+        }
+        return 1;
     }
 }

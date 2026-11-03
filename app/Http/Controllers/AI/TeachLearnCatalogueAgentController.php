@@ -29,21 +29,80 @@ class TeachLearnCatalogueAgentController extends AiController
     }
 
     /**
-     * Resolve the active tenant institute ID.
+     * Resolve and strictly authorize the active tenant institute ID.
+     *
+     * Extracts tenant identity dynamically from authenticated MCP context, JWT payload,
+     * or active Laravel session. Never trusts unverified request inputs, and never
+     * defaults to static institute IDs (e.g. 1, 3, 6).
      */
     private function resolveInstituteId(Request $request): int
     {
-        $context = $request->attributes->get('mcp_context');
-        if ($context && !empty($context->selectedInstituteId)) {
-            return (int) $context->selectedInstituteId;
+        $allowedInstituteIds = [];
+        $auth = $request->attributes->get('mcp_auth') ?? [];
+
+        // 1. Check validated McpRequestContext from McpContextHydrator middleware
+        $mcpContext = $request->attributes->get('mcp_context');
+        if ($mcpContext instanceof \App\Services\Mcp\McpRequestContext) {
+            $allowedInstituteIds = $mcpContext->allowedInstituteIds;
+            if ($mcpContext->selectedInstituteId > 0) {
+                // If a specific institute was requested, verify it is allowed
+                $headerId = (int) ($request->header('X-MCP-Institute-Id') ?: $request->input('sub_institute_id'));
+                if ($headerId > 0) {
+                    if (in_array($headerId, $allowedInstituteIds, true) || $mcpContext->isAdmin) {
+                        return $headerId;
+                    }
+                    abort(403, "Unauthorized tenant access: Institute ID {$headerId} is outside your authorized scope.");
+                }
+                return (int) $mcpContext->selectedInstituteId;
+            }
         }
 
+        // 2. Check verified JWT authentication payload from McpAuth middleware
+        if (is_array($auth) && !empty($auth['sub_institute_id'])) {
+            $parsed = array_values(array_filter(array_map('intval', explode(',', (string) $auth['sub_institute_id']))));
+            if (!empty($parsed)) {
+                $allowedInstituteIds = array_unique(array_merge($allowedInstituteIds, $parsed));
+            }
+        }
+
+        // 3. Check Laravel authenticated session
+        $sessionInstitute = session()->get('sub_institute_id');
+        if ($sessionInstitute && is_numeric($sessionInstitute) && (int) $sessionInstitute > 0) {
+            $allowedInstituteIds[] = (int) $sessionInstitute;
+        }
+
+        // 4. Check authenticated user object
+        if (auth()->check() && !empty(auth()->user()->sub_institute_id)) {
+            $allowedInstituteIds[] = (int) auth()->user()->sub_institute_id;
+        }
+
+        $allowedInstituteIds = array_values(array_unique(array_filter($allowedInstituteIds)));
+
+        // 5. If the request explicitly requested an institute, verify server-side authorization
+        $requestedInstitute = 0;
         $headerId = $request->header('X-MCP-Institute-Id');
         if ($headerId && is_numeric($headerId)) {
-            return (int) $headerId;
+            $requestedInstitute = (int) $headerId;
+        } elseif ($request->has('sub_institute_id') && is_numeric($request->input('sub_institute_id'))) {
+            $requestedInstitute = (int) $request->input('sub_institute_id');
         }
 
-        return (int) ($request->input('sub_institute_id') ?: 1);
+        if ($requestedInstitute > 0) {
+            $isAdmin = (int) ($auth['is_admin'] ?? (auth()->user()?->is_admin ?? 0));
+            if (in_array($requestedInstitute, $allowedInstituteIds, true) || $isAdmin === 2) {
+                return $requestedInstitute;
+            }
+
+            abort(403, "Unauthorized tenant access: Institute ID {$requestedInstitute} is outside your authorized scope.");
+        }
+
+        // 6. Default to the primary authorized institute for this tenant
+        if (!empty($allowedInstituteIds)) {
+            return (int) $allowedInstituteIds[0];
+        }
+
+        // 7. If no authorized tenant exists, refuse access with 401 Unauthorized (never hardcoded fallback)
+        abort(401, 'Unauthenticated: Valid tenant institute context could not be resolved from authenticated session or JWT.');
     }
 
     /**
@@ -267,6 +326,7 @@ class TeachLearnCatalogueAgentController extends AiController
         try {
             $instituteId = $this->resolveInstituteId($request);
             $options = $request->all();
+            $options['sub_institute_id'] = $instituteId; // Enforce dynamic authenticated tenant
 
             $report = $this->pipelineService->runPipeline($instituteId, $options);
 
@@ -299,6 +359,155 @@ class TeachLearnCatalogueAgentController extends AiController
 
             return $this->success('Teach/Learn Executive Skill Object (ESO) loaded successfully.', [
                 'eso' => $eso,
+                'server_time' => Carbon::now()->toIso8601String(),
+            ]);
+        } catch (Throwable $e) {
+            return $this->handle($e);
+        }
+    }
+
+    /**
+     * GET /api/ai/teach-learn/catalogue-agent/standards
+     * Returns real database standards for the active institute.
+     */
+    public function standards(Request $request): JsonResponse
+    {
+        try {
+            $instituteId = $this->resolveInstituteId($request);
+            $standards = DB::table('standard')
+                ->where('sub_institute_id', $instituteId)
+                ->select(['id', 'name', 'grade_id'])
+                ->orderBy('id')
+                ->get();
+
+            return $this->success('Standards retrieved successfully.', [
+                'standards' => $standards,
+                'count' => count($standards),
+                'server_time' => Carbon::now()->toIso8601String(),
+            ]);
+        } catch (Throwable $e) {
+            return $this->handle($e);
+        }
+    }
+
+    /**
+     * GET /api/ai/teach-learn/catalogue-agent/subjects
+     * Returns real subjects mapped to the selected standard(s) where allow_content = 'Yes'.
+     */
+    public function subjects(Request $request): JsonResponse
+    {
+        try {
+            $instituteId = $this->resolveInstituteId($request);
+            $standardIds = $request->input('standard_ids') ?: $request->input('standard_id');
+            if (is_string($standardIds)) {
+                $standardIds = array_filter(array_map('intval', explode(',', $standardIds)));
+            } elseif (is_numeric($standardIds)) {
+                $standardIds = [(int) $standardIds];
+            } elseif (!is_array($standardIds)) {
+                $standardIds = [];
+            }
+
+            $query = DB::table('sub_std_map as m')
+                ->join('subject as s', 's.id', '=', 'm.subject_id')
+                ->where('m.sub_institute_id', $instituteId)
+                ->where('m.allow_content', 'Yes');
+
+            if (!empty($standardIds)) {
+                $query->whereIn('m.standard_id', $standardIds);
+            }
+
+            $subjects = $query->select([
+                's.id as subject_id',
+                DB::raw('COALESCE(m.display_name, s.subject_name) as subject_name'),
+                'm.standard_id',
+            ])->distinct()->orderBy('subject_name')->get();
+
+            return $this->success('Subjects retrieved successfully.', [
+                'subjects' => $subjects,
+                'count' => count($subjects),
+                'server_time' => Carbon::now()->toIso8601String(),
+            ]);
+        } catch (Throwable $e) {
+            return $this->handle($e);
+        }
+    }
+
+    /**
+     * GET /api/ai/teach-learn/catalogue-agent/chapters
+     * Returns real chapters for the selected subject(s) and standard(s).
+     */
+    public function chapters(Request $request): JsonResponse
+    {
+        try {
+            $instituteId = $this->resolveInstituteId($request);
+            $standardIds = $request->input('standard_ids') ?: $request->input('standard_id');
+            if (is_string($standardIds)) {
+                $standardIds = array_filter(array_map('intval', explode(',', $standardIds)));
+            } elseif (is_numeric($standardIds)) {
+                $standardIds = [(int) $standardIds];
+            } elseif (!is_array($standardIds)) {
+                $standardIds = [];
+            }
+
+            $subjectIds = $request->input('subject_ids') ?: $request->input('subject_id');
+            if (is_string($subjectIds)) {
+                $subjectIds = array_filter(array_map('intval', explode(',', $subjectIds)));
+            } elseif (is_numeric($subjectIds)) {
+                $subjectIds = [(int) $subjectIds];
+            } elseif (!is_array($subjectIds)) {
+                $subjectIds = [];
+            }
+
+            $query = DB::table('chapter_master')
+                ->where('sub_institute_id', $instituteId)
+                ->where('show_hide', 1);
+
+            if (!empty($standardIds)) {
+                $query->whereIn('standard_id', $standardIds);
+            }
+            if (!empty($subjectIds)) {
+                $query->whereIn('subject_id', $subjectIds);
+            }
+
+            $chapters = $query->select([
+                'id',
+                'chapter_name',
+                'sort_order',
+                'standard_id',
+                'subject_id',
+            ])->orderBy('sort_order')->orderBy('chapter_name')->get();
+
+            return $this->success('Chapters retrieved successfully.', [
+                'chapters' => $chapters,
+                'count' => count($chapters),
+                'server_time' => Carbon::now()->toIso8601String(),
+            ]);
+        } catch (Throwable $e) {
+            return $this->handle($e);
+        }
+    }
+
+    /**
+     * POST /api/ai/teach-learn/catalogue-agent/check-content
+     * Checks whether content already exists for the selected Standard, Subject, and Chapter.
+     */
+    public function checkContent(Request $request): JsonResponse
+    {
+        try {
+            $instituteId = $this->resolveInstituteId($request);
+            $standardId = (int) ($request->input('standard_id') ?: 0);
+            $subjectId = $request->input('subject_id') ? (int) $request->input('subject_id') : null;
+            $chapterId = $request->input('chapter_id') ? (int) $request->input('chapter_id') : null;
+
+            $coverage = $this->contentAgentService->checkChapterContentCoverage(
+                $instituteId,
+                $standardId,
+                $subjectId,
+                $chapterId
+            );
+
+            return $this->success('Content coverage checked successfully.', [
+                'coverage' => $coverage,
                 'server_time' => Carbon::now()->toIso8601String(),
             ]);
         } catch (Throwable $e) {
