@@ -39,6 +39,80 @@ abstract class DocumentWriter
 - Plain sentence-case language. Address the learner as "you". No emoji, no exclamation marks, no Markdown, no HTML.
 RULES;
 
+    /**
+     * The numbers in the strings of $item that none of $allowed contains: the validator's grounding rule, applied while the
+     * model can still be asked to fix them (a number it worked out for an example the chapter does not give would otherwise only
+     * be found when the whole document is rejected, again on the next run with the same example).
+     *
+     * `$allowed` is the chapter text and whatever else the model was shown. A "step 2" or a slide number is not a claim, and
+     * `$procedure` names fields (by key) that hold what the teacher or students do: group sizes and minutes up to 60 are
+     * not claims there either (the validator's own rule for those fields).
+     *
+     * @param array<string,mixed> $item
+     * @param array<int,string> $allowed
+     * @param array<int,string> $procedure keys whose strings are procedure
+     * @return array<int,string>
+     */
+    public static function ungroundedNumbers(array $item, array $allowed, array $procedure = []): array
+    {
+        $text = '';
+        $steps = '';
+        $collect = function ($value, bool $inProcedure) use (&$collect, &$text, &$steps, $procedure): void {
+            if (is_array($value)) {
+                foreach ($value as $k => $v) {
+                    $collect($v, $inProcedure || in_array($k, $procedure, true));
+                }
+            } elseif (is_string($value)) {
+                if ($inProcedure) {
+                    $steps .= ' ' . $value;
+                } else {
+                    $text .= ' ' . $value;
+                }
+            }
+        };
+        $collect($item, false);
+        $steps = preg_replace('/(?<![\d.,])([1-9]|[1-5][0-9]|60)(?![\d]|[.,]\d)/', '', $steps) ?? $steps;
+        $text = preg_replace('/\b(?:slide|step)\s+\d+\b/i', '', $text . ' ' . $steps) ?? $text;
+
+        $pool = mb_strtolower(implode(' ', $allowed));
+        preg_match_all('/\d+(?:[.,]\d+)?/u', $text, $found);
+        $bad = [];
+        foreach (array_unique($found[0]) as $number) {
+            if (!preg_match('/(?<![\d.])' . preg_quote($number, '/') . '(?![\d])/u', $pool)) {
+                $bad[] = $number;
+            }
+        }
+
+        return $bad;
+    }
+
+    /**
+     * What a number in the wording may come from: the chapter text, the concepts' own names and definitions, and the questions
+     * the model was shown (the sources the validator's grounding check allows). @param array<int,mixed> $shown further text, any depth
+     * @return array<int,string>
+     */
+    protected static function numbersAllowedFrom(array $context, array $map, array $shown = []): array
+    {
+        $allowed = [(string) ($context['ground_truth'] ?? '')];
+        foreach ((array) ($map['concepts'] ?? []) as $c) {
+            $allowed[] = (string) ($c['name'] ?? '') . ' ' . (string) ($c['definition'] ?? '');
+        }
+        array_walk_recursive($shown, function ($value) use (&$allowed): void {
+            if (is_string($value)) {
+                $allowed[] = strip_tags($value);
+            }
+        });
+
+        return $allowed;
+    }
+
+    /** The instruction a model gets back for numbers that are not in the chapter text. @param array<int,string> $numbers */
+    protected static function numberProblem(array $numbers): string
+    {
+        return 'These numbers are not in the chapter text or in the questions you were shown: ' . implode(', ', array_slice($numbers, 0, 12))
+            . '. Use only numbers that the chapter text gives. If an example needs a result the chapter does not state, say what is to be done with the chapter\'s own numbers instead of working out a new one.';
+    }
+
     protected function ask(string $system, string $prompt, int $maxTokens): string
     {
         return $this->replies[] = $this->completer->complete($system, $prompt, $maxTokens);

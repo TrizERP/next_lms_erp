@@ -13,6 +13,7 @@ use App\Services\StudyDeck\Branching\BranchingScenarioService;
 use App\Services\StudyDeck\ClaudeApiCompleter;
 use App\Services\StudyDeck\ClaudeCliCompleter;
 use App\Services\StudyDeck\Contracts\Completer;
+use App\Services\StudyDeck\Documents\ChapterHasNoSourceText;
 use App\Services\StudyDeck\Documents\CompactRevisionPdfRenderer;
 use App\Services\StudyDeck\Documents\DocumentKind;
 use App\Services\StudyDeck\Documents\DocumentPictures;
@@ -102,12 +103,31 @@ class ContentGenerationService
      */
     public function handles($chapterId): bool
     {
+        return self::chapterListed((string) config('claude.chapter_ids', ''), (int) $chapterId);
+    }
+
+    /**
+     * Is this chapter written as a study document (revision notes, remedial class, classroom activities)?
+     *
+     * True for every chapter `claude.study_document_chapter_ids` lists, and for every chapter Claude already serves, so
+     * opening study documents to more chapters never takes them away from one that had them.
+     */
+    public function servesStudyDocuments($chapterId): bool
+    {
         $chapterId = (int) $chapterId;
+
+        return $this->handles($chapterId)
+            || self::chapterListed((string) config('claude.study_document_chapter_ids', ''), $chapterId);
+    }
+
+    /** Does a comma-separated list of chapter ids (or `*`) include the chapter? An empty list includes none. */
+    private static function chapterListed(string $configured, int $chapterId): bool
+    {
         if ($chapterId <= 0) {
             return false;
         }
 
-        $configured = trim((string) config('claude.chapter_ids', ''));
+        $configured = trim($configured);
         if ($configured === '') {
             return false;
         }
@@ -861,12 +881,12 @@ class ContentGenerationService
 
     /**
      * Which kind of study document a requested content type should be written as for this chapter, or null when it
-     * should be written the way it always was (a chapter Claude does not serve, a type that is not one of the three,
+     * should be written the way it always was (a chapter study documents are not enabled for, a type that is not one of the three,
      * or `claude.study_documents` switched off, which restores the earlier single-prompt documents at once).
      */
     public function studyDocumentKindFor(string $contentType, $chapterId): ?DocumentKind
     {
-        if (!(bool) config('claude.study_documents', true) || !$this->handles($chapterId)) {
+        if (!(bool) config('claude.study_documents', true) || !$this->servesStudyDocuments($chapterId)) {
             return null;
         }
 
@@ -951,13 +971,30 @@ class ContentGenerationService
         $chapterId = (int) $input['chapter']->id;
         $name = strtolower($kind->label());
 
+        // The pages are measured by drawing both copies, so the fit and the page limits (revision notes 8 to 10, a remedial class
+        // 10 to 12, classroom activities a compact pack of 5 to 6) apply to a drawer request as they do to the artisan command's.
+        $options = [
+            'concept_ids' => (array) ($input['concept_ids'] ?? []),
+            'measure' => fn (array $document) => [
+                'revision' => CompactRevisionPdfRenderer::pageCount($this->studyDocumentPdfBytes($document, ['variant' => 'revision', 'tenant' => $tenant])),
+                'practice' => CompactRevisionPdfRenderer::pageCount($this->studyDocumentPdfBytes($document, ['variant' => 'practice', 'tenant' => $tenant])),
+            ],
+        ];
+        if ($kind === DocumentKind::Activities) {
+            $options += ['compact' => true, 'pages' => StudyDocumentService::ACTIVITY_PAGES, 'min_pages' => StudyDocumentService::ACTIVITY_PAGES_MIN];
+        }
+
         try {
             $result = $this->studyDocumentService($completer, $tenant, $chapterId)
-                ->generate($kind, $chapterId, $tenant, ['concept_ids' => (array) ($input['concept_ids'] ?? [])]);
+                ->generate($kind, $chapterId, $tenant, $options);
         } catch (AiConfigurationException $e) {
             return $this->fail($e->getMessage(), 500);
         } catch (AiProviderException $e) {
             return $this->fail($this->readableApiError($e), 502);
+        } catch (ChapterHasNoSourceText $e) {
+            // Not a failure of ours: with study documents open to every chapter, a chapter whose textbook has not been
+            // extracted yet is an ordinary state for the teacher to be told about.
+            return $this->fail('This chapter has no extracted textbook text yet, so the ' . $name . ' cannot be written from it. Upload and extract the chapter first.', 422);
         } catch (\InvalidArgumentException $e) {
             return $this->fail($e->getMessage(), 422);
         } catch (Throwable $e) {

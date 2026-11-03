@@ -80,6 +80,14 @@ final class StudyDeckImageUrls
                 }
             }
         }
+        // An item of a slide's interaction (a card opened beside the slide's picture) may carry a picture of its own.
+        foreach ((array) ($deck['slides'] ?? []) as $slide) {
+            foreach ((array) ($slide['interaction']['items'] ?? []) as $item) {
+                if (($id = StudyDeckImages::idFromRef($item['image']['url'] ?? null)) !== null) {
+                    $wanted[$id] = $id;
+                }
+            }
+        }
         // A study document may also hold a picture per concept.
         foreach ((array) ($deck['concept_images'] ?? []) as $image) {
             if (($id = StudyDeckImages::idFromRef($image['url'] ?? null)) !== null) {
@@ -127,6 +135,19 @@ final class StudyDeckImageUrls
                     } else {
                         $deck['slides'][$si]['interaction']['nodes'][$k]['extra_images'][$path[1]]['url'] = $urls[$id];
                     }
+                }
+            }
+        }
+        foreach ((array) ($deck['slides'] ?? []) as $si => $slide) {
+            foreach ((array) ($slide['interaction']['items'] ?? []) as $k => $item) {
+                $id = StudyDeckImages::idFromRef($item['image']['url'] ?? null);
+                if ($id === null) {
+                    continue;
+                }
+                if (isset($urls[$id])) {
+                    $deck['slides'][$si]['interaction']['items'][$k]['image']['url'] = $urls[$id];
+                } else {
+                    Log::warning('Study deck item picture is not available to this school', ['image_id' => $id, 'tenant' => $tenant]);
                 }
             }
         }

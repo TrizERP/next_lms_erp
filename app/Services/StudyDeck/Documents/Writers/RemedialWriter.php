@@ -115,6 +115,8 @@ class RemedialWriter extends DocumentWriter
 
         $compact = $this->compact;
         $purpose = $this->purpose;
+        // A worked example is where a model works out numbers the chapter never gives; tell it while it can still change them.
+        $allowed = self::numbersAllowedFrom($context, $map, array_column($work, 'practice'));
         $units = $this->inChunks(
             $work,
             self::SYSTEM,
@@ -126,7 +128,10 @@ class RemedialWriter extends DocumentWriter
                 default => $this->prompt($context, $chunk),
             },
             fn (array $json, array $chunk) => $this->parse($json, $chunk),
-            fn (array $unit, array $item) => self::problems($unit, $item, $this->checker, $compact, $purpose),
+            fn (array $unit, array $item) => array_merge(
+                self::problems($unit, $item, $this->checker, $compact, $purpose),
+                ($bad = self::ungroundedNumbers($unit, $allowed)) ? [self::numberProblem($bad)] : []
+            ),
             $progress
         );
 

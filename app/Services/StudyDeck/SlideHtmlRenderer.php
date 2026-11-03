@@ -260,10 +260,12 @@ class SlideHtmlRenderer
         }
 
         if ($img) {
-            $credit = ($img['type'] ?? 'photo') === 'photo' ? '. ' . trim(($img['creator'] ?: 'Openverse') . ', ' . $img['licence']) : '';
+            // The picture's own title can run to 40 words (a file name and a description), and the whole caption counts towards the slide's word
+            // limit: it is shortened here. The full title, creator, licence and source stay in the deck's "Image credits" section.
+            $credit = ($img['type'] ?? 'photo') === 'photo' ? '. ' . trim(self::firstWords((string) ($img['creator'] ?: 'Openverse'), 4) . ', ' . $img['licence']) : '';
             $out .= '<figure class="fig-md"' . $attrs('visual', $firstName, $c['bloom']) . '>'
                 . '<img src="' . $this->e($img['url']) . '" alt="' . $this->e($img['alt']) . '">'
-                . '<figcaption>' . $this->e(rtrim((string) $img['caption'], '.') . $credit) . '</figcaption></figure>';
+                . '<figcaption>' . $this->e(self::firstWords(rtrim((string) $img['caption'], '.'), 6) . $credit) . '</figcaption></figure>';
         }
 
         if ($c['example'] !== null) {
@@ -371,5 +373,13 @@ class SlideHtmlRenderer
     private function e(string $s): string
     {
         return htmlspecialchars($s, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+    }
+
+    /** The first `$n` words of a caption or a creator's name, with an ellipsis when something was left out. */
+    public static function firstWords(string $text, int $n): string
+    {
+        $words = preg_split('/\s+/u', trim($text), -1, PREG_SPLIT_NO_EMPTY) ?: [];
+
+        return count($words) <= $n ? implode(' ', $words) : rtrim(implode(' ', array_slice($words, 0, $n)), ',;:.-') . '…';
     }
 }

@@ -38,9 +38,11 @@ class GenerateStudyDocumentCommand extends Command
         {--concepts= : comma-separated concept ids to write about (default: every concept of the chapter)}
         {--per-concept=4 : most bank questions offered per concept}
         {--compact : a compact pack of any kind: every part written short and the bank questions fitted to --pages}
-        {--pages=5 : with --compact, the exact number of pages both copies of the PDF must come to}
+        {--pages=5 : with --compact, the exact number of pages both copies of the PDF must come to (the most, with --min-pages)}
+        {--min-pages= : with --compact, accept a range: both copies must come to --min-pages up to --pages pages, and be the same length}
         {--draft= : the draft.json of an earlier compact or purpose-based run: its wording is reused and only the page fit is made again (no model call)}
         {--lessons= : a remedial class: how many concepts get a lesson (default about a fifth of the chapter, 4 to 8)}
+        {--fuller : revision notes: write each sheet at its fullest (always the case for a chapter of five topics or fewer)}
         {--interactions : give each part that has none an interaction (match, order, compare, scenario ...): needs --draft; the model reads each part and adds nothing to the wording}
         {--pictures : give parts that have no picture one the classroom presentation of the chapter already stores (credited photographs, drawn diagrams); needs --draft}
         {--exclude-pictures= : comma-separated study_deck_images ids never to reuse}
@@ -136,6 +138,8 @@ class GenerateStudyDocumentCommand extends Command
                 'per_concept' => (int) $this->option('per-concept'),
                 'compact' => $compact,
                 'pages' => $pages,
+                'min_pages' => $this->option('min-pages') !== null ? (int) $this->option('min-pages') : null,
+                'fuller' => $this->option('fuller') ? true : null,
                 'draft' => $draft,
                 'interactions' => (bool) $this->option('interactions'),
                 'interaction_set' => $interactionSet,
@@ -248,8 +252,9 @@ class GenerateStudyDocumentCommand extends Command
             $lines[] = sprintf('%s (%s, %s, %d pages)', $file, $label, number_format(strlen($bytes) / 1024, 0) . ' KiB', $count);
             // What was written is what was measured: a compact pack that drifted from its page target is not a result.
             $target = (int) ($document['compact']['target_pages'] ?? 0);
-            if ($target > 0 && $count !== $target) {
-                throw new \RuntimeException('the "' . $label . '" copy came out at ' . $count . ' pages, not ' . $target);
+            $least = (int) ($document['compact']['min_pages'] ?? $target);
+            if ($target > 0 && ($count < $least || $count > $target)) {
+                throw new \RuntimeException('the "' . $label . '" copy came out at ' . $count . ' pages, not ' . ($least === $target ? $target : $least . ' to ' . $target));
             }
             // A purpose-based document has a range, not a count; what was written must be what was measured and be inside it.
             $range = $document['purpose'] ?? null;

@@ -54,6 +54,20 @@ class InteractionPlanner
     /** @var array<int,string> raw replies, kept for inspection */
     public array $replies = [];
 
+    /** What a number in an interaction may be found in (GroundedNumbers::allowedText), set by plan(); '' = not judged (check() called on its own). */
+    private string $allowed = '';
+
+    /** The bank questions the deck may use: the validator accepts a number found in one of them, so this stage must too. @var array<int,array<int,array<string,mixed>>> */
+    private array $eligible = [];
+
+    /** @param array<int,array<int,array<string,mixed>>> $eligible concept_id => questions */
+    public function groundedIn(array $eligible): static
+    {
+        $this->eligible = $eligible;
+
+        return $this;
+    }
+
     public function __construct(private readonly Completer $completer, private readonly int $chunkSize = 12)
     {
     }
@@ -79,6 +93,7 @@ class InteractionPlanner
      */
     public function plan(array $context, array $map, array $plan, array $content, array $images, ?callable $progress = null): array
     {
+        $this->allowed = GroundedNumbers::allowedText($context, $this->eligible);
         $caps = self::capsFor($map);
         $slides = [];
         $out = [];
@@ -259,6 +274,13 @@ class InteractionPlanner
             if ($clean === null || $errors) {
                 $bad[$n] = $errors ?: ['The interaction is not valid.'];
                 $errors = [];
+                continue;
+            }
+            // The validator rejects the whole deck for a number that is not in the chapter, and by then nobody can fix it: it goes back here,
+            // to this stage's own repair round, and is dropped with a reason if it still cannot be fixed.
+            $loose = GroundedNumbers::ungrounded(GroundedNumbers::wording($clean), $this->allowed);
+            if ($loose !== []) {
+                $bad[$n] = [GroundedNumbers::complaint($loose)];
                 continue;
             }
             $clean['reason'] = $reason !== '' ? $reason : $this->text($raw['reason'] ?? '');

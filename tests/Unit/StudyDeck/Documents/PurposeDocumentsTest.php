@@ -699,7 +699,51 @@ class PurposeDocumentsTest extends TestCase
 
         $over = $this->generate(DocumentKind::RevisionNotes, null, ['measure' => $aim(6)]);
         $this->assertTrue($over['report']['ok'], 'inside the limit of fifteen, so it passes');
-        $this->assertStringContainsString('aimed at 5 to 10', implode(' ', $over['report']['warnings']));
+        $this->assertStringContainsString('aimed at 8 to 10', implode(' ', $over['report']['warnings']));
+    }
+
+    public function test_sheets_are_asked_for_at_their_fullest_only_when_told_to_and_the_limits_do_not_change(): void
+    {
+        $recording = fn () => new class extends PurposeModel {
+            /** @var array<int,string> */
+            public array $prompts = [];
+
+            public function complete(string $system, string $prompt, int $maxTokens = 16000): string
+            {
+                $this->prompts[] = $prompt;
+
+                return parent::complete($system, $prompt, $maxTokens);
+            }
+        };
+        $sheetPrompts = fn ($model) => array_values(array_filter($model->prompts, fn ($p) => str_contains($p, 'Write the REVISION SHEET')));
+
+        $full = $recording();
+        $fuller = $this->generate(DocumentKind::RevisionNotes, $full, ['fuller' => true]);
+        $this->assertNotEmpty($sheetPrompts($full));
+        foreach ($sheetPrompts($full) as $prompt) {
+            $this->assertStringContainsString('DEPTH.', $prompt);
+        }
+
+        $plain = $recording();
+        $this->generate(DocumentKind::RevisionNotes, $plain, ['fuller' => false]);
+        foreach ($sheetPrompts($plain) as $prompt) {
+            $this->assertStringNotContainsString('DEPTH.', $prompt);
+        }
+
+        // The same limits apply either way: what the model is told to fill is still held to them by the validator.
+        $this->assertTrue($fuller['report']['ok'], implode(' ', $fuller['report']['errors']));
+    }
+
+    public function test_notes_that_come_to_fewer_pages_than_the_aim_pass_with_a_warning_and_use_every_question_they_have_room_for(): void
+    {
+        // A chapter of few topics: nothing the fit can drop, so the pack keeps the most questions the notes hold.
+        $short = $this->generate(DocumentKind::RevisionNotes, null, ['measure' => fn () => ['revision' => 6, 'practice' => 5]]);
+
+        $this->assertTrue($short['report']['ok'], 'six pages is inside the limit of five to fifteen');
+        $this->assertSame(StudyDocumentService::REVISION_CHECK_QUESTIONS, 14);
+        $this->assertLessThanOrEqual(StudyDocumentService::REVISION_CHECK_QUESTIONS, $short['document']['purpose']['check_questions']);
+        $warnings = implode(' ', $short['report']['warnings']);
+        $this->assertStringContainsString('aimed at 8 to 10', $warnings);
     }
 
     public function test_a_document_outside_five_to_fifteen_pages_does_not_pass(): void

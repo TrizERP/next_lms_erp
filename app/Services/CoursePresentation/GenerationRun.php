@@ -365,7 +365,7 @@ class GenerationRun
             // The story format is the same pipeline built with the story template; the teaching method shapes the story.
             $args = ['chapter' => $chapterId, '--tenant' => $tenant, '--out' => $bundle, '--teaching-method' => $status['method']];
             // Pedagogical workflow pilot: only the one configured chapter; every other chapter's arguments stay as they were.
-            $workflows = app(PedagogicalWorkflow::class);
+            $workflows = app(PedagogicalWorkflow::class)->forIds($chapterId, $tenant);
             if ($workflows->appliesToIds($chapterId, $tenant)) {
                 $context = $workflows->generationContext((string) $status['method'], (string) ($status['format'] ?? ''));
                 if ($context !== null) {

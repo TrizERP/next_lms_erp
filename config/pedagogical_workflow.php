@@ -5,9 +5,9 @@
 | Pedagogical workflow pilot (Course Presentation card)
 |--------------------------------------------------------------------------
 |
-| Data only. SCOPE: Std 9 Science, chapter 8592, school 1. Every other chapter keeps the existing card and
-| pipeline untouched; PedagogicalWorkflow::appliesTo() is the only gate and the backend checks chapter, standard,
-| subject and school together (the frontend flag is a convenience, not the guard).
+| Data only. SCOPE: Std 9 chapter 1 of Science (8592), Mathematics (8594), English (8622) and Social Science (8608), school 1.
+| Every other chapter keeps the existing card and pipeline untouched; PedagogicalWorkflow::appliesTo() is the only gate and
+| the backend checks chapter, standard, subject and school together (the frontend flag is a convenience, not the guard).
 |
 | `methods` hold the staged workflow of each teaching method (keys match config course_presentation_pilot.pedagogies
 | and StudyDeck\TeachingMethodProfile). `formats` hold the delivery formats; a format is selectable only when its
@@ -26,6 +26,90 @@ return [
         'label' => 'Std 9 Science, chapter 1 (Exploration: Entering the World of Secondary Science)',
         'chapter_id' => 8592, 'standard_id' => 42, 'subject_id' => 3975, 'sub_institute_id' => 1,
         'academic_year' => 2026,
+    ],
+
+    // Further chapters the workflow is switched on for. `scope` above is the original Science chapter and uses the top-level `methods` and
+    // `compatibility`; each chapter here names a subject `profile` (below) that narrows them to what suits the subject. A chapter matches only
+    // when its id, standard, subject AND school all match, exactly like `scope`. Std 9 chapter 1 of every other subject is NOT listed here on purpose.
+    'chapters' => [
+        ['label' => 'Std 9 Mathematics, chapter 1 (Orienting Yourself: The Use of Coordinates)', 'profile' => 'mathematics',
+            'chapter_id' => 8594, 'standard_id' => 42, 'subject_id' => 3976, 'sub_institute_id' => 1],
+        ['label' => 'Std 9 English, chapter 1 (How I Taught My Grandmother to Read)', 'profile' => 'english',
+            'chapter_id' => 8622, 'standard_id' => 42, 'subject_id' => 3978, 'sub_institute_id' => 1],
+        ['label' => 'Std 9 Social Science, chapter 1 (Understanding Social Science)', 'profile' => 'social_science',
+            'chapter_id' => 8608, 'standard_id' => 42, 'subject_id' => 4469, 'sub_institute_id' => 1],
+    ],
+
+    /*
+    | SUBJECT PROFILES. What differs between subjects, nothing else:
+    |   methods        the teaching methods offered for the chapter, strongest first (the order of the picker). A method left out is refused by the server.
+    |   compatibility  method -> delivery formats that suit it in this subject (a format with no generator is listed but cannot be chosen).
+    |   wording        text replaced in the method stages (the shared stage text was written for Science).
+    |   images         'diagrams' = the normal picture ladder (web picture, textbook picture, drawn diagram); omitted = photographs first, as for Science.
+    |   ai_note        appended to the method's instruction in every generation prompt.
+    |
+    | HOW THE METHODS WERE CHOSEN (2026-11-03). Two sources, nothing invented: (1) the chapter's own teaching analysis (semantic_intelligence), through
+    | the same MethodSuitability rule the pre-flight shows: a method it judges NOT suitable is left out; (2) for the five methods that analysis cannot
+    | judge (explicit, problem-based, collaborative, Socratic, mastery) the content of the chapter, kept only where the chapter has work for that method.
+    | Add a method back by listing it in `methods` and `compatibility`; no code changes.
+    |   Maths (9 concepts)        suitable: inquiry 8/9, experiential 9/9, gamified 5/9. Out: project 0/9, flipped 0/9; Socratic and a story-led
+    |                             format do not fit plotting and formulas.
+    |   English (10 concepts)     suitable: experiential 10/10, gamified 2/10. Out: inquiry 0/10, project 0/10, flipped 1/10; problem-based has no
+    |                             problem to solve in a story.
+    |   Social Science (17)       suitable: inquiry 15/17, experiential 14/17, project 4/17. Out: flipped 0/17, gamified 1/17; mastery drilling does not
+    |                             fit a chapter of definitions and sources.
+    | Only interactive_slides and branching_scenario can be generated today; the other formats are shown so the teacher sees what would suit.
+    */
+    'profiles' => [
+
+        'mathematics' => [
+            'subject' => 'Mathematics',
+            'methods' => ['explicit_instruction', 'inquiry_based', 'experiential', 'differentiated_mastery', 'gamified', 'problem_based', 'collaborative'],
+            'compatibility' => [
+                'explicit_instruction' => ['interactive_slides', 'worksheet_guide', 'video_lesson'],
+                'inquiry_based' => ['interactive_slides', 'simulation_activity'],
+                'experiential' => ['simulation_activity', 'interactive_slides', 'worksheet_guide'],
+                'differentiated_mastery' => ['worksheet_guide', 'interactive_slides'],
+                'gamified' => ['branching_scenario', 'interactive_slides', 'simulation_activity'],
+                'problem_based' => ['interactive_slides', 'scenario_lesson', 'branching_scenario'],
+                'collaborative' => ['interactive_slides', 'worksheet_guide', 'simulation_activity'],
+            ],
+            'wording' => ['scientific' => 'mathematical'],
+            'images' => 'diagrams',
+            'ai_note' => 'This is a Mathematics chapter. Teach through worked examples and plotting or construction steps, and show the working. Every picture is a drawn grid, graph or diagram, never a photograph; where a stage asks for a photograph, use a drawn diagram of the same idea. Use only numbers, coordinates and formulas that appear in the chapter text, its questions or its concept definitions (the finished deck is checked for this).',
+        ],
+
+        'english' => [
+            'subject' => 'English',
+            'methods' => ['experiential', 'explicit_instruction', 'collaborative', 'socratic', 'gamified', 'differentiated_mastery'],
+            'compatibility' => [
+                'experiential' => ['interactive_slides', 'branching_scenario', 'worksheet_guide'],
+                'explicit_instruction' => ['interactive_slides', 'worksheet_guide', 'video_lesson'],
+                'collaborative' => ['interactive_slides', 'branching_scenario', 'worksheet_guide'],
+                'socratic' => ['socratic_dialogue', 'interactive_slides', 'branching_scenario'],
+                'gamified' => ['branching_scenario', 'interactive_slides', 'scenario_lesson'],
+                'differentiated_mastery' => ['worksheet_guide', 'interactive_slides'],
+            ],
+            'wording' => ['scientific' => 'literary'],
+            'images' => 'diagrams',
+            'ai_note' => 'This is an English chapter: a first-person story with language work (vocabulary, prefixes, tense, idioms). Ground every slide in the story itself: use only its characters, events and quotations. Teach each language point with sentences taken from or closely modelled on the chapter, and ask comprehension and discussion questions whose answers are reasons found in the text. Pictures are illustrations of scenes or drawn language diagrams; do not invent facts about real people or places.',
+        ],
+
+        'social_science' => [
+            'subject' => 'Social Science',
+            'methods' => ['inquiry_based', 'experiential', 'project_based', 'problem_based', 'collaborative', 'socratic', 'explicit_instruction'],
+            'compatibility' => [
+                'inquiry_based' => ['interactive_slides', 'branching_scenario', 'scenario_lesson', 'worksheet_guide'],
+                'experiential' => ['simulation_activity', 'interactive_slides', 'worksheet_guide'],
+                'project_based' => ['interactive_slides', 'worksheet_guide', 'scenario_lesson'],
+                'problem_based' => ['interactive_slides', 'scenario_lesson', 'branching_scenario'],
+                'collaborative' => ['interactive_slides', 'branching_scenario', 'worksheet_guide'],
+                'socratic' => ['socratic_dialogue', 'interactive_slides', 'branching_scenario'],
+                'explicit_instruction' => ['interactive_slides', 'video_lesson', 'worksheet_guide'],
+            ],
+            'wording' => ['scientific' => 'social-science'],
+            'ai_note' => 'This is a Social Science chapter that introduces history, geography, political science and economics. Treat evidence as sources (what a source is, what it can and cannot tell us) and ground every claim in the chapter text; do not add dates, places or events it does not give. For the Indian knowledge-tradition ideas (Panchayati Raj, Dharma and Rajadharma, Vasudhaiva Kutumbakam) say only what the chapter says. Keep a neutral, respectful tone on social and political topics. Pictures are photographs, maps or drawn diagrams of the sources and places the chapter names.',
+        ],
     ],
 
     'formats' => [

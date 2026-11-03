@@ -52,6 +52,12 @@ class ActivityWriter extends DocumentWriter
      */
     public const COMPACT_ACTIVITIES_MAX = 10;
 
+    /**
+     * The fewest activities a compact pack aims at when the chapter has the concepts for them. A card is about half a page, so a
+     * pack of three or four (what a chapter of ten concepts used to get) is a three-page set, however many questions follow it.
+     */
+    public const COMPACT_ACTIVITIES_MIN = 8;
+
     public const COMPACT_FORMATS = ['inquiry', 'quiz', 'problem_solving', 'discussion', 'role_play', 'reflection'];
 
     public const COMPACT_OBJECTIVE_WORDS = 20;
@@ -93,8 +99,12 @@ class ActivityWriter extends DocumentWriter
     {
         $min = max(min(3, $concepts), (int) ceil($concepts / 4));
         if ($compact) {
-            // Few enough to fit a few pages as cards, and still enough that every concept is in one (at most MAX_CONCEPTS each).
-            return [$min, max($min, min(self::COMPACT_ACTIVITIES_MAX, (int) ceil($concepts / 3)))];
+            // Few enough to fit a few pages as cards, enough to fill them, and enough that every concept is in one (at most
+            // MAX_CONCEPTS each). A chapter with few concepts gets about two activities for each, up to the pack's most.
+            $least = $concepts >= self::COMPACT_ACTIVITIES_MIN ? max($min, self::COMPACT_ACTIVITIES_MIN) : $min;
+            $most = min(self::COMPACT_ACTIVITIES_MAX, max((int) ceil($concepts / 3), 2 * $concepts));
+
+            return [$least, max($least, $most)];
         }
         $max = min(self::MAX_ACTIVITIES, max($min, (int) ceil($concepts / 2)));
 
@@ -145,6 +155,9 @@ class ActivityWriter extends DocumentWriter
         }
 
         $compact = $this->compact;
+        // An activity that has students plot or compute something is where a model invents numbers the chapter never gives (and
+        // a pair written "(4,3)" reads as one number); tell it while it can still change them. Procedure (group sizes, minutes up to 60) is let through.
+        $allowed = self::numbersAllowedFrom($context, $map, array_column($work, 'bank_questions_attached'));
         $activities = $this->inChunks(
             $work,
             self::SYSTEM,
@@ -152,7 +165,10 @@ class ActivityWriter extends DocumentWriter
             'classroom activities',
             fn (array $chunk) => $compact ? $this->compactWritePrompt($context, $chunk) : $this->writePrompt($context, $chunk),
             fn (array $json, array $chunk) => $this->parse($json, $chunk),
-            fn (array $activity, array $item) => self::problems($activity, $item, $this->checker, $compact),
+            fn (array $activity, array $item) => array_merge(
+                self::problems($activity, $item, $this->checker, $compact),
+                ($bad = self::ungroundedNumbers($activity, $allowed, ['materials', 'teacher_steps', 'student_steps', 'setup'])) ? [self::numberProblem($bad)] : []
+            ),
             $progress
         );
 

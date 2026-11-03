@@ -1742,35 +1742,37 @@ public function generateGammaPDF(Request $request)
             }
         }
 
+        // Revision notes, a remedial class and classroom activities are STUDY DOCUMENTS: written from the chapter's own
+        // concept data, prerequisites and question bank, checked, and stored with a PDF the app reads in place. The
+        // prompt the drawer assembled is not used for them (the pipeline builds its own from the same data). They are
+        // decided before the `chapter_ids` gate below because they are open to more chapters than that list (see
+        // ContentGenerationService::servesStudyDocuments), and must not drag the other content types along with them.
+        if ($kind = $this->contentGeneration->studyDocumentKindFor($contentType, $chapterData->id)) {
+            $conceptIds = $this->resolveStudyDocumentConceptIds($chapterData->id, (array) $request->input('concept_names', []));
+            if ($conceptIds === null) {
+                return response()->json(['success' => false, 'status_code' => 0, 'message' => 'None of the selected concepts could be matched to this chapter.'], 422);
+            }
+            $result = $this->contentGeneration->generateStudyDocument($kind, [
+                'chapter' => $chapterData,
+                'chapter_name' => (string) ($chapterData->chapter_name ?: $chapterName),
+                'grade_id' => $gradeId,
+                'concept_id' => null,
+                'concept_ids' => $conceptIds,
+                'sub_institute_id' => $sub_institute_id,
+                'syear' => $syear,
+                'created_by' => $user_id,
+                'user_profile_name' => $request->user_profile_name,
+            ]);
+
+            return response()->json($result['body'], $result['http']);
+        }
+
         // Chapters listed in config('claude.chapter_ids') are written by Claude
         // instead of Gamma/Gemini - for every content type, presentations
         // included. The prompt has already been assembled by the caller, so the
         // service only chooses the model and stores the result. Any other
         // chapter falls through to the two provider branches below unchanged.
         if ($this->contentGeneration->handles($chapterData->id)) {
-            // Revision notes, a remedial class and classroom activities are STUDY DOCUMENTS: written from the chapter's own
-            // concept data, prerequisites and question bank, checked, and stored with a PDF the app reads in place. The
-            // prompt the drawer assembled is not used for them (the pipeline builds its own from the same data).
-            if ($kind = $this->contentGeneration->studyDocumentKindFor($contentType, $chapterData->id)) {
-                $conceptIds = $this->resolveStudyDocumentConceptIds($chapterData->id, (array) $request->input('concept_names', []));
-                if ($conceptIds === null) {
-                    return response()->json(['success' => false, 'status_code' => 0, 'message' => 'None of the selected concepts could be matched to this chapter.'], 422);
-                }
-                $result = $this->contentGeneration->generateStudyDocument($kind, [
-                    'chapter' => $chapterData,
-                    'chapter_name' => (string) ($chapterData->chapter_name ?: $chapterName),
-                    'grade_id' => $gradeId,
-                    'concept_id' => null,
-                    'concept_ids' => $conceptIds,
-                    'sub_institute_id' => $sub_institute_id,
-                    'syear' => $syear,
-                    'created_by' => $user_id,
-                    'user_profile_name' => $request->user_profile_name,
-                ]);
-
-                return response()->json($result['body'], $result['http']);
-            }
-
             $result = $this->contentGeneration->generate([
                 'prompt' => $prompt,
                 'content_type' => $contentType,

@@ -212,6 +212,32 @@ class CompactStudyDocumentsTest extends TestCase
         $this->assertStringContainsString('student half of the card runs to', implode(' ', ActivityWriter::problems($wordy, $this->work(), null, true)));
     }
 
+    public function test_a_compact_pack_of_a_chapter_with_ten_concepts_gets_enough_activities_to_fill_its_pages(): void
+    {
+        // Ten concepts used to get three or four activities, which is a three- or four-page set however many questions follow.
+        $this->assertSame([8, 10], ActivityWriter::range(10, true));
+        $this->assertSame([8, 10], ActivityWriter::range(17, true));
+        // A chapter too small for that keeps what covers its concepts.
+        [$min, $max] = ActivityWriter::range(4, true);
+        $this->assertSame(3, $min);
+        $this->assertGreaterThanOrEqual($min, $max);
+    }
+
+    public function test_a_number_the_chapter_does_not_give_is_reported_while_the_model_can_still_fix_it(): void
+    {
+        $allowed = ['A point such as (3, -4) is described by two numbers. The midpoint of (3, -4) and (-7, 1) is (-2, -1.5).'];
+
+        $this->assertSame([], ActivityWriter::ungroundedNumbers(['text' => 'Plot (3, -4) and (-7, 1).'], $allowed));
+        $this->assertSame(['17'], ActivityWriter::ungroundedNumbers(['text' => 'Solve for x: x = -17.'], $allowed));
+        // A pair written without a space is one token, "4,3", which the chapter does not contain.
+        $this->assertSame(['4,3'], ActivityWriter::ungroundedNumbers(['text' => 'Plot the point (4,3).'], $allowed));
+        // Not a claim: "step 2", and (in procedure) a group size or minutes up to 60.
+        $this->assertSame([], ActivityWriter::ungroundedNumbers(['text' => 'See step 2.', 'student_steps' => ['Work in groups of 4 for 15 minutes.']], $allowed, ['student_steps']));
+        // But a number above 60 in procedure, or any number outside it, is still checked.
+        $this->assertSame(['90'], ActivityWriter::ungroundedNumbers(['student_steps' => ['Spend 90 minutes.']], $allowed, ['student_steps']));
+        $this->assertSame(['9'], ActivityWriter::ungroundedNumbers(['reflection' => ['Groups of 9 reported.']], $allowed, ['student_steps']));
+    }
+
     /** @return array<int,array<string,mixed>> */
     private function planReply(): array
     {

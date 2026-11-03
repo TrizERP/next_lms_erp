@@ -77,6 +77,20 @@ return [
             'after_commit' => false,
         ],
 
+        // Course Presentation drafts (App\Jobs\GenerateCoursePresentationJob). Own queue name so a worker for them never
+        // runs the unrelated jobs waiting in `default` (nothing consumed `default`, so drafts used to wait there until they
+        // were marked "worker did not start"), and a retry_after ABOVE the job's 7200s timeout so a running draft is never
+        // handed to a second worker. Start the worker with
+        //   php artisan queue:work course_presentation --queue=course-presentation --sleep=3 --tries=1 --timeout=7200 --max-time=3600
+        // and restart it after the pipeline's code changes (the job refuses to run on a worker older than that code).
+        'course_presentation' => [
+            'driver' => 'database',
+            'table' => 'jobs',
+            'queue' => 'course-presentation',
+            'retry_after' => 7300,
+            'after_commit' => false,
+        ],
+
         'beanstalkd' => [
             'driver' => 'beanstalkd',
             'host' => 'localhost',

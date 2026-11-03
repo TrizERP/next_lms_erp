@@ -5,15 +5,21 @@ namespace App\Services\CoursePresentation;
 use App\Services\StudyDeck\TeachingMethodProfile;
 
 /**
- * The staged pedagogical workflow of the Course Presentation card, switched on for ONE chapter
- * (config pedagogical_workflow.scope). Reads config only; nothing here touches the database.
+ * The staged pedagogical workflow of the Course Presentation card, switched on for the chapters listed in config
+ * pedagogical_workflow (`scope`: Std 9 Science chapter 1; `chapters`: Std 9 chapter 1 of other subjects, each with a subject profile).
+ * Reads config only; nothing here touches the database.
  *
  * Every other chapter is "not applicable": the caller keeps the existing card and pipeline.
+ *
+ * An instance answers for the Science chapter until forChapter() / forIds() binds it to the chapter at hand; the bound copy then
+ * offers that chapter's methods and method -> format map (its subject profile) and builds its generation context.
  */
 class PedagogicalWorkflow
 {
     private array $config;
     private MethodContextRepository $contexts;
+    /** The scope entry this copy was bound to by forChapter() / forIds(); null = not bound (the original Science entry). */
+    private ?array $bound = null;
 
     public function __construct(?array $config = null, ?MethodContextRepository $contexts = null)
     {
@@ -21,25 +27,100 @@ class PedagogicalWorkflow
         $this->contexts = $contexts ?? new MethodContextRepository();
     }
 
-    /** Chapter, standard, subject and school must ALL match the one pilot entry. */
+    /** @return array<int,array<string,mixed>> every chapter entry: the original `scope`, then `chapters` */
+    private function entries(): array
+    {
+        $out = [];
+        if (($first = (array) ($this->config['scope'] ?? [])) !== []) {
+            $out[] = $first;
+        }
+        foreach ((array) ($this->config['chapters'] ?? []) as $entry) {
+            $out[] = (array) $entry;
+        }
+
+        return $out;
+    }
+
+    /** Chapter, standard, subject and school must ALL match one entry. @return array<string,mixed>|null */
+    private function entryFor(array $row): ?array
+    {
+        foreach ($this->entries() as $e) {
+            if ((int) ($row['id'] ?? 0) === (int) $e['chapter_id']
+                && (int) ($row['standard_id'] ?? 0) === (int) $e['standard_id']
+                && (int) ($row['subject_id'] ?? 0) === (int) $e['subject_id']
+                && (int) ($row['sub_institute_id'] ?? 0) === (int) $e['sub_institute_id']) {
+                return $e;
+            }
+        }
+
+        return null;
+    }
+
+    /** @return array<string,mixed>|null */
+    private function entryForIds(int $chapterId, int $tenant): ?array
+    {
+        foreach ($this->entries() as $e) {
+            if ($chapterId === (int) $e['chapter_id'] && $tenant === (int) $e['sub_institute_id']) {
+                return $e;
+            }
+        }
+
+        return null;
+    }
+
+    /** Chapter, standard, subject and school must ALL match one pilot entry. */
     public function appliesTo(object|array $chapter): bool
     {
-        $s = (array) ($this->config['scope'] ?? []);
-        $row = (array) $chapter;
-
-        return $s !== []
-            && (int) ($row['id'] ?? 0) === (int) $s['chapter_id']
-            && (int) ($row['standard_id'] ?? 0) === (int) $s['standard_id']
-            && (int) ($row['subject_id'] ?? 0) === (int) $s['subject_id']
-            && (int) ($row['sub_institute_id'] ?? 0) === (int) $s['sub_institute_id'];
+        return $this->entryFor((array) $chapter) !== null;
     }
 
     /** For the background run, which already has the verified ids only. */
     public function appliesToIds(int $chapterId, int $tenant): bool
     {
-        $s = (array) ($this->config['scope'] ?? []);
+        return $this->entryForIds($chapterId, $tenant) !== null;
+    }
 
-        return $s !== [] && $chapterId === (int) $s['chapter_id'] && $tenant === (int) $s['sub_institute_id'];
+    /** A copy answering for this chapter's subject profile. A chapter outside the pilot gets the unbound copy, which callers never reach. */
+    public function forChapter(object|array $chapter): static
+    {
+        return $this->bind($this->entryFor((array) $chapter));
+    }
+
+    public function forIds(int $chapterId, int $tenant): static
+    {
+        return $this->bind($this->entryForIds($chapterId, $tenant));
+    }
+
+    private function bind(?array $entry): static
+    {
+        $copy = clone $this;
+        $copy->bound = $entry;
+
+        return $copy;
+    }
+
+    /** The subject profile of the bound chapter; empty for Science, which keeps the top-level methods and compatibility. @return array<string,mixed> */
+    private function profile(): array
+    {
+        $key = (string) ($this->bound['profile'] ?? '');
+
+        return $key === '' ? [] : (array) ($this->config['profiles'][$key] ?? []);
+    }
+
+    /** method => format keys that suit it, for the bound subject. @return array<string,array<int,string>> */
+    private function compatibilityMap(): array
+    {
+        return (array) ($this->profile()['compatibility'] ?? $this->config['compatibility'] ?? []);
+    }
+
+    /** @param array<string,string> $replace */
+    private function reword(mixed $value, array $replace): mixed
+    {
+        if (is_string($value)) {
+            return str_ireplace(array_keys($replace), array_values($replace), $value);
+        }
+
+        return is_array($value) ? array_map(fn ($v) => $this->reword($v, $replace), $value) : $value;
     }
 
     /**
@@ -58,6 +139,21 @@ class PedagogicalWorkflow
             }
             $row = $this->contexts->active((string) $key);
             $out[$key] = $row === null ? $m : $this->fromStored($m, $row);
+        }
+
+        // A subject profile offers only the methods that suit the subject (in its order) and says "scientific" in the subject's own words.
+        $profile = $this->profile();
+        if (isset($profile['methods'])) {
+            $offered = [];
+            foreach ((array) $profile['methods'] as $key) {
+                if (isset($out[$key])) {
+                    $offered[$key] = $out[$key];
+                }
+            }
+            $out = $offered;
+        }
+        if (!empty($profile['wording'])) {
+            $out = array_map(fn ($m) => $this->reword($m, (array) $profile['wording']), $out);
         }
 
         return $out;
@@ -98,7 +194,7 @@ class PedagogicalWorkflow
     public function formatsFor(string $method): array
     {
         $out = [];
-        foreach ((array) ($this->config['compatibility'][$method] ?? []) as $key) {
+        foreach ((array) ($this->compatibilityMap()[$method] ?? []) as $key) {
             $f = $this->config['formats'][$key] ?? null;
             if ($f === null) {
                 continue;
@@ -116,7 +212,7 @@ class PedagogicalWorkflow
     /** @return array<string,array<int,string>> method => compatible format keys, for active methods only */
     public function compatibility(): array
     {
-        return array_intersect_key((array) ($this->config['compatibility'] ?? []), $this->methods());
+        return array_intersect_key($this->compatibilityMap(), $this->methods());
     }
 
     /** null when the combination may be used, otherwise the reason it may not. */
@@ -125,7 +221,7 @@ class PedagogicalWorkflow
         if (!isset($this->methods()[$method])) {
             return 'This teaching method is not available for this chapter.';
         }
-        if (!in_array($format, (array) ($this->config['compatibility'][$method] ?? []), true)) {
+        if (!in_array($format, (array) ($this->compatibilityMap()[$method] ?? []), true)) {
             return 'This content format does not suit the chosen teaching method.';
         }
         if (!$this->formatAvailable($format)) {
@@ -154,7 +250,7 @@ class PedagogicalWorkflow
 
     /**
      * The context the study-deck pipeline receives for this method and format. Facts (concepts, outcomes, text) are
-     * NOT put here: the pipeline loads them from the chapter itself, so nothing outside chapter 8592 can enter.
+     * NOT put here: the pipeline loads them from the chapter itself, so nothing outside the bound chapter can enter.
      *
      * @return array<string,mixed>|null
      */
@@ -166,12 +262,15 @@ class PedagogicalWorkflow
             return null;
         }
         $m = $this->methods()[$method];
+        $profile = $this->profile();
+        $note = trim((string) ($profile['ai_note'] ?? ''));
 
-        return [
-            'chapter_id' => (int) $this->config['scope']['chapter_id'],
+        $context = [
+            'chapter_id' => (int) ($this->bound['chapter_id'] ?? $this->config['scope']['chapter_id']),
             // Every stored field of the method context (the eleven of pedagogical_method_contexts); rule() decides which reach which prompt.
             'method' => [
-                'key' => $method, 'name' => $wf['name'], 'definition' => $wf['description'], 'ai_instructions' => $m['ai_instructions'],
+                'key' => $method, 'name' => $wf['name'], 'definition' => $wf['description'],
+                'ai_instructions' => $note === '' ? $m['ai_instructions'] : trim((string) $m['ai_instructions'] . ' ' . $note),
                 'teacher_role' => $wf['teacher_role'], 'student_role' => $wf['student_role'], 'assessment' => $wf['assessment'],
                 'philosophy' => $m['philosophy'] ?? null, 'principles' => $m['principles'] ?? [], 'strategies' => $m['strategies'] ?? [],
                 'questioning' => $m['questioning'] ?? [], 'activity_types' => $wf['activity_types'], 'interaction_types' => $wf['interaction_types'],
@@ -181,6 +280,13 @@ class PedagogicalWorkflow
             'stages' => $wf['stages'],
             'outcomes' => [],
         ];
+        // Only a subject profile adds these, so the Science context is exactly what it was. `images` = 'diagrams' keeps the normal picture ladder.
+        if ($profile !== []) {
+            $context['subject'] = (string) ($profile['subject'] ?? '');
+            $context['images'] = (string) ($profile['images'] ?? 'photographs');
+        }
+
+        return $context;
     }
 
     /**
@@ -266,9 +372,16 @@ class PedagogicalWorkflow
                 . implode("\n", array_map(fn ($o) => "- {$o['ref']} ({$o['type']}): {$o['description']}", $outcomes));
         }
 
+        // A competency reads like a heading over its outcomes, and a plan that tags only the outcomes is sent back for the competencies: name them.
+        $competencies = array_column(array_filter($outcomes, fn ($o) => ($o['type'] ?? '') === 'competency'), 'ref');
+        $competencyNote = $competencies === [] ? '' : ' The competencies (' . implode(', ', $competencies) . ') are not headings: each needs its OWN ref in the outcome_refs of at least one slide that develops it, as well as its outcomes.';
+
         $tail = match ($kind) {
             'planner' => ' Give EVERY slide except the cover a "workflow_stage": a whole number from 1 to ' . $count . ' naming the stage it belongs to. The deck may run the stage sequence again inside each topic, but within one topic the stage numbers never go down, and every stage from 1 to ' . $count . ' must appear on at least one slide.'
-                . ($outcomes === [] ? '' : ' Give each slide an "outcome_refs" list holding the refs (from the list above) of the outcomes and competencies it genuinely helps achieve ([] if none). EVERY listed outcome and competency must appear in the outcome_refs of at least one slide. Use only the listed refs.'),
+                // A stage is not a slide type: a plan once spent six repair rounds on a reflection stage it carried on a slide with no concepts, on an
+                // invented "reflection" type, and on no slide at all, in turn.
+                . ' A workflow stage is NOT a slide_type: every slide_type must be exactly one of the listed slide types (never invent one such as "reflection"). A stage with no slide type of its own, such as a reflection or discussion stage, is carried by a slide of a listed type that fits it (for example challenge, scenario, relationship or summary). A recall, practice, application, scenario, relationship, worked_example, misconception or concept slide must list the concept_ids it is about.'
+                . ($outcomes === [] ? '' : ' Give each slide an "outcome_refs" list holding the refs (from the list above) of the outcomes and competencies it genuinely helps achieve ([] if none). EVERY listed outcome and competency must appear in the outcome_refs of at least one slide. Use only the listed refs.' . $competencyNote),
             'content' => ' Each slide in the input names its workflow_stage (and stage name) and its outcome_refs: write the slide as that stage, using the stage activity and questions for the text and the check, addressed to the students described above.'
                 . ($outcomes === [] ? '' : ' Make sure every outcome listed in a slide\'s outcome_refs is actually addressed in its explanation or check.'),
             'story' => ' Scenes follow the stages in order; the stage questions are the student decisions.'

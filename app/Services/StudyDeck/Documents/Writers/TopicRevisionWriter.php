@@ -54,9 +54,36 @@ class TopicRevisionWriter extends RevisionNotesWriter
     private const SHEET_SYSTEM = 'You are an experienced teacher preparing one-page exam revision sheets for the topics of a textbook chapter. '
         . 'You reply with a single JSON object and nothing else. You never add facts that are not in the chapter text, and you never teach: you condense.';
 
+    /** Ask for each sheet at its fullest (see fuller()). */
+    private bool $fuller = false;
+
     public function __construct(\App\Services\StudyDeck\Contracts\Completer $completer, int $chunkSize = 2)
     {
         parent::__construct($completer, $chunkSize);
+    }
+
+    /**
+     * Ask for each sheet at its fullest: the limits stay exactly as they are (the validator holds the finished document to them),
+     * but the model is told to use the room they give instead of writing the shortest sheet that passes. For a chapter of few
+     * topics, whose sheets add up to fewer pages than a revision pack is aimed at, that is what fills them with chapter content
+     * rather than with blank space or questions.
+     */
+    public function fuller(bool $on = true): static
+    {
+        $this->fuller = $on;
+
+        return $this;
+    }
+
+    private function depthNote(): string
+    {
+        return $this->fuller
+            ? "\n\nDEPTH. This chapter has few topics, so each sheet is read as the whole revision of its topic: use the room the limits give, within them. "
+                . "Write each \"essential\" as a complete sentence near the top of its word limit that states the fact together with the condition, reason or consequence the chapter attaches to it; "
+                . 'give a "compare" table for every topic whose chapter text sets things side by side (and a fuller one: the most rows the limit allows); '
+                . 'give the most "mixups" and "recall" points the listed misconceptions and the chapter text support, and the full number of glossary terms. '
+                . 'Everything still comes from the chapter text, and a field with nothing real to say stays empty.'
+            : '';
     }
 
     /**
@@ -367,6 +394,8 @@ Rules
 - "checklist": 1 or 2 statements starting "I can", built from the listed objectives of the topic's concepts: what the learner should be able to do before the examination.
 - "terms": the topic's vocabulary for a glossary, 0 to {$glossary} entries {"concept_id": id, "term": "...", "meaning": "{$meanMin} to {$meanMax} words"}. A term is a word or short phrase the learner must be able to USE (for example a name the chapter introduces), never the title of a concept (each concept already has its row) and never a sentence. Its meaning is a DEFINITION in the chapter text's own words: what the term means, as a whole sentence or a noun phrase ("A ... that ..."), never a fragment and never the sentence of a row said again. 0 entries is right when the topic has no vocabulary beyond its rows.
 - "diagram" and "diagram_notes": ONLY where the topic has several named parts, kinds or relations that the chapter lists and a picture would help recall; at most ONE in this whole reply, and about one topic in three has one (null and [] for the rest); do not draw what the comparison table of the same topic already shows. A diagram is {"layout": "compare" | "hub", "title": "...", ...}: hub has "center" and "nodes" (3 to 6 labels); compare has "left" and "right", each {"heading": "...", "items": [2 to 5 labels]}. Every label uses words from the chapter text and is at most 40 characters. "diagram_notes" has one entry for EVERY label drawn: [{"label": "the label exactly", "text": "5 to 25 words saying what it is"}].
+
+{$this->depthNote()}
 
 Reply with:
 {"topics": [{"topic_id": 0, "big_idea": "", "rows": [{"concept_id": 0, "essential": "", "terms": [""]}], "compare": null, "mixups": [{"wrong_idea": "", "correct": ""}], "recall": [""], "checklist": ["I can ..."], "terms": [{"concept_id": 0, "term": "", "meaning": ""}], "diagram": null, "diagram_notes": []}]}

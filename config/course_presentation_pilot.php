@@ -25,9 +25,13 @@ return [
     'resource' => 'course_presentation',
 
     'scope' => [
-        'label' => 'the Std 9 Science pilot chapter and the four Std 4 EVS "Water" chapters',
+        'label' => 'chapter 1 of Std 9 Science, Mathematics, English and Social Science and the four Std 4 EVS "Water" chapters',
         'chapters' => [
             ['chapter_id' => 8592, 'standard_id' => 42, 'subject_id' => 3975, 'sub_institute_id' => 1],
+            // Std 9 chapter 1 of the other subjects (verified against chapter_master 2026-11-03). Their methods and formats: config/pedagogical_workflow.php `profiles`.
+            ['chapter_id' => 8594, 'standard_id' => 42, 'subject_id' => 3976, 'sub_institute_id' => 1],
+            ['chapter_id' => 8622, 'standard_id' => 42, 'subject_id' => 3978, 'sub_institute_id' => 1],
+            ['chapter_id' => 8608, 'standard_id' => 42, 'subject_id' => 4469, 'sub_institute_id' => 1],
             // Std 4 EVS (subject 48385), school 341: verified against chapter_master, document_extractions and semantic_intelligence.
             ['chapter_id' => 41675, 'standard_id' => 4258, 'subject_id' => 48385, 'sub_institute_id' => 341],
             ['chapter_id' => 41676, 'standard_id' => 4258, 'subject_id' => 48385, 'sub_institute_id' => 341],
@@ -224,7 +228,10 @@ return [
             'rounds' => 2,
             'source' => (string) env('COURSE_PRESENTATION_IMAGE_SOURCE', ''),
         ],
-        'hard_limit_seconds' => (int) env('COURSE_PRESENTATION_HARD_LIMIT_SECONDS', 240),
+        // A slides run is three model stages in a row (plan, write, interactions) and one plan or repair reply alone takes 20-90 s; the
+        // only complete run on record took 630 s. At 240 s a run ran out of time inside planning even when nothing was wrong, so it
+        // could not succeed from the application. 900 matches the per-stage cap above.
+        'hard_limit_seconds' => (int) env('COURSE_PRESENTATION_HARD_LIMIT_SECONDS', 900),
         'run_dir' => 'app/course-presentation',
     ],
     // Where an earlier, unstored study-deck bundle of a chapter is looked for (read only, its report.json). Tests point it elsewhere.

@@ -23,8 +23,15 @@ class GenerateCoursePresentationJob implements ShouldQueue, ShouldBeUnique
     public int $timeout = 7200;
     public int $uniqueFor = 7200;
 
+    public const CONNECTION = 'course_presentation';
+
     public function __construct(public int $chapterId, public int $tenant, public string $run)
     {
+        // Its own queue (config/queue.php), so it is not left waiting in `default` where no worker runs. With the synchronous
+        // driver the controller runs it after the response, as before.
+        if (config('queue.default') !== 'sync') {
+            $this->onConnection(self::CONNECTION)->onQueue((string) config('queue.connections.' . self::CONNECTION . '.queue', 'course-presentation'));
+        }
     }
 
     public function uniqueId(): string

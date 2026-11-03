@@ -359,6 +359,21 @@ class CoursePresentationGenerationTest extends CoursePresentationTestCase
         $this->assertSame([], array_intersect(['tenant', 'user_id', 'log', 'chapter_id', 'bundle'], array_keys($res->json('run'))));
     }
 
+    public function test_a_draft_job_goes_to_its_own_queue_unless_the_driver_is_synchronous(): void
+    {
+        // `default` has no worker: a draft left there waited until it was marked "worker did not start".
+        config(['queue.default' => 'database']);
+        $job = new GenerateCoursePresentationJob(self::CHAPTER, self::TENANT, 'r0123456789ab');
+        $this->assertSame('course_presentation', $job->connection);
+        $this->assertSame('course-presentation', $job->queue);
+        $this->assertGreaterThan($job->timeout, (int) config('queue.connections.course_presentation.retry_after'), 'a running draft must not be handed to a second worker');
+
+        config(['queue.default' => 'sync']);
+        $job = new GenerateCoursePresentationJob(self::CHAPTER, self::TENANT, 'r0123456789ab');
+        $this->assertNull($job->connection, 'with the synchronous driver the controller still runs it after the response');
+        $this->assertNull($job->queue);
+    }
+
     public function test_progress_is_saved_while_the_generator_is_still_running(): void
     {
         $this->seedPilotChapter();

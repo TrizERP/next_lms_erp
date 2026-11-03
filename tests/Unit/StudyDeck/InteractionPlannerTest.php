@@ -234,10 +234,25 @@ class InteractionPlannerTest extends TestCase
         $reply = $this->interactionReply();
         $reply['slides'][2]['interaction']['items'][0]['text'] = 'A law was first written down by 4712 observers in one afternoon.';
 
-        $r = $this->build([json_encode($reply)]);
+        // The planner holds the wording to the chapter text itself: the item is sent back once and, when it still has the number, dropped
+        // with its reason, so the finished deck is not failed for a number nobody could have fixed at that point (see GroundedNumbersTest).
+        $r = $this->build([json_encode($reply), '{}']);
 
-        $this->assertFalse($r['report']['ok']);
-        $this->assertStringContainsString('4712', implode("\n", $r['report']['errors']));
+        $this->assertNull($this->slide($r, 4)['interaction']);
+        $this->assertStringContainsString('4712', (string) $this->slide($r, 4)['interaction_reason']);
+        $this->assertStringContainsString('not in the chapter text', (string) $this->slide($r, 4)['interaction_reason']);
+        $this->assertStringNotContainsString('Numbers in slide text', implode("\n", $r['report']['errors']));
+    }
+
+    public function test_the_validator_still_refuses_an_interaction_with_a_number_the_chapter_does_not_give(): void
+    {
+        $r = $this->build([json_encode($this->interactionReply())]);
+        $deck = $r['deck'];
+        $deck['slides'][3]['interaction']['items'][0]['text'] = 'A law was first written down by 4712 observers in one afternoon.';
+
+        $errors = (new DeckValidator())->validate($r['context'], $r['map'], $r['selection']['eligible'], ['html' => $r['html'], 'deck' => $deck])['errors'];
+
+        $this->assertStringContainsString('4712', implode("\n", $errors));
     }
 
     public function test_practice_is_capped_and_an_unplaced_concept_question_is_no_longer_an_error(): void
@@ -272,9 +287,9 @@ class InteractionPlannerTest extends TestCase
         $reply['slides'][5] = ['n' => 7, 'reason' => 'dated events', 'interaction' => [
             'kind' => 'timeline', 'intro' => 'Select an event.',
             'items' => [
-                ['when' => '1687', 'label' => 'Laws of motion', 'text' => 'Newton gave three laws of motion that describe repeated patterns.'],
-                ['when' => '1905', 'label' => 'A new theory', 'text' => 'A theory explains why a pattern occurs, and can replace an older one.'],
-                ['when' => '1915', 'label' => 'Tested', 'text' => 'A theory is kept only while its predictions agree with what is measured.'],
+                ['when' => 'First', 'label' => 'Laws of motion', 'text' => 'Newton gave three laws of motion that describe repeated patterns.'],
+                ['when' => 'Next', 'label' => 'A new theory', 'text' => 'A theory explains why a pattern occurs, and can replace an older one.'],
+                ['when' => 'Last', 'label' => 'Tested', 'text' => 'A theory is kept only while its predictions agree with what is measured.'],
             ],
         ]];
 
@@ -283,9 +298,27 @@ class InteractionPlannerTest extends TestCase
         $this->assertSame('order', $this->slide($r, 6)['interaction']['kind']);
         $this->assertSame(['o1', 'o2', 'o3'], array_column($this->slide($r, 6)['interaction']['items'], 'id'));
         $this->assertSame('timeline', $this->slide($r, 7)['interaction']['kind']);
-        $this->assertSame('1687', $this->slide($r, 7)['interaction']['items'][0]['when']);
-        // The dates are claims: the grounding check holds them to the chapter text.
-        $this->assertStringContainsString('Numbers in slide text that are not in the chapter text', implode("\n", $r['report']['errors']));
+        $this->assertSame('First', $this->slide($r, 7)['interaction']['items'][0]['when']);
+    }
+
+    public function test_a_timeline_whose_dates_are_not_in_the_chapter_text_is_dropped_with_its_reason(): void
+    {
+        $reply = $this->interactionReply();
+        $reply['slides'][5] = ['n' => 7, 'reason' => 'dated events', 'interaction' => [
+            'kind' => 'timeline', 'intro' => 'Select an event.',
+            'items' => [
+                ['when' => '1687', 'label' => 'Laws of motion', 'text' => 'Newton gave three laws of motion that describe repeated patterns.'],
+                ['when' => '1905', 'label' => 'A new theory', 'text' => 'A theory explains why a pattern occurs, and can replace an older one.'],
+                ['when' => '1915', 'label' => 'Tested', 'text' => 'A theory is kept only while its predictions agree with what is measured.'],
+            ],
+        ]];
+
+        // The dates are claims, and this chapter gives none: the item is sent back once, then dropped, rather than failing the whole deck at the end.
+        $r = $this->build([json_encode($reply), '{}']);
+
+        $this->assertNull($this->slide($r, 7)['interaction']);
+        $this->assertStringContainsString('1687', (string) $this->slide($r, 7)['interaction_reason']);
+        $this->assertStringNotContainsString('Numbers in slide text', implode("\n", $r['report']['errors']));
     }
 
     public function test_each_new_kind_is_dropped_when_it_breaks_its_own_rules(): void
