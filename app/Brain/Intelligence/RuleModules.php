@@ -45,6 +45,7 @@ final class RuleModules
      * config/platform_services.php module keys.
      */
     private const MODULE_TOKENS = [
+        'alumni' => 'alumni',
         'academic' => 'academics',
         'admissions' => 'admissions',
         'attendance' => 'attendance',

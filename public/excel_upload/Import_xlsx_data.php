@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/../../bootstrap/excel_upload_guard.php';
 
 // ini_set('display_errors', 1);
 // ini_set('display_startup_errors', 1);
@@ -6,7 +7,7 @@
 include('db.php');
 
 require_once('PHPExcel.php');
-session_start();
+if (session_status() !== PHP_SESSION_ACTIVE) { session_start(); }
 // if($_REQUEST['modfunc'] == "SAVE"){
 //  $random_num = rand(1, 50000);
 //     $file_name = $random_num . "-" . str_replace(" ", _, $_FILES["file"]["name"]);

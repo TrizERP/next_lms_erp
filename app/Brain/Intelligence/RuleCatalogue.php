@@ -790,6 +790,50 @@ final class RuleCatalogue
             'category' => 'remediate',
         ],
 
+        /* ------------------------------------------------------- alumni --- */
+        'mod_alumni_awaiting_verification' => [
+            'family' => 'ownership_gap',
+            'confidence' => 0.75,
+            'hypothesis' => 'Records registered or imported faster than anyone verifies them, because verification is a manual step with no named owner and no deadline. The register fills; the confirmation queue is nobody\'s morning task.',
+            'action' => 'Name the person who owns the Pending Verification list and work it to empty. Until a record is verified it should not feed the directory, mentor matching or campaigns.',
+            'category' => 'remediate',
+        ],
+        'mod_alumni_unreachable' => [
+            'family' => 'data_quality',
+            'confidence' => 0.70,
+            'hypothesis' => 'Alumni were added from the student record or an import, which carries a name and a batch but no consent. Consent is a separate act that nothing in the creation path asks for, so the records exist and cannot be written to.',
+            'action' => 'Collect consent and a current email or mobile at the next touchpoint — an event, a survey or the portal login — and do not message any record without it.',
+            'category' => 'remediate',
+        ],
+        'mod_alumni_incomplete_profiles' => [
+            'family' => 'data_quality',
+            'confidence' => 0.65,
+            'hypothesis' => 'Records created by staff or import with only the minimum fields, and never revisited by the alumnus. Nothing prompts a person to complete a profile they did not create.',
+            'action' => 'Invite these alumni to complete their profile, or fill the gaps from the original student record, before using the directory for matching.',
+            'category' => 'remediate',
+        ],
+        'mod_alumni_dormant' => [
+            'family' => 'engagement_risk',
+            'confidence' => 0.60,
+            'hypothesis' => 'No event, survey or message has drawn these alumni back in the last year. A register that is only written to when staff add a record measures the register, not the community.',
+            'action' => 'Run a re-engagement campaign to the reachable dormant alumni and measure who responds; treat the silent remainder as a contact-quality question, not a disengagement one.',
+            'category' => 'remediate',
+        ],
+        'mod_alumni_mentor_requests_waiting' => [
+            'family' => 'sla_breach',
+            'confidence' => 0.80,
+            'hypothesis' => 'Matching is manual, and either no mentor covers the career area asked for or nobody owns the open queue. The request was made in good faith and has had no answer.',
+            'action' => 'Match or decline each open request, and recruit mentors for the career areas students actually ask for. A decline with a reason is better than silence.',
+            'category' => 'remediate',
+        ],
+        'mod_alumni_donations_unverified' => [
+            'family' => 'ownership_gap',
+            'confidence' => 0.70,
+            'hypothesis' => 'Donations reported by alumni need someone to check a bank or payment reference by hand, and that step has no owner. The donor has given or pledged and has heard nothing back.',
+            'action' => 'Confirm or reject each pending donation and issue the receipt. A donor who has paid and receives nothing rarely gives again.',
+            'category' => 'remediate',
+        ],
+
         /* ------------------------------------------------------- visitor --- */
         'mod_visitor_visits_never_closed' => [
             'family' => 'lifecycle_inconsistency',

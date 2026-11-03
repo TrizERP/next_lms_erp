@@ -32,15 +32,15 @@
         						$syear = Session::get('syear');
         						$user_id = Session::get('user_id');
 
-                                $chapter_link = "/excel_upload/bulk_chapter_data.php?sub_institute_id=".$sub_institute_id."&syear=".$syear."&user_id=".$user_id;
+                                $chapter_link = "/excel_upload/bulk_chapter_data.php?sub_institute_id=".$sub_institute_id."&syear=".$syear."&user_id=".$user_id."&xk=".\App\Support\ExcelUploadLink::key((int) $sub_institute_id, (int) $user_id);
 
-                                $topic_link = "/excel_upload/bulk_topic_data.php?sub_institute_id=".$sub_institute_id."&syear=".$syear."&user_id=".$user_id;
+                                $topic_link = "/excel_upload/bulk_topic_data.php?sub_institute_id=".$sub_institute_id."&syear=".$syear."&user_id=".$user_id."&xk=".\App\Support\ExcelUploadLink::key((int) $sub_institute_id, (int) $user_id);
 
-        						$question_link = "/excel_upload/bulk_question_data.php?sub_institute_id=".$sub_institute_id."&syear=".$syear."&user_id=".$user_id;
+        						$question_link = "/excel_upload/bulk_question_data.php?sub_institute_id=".$sub_institute_id."&syear=".$syear."&user_id=".$user_id."&xk=".\App\Support\ExcelUploadLink::key((int) $sub_institute_id, (int) $user_id);
 
-                                $lo_link = "/excel_upload/bulk_lo_data.php?sub_institute_id=".$sub_institute_id."&syear=".$syear."&user_id=".$user_id;
+                                $lo_link = "/excel_upload/bulk_lo_data.php?sub_institute_id=".$sub_institute_id."&syear=".$syear."&user_id=".$user_id."&xk=".\App\Support\ExcelUploadLink::key((int) $sub_institute_id, (int) $user_id);
 
-                                $content_link = "/excel_upload/bulk_content_data.php?sub_institute_id=".$sub_institute_id."&syear=".$syear."&user_id=".$user_id;
+                                $content_link = "/excel_upload/bulk_content_data.php?sub_institute_id=".$sub_institute_id."&syear=".$syear."&user_id=".$user_id."&xk=".\App\Support\ExcelUploadLink::key((int) $sub_institute_id, (int) $user_id);
                                 @endphp
     						<a href="{{$chapter_link}}" target="_blank" class="btn btn-info add-new">Bulk Chapter Upload</a>
 

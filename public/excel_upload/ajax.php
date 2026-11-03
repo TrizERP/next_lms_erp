@@ -1,10 +1,11 @@
 <?php
+require_once __DIR__ . '/../../bootstrap/excel_upload_guard.php';
 include('db.php');
 
 if ($_POST['action'] == 'getStandard') {
 
-    $grade = isset($_REQUEST['grade']) ? $_REQUEST['grade'] : 0;
-    $sub_institute_id = isset($_REQUEST['sub_institute_id']) ? $_REQUEST['sub_institute_id'] : 0;
+    $grade = isset($_REQUEST['grade']) ? (int) $_REQUEST['grade'] : 0;
+    $sub_institute_id = isset($_REQUEST['sub_institute_id']) ? (int) $_REQUEST['sub_institute_id'] : 0;
 
     $stdArr = mysqli_query($cn, "SELECT * FROM standard WHERE sub_institute_id = '" . $sub_institute_id . "' AND grade_id = '" . $grade . "'");
 
@@ -18,8 +19,8 @@ if ($_POST['action'] == 'getStandard') {
 
 if ($_POST['action'] == 'getSubject') {
 
-    $standard = isset($_REQUEST['standard']) ? $_REQUEST['standard'] : 0;
-    $sub_institute_id = isset($_REQUEST['sub_institute_id']) ? $_REQUEST['sub_institute_id'] : 0;
+    $standard = isset($_REQUEST['standard']) ? (int) $_REQUEST['standard'] : 0;
+    $sub_institute_id = isset($_REQUEST['sub_institute_id']) ? (int) $_REQUEST['sub_institute_id'] : 0;
 //    echo "SELECT * FROM sub_std_map WHERE sub_institute_id = '".$sub_institute_id."' AND standard_id = '".$standard."'";
 //	die();
     $subArr = mysqli_query($cn, "SELECT * FROM sub_std_map WHERE sub_institute_id = '" . $sub_institute_id . "' AND standard_id = '" . $standard . "'");
@@ -34,9 +35,9 @@ if ($_POST['action'] == 'getSubject') {
 
 if ($_POST['action'] == 'getChapter') {
 
-    $standard = isset($_REQUEST['standard']) ? $_REQUEST['standard'] : 0;
-    $subject = isset($_REQUEST['subject']) ? $_REQUEST['subject'] : 0;
-    $sub_institute_id = isset($_REQUEST['sub_institute_id']) ? $_REQUEST['sub_institute_id'] : 0;
+    $standard = isset($_REQUEST['standard']) ? (int) $_REQUEST['standard'] : 0;
+    $subject = isset($_REQUEST['subject']) ? (int) $_REQUEST['subject'] : 0;
+    $sub_institute_id = isset($_REQUEST['sub_institute_id']) ? (int) $_REQUEST['sub_institute_id'] : 0;
     //$syear = isset($_REQUEST['syear']) ? $_REQUEST['syear'] : 0;
 
     $chapterArr = mysqli_query($cn, "SELECT * FROM chapter_master WHERE sub_institute_id = '" . $sub_institute_id . "'
@@ -52,10 +53,10 @@ if ($_POST['action'] == 'getChapter') {
 
 if ($_POST['action'] == 'getTopic') {
 
-    $standard = isset($_REQUEST['standard']) ? $_REQUEST['standard'] : 0;
-    $subject = isset($_REQUEST['subject']) ? $_REQUEST['subject'] : 0;
-    $chapter = isset($_REQUEST['chapter']) ? $_REQUEST['chapter'] : 0;
-    $sub_institute_id = isset($_REQUEST['sub_institute_id']) ? $_REQUEST['sub_institute_id'] : 0;
+    $standard = isset($_REQUEST['standard']) ? (int) $_REQUEST['standard'] : 0;
+    $subject = isset($_REQUEST['subject']) ? (int) $_REQUEST['subject'] : 0;
+    $chapter = isset($_REQUEST['chapter']) ? (int) $_REQUEST['chapter'] : 0;
+    $sub_institute_id = isset($_REQUEST['sub_institute_id']) ? (int) $_REQUEST['sub_institute_id'] : 0;
     $sql = "SELECT * FROM topic_master WHERE sub_institute_id = '" . $sub_institute_id . "'
     AND chapter_id = '" . $chapter . "'";
     $topicArr = mysqli_query($cn, $sql);

@@ -134,3 +134,7 @@ Fixed: anonymous student-data GETs (`map_student/fetchData`, `calendar/fetchData
 Checked and fine: `public/*_integration.php`, `test.php` are CLI-only; `hrms_api.php` / `library_api.php` need a signed JWT; Next.js `dangerouslySetInnerHTML` sinks are sanitised or escaped.
 
 Not done: the other ~230 `{!! !!}` Blade outputs are server-built HTML (school header, asterisks, flash messages) and were not changed; a `lms/new_*`, paraphrase and result-permission route group points at controllers that do not exist (dead routes, 500 not data).
+
+## 10. Final audit (2026-11-02): excel_upload
+
+The bulk-import scripts in `public/excel_upload/` took the school and user from the request and never checked a login (`session_start()` is not one). They now include `bootstrap/excel_upload_guard.php` first: a request is accepted only with `xk=<expiry>.<hmac>` made by `App\Support\ExcelUploadLink::key()` from APP_KEY, and from then on the signed school and user replace whatever the request says. Menu links (Bulk Chapter Upload page, Field Settings popup) carry the key. `ajax.php` casts its ids to integers. The old `implementation_2` page links to a different host and will no longer open these pages.

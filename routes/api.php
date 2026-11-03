@@ -910,6 +910,22 @@ Route::controller(\App\Http\Controllers\api\UserManagementApiController::class)-
 Route::get('groupwise-rights', [\App\Http\Controllers\api\GroupwiseRightsApiController::class, 'index']);
 Route::get('groupwise-rights/{profileId}/matrix', [\App\Http\Controllers\api\GroupwiseRightsApiController::class, 'matrix']);
 Route::post('groupwise-rights', [\App\Http\Controllers\api\GroupwiseRightsApiController::class, 'store']);
+
+// Roles & Access: module-wise role rights, copy, effective access and change history. Admin only;
+// the controller validates the token itself (see RoleAccessApiController).
+Route::controller(\App\Http\Controllers\api\RoleAccessApiController::class)->prefix('role-access')->group(function () {
+    Route::get('roles', 'roles');
+    Route::get('roles/{profileId}/modules', 'modules')->whereNumber('profileId');
+    Route::post('roles/{profileId}/rights', 'save')->whereNumber('profileId');
+    Route::post('roles/{profileId}/copy/preview', 'copyPreview')->whereNumber('profileId');
+    Route::post('roles/{profileId}/copy/apply', 'copyApply')->whereNumber('profileId');
+    Route::get('users', 'users');
+    Route::get('users/{userId}/effective', 'effective')->whereNumber('userId');
+    Route::get('coverage', 'coverage');
+    Route::get('history', 'history');
+    Route::get('history/{batchId}', 'historyDetail');
+    Route::post('history/{batchId}/undo', 'undo');
+});
 Route::get('individual-rights', [\App\Http\Controllers\api\IndividualRightsApiController::class, 'index']);
 Route::get('individual-rights/{profileId}/users', [\App\Http\Controllers\api\IndividualRightsApiController::class, 'users']);
 Route::get('individual-rights/{profileId}/{userId}/matrix', [\App\Http\Controllers\api\IndividualRightsApiController::class, 'matrix']);
