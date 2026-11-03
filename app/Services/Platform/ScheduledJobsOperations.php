@@ -51,6 +51,9 @@ class ScheduledJobsOperations
             'alumni.opportunity.expiring' => [self::class, 'alumniOpportunitiesExpiring'],
             'alumni.profile.verification_waiting' => [self::class, 'alumniVerificationWaiting'],
             'alumni.profile.milestones_ahead' => [self::class, 'alumniBirthdaysAhead'],
+            'organization_management.compliance.due_soon' => [self::class, 'orgComplianceDueSoon'],
+            'organization_management.compliance.overdue_scan' => [self::class, 'orgComplianceOverdue'],
+            'organization_management.disciplinary.monthly_summary' => [self::class, 'orgDisciplinaryMonth'],
             'document_templates.template.draft_scan' => [self::class, 'documentTemplateDrafts'],
             'document_templates.template.missing_category_scan' => [self::class, 'documentTemplateMissingCategories'],
             'document_templates.template.summary' => [self::class, 'documentTemplateSummary'],
@@ -528,6 +531,62 @@ class ScheduledJobsOperations
         }
 
         return "Report only: {$n} alumni have a birthday in the next 7 days. No one is named and no message was sent.";
+    }
+
+    /** Open compliance items: not completed, not marked not applicable, not deleted. */
+    private static function orgOpenCompliance(int $tenant)
+    {
+        return DB::table('org_compliance_library')->where('sub_institute_id', $tenant)->whereNull('deleted_at')
+            ->where(fn ($w) => $w->whereNull('status')->orWhereNotIn('status', ['Completed', 'Not Applicable']));
+    }
+
+    /** Report only: open compliance items due in the next 7 days. */
+    public static function orgComplianceDueSoon(PlatformScheduledTask $task): string
+    {
+        if (! Schema::hasTable('org_compliance_library')) {
+            return 'Report only: the compliance register is not available, so due dates cannot be checked.';
+        }
+        $n = self::orgOpenCompliance((int) $task->sub_institute_id)
+            ->whereBetween(DB::raw('COALESCE(next_due_date, duedate)'), [Carbon::today()->toDateString(), Carbon::today()->addDays(7)->toDateString()])
+            ->count();
+        if ($n === 0) {
+            return 'Report only: no open compliance item is due in the next 7 days.';
+        }
+
+        return "Report only: {$n} open compliance items are due in the next 7 days. No reminder was sent and no item was changed.";
+    }
+
+    /** Report only: open compliance items already past their due date. */
+    public static function orgComplianceOverdue(PlatformScheduledTask $task): string
+    {
+        if (! Schema::hasTable('org_compliance_library')) {
+            return 'Report only: the compliance register is not available, so overdue items cannot be checked.';
+        }
+        $q = self::orgOpenCompliance((int) $task->sub_institute_id)->where(DB::raw('COALESCE(next_due_date, duedate)'), '<', Carbon::today()->toDateString());
+        $n = (clone $q)->count();
+        if ($n === 0) {
+            return 'Report only: no open compliance item is past its due date.';
+        }
+        $oldest = (clone $q)->min(DB::raw('COALESCE(next_due_date, duedate)'));
+
+        return "Report only: {$n} open compliance items are past their due date, the oldest due on {$oldest}. No item was changed.";
+    }
+
+    /** Report only: disciplinary incidents registered this month. Names nobody. */
+    public static function orgDisciplinaryMonth(PlatformScheduledTask $task): string
+    {
+        if (! Schema::hasTable('org_disciplinary_library')) {
+            return 'Report only: the disciplinary register is not available, so incidents cannot be counted.';
+        }
+        $q = DB::table('org_disciplinary_library')->where('sub_institute_id', (int) $task->sub_institute_id)->whereNull('deleted_at')
+            ->where('incident_datetime', '>=', Carbon::now()->startOfMonth());
+        $n = (clone $q)->count();
+        if ($n === 0) {
+            return 'Report only: no disciplinary incident has been registered this month.';
+        }
+        $open = (clone $q)->whereNull('action_taken')->count();
+
+        return "Report only: {$n} disciplinary incidents this month, {$open} with no action recorded. No one is named and nothing was changed.";
     }
 
     /** Report only: templates left in draft and not edited for more than 30 days. */

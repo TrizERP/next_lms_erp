@@ -123,6 +123,7 @@ return [
         'communication' => ['label' => 'Communication', 'group' => 'Administration', 'icon' => 'megaphone',              'description' => 'Circulars, campaigns and parent messaging.'],
         'inward_outward' => ['label' => 'Inward Outward', 'group' => 'Administration', 'icon' => 'mail', 'description' => 'Letters, parcels and documents received and dispatched by the school office.'],
         'alumni'        => ['label' => 'Alumni Management', 'group' => 'Administration', 'icon' => 'graduation-cap', 'description' => 'Former students: verification, mentoring, events and giving.'],
+        'organization_management' => ['label' => 'Organization Management', 'group' => 'People', 'icon' => 'building-2', 'description' => 'Employee directory, compliance and disciplinary records.'],
         'document_templates' => ['label' => 'Document Templates', 'group' => 'Administration', 'icon' => 'file-text', 'description' => 'Printable certificates, ID cards, fee documents and letters designed for the school.'],
         'utility'       => ['label' => 'Utility', 'group' => 'Administration', 'icon' => 'wrench', 'description' => 'Year rollover, student transfer and custom modules.'],
         'complaint'     => ['label' => 'Complaint', 'group' => 'Administration', 'icon' => 'message-square-warning', 'description' => 'Complaints received from parents and others, and their resolution.'],
@@ -1124,6 +1125,23 @@ return [
             'label' => 'Alumni birthdays in the next 7 days',
             'description' => 'Counts alumni whose birthday falls in the next 7 days. It names nobody and sends nothing.',
             'schedule' => ['minute' => '0', 'hour' => '7', 'day' => '*', 'month' => '*', 'day_of_week' => '*'],
+        ],
+
+        // Organization Management
+        'organization_management.compliance.due_soon' => [
+            'label' => 'Compliance items due in the next 7 days',
+            'description' => 'Counts open compliance items with a due date in the next 7 days. It does not remind anyone or change any item.',
+            'schedule' => ['minute' => '0', 'hour' => '8', 'day' => '*', 'month' => '*', 'day_of_week' => '*'],
+        ],
+        'organization_management.compliance.overdue_scan' => [
+            'label' => 'Scan overdue compliance items',
+            'description' => 'Reports open compliance items already past their due date and the oldest one. It does not change any item.',
+            'schedule' => ['minute' => '30', 'hour' => '8', 'day' => '*', 'month' => '*', 'day_of_week' => '1-6'],
+        ],
+        'organization_management.disciplinary.monthly_summary' => [
+            'label' => 'Disciplinary incidents this month',
+            'description' => 'Counts the incidents registered this month and how many have no action recorded. It names nobody.',
+            'schedule' => ['minute' => '0', 'hour' => '18', 'day' => '*', 'month' => '*', 'day_of_week' => '5'],
         ],
 
         // Document Templates

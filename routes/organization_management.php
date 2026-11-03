@@ -7,6 +7,7 @@ use App\Http\Controllers\api\OrganizationManagement\Compliance\ComplianceCategor
 use App\Http\Controllers\api\OrganizationManagement\Compliance\ComplianceEvidenceController;
 use App\Http\Controllers\api\OrganizationManagement\Compliance\ComplianceTemplateController;
 use App\Http\Controllers\api\OrganizationManagement\Disciplinary\DisciplinaryLibraryController;
+use App\Http\Controllers\api\OrganizationManagement\KnowledgeGraph\KnowledgeGraphController;
 use App\Http\Controllers\api\OrganizationManagement\EmployeeDirectory\EmployeeDirectoryController;
 use App\Http\Controllers\api\OrganizationManagement\EmployeeDirectory\EmployeeDirectoryAnalyticsController;
 use App\Http\Controllers\api\OrganizationManagement\RolePermissions\RolePermissionsController;
@@ -75,6 +76,10 @@ Route::middleware(['api.session'])->group(function () {
         Route::match(['put', 'post'], '/{id}', [ComplianceLibraryController::class, 'update'])->whereNumber('id');
         Route::delete('/{id}', [ComplianceLibraryController::class, 'destroy'])->whereNumber('id');
     });
+
+    // Knowledge Graph - the school's organization structure from Neo4j, read only.
+    Route::get('organization-management/knowledge-graph', [KnowledgeGraphController::class, 'index']);
+    Route::get('organization-management/knowledge-graph/staff/{id}', [KnowledgeGraphController::class, 'staff'])->whereNumber('id');
 
     // Disciplinary Library - ported from G2G's discliplinaryManagementController.
     Route::prefix('organization-management/disciplinary-library')->group(function () {
