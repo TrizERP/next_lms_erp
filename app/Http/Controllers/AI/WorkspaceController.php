@@ -6,6 +6,7 @@ use App\Domain\AI\Agents\AgentRunner;
 use App\Domain\AI\Workspace\AiContextService;
 use App\Domain\AI\Workspace\CapabilityResolver;
 use App\Domain\AI\Workspace\FlowStateResolver;
+use App\Domain\AI\Workspace\ModuleKeyAliases;
 use App\Domain\AI\Workspace\OntologyViewResolver;
 use App\Domain\AI\Templates\ReportTemplateResolver;
 use App\Domain\AI\Workspace\PageDataResolver;
@@ -14,6 +15,7 @@ use App\Domain\GenerativeAI\GenerationService;
 use App\Services\Mcp\AiReportGenerator;
 use App\Domain\Workflow\WorkflowEngine;
 use Illuminate\Http\Request;
+use App\Services\Graph\GraphDrain;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Throwable;
@@ -578,6 +580,110 @@ class WorkspaceController extends AiController
             }
 
             return $this->success('Relationships loaded.', $result);
+        } catch (Throwable $exception) {
+            return $this->handle($exception);
+        }
+    }
+
+    /**
+     * The relationship views available for the module on screen, before any record
+     * is selected — what the decentralized Knowledge Graph tab shows before the
+     * user has picked one to drill into. Mirrors ontologyView()'s context
+     * resolution, but lists by module rather than walking one view for one record.
+     *
+     * `module`, when sent, names the module directly rather than leaving it to
+     * route-pattern matching. The generic /modules/<slug>/<category> family (every
+     * module's own Knowledge Graph tab lives there) is not covered by ai_modules'
+     * route_patterns, which were written for each module's native routes
+     * (/fees/**, /attendance/**, ...) — so for this family the page's own slug is
+     * the only reliable signal. Same trust level as AiContextService's entity
+     * hints: it steers which module's views are listed, never what is read, since
+     * availableForModule() only ever returns view metadata for a matching
+     * module_key and a mismatched or unknown key just returns no views.
+     */
+    public function moduleViews(Request $request)
+    {
+        try {
+            $scope = $this->scope($request);
+
+            $validated = $request->validate([
+                'route' => 'required|string|max:500',
+                'module' => 'nullable|string|max:100',
+            ]);
+
+            $context = $this->contextService->resolve($validated['route'], $scope);
+            $moduleKey = $validated['module'] ?? $context->moduleKey;
+
+            if ($moduleKey === null) {
+                return $this->success('No module resolved for this page.', [
+                    'module' => null,
+                    'module_label' => null,
+                    'views' => [],
+                ]);
+            }
+
+            $moduleKey = ModuleKeyAliases::canonicalize($moduleKey);
+
+            return $this->success('Module views loaded.', [
+                'module' => $moduleKey,
+                'module_label' => $context->moduleKey === $moduleKey ? $context->moduleLabel : null,
+                'views' => $this->ontologyViews->availableForModule($moduleKey, $scope),
+            ]);
+        } catch (Throwable $exception) {
+            return $this->handle($exception);
+        }
+    }
+
+    /**
+     * Non-blocking sync health for both Knowledge Graph surfaces — the
+     * Centralized explorer and every decentralized module tab.
+     *
+     * Deliberately MySQL-only: reads `sync_log`/`neo4j_sync_queue` (the
+     * outbox tables `GraphDrain::depth()` already reports from) and never
+     * opens a Neo4j connection itself, so this stays fast and reliable even
+     * while a heavy drain/backfill is actively competing for the graph
+     * connection — the exact situation this endpoint exists to be checked
+     * during, not around.
+     *
+     * Reports only what these tables actually record. There is no durable,
+     * named "backfill job" concept in this architecture (the outbox is a
+     * continuous queue, not a tracked job row), so this never fabricates a
+     * percentage or a job id — `status` is derived from real pending/failed
+     * counts, and a caller running its own one-off backfill script has no
+     * way to be reflected here beyond the rows it writes to these same
+     * tables.
+     */
+    public function graphSyncStatus(Request $request)
+    {
+        try {
+            if (! Schema::hasTable('sync_log') || ! Schema::hasTable('neo4j_sync_queue')) {
+                return $this->success('Sync status unavailable.', ['available' => false]);
+            }
+
+            $depth = GraphDrain::depth();
+
+            $failedNodes = DB::table('sync_log')->where('status', 'FAILED')->count();
+            $failedRels = DB::table('neo4j_sync_queue')->where('status', 'failed')->count();
+
+            $lastNodeSync = DB::table('sync_log')->where('status', 'SUCCESS')->max('processed_at');
+            $lastRelSync = DB::table('neo4j_sync_queue')->where('status', 'done')->max('processed_at');
+            $lastSync = max(array_filter([$lastNodeSync, $lastRelSync])) ?: null;
+
+            $status = match (true) {
+                $failedNodes > 0 || $failedRels > 0 => 'attention',
+                $depth['nodes'] > 0 || $depth['rels'] > 0 => 'draining',
+                default => 'idle',
+            };
+
+            return $this->success('Sync status loaded.', [
+                'available' => true,
+                'status' => $status,
+                'pending_nodes' => $depth['nodes'],
+                'pending_relationships' => $depth['rels'],
+                'failed_nodes' => $failedNodes,
+                'failed_relationships' => $failedRels,
+                'last_successful_sync_at' => $lastSync,
+            ]);
         } catch (Throwable $exception) {
             return $this->handle($exception);
         }

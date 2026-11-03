@@ -30,6 +30,24 @@ use Throwable;
  */
 class GraphQueryService
 {
+    /**
+     * Neo4j "from" label overrides, keyed by [ontology entity key][graph
+     * relationship type]. `graphLabelFor()`'s naive transform is right for
+     * almost every entity, but `fee_student` (sourceTable `tblstudent`, same
+     * person as the `student` entity) needs a DIFFERENT real label depending
+     * on which edge is being walked: `MADE_PAYMENT` is rooted directly on the
+     * person (`:StuDetail`), while `ENROLLED_IN` needs the exact same
+     * person->enrolment bridge `resolveGraphStartIds()` already does for
+     * `student` — so it must resolve to `Student`, not naively to a
+     * nonexistent `FeeStudent` label, so that bridge actually fires.
+     */
+    private const FROM_LABEL_OVERRIDE = [
+        'fee_student' => [
+            'ENROLLED_IN' => 'Student',
+            'MADE_PAYMENT' => 'StuDetail',
+        ],
+    ];
+
     public function __construct(
         private readonly OntologyRegistry $registry,
         private readonly ?Neo4jService $neo4j = null,
@@ -286,6 +304,18 @@ class GraphQueryService
             $query->where($targetTable . '.' . $edge->toColumn, $fromValue);
         }
 
+        // Extra static equality filters an edge needs beyond the join itself — e.g.
+        // `ai_signals` shares its `id`/`subject_id` numbering across more than one
+        // `subject_entity_key`, so a bare `subject_id = $fromValue` join can match a
+        // different kind of subject that happens to share the id. Declared on the
+        // edge's `attributes` JSON (`{"sql_filters":{"column":"value"}}`), not
+        // hardcoded here, so this stays generic rather than a signal-specific hack.
+        foreach ($edge->attributes['sql_filters'] ?? [] as $column => $value) {
+            if (Schema::hasColumn($targetTable, $column)) {
+                $query->where($targetTable . '.' . $column, $value);
+            }
+        }
+
         $this->applyScope($query, $targetEntity, $context);
 
         $query->select($targetTable . '.*')->limit($spec->limitPerHop);
@@ -336,7 +366,8 @@ class GraphQueryService
             return null;
         }
 
-        $fromLabel = $this->graphLabelFor($node->entityKey);
+        $fromLabel = self::FROM_LABEL_OVERRIDE[$node->entityKey][$edge->graphRelationshipType]
+            ?? $this->graphLabelFor($node->entityKey);
         $toLabel = $this->graphLabelFor($targetEntity->key);
 
         // The graph is never keyed on a generic `id` property (GraphSchema.php's own
@@ -358,13 +389,24 @@ class GraphQueryService
             return null;
         }
 
+        $startIds = $this->resolveGraphStartIds($node, $fromLabel, $context);
+
+        if ($startIds === null) {
+            return null; // bridge lookup itself failed — let the caller fall back to SQL.
+        }
+
+        if ($startIds === []) {
+            return []; // genuinely nothing to start from yet (e.g. person has no enrolment) — not a failure.
+        }
+
         // Labels, relationship types and key property names come from the ontology and
         // GraphSchema, never from user input, so they are safe to interpolate. Values
         // stay parameterised.
         $cypher = sprintf(
-            'MATCH (a:%s {%s: $startId})-[:%s]->(b:%s) '
+            'MATCH (a:%s) WHERE a.%s IN $startIds '
+            . 'MATCH (a)-[:%s]->(b:%s) '
             . 'WHERE ($tenantId IS NULL OR b.sub_institute_id IS NULL OR b.sub_institute_id = $tenantId) '
-            . 'RETURN b LIMIT %d',
+            . 'RETURN DISTINCT b LIMIT %d',
             $fromLabel,
             $fromKey,
             $edge->graphRelationshipType,
@@ -374,7 +416,7 @@ class GraphQueryService
 
         try {
             $result = $this->neo4j->run($cypher, [
-                'startId' => is_numeric($node->id) ? (int) $node->id : (string) $node->id,
+                'startIds' => $startIds,
                 'tenantId' => $context->selectedInstituteId,
             ]);
         } catch (Throwable $exception) {
@@ -411,6 +453,80 @@ class GraphQueryService
         }
 
         return $nodes;
+    }
+
+    /**
+     * The real graph-side starting id(s) to walk an edge from.
+     *
+     * For almost every entity this is just `[$node->id]` — the ontology key and
+     * the Neo4j label name the same real-world row. The `student` entity does
+     * not: its SQL identity (`tblstudent`, the PERSON) and its Neo4j identity
+     * for every outgoing edge (`:Student`, one node per ENROLMENT, per
+     * `StudentGraphProjection`) are two different real nodes connected by a
+     * genuine edge, `(:StuDetail {sdId})-[:HAS_STUDENT]->(:Student {stuId})` —
+     * not a GraphSchema::siblingOf() case (that mechanism is for :Staff/:Teacher,
+     * the SAME row double-keyed under two conventions; this is two different
+     * rows). Without this bridge, `graphLabelFor('student')` naively produces
+     * `Student` and tries to MATCH it directly on the PERSON's id, which no
+     * `:Student` node carries, so every graph-rooted edge from a real person id
+     * silently returned zero rows — indistinguishable from "not synced yet",
+     * which is why it went unnoticed.
+     *
+     * A person can hold more than one enrolment (transfer, re-admission), so
+     * this fans out to all of them, matching the many_to_many cardinality
+     * `enrolled_in_standard` already declares.
+     *
+     * `fee_student` shares this bridge (via `FROM_LABEL_OVERRIDE` resolving
+     * its `ENROLLED_IN` edge to `Student`, same as `student`) — it is the
+     * identical real person/enrolment table pair, just a different ontology
+     * entity for the Fees UI context.
+     *
+     * @return array<int>|null  null only when the bridge query itself failed
+     *                          (caller falls back to SQL); [] means the person
+     *                          genuinely has no live enrolment yet.
+     */
+    private function resolveGraphStartIds(GraphNode $node, string $fromLabel, McpRequestContext $context): ?array
+    {
+        if (! in_array($node->entityKey, ['student', 'fee_student'], true) || $fromLabel !== 'Student' || $node->id === null) {
+            return [is_numeric($node->id) ? (int) $node->id : $node->id];
+        }
+
+        $personKey = GraphSchema::key('StuDetail');
+        $tenantId = $context->selectedInstituteId;
+
+        try {
+            $result = $this->neo4j->run(
+                "MATCH (p:StuDetail {{$personKey}: \$id}) "
+                . 'WHERE ($tenantId IS NULL OR p.sub_institute_id IS NULL OR p.sub_institute_id = $tenantId) '
+                . 'MATCH (p)-[:HAS_STUDENT]->(s:Student) '
+                . 'WHERE ($tenantId IS NULL OR s.sub_institute_id IS NULL OR s.sub_institute_id = $tenantId) '
+                . 'RETURN DISTINCT s.stuId AS stuId',
+                ['id' => (int) $node->id, 'tenantId' => $tenantId]
+            );
+        } catch (Throwable $exception) {
+            Log::info('[knowledge-graph] StuDetail->Student bridge unavailable, using SQL', [
+                'person_id' => $node->id,
+                'error' => $exception->getMessage(),
+            ]);
+
+            return null;
+        }
+
+        if ($result === null) {
+            return null;
+        }
+
+        $ids = [];
+
+        foreach ($result as $record) {
+            $stuId = $record->get('stuId');
+
+            if ($stuId !== null) {
+                $ids[] = (int) $stuId;
+            }
+        }
+
+        return $ids;
     }
 
     private function extractGraphProperties(mixed $record): array
@@ -593,7 +709,7 @@ class GraphQueryService
             }
         }
 
-        foreach (['name', 'subject_name', 'chapter_name', 'title', 'SchoolName', 'client_name'] as $candidate) {
+        foreach (['name', 'subject_name', 'chapter_name', 'title', 'SchoolName', 'client_name', 'display_name', 'displayLabel'] as $candidate) {
             if (! empty($data[$candidate])) {
                 return (string) $data[$candidate];
             }

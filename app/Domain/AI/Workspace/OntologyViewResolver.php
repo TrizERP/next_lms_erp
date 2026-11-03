@@ -212,6 +212,42 @@ class OntologyViewResolver
             ->all();
     }
 
+    /**
+     * The views available for a module, before any record is selected — what the
+     * module-level "Knowledge Graph" tab shows before the user has picked a record
+     * to drill into. Unlike available(), this does not require AiContext::hasEntity()
+     * and filters by module_key instead of root_entity_key, so it can render as soon
+     * as the module itself is known.
+     */
+    public function availableForModule(string $moduleKey, McpRequestContext $scope): array
+    {
+        if (! Schema::hasTable('ai_ontology_views')) {
+            return [];
+        }
+
+        return DB::table('ai_ontology_views')
+            ->where('status', 1)
+            ->where('module_key', $moduleKey)
+            ->where(function ($inner) use ($scope) {
+                $inner->whereNull('sub_institute_id')
+                    ->orWhere('sub_institute_id', $scope->selectedInstituteId);
+            })
+            ->orderBy('sort_order')
+            ->get()
+            ->map(fn ($row) => [
+                'key' => $row->view_key,
+                'label' => $row->label,
+                'description' => $row->description,
+                'root_entity_key' => $row->root_entity_key,
+                'steps' => array_map(
+                    fn ($step) => $step['label'] ?? $this->humanize($step['entity'] ?? ''),
+                    $this->decode($row->path)
+                ),
+            ])
+            ->values()
+            ->all();
+    }
+
     private function findView(string $viewKey, AiContext $context): ?object
     {
         if (! Schema::hasTable('ai_ontology_views')) {

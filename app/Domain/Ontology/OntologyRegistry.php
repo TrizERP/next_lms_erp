@@ -208,32 +208,39 @@ class OntologyRegistry
         unset($this->entityMemo[$memoKey], $this->relationshipMemo[$memoKey]);
     }
 
+    /**
+     * Invalidates every cached entity/relationship list, for every tenant —
+     * not just the ones that happen to have an `ontology_entities` override
+     * row, which is the set this used to enumerate. That missed any tenant
+     * reached only through `ontology_relationships`, and — the common case —
+     * any tenant with no override row at all: `relationships($subInstituteId)`
+     * caches one entry per distinct `selectedInstituteId` a real request ever
+     * passes, a key space this class cannot enumerate from its own tables.
+     * Caught live: flipping `in_graph` on a relationship, calling the old
+     * flushAll(), and still reading the stale value back for a tenant with no
+     * ontology override row at all.
+     *
+     * Bumping the version (below) makes every previously-built cache key
+     * unreachable in one call, with no enumeration needed and no dependence
+     * on which cache driver is configured.
+     */
     public function flushAll(): void
     {
         $this->entityMemo = [];
         $this->relationshipMemo = [];
 
-        if (! Schema::hasTable('ontology_entities')) {
-            Cache::forget($this->cacheKey('entities', null));
-            Cache::forget($this->cacheKey('relationships', null));
+        Cache::forever(self::VERSION_KEY, (string) now()->getPreciseTimestamp(6));
+    }
 
-            return;
-        }
+    private const VERSION_KEY = 'ontology:cache_version';
 
-        $tenantIds = DB::table('ontology_entities')
-            ->distinct()
-            ->pluck('sub_institute_id')
-            ->all();
-
-        $tenantIds[] = null;
-
-        foreach (array_unique($tenantIds, SORT_REGULAR) as $tenantId) {
-            $this->flush($tenantId === null ? null : (int) $tenantId);
-        }
+    private function cacheVersion(): string
+    {
+        return Cache::rememberForever(self::VERSION_KEY, fn () => (string) now()->getPreciseTimestamp(6));
     }
 
     private function cacheKey(string $bucket, ?int $subInstituteId): string
     {
-        return sprintf('ontology:%s:%s', $bucket, $subInstituteId ?? 'global');
+        return sprintf('ontology:%s:%s:%s', $bucket, $subInstituteId ?? 'global', $this->cacheVersion());
     }
 }

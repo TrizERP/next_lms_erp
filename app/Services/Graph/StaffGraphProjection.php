@@ -9,40 +9,30 @@ use RuntimeException;
 use Throwable;
 
 /**
- * `tbluser` -> :Teacher for the 118 the reference ingest already claimed,
- *              :Staff for everybody else.
+ * `tbluser` -> :Staff, the single canonical label for every row.
  *
  * -----------------------------------------------------------------------------
- * WHY THIS CANNOT BE A COLUMN MAP
+ * :TEACHER IS GONE — HERE IS WHY THAT'S CORRECT, NOT A REGRESSION
  * -----------------------------------------------------------------------------
- * Every other straightforward entity is declared as data in `config/neo4j.php`
- * and served by TableGraphProjection, because one table maps to one label. This
- * one does not: `tbluser` maps to TWO labels, and which one a given row belongs
- * to is a fact about the GRAPH, not about the row.
+ * This table used to split into :Teacher (the 118 rows a one-off reference
+ * CSV ingest had claimed before :Staff existed) and :Staff (everyone else),
+ * purely to avoid relabelling those 118 people out from under themselves.
+ * That historical accident is now moot: the 118 :Teacher nodes it existed to
+ * protect are gone (wiped by a graph reset, and the reference script that
+ * originated them is permanently blocked from re-running — see
+ * `CypherRunCommand`'s 00_/01_ guard), and nothing in the live system can
+ * ever create a :Teacher node again — this class's own old `labelFor()`
+ * could only ever PRESERVE a pre-existing one, never originate one.
  *
- * The reference script (`00_k12_reference.cypher`) loaded `tbluser` into
- * :Teacher, but from a CSV holding only 118 rows. The table has 4,771. When the
- * eight module scripts were written the remaining 4,653 became :Staff, because
- * putting all of them into :Teacher would have labelled the accounts clerk a
- * teacher, and creating :Staff for all of them would have put those 118 people
- * in the graph twice.
- *
- * So the rule is: if this id is already a :Teacher, keep it a :Teacher. If not,
- * it is :Staff. A person stays one node, and the label they were first given
- * never changes underneath them.
- *
- * -----------------------------------------------------------------------------
- * WHY IT ASKS NEO4J RATHER THAN GUESSING FROM `user_profile_id`
- * -----------------------------------------------------------------------------
- * `tbluser.user_profile_id` looks like it should say who is a teacher, and it
- * nearly does — profile 1 is 'Teacher' for 3,561 rows. But the 118 :Teacher
- * nodes that exist carry only five distinct `user_profile_id` values and were
- * seeded from one tenant's CSV, so the two sets do not coincide. Deriving the
- * label from the column would relabel people the graph already holds. Asking
- * the graph is the only answer that cannot drift.
- *
- * The lookup is cached per drain pass — a batch of 500 staff events would
- * otherwise be 500 round trips.
+ * Reviving :Teacher as a real sibling label would also be the wrong fix even
+ * if it were revived cleanly: "is this person a teacher" is an ATTRIBUTE that
+ * can change over someone's tenure, not a different kind of node — and other
+ * modules (Performance, Mobility, Competency) need to query "any employee"
+ * generically, not "only non-teachers". So the real, current signal
+ * (`user_profile_id` -> `tbluserprofilemaster.name = 'Teacher'`, the same
+ * join `EmployeeDirectoryController::teacherList()` already trusts) is
+ * exposed as the `is_teacher` boolean property below, on the one canonical
+ * :Staff node every tbluser row becomes.
  *
  * -----------------------------------------------------------------------------
  * SECRETS
@@ -56,9 +46,10 @@ use Throwable;
 class StaffGraphProjection implements GraphProjection
 {
     private const TABLE = 'tbluser';
+    private const LABEL = 'Staff';
 
-    /** tbluser.id => 'Teacher' | 'Staff', for the life of one drain pass. */
-    private array $labelCache = [];
+    /** tbluserprofilemaster.id => is its name 'Teacher'?, for the life of one drain pass. */
+    private array $teacherProfileCache = [];
 
     public function __construct(
         private readonly GraphOutbox $outbox,
@@ -73,7 +64,7 @@ class StaffGraphProjection implements GraphProjection
 
     public function labels(): array
     {
-        return ['Staff', 'Teacher'];
+        return [self::LABEL];
     }
 
     public function enqueue(string $table, int $recordId, array $hints = []): array
@@ -85,7 +76,7 @@ class StaffGraphProjection implements GraphProjection
         }
 
         $row = (array) $row;
-        $label = $this->labelFor($recordId);
+        $label = self::LABEL;
         $tenant = $this->intOrNull($row['sub_institute_id'] ?? null);
 
         $log = [$this->outbox->node($label, $recordId, $this->properties($row, $recordId, $label))];
@@ -121,13 +112,9 @@ class StaffGraphProjection implements GraphProjection
 
     public function delete(string $table, int $recordId, array $hints = []): array
     {
-        // The row is gone, so the graph cannot be asked which label held it.
-        // Emitting a delete for both is safe: a DETACH DELETE that matches
-        // nothing is a no-op, and exactly one of the two can ever match.
         return [
             'log' => [
-                $this->outbox->node('Staff', $recordId, [], 'DELETE'),
-                $this->outbox->node('Teacher', $recordId, [], 'DELETE'),
+                $this->outbox->node(self::LABEL, $recordId, [], 'DELETE'),
             ],
             'queue' => [],
         ];
@@ -140,7 +127,7 @@ class StaffGraphProjection implements GraphProjection
 
     public function enqueueNode(string $label, int $nodeId): array
     {
-        if ($label !== 'Staff' && $label !== 'Teacher') {
+        if ($label !== self::LABEL) {
             return ['log' => [], 'queue' => []];
         }
 
@@ -154,45 +141,41 @@ class StaffGraphProjection implements GraphProjection
     // -----------------------------------------------------------------------
 
     /**
-     * :Teacher when the graph already holds this person as one, :Staff otherwise.
+     * The real "is this person a teacher" signal — `user_profile_id` joined
+     * to `tbluserprofilemaster.name = 'Teacher'`, the same join
+     * `EmployeeDirectoryController::teacherList()` already trusts. Cached per
+     * profile id for the life of one drain pass (a batch of 500 staff events
+     * typically carries only a handful of distinct profiles).
      *
-     * A Neo4j failure falls through to :Staff rather than throwing. That is the
-     * safe side of the choice: :Staff is where 4,653 of the 4,771 belong, and a
-     * wrong :Staff node is a duplicate that reconcile can find, whereas a thrown
-     * exception would stall the whole drain pass behind one unreachable lookup.
+     * A Neo4j... no — a DB failure here falls through to `false` rather than
+     * throwing, same reasoning the old label lookup used: a missed
+     * `is_teacher` flag is a property reconcile can fix later, not a reason
+     * to stall the whole drain pass behind one lookup.
      */
-    private function labelFor(int $userId): string
+    private function isTeacherProfile(?int $userProfileId): bool
     {
-        if (isset($this->labelCache[$userId])) {
-            return $this->labelCache[$userId];
+        if ($userProfileId === null) {
+            return false;
         }
 
-        $label = 'Staff';
+        if (isset($this->teacherProfileCache[$userProfileId])) {
+            return $this->teacherProfileCache[$userProfileId];
+        }
+
+        $isTeacher = false;
 
         try {
-            $result = $this->neo4j->run(
-                'MATCH (t:Teacher {teacherId: $id}) RETURN count(t) AS c',
-                ['id' => $userId]
-            );
-
-            foreach ($result as $record) {
-                if ((int) $record->get('c') > 0) {
-                    $label = 'Teacher';
-                }
-
-                break;
-            }
+            $isTeacher = DB::table('tbluserprofilemaster')
+                ->where('id', $userProfileId)
+                ->where('name', 'Teacher')
+                ->exists();
         } catch (Throwable $e) {
-            // Leave $label as 'Staff'; see the note above.
+            // Leave $isTeacher as false; see the note above.
         }
 
-        return $this->labelCache[$userId] = $label;
+        return $this->teacherProfileCache[$userProfileId] = $isTeacher;
     }
 
-    /**
-     * The property set is the same either way apart from the unique key, so a
-     * person keeps the same shape whichever label they landed in.
-     */
     private function properties(array $row, int $recordId, string $label): array
     {
         $key = GraphSchema::key($label);
@@ -222,11 +205,9 @@ class StaffGraphProjection implements GraphProjection
             }
         }
 
-        $props['displayLabel'] = $label === 'Teacher'
-            // The 118 existing :Teacher nodes carry `Teacher:<user_profile_id>`;
-            // reproducing it keeps their label stable across a re-sync.
-            ? 'Teacher:' . trim((string) ($row['user_profile_id'] ?? $recordId))
-            : 'Staff:' . trim((string) ($row['first_name'] ?? '')) . ' ' . trim((string) ($row['last_name'] ?? ''));
+        $props['is_teacher'] = $this->isTeacherProfile($this->intOrNull($row['user_profile_id'] ?? null));
+
+        $props['displayLabel'] = 'Staff:' . trim((string) ($row['first_name'] ?? '')) . ' ' . trim((string) ($row['last_name'] ?? ''));
 
         $props['src'] = self::TABLE;
         $props[$key] = $recordId;

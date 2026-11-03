@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\api\OrganizationManagement\KnowledgeGraph;
 
+use App\Domain\KnowledgeGraph\GraphModuleBrowser;
 use App\Exceptions\GraphUnavailableException;
 use App\Http\Controllers\Controller;
 use App\Services\Neo4jService;
@@ -24,11 +25,20 @@ use Throwable;
  * Read only, and always limited to the signed-in school (`sub_institute_id`). A school can have
  * hundreds of staff, so the picture shows a sample per role (`staff_per_role`, 5-100); the real
  * totals for every role and department come back as counts so the numbers stay honest.
+ *
+ * The queries themselves now live in `GraphModuleBrowser::organizationStaffGraph()`, reused
+ * (not duplicated) by the rebuilt centralized Knowledge Graph explorer's own Organization
+ * Management submodule — `index()` below calls that same method and reshapes its canonical
+ * `{id, entityKey, recordId, label, source, attributes}` node / `{id, source, target, relation}`
+ * edge shape back into this endpoint's own, unchanged `{id, type, label, count?, role?}` /
+ * `{from, to, label}` response, so nothing calling this route sees any difference.
  */
 class KnowledgeGraphController extends Controller
 {
-    public function __construct(private readonly Neo4jService $neo4j)
-    {
+    public function __construct(
+        private readonly Neo4jService $neo4j,
+        private readonly GraphModuleBrowser $browser,
+    ) {
     }
 
     public function index(Request $request): JsonResponse
@@ -42,7 +52,15 @@ class KnowledgeGraphController extends Controller
         $withSubjects = $request->boolean('subjects');
 
         try {
-            return response()->json(['status' => 1, 'data' => $this->build($tenant, $perRole, $withSubjects)]);
+            $result = $this->browser->organizationStaffGraph($tenant, $perRole, $withSubjects);
+
+            if (isset($result['error'])) {
+                report(new \RuntimeException($result['error']));
+
+                return response()->json(['status' => 0, 'message' => "Couldn't load the knowledge graph. Try again."], 500);
+            }
+
+            return response()->json(['status' => 1, 'data' => $this->toLegacyShape($result)]);
         } catch (GraphUnavailableException $e) {
             return response()->json(['status' => 0, 'message' => 'The knowledge graph database is not reachable right now.'], 503);
         } catch (Throwable $e) {
@@ -50,6 +68,40 @@ class KnowledgeGraphController extends Controller
 
             return response()->json(['status' => 0, 'message' => "Couldn't load the knowledge graph. Try again."], 500);
         }
+    }
+
+    /**
+     * `GraphModuleBrowser::organizationStaffGraph()`'s canonical shape ->
+     * this endpoint's original, unchanged response shape.
+     *
+     * @param array{nodes: list<array<string,mixed>>, edges: list<array<string,mixed>>, stats: array<string,int>} $result
+     * @return array{nodes: list<array<string,mixed>>, edges: list<array<string,string>>, stats: array<string,int>}
+     */
+    private function toLegacyShape(array $result): array
+    {
+        $nodes = array_map(function (array $node): array {
+            $legacy = [
+                'id' => $node['id'],
+                'type' => strtolower($node['entityKey']),
+                'label' => $node['label'],
+            ];
+            if (array_key_exists('count', $node['attributes'] ?? [])) {
+                $legacy['count'] = $node['attributes']['count'];
+            }
+            if (array_key_exists('role', $node['attributes'] ?? [])) {
+                $legacy['role'] = $node['attributes']['role'];
+            }
+
+            return $legacy;
+        }, $result['nodes']);
+
+        $edges = array_map(fn (array $edge): array => [
+            'from' => $edge['source'],
+            'to' => $edge['target'],
+            'label' => $edge['relation'],
+        ], $result['edges']);
+
+        return ['nodes' => $nodes, 'edges' => $edges, 'stats' => $result['stats']];
     }
 
     /**
@@ -129,100 +181,4 @@ class KnowledgeGraphController extends Controller
         ]]);
     }
 
-    /** @return array{nodes: list<array<string,mixed>>, edges: list<array<string,string>>, stats: array<string,int>} */
-    private function build(int $tenant, int $perRole, bool $withSubjects): array
-    {
-        $nodes = [];
-        $edges = [];
-        $params = ['t' => $tenant];
-
-        $institute = null;
-        foreach ($this->neo4j->run('MATCH (i:Institute {sub_institute_id: $t}) RETURN i.SchoolName AS name LIMIT 1', $params) as $row) {
-            $institute = (string) $row->get('name');
-        }
-        $nodes['institute'] = ['id' => 'institute', 'type' => 'institute', 'label' => $institute ?: 'School', 'count' => 0];
-
-        $departments = [];
-        foreach ($this->neo4j->run(
-            'MATCH (d:Department {sub_institute_id: $t}) WHERE coalesce(d.deleted_at, "") = ""
-             OPTIONAL MATCH (s:Staff)-[:IN_DEPARTMENT]->(d)
-             RETURN d.id AS id, d.department AS name, d.parent_id AS parent, count(s) AS staff',
-            $params
-        ) as $row) {
-            $id = 'dept-'.$row->get('id');
-            $departments[$id] = (int) $row->get('parent');
-            $nodes[$id] = ['id' => $id, 'type' => 'department', 'label' => (string) $row->get('name'), 'count' => (int) $row->get('staff')];
-        }
-        foreach ($departments as $id => $parent) {
-            $parentId = $parent > 0 ? 'dept-'.$parent : null;
-            $edges[] = ['from' => $parentId && isset($nodes[$parentId]) ? $parentId : 'institute', 'to' => $id, 'label' => 'HAS_DEPARTMENT'];
-        }
-
-        $totalStaff = 0;
-        foreach ($this->neo4j->run(
-            'MATCH (r:Role)<-[:HAS_ROLE]-(s:Staff {sub_institute_id: $t})
-             RETURN r.id AS id, r.name AS name, count(DISTINCT s) AS staff ORDER BY staff DESC',
-            $params
-        ) as $row) {
-            $roleId = 'role-'.$row->get('id');
-            $total = (int) $row->get('staff');
-            $totalStaff += $total;
-            $nodes[$roleId] = ['id' => $roleId, 'type' => 'role', 'label' => (string) $row->get('name'), 'count' => $total];
-            $edges[] = ['from' => 'institute', 'to' => $roleId, 'label' => 'HAS_ROLE'];
-
-            foreach ($this->neo4j->run(
-                'MATCH (r:Role {id: $rid})<-[:HAS_ROLE]-(s:Staff {sub_institute_id: $t})
-                 OPTIONAL MATCH (s)-[:IN_DEPARTMENT]->(d:Department)
-                 RETURN s.staffId AS id, s.first_name AS first, s.last_name AS last, collect(DISTINCT d.id) AS depts
-                 ORDER BY first LIMIT $n',
-                ['t' => $tenant, 'rid' => $row->get('id'), 'n' => $perRole]
-            ) as $staff) {
-                $staffId = 'staff-'.$staff->get('id');
-                $nodes[$staffId] = [
-                    'id' => $staffId, 'type' => 'staff', 'role' => $roleId,
-                    'label' => trim($staff->get('first').' '.$staff->get('last')) ?: 'Staff',
-                ];
-                $edges[] = ['from' => $roleId, 'to' => $staffId, 'label' => 'HAS_ROLE'];
-                foreach ($staff->get('depts') as $deptId) {
-                    if (isset($nodes['dept-'.$deptId])) {
-                        $edges[] = ['from' => 'dept-'.$deptId, 'to' => $staffId, 'label' => 'IN_DEPARTMENT'];
-                    }
-                }
-            }
-        }
-        $nodes['institute']['count'] = $totalStaff;
-
-        if ($withSubjects) {
-            $shown = array_values(array_map(
-                fn ($n) => substr($n['id'], 6),
-                array_filter($nodes, fn ($n) => $n['type'] === 'staff')
-            ));
-            if ($shown !== []) {
-                foreach ($this->neo4j->run(
-                    'MATCH (s:Staff {sub_institute_id: $t})-[:TEACHES_SUBJECT]->(x:Subject) WHERE toString(s.staffId) IN $ids
-                     RETURN toString(s.staffId) AS sid, x.id AS id, x.name AS name',
-                    ['t' => $tenant, 'ids' => array_map('strval', $shown)]
-                ) as $row) {
-                    $subjectId = 'subject-'.$row->get('id');
-                    $nodes[$subjectId] ??= ['id' => $subjectId, 'type' => 'subject', 'label' => (string) $row->get('name')];
-                    $edges[] = ['from' => 'staff-'.$row->get('sid'), 'to' => $subjectId, 'label' => 'TEACHES_SUBJECT'];
-                }
-            }
-        }
-
-        $byType = array_count_values(array_column($nodes, 'type'));
-
-        return [
-            'nodes' => array_values($nodes),
-            'edges' => $edges,
-            'stats' => [
-                'staffTotal' => $totalStaff,
-                'staffShown' => $byType['staff'] ?? 0,
-                'roles' => $byType['role'] ?? 0,
-                'departments' => $byType['department'] ?? 0,
-                'subjects' => $byType['subject'] ?? 0,
-                'edges' => count($edges),
-            ],
-        ];
-    }
 }

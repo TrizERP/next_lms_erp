@@ -113,12 +113,21 @@ return new class extends Migration
             'to_entity_key' => 'fee_record',
             'relation' => 'has_fees',
             'description' => 'A student has fee records.',
-            'from_column' => null,
+            // Explicit 'id' rather than null: resolveFromValue() treats a null
+            // fromColumn as shorthand for "the node's own primary key" and would
+            // have worked either way, but RelationshipDefinition::isSqlTraversable()
+            // requires fromColumn to be non-null to count the edge as fully
+            // configured — with null here this relationship silently traversed as
+            // neither SQL- nor graph-traversable. The columns this block used to set
+            // here — is_sql_traversable/is_graph_traversable — do not exist on
+            // ontology_relationships at all (confirmed: inserting them throws
+            // "Unknown column"); the real columns RelationshipDefinition::fromRow()
+            // reads are `traversable` and `in_graph`, used below.
+            'from_column' => 'id',
             'to_column' => 'student_id',
             'traversal_cost' => 1,
-            'is_sql_traversable' => true,
-            'is_graph_traversable' => false,
-            'sort_order' => 1,
+            'traversable' => true,
+            'in_graph' => false,
             'status' => 1,
             'sub_institute_id' => $instituteId,
             'created_at' => $now,
@@ -130,12 +139,12 @@ return new class extends Migration
             'to_entity_key' => 'fee_payment',
             'relation' => 'has_payments',
             'description' => 'A student has made fee payments.',
-            'from_column' => null,
+            // See has_fees above — explicit primary key, not the null shorthand.
+            'from_column' => 'id',
             'to_column' => 'student_id',
             'traversal_cost' => 1,
-            'is_sql_traversable' => true,
-            'is_graph_traversable' => false,
-            'sort_order' => 2,
+            'traversable' => true,
+            'in_graph' => false,
             'status' => 1,
             'sub_institute_id' => $instituteId,
             'created_at' => $now,
@@ -146,13 +155,17 @@ return new class extends Migration
             'from_entity_key' => 'fee_record',
             'to_entity_key' => 'fee_policy',
             'relation' => 'governed_by',
+            // Declared but not yet mapped: fee_record carries no column linking a
+            // specific record to a specific fee_policy row, so there is no real join
+            // to walk (same pattern as 'department has employee' in the core seed).
+            // traversable => false makes that explicit rather than leaving it to be
+            // inferred from both columns being null.
             'description' => 'A fee record is governed by institute fee policies.',
             'from_column' => null,
             'to_column' => null,
             'traversal_cost' => 2,
-            'is_sql_traversable' => false,
-            'is_graph_traversable' => false,
-            'sort_order' => 3,
+            'traversable' => false,
+            'in_graph' => false,
             'status' => 1,
             'sub_institute_id' => $instituteId,
             'created_at' => $now,
@@ -163,13 +176,17 @@ return new class extends Migration
             'from_entity_key' => 'fee_student',
             'to_entity_key' => 'fee_student',
             'relation' => 'same_class',
+            // Declared but not yet mapped: fee_student (tblstudent) has no
+            // standard_id column of its own — that lives on tblstudent_enrollment —
+            // so from_column names a column the source table doesn't have and the
+            // join would silently resolve nothing even if left "traversable".
+            // Marked false to say so rather than leave a dead-but-technically-on edge.
             'description' => 'Students in the same standard/section.',
             'from_column' => 'standard_id',
             'to_column' => 'id',
             'traversal_cost' => 3,
-            'is_sql_traversable' => false,
-            'is_graph_traversable' => false,
-            'sort_order' => 4,
+            'traversable' => false,
+            'in_graph' => false,
             'status' => 1,
             'sub_institute_id' => $instituteId,
             'created_at' => $now,
@@ -194,6 +211,14 @@ return new class extends Migration
 
     private function upsertEntity(array $data): void
     {
+        // Each entity above declares 'attributes' as a plain PHP array; the query
+        // builder can only bind scalars, so it must be encoded before it reaches
+        // insert()/update() — the core ontology seed (2026_08_20_000007) does this
+        // at its own call site, this file never did.
+        if (isset($data['attributes']) && is_array($data['attributes'])) {
+            $data['attributes'] = json_encode($data['attributes']);
+        }
+
         $key = $data['entity_key'];
         $sub = $data['sub_institute_id'];
 
@@ -225,7 +250,13 @@ return new class extends Migration
                 ->where('id', $existing->id)
                 ->update($data);
         } else {
-            DB::table('ontology_relationships')->insert($data);
+            // relationship_key is NOT NULL with no default; this function never set
+            // it (the lookup above matches on from/to/relation instead), so every
+            // insert here failed before reaching the column-name issues already
+            // fixed above. Same derivation as the core ontology seed's own key.
+            DB::table('ontology_relationships')->insert($data + [
+                'relationship_key' => sprintf('%s_%s_%s', $data['from_entity_key'], $data['relation'], $data['to_entity_key']),
+            ]);
         }
     }
 };
