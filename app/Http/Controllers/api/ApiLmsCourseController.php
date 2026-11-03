@@ -168,8 +168,58 @@ class ApiLmsCourseController extends Controller
             $initialTemplate = preg_replace('/[^a-zA-Z0-9_-]/', '', $_GET['template']);
         }
 
+        // 1. Guarantee Hero Visual Image if missing from document body
+        $hasImage = str_contains($body, '<img') || str_contains($body, 'doc-image-frame');
+        if (!$hasImage) {
+            $domain = 'general';
+            $checkText = strtolower($subName . ' ' . $title . ' ' . $chapName . ' ' . $category);
+            if (str_contains($checkText, 'econ') || str_contains($checkText, 'market') || str_contains($checkText, 'price') || str_contains($checkText, 'money') || str_contains($checkText, 'social science') || str_contains($checkText, 'commerce')) {
+                $domain = 'economics';
+            } elseif (str_contains($checkText, 'phys') || str_contains($checkText, 'force') || str_contains($checkText, 'motion') || str_contains($checkText, 'gravity') || str_contains($checkText, 'energy') || str_contains($checkText, 'light')) {
+                $domain = 'physics';
+            } elseif (str_contains($checkText, 'chem') || str_contains($checkText, 'reaction') || str_contains($checkText, 'acid') || str_contains($checkText, 'molecule') || str_contains($checkText, 'element') || str_contains($checkText, 'compound')) {
+                $domain = 'chemistry';
+            } elseif (str_contains($checkText, 'bio') || str_contains($checkText, 'cell') || str_contains($checkText, 'life') || str_contains($checkText, 'plant') || str_contains($checkText, 'animal') || str_contains($checkText, 'organ') || str_contains($checkText, 'reproduction')) {
+                $domain = 'biology';
+            } elseif (str_contains($checkText, 'math') || str_contains($checkText, 'algebra') || str_contains($checkText, 'geom') || str_contains($checkText, 'trig') || str_contains($checkText, 'calculus') || str_contains($checkText, 'arithmetic') || str_contains($checkText, 'number')) {
+                $domain = 'mathematics';
+            }
+
+            $builder = new \App\Services\lms\PedagogicalContentBuilder();
+            $visuals = $builder->resolveCuratedDomainVisuals($domain, $chapName, $initialTemplate);
+            $heroUrl = $visuals['hero'] ?? 'https://images.unsplash.com/photo-1590283603385-17ffb3a7f29f?auto=format&fit=crop&w=800&q=80';
+            $caption = htmlspecialchars($visuals['caption'] ?? 'Visual Anchor Reference');
+
+            $heroHtml = <<<HTML
+<div class="doc-image-frame" data-role="hero-visual">
+  <div class="image-inner-wrapper">
+    <img src="{$heroUrl}" alt="{$safeTitle} Visual Reference" loading="lazy" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1497633762265-9d179a990aa6?auto=format&fit=crop&w=800&q=80';">
+  </div>
+  <div class="doc-image-caption">
+    <strong>Visual Anchor:</strong> {$caption}
+  </div>
+</div>
+HTML;
+
+            if (str_contains($body, '</header>')) {
+                $body = preg_replace('/(<\/header>)/i', '$1' . "\n" . $heroHtml, $body, 1);
+            } else {
+                $body = $heroHtml . "\n" . $body;
+            }
+        } else {
+            $body = preg_replace('/<img(?![^>]*\bonerror=)([^>]+)>/i', '<img$1 onerror="this.onerror=null; this.src=\'https://images.unsplash.com/photo-1497633762265-9d179a990aa6?auto=format&fit=crop&w=800&q=80\';">', $body);
+        }
+
+        // 2. Synchronize any inner data-template on article with initialTemplate
+        $body = preg_replace('/(<article[^>]*\bdata-template=")[^"]*(")/i', '${1}' . $initialTemplate . '${2}', $body);
+
         $themeStyles = <<<CSS
-    :root, [data-template="modern_tech"] {
+    /* ==========================================================================
+       8 DISTINCT VISUAL IDENTITY SYSTEMS (COLORS, TYPOGRAPHY, BACKGROUNDS, CARDS)
+       ========================================================================== */
+
+    /* 1. MODERN SLATE & NEON */
+    :root, html[data-template="modern_tech"] {
       --bg-color: #0b0f19;
       --card-bg: #111827;
       --card-border: rgba(99, 102, 241, 0.25);
@@ -190,7 +240,8 @@ class ApiLmsCourseController extends Controller
       --border-radius: 16px;
     }
 
-    [data-template="academic_classic"] {
+    /* 2. ACADEMIC CLASSIC (CBSE / OXFORD TEXTBOOK) */
+    html[data-template="academic_classic"] {
       --bg-color: #faf7f0;
       --card-bg: #ffffff;
       --card-border: #cbd5e1;
@@ -200,18 +251,19 @@ class ApiLmsCourseController extends Controller
       --primary-glow: rgba(30, 58, 138, 0.15);
       --accent: #881337;
       --header-bg: #1e3a8a;
-      --font-body: 'Plus Jakarta Sans', system-ui, sans-serif;
+      --font-body: 'Plus Jakarta Sans', Georgia, serif;
       --font-heading: 'Merriweather', Georgia, serif;
       --slide-bg: #ffffff;
       --table-header-bg: #f1f5f9;
       --table-zebra-bg: #fcfbf9;
       --badge-bg: #e0e7ff;
       --badge-text: #1e3a8a;
-      --callout-bg: #f8fafc;
-      --border-radius: 10px;
+      --callout-bg: #fdfbf7;
+      --border-radius: 6px;
     }
 
-    [data-template="vibrant_creative"] {
+    /* 3. VIBRANT & CREATIVE (STUDENT BENTO / ENGAGING) */
+    html[data-template="vibrant_creative"] {
       --bg-color: #f0fdf4;
       --card-bg: #ffffff;
       --card-border: #bbf7d0;
@@ -228,11 +280,12 @@ class ApiLmsCourseController extends Controller
       --table-zebra-bg: #f9fefb;
       --badge-bg: #dcfce7;
       --badge-text: #065f46;
-      --callout-bg: #f0fdf4;
-      --border-radius: 20px;
+      --callout-bg: #ecfdf5;
+      --border-radius: 24px;
     }
 
-    [data-template="stem_blueprint"] {
+    /* 4. STEM TECHNICAL BLUEPRINT (CAD / CARTESIAN GRID) */
+    html[data-template="stem_blueprint"] {
       --bg-color: #031826;
       --card-bg: #072538;
       --card-border: rgba(6, 182, 212, 0.35);
@@ -242,7 +295,7 @@ class ApiLmsCourseController extends Controller
       --primary-glow: rgba(6, 182, 212, 0.25);
       --accent: #10b981;
       --header-bg: #042133;
-      --font-body: 'Plus Jakarta Sans', system-ui, sans-serif;
+      --font-body: 'Plus Jakarta Sans', 'JetBrains Mono', monospace;
       --font-heading: 'JetBrains Mono', monospace;
       --slide-bg: #072538;
       --table-header-bg: #083344;
@@ -250,10 +303,11 @@ class ApiLmsCourseController extends Controller
       --badge-bg: rgba(6, 182, 212, 0.15);
       --badge-text: #67e8f9;
       --callout-bg: rgba(8, 51, 68, 0.6);
-      --border-radius: 8px;
+      --border-radius: 6px;
     }
 
-    [data-template="warm_editorial"] {
+    /* 5. HUMANITIES & WARM EDITORIAL (MAGAZINE / ESSAY) */
+    html[data-template="warm_editorial"] {
       --bg-color: #fbf8f3;
       --card-bg: #ffffff;
       --card-border: #e7e5e4;
@@ -263,7 +317,7 @@ class ApiLmsCourseController extends Controller
       --primary-glow: rgba(194, 65, 12, 0.18);
       --accent: #b45309;
       --header-bg: #431407;
-      --font-body: 'Plus Jakarta Sans', system-ui, sans-serif;
+      --font-body: 'Plus Jakarta Sans', 'Merriweather', Georgia, serif;
       --font-heading: 'Playfair Display', Georgia, serif;
       --slide-bg: #ffffff;
       --table-header-bg: #ffedd5;
@@ -274,52 +328,55 @@ class ApiLmsCourseController extends Controller
       --border-radius: 12px;
     }
 
-    [data-template="minimalist_clean"] {
-      --bg-color: #f8fafc;
+    /* 6. MINIMALIST EXECUTIVE (SWISS HIGH-DESIGN) */
+    html[data-template="minimalist_clean"] {
+      --bg-color: #ffffff;
       --card-bg: #ffffff;
-      --card-border: #e2e8f0;
+      --card-border: #cbd5e1;
       --text-main: #0f172a;
-      --text-muted: #64748b;
-      --primary: #2563eb;
-      --primary-glow: rgba(37, 99, 235, 0.15);
+      --text-muted: #475569;
+      --primary: #0f172a;
+      --primary-glow: rgba(15, 23, 42, 0.12);
       --accent: #0f172a;
       --header-bg: #0f172a;
       --font-body: 'Inter', system-ui, sans-serif;
       --font-heading: 'Inter', system-ui, sans-serif;
       --slide-bg: #ffffff;
-      --table-header-bg: #f1f5f9;
-      --table-zebra-bg: #f8fafc;
-      --badge-bg: #e0e7ff;
-      --badge-text: #1d4ed8;
+      --table-header-bg: #f8fafc;
+      --table-zebra-bg: #ffffff;
+      --badge-bg: #f1f5f9;
+      --badge-text: #0f172a;
       --callout-bg: #f8fafc;
-      --border-radius: 6px;
+      --border-radius: 0px;
     }
 
-    [data-template="infographic_visual"] {
+    /* 7. INFOGRAPHIC & VISUAL FLOW */
+    html[data-template="infographic_visual"] {
       --bg-color: #060b19;
-      --card-bg: #0d162e;
+      --card-bg: #0a1128;
       --card-border: rgba(0, 180, 216, 0.35);
       --text-main: #f8fafc;
       --text-muted: #94a3b8;
       --primary: #00b4d8;
       --primary-glow: rgba(0, 180, 216, 0.3);
       --accent: #ffd166;
-      --header-bg: #0a1128;
+      --header-bg: #060b19;
       --font-body: 'Plus Jakarta Sans', system-ui, sans-serif;
       --font-heading: 'Plus Jakarta Sans', system-ui, sans-serif;
-      --slide-bg: #0d162e;
+      --slide-bg: #0a1128;
       --table-header-bg: #101f42;
       --table-zebra-bg: rgba(0, 180, 216, 0.04);
       --badge-bg: rgba(0, 180, 216, 0.18);
       --badge-text: #7dd3fc;
       --callout-bg: rgba(16, 31, 66, 0.7);
-      --border-radius: 14px;
+      --border-radius: 18px;
     }
 
-    [data-template="gamified_quest"] {
+    /* 8. GAMIFIED QUEST & DISCOVERY */
+    html[data-template="gamified_quest"] {
       --bg-color: #110722;
-      --card-bg: #1d0f38;
-      --card-border: rgba(168, 85, 247, 0.35);
+      --card-bg: #190a30;
+      --card-border: rgba(168, 85, 247, 0.45);
       --text-main: #fdf4ff;
       --text-muted: #d8b4fe;
       --primary: #a855f7;
@@ -328,13 +385,1188 @@ class ApiLmsCourseController extends Controller
       --header-bg: #180931;
       --font-body: 'Plus Jakarta Sans', system-ui, sans-serif;
       --font-heading: 'Fredoka', 'Outfit', sans-serif;
-      --slide-bg: #1d0f38;
+      --slide-bg: #190a30;
       --table-header-bg: #2e1065;
       --table-zebra-bg: rgba(168, 85, 247, 0.05);
-      --badge-bg: rgba(250, 204, 21, 0.15);
+      --badge-bg: rgba(250, 204, 21, 0.18);
       --badge-text: #fde047;
       --callout-bg: rgba(46, 16, 85, 0.7);
       --border-radius: 20px;
+    }
+
+    /* Guarantee contrast on light templates — fixes white-on-white text bug */
+    html[data-template="minimalist_clean"] .doc-body,
+    html[data-template="minimalist_clean"] .doc-body p,
+    html[data-template="minimalist_clean"] .doc-body h1,
+    html[data-template="minimalist_clean"] .doc-body h2,
+    html[data-template="minimalist_clean"] .doc-body h3,
+    html[data-template="minimalist_clean"] .doc-body h4,
+    html[data-template="minimalist_clean"] .doc-body h5,
+    html[data-template="minimalist_clean"] .doc-body li,
+    html[data-template="minimalist_clean"] .doc-body td,
+    html[data-template="minimalist_clean"] .doc-body th,
+    html[data-template="minimalist_clean"] .doc-body strong,
+    html[data-template="academic_classic"] .doc-body,
+    html[data-template="academic_classic"] .doc-body p,
+    html[data-template="academic_classic"] .doc-body h1,
+    html[data-template="academic_classic"] .doc-body h2,
+    html[data-template="academic_classic"] .doc-body h3,
+    html[data-template="academic_classic"] .doc-body h4,
+    html[data-template="academic_classic"] .doc-body h5,
+    html[data-template="academic_classic"] .doc-body li,
+    html[data-template="academic_classic"] .doc-body td,
+    html[data-template="academic_classic"] .doc-body th,
+    html[data-template="warm_editorial"] .doc-body,
+    html[data-template="warm_editorial"] .doc-body p,
+    html[data-template="warm_editorial"] .doc-body h1,
+    html[data-template="warm_editorial"] .doc-body h2,
+    html[data-template="warm_editorial"] .doc-body h3,
+    html[data-template="warm_editorial"] .doc-body h4,
+    html[data-template="warm_editorial"] .doc-body h5,
+    html[data-template="vibrant_creative"] .doc-body,
+    html[data-template="vibrant_creative"] .doc-body p,
+    html[data-template="vibrant_creative"] .doc-body h1,
+    html[data-template="vibrant_creative"] .doc-body h2,
+    html[data-template="vibrant_creative"] .doc-body h3,
+    html[data-template="vibrant_creative"] .doc-body h4,
+    html[data-template="vibrant_creative"] .doc-body h5 {
+      color: var(--text-main);
+    }
+
+    /* ==========================================================================
+       TEMPLATE-SPECIFIC STRUCTURAL LAYOUTS ACROSS ALL 5 CONTENT SECTIONS
+       ========================================================================== */
+
+    /* -------------------------------------------------------------------------
+       1. ACADEMIC CLASSIC (CBSE / Formal Textbook)
+       ------------------------------------------------------------------------- */
+    html[data-template="academic_classic"] .doc-container {
+      border: 4px double #1e3a8a;
+      border-radius: 4px;
+      box-shadow: 0 15px 35px rgba(30, 58, 138, 0.08);
+      background: #ffffff;
+    }
+    html[data-template="academic_classic"] .doc-header {
+      background: #1e3a8a;
+      border-bottom: 3px double #93c5fd;
+    }
+    html[data-template="academic_classic"] header.cover {
+      text-align: center;
+      border-bottom: 2px solid #1e3a8a;
+      border-top: 1px solid #1e3a8a;
+      padding: 24px 16px;
+      margin-bottom: 28px;
+      background: #faf8f5;
+    }
+    html[data-template="academic_classic"] header.cover h2 {
+      font-family: 'Merriweather', Georgia, serif;
+      font-size: 30px;
+      color: #1e3a8a;
+      font-weight: 700;
+    }
+    html[data-template="academic_classic"] header.cover p.lede {
+      font-family: 'Merriweather', Georgia, serif;
+      font-style: italic;
+      color: #475569;
+      max-width: 720px;
+      margin: 0 auto;
+    }
+    html[data-template="academic_classic"] .doc-image-frame {
+      border: 1px solid #cbd5e1;
+      border-radius: 4px;
+      padding: 8px;
+      background: #faf9f6;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+      margin: 24px auto;
+      max-width: 820px;
+      text-align: center;
+    }
+    html[data-template="academic_classic"] .doc-image-frame img {
+      border-radius: 2px;
+      filter: contrast(1.02);
+      max-height: 320px;
+      object-fit: cover;
+    }
+    html[data-template="academic_classic"] .doc-image-caption {
+      background: transparent;
+      border: none;
+      font-family: 'Merriweather', serif;
+      font-style: italic;
+      font-size: 13px;
+      color: #475569;
+      padding: 10px 0 2px;
+    }
+    /* Section 1: Scholarly Treatise with Drop Cap */
+    html[data-template="academic_classic"] .notes-section[data-block="summary"] {
+      border-left: 4px solid #1e3a8a;
+      padding: 20px 24px;
+      background: #fdfbf7;
+      border-radius: 0 8px 8px 0;
+      margin-bottom: 32px;
+    }
+    html[data-template="academic_classic"] .notes-section[data-block="summary"] p::first-letter {
+      font-family: 'Merriweather', Georgia, serif;
+      font-size: 3.4rem;
+      float: left;
+      line-height: 0.8;
+      margin: 4px 12px 0 0;
+      color: #1e3a8a;
+      font-weight: 700;
+    }
+    /* Section 2: Chicago/Oxford Academic Table */
+    html[data-template="academic_classic"] .concept-glossary-table {
+      border: none;
+      border-top: 2px solid #1e3a8a;
+      border-bottom: 2px solid #1e3a8a;
+      border-radius: 0;
+    }
+    html[data-template="academic_classic"] .concept-glossary-table th {
+      background: #f1f5f9;
+      color: #1e3a8a;
+      border-bottom: 1.5px solid #1e3a8a;
+      font-family: 'Merriweather', serif;
+      font-weight: 700;
+    }
+    html[data-template="academic_classic"] .concept-glossary-table td {
+      border-bottom: 1px solid #e2e8f0;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+    html[data-template="academic_classic"] .concept-glossary-table .concept-term {
+      font-family: 'Merriweather', serif;
+      color: #1e3a8a;
+      font-size: 14px;
+    }
+    html[data-template="academic_classic"] .badge-exam {
+      background: #eff6ff;
+      color: #1e3a8a;
+      border: 1px solid #bfdbfe;
+      border-radius: 4px;
+    }
+    /* Section 3: Archival Plate Container */
+    html[data-template="academic_classic"] .notes-section[data-block="mindmap"] {
+      border: 1px solid #cbd5e1;
+      background: #faf9f6;
+      padding: 24px;
+      border-radius: 4px;
+      text-align: center;
+    }
+    /* Section 4: Deep Dive Classic Theorems */
+    html[data-template="academic_classic"] .rules-breakdown-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 20px;
+    }
+    html[data-template="academic_classic"] .rule-box {
+      background: #ffffff;
+      border: 1px solid #cbd5e1;
+      border-top: 3px solid #1e3a8a;
+      border-radius: 4px;
+      padding: 22px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.04);
+    }
+    html[data-template="academic_classic"] .rule-box h4 {
+      font-family: 'Merriweather', serif;
+      color: #1e3a8a;
+      font-size: 18px;
+    }
+    html[data-template="academic_classic"] .formula-banner {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-left: 3px solid #1e3a8a;
+      font-family: 'Merriweather', serif;
+      font-style: italic;
+      color: #0f172a;
+      padding: 12px 18px;
+      text-align: center;
+    }
+    /* Section 5: NCERT Examiner Warning Plate & Board Self-Test */
+    html[data-template="academic_classic"] .notes-section[data-block="warnings"] {
+      border: 2px solid #881337;
+      background: #fffafb;
+      border-radius: 6px;
+      padding: 24px;
+    }
+    html[data-template="academic_classic"] .warning-item {
+      border-bottom: 1px dashed #fecdd3;
+      padding: 14px 0;
+      background: transparent;
+    }
+    html[data-template="academic_classic"] .warning-num {
+      background: #881337;
+      color: #ffffff;
+      font-family: 'Merriweather', serif;
+      border-radius: 4px;
+      width: 28px;
+      height: 28px;
+    }
+    html[data-template="academic_classic"] .test-item {
+      border: 1px solid #cbd5e1;
+      border-radius: 4px;
+      padding: 18px;
+      background: #ffffff;
+      margin-bottom: 16px;
+    }
+    html[data-template="academic_classic"] .q-badge {
+      background: #1e3a8a;
+      color: #ffffff;
+      font-family: 'Merriweather', serif;
+      border-radius: 4px;
+    }
+
+    /* -------------------------------------------------------------------------
+       2. STEM TECHNICAL BLUEPRINT (Engineering CAD / Monospace Grid)
+       ------------------------------------------------------------------------- */
+    html[data-template="stem_blueprint"] body {
+      background-color: #031826;
+      background-image: linear-gradient(rgba(6, 182, 212, 0.08) 1px, transparent 1px), linear-gradient(90deg, rgba(6, 182, 212, 0.08) 1px, transparent 1px);
+      background-size: 24px 24px;
+    }
+    html[data-template="stem_blueprint"] .doc-container {
+      border: 1px solid rgba(6, 182, 212, 0.4);
+      border-radius: 8px;
+      background: #072538;
+      box-shadow: 0 0 35px rgba(6, 182, 212, 0.15);
+      position: relative;
+    }
+    html[data-template="stem_blueprint"] header.cover {
+      border-bottom: 2px dashed rgba(6, 182, 212, 0.4);
+      padding-bottom: 20px;
+      font-family: 'JetBrains Mono', monospace;
+    }
+    html[data-template="stem_blueprint"] header.cover h2 {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 26px;
+      color: #67e8f9;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    html[data-template="stem_blueprint"] header.cover p.lede {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      color: #94a3b8;
+    }
+    html[data-template="stem_blueprint"] .doc-image-frame {
+      border: 1px solid #06b6d4;
+      border-radius: 6px;
+      background: #041a29;
+      padding: 4px;
+      position: relative;
+      box-shadow: 0 0 20px rgba(6, 182, 212, 0.2);
+    }
+    html[data-template="stem_blueprint"] .doc-image-frame img {
+      filter: saturate(1.1) brightness(0.95);
+      border-radius: 4px;
+      max-height: 280px;
+    }
+    html[data-template="stem_blueprint"] .doc-image-caption {
+      background: #02121c;
+      border-top: 1px solid #06b6d4;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      color: #67e8f9;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    /* Section 1: Telemetry Terminal Console */
+    html[data-template="stem_blueprint"] .notes-section[data-block="summary"] {
+      background: #041c2c;
+      border: 1px solid rgba(6, 182, 212, 0.3);
+      border-radius: 6px;
+      padding: 20px;
+      font-family: 'JetBrains Mono', monospace;
+      position: relative;
+    }
+    html[data-template="stem_blueprint"] .notes-section[data-block="summary"]::before {
+      content: '> INITIATING TELEMETRY PARAMETER CONDUIT_';
+      display: block;
+      font-size: 10px;
+      font-weight: 800;
+      color: #22d3ee;
+      margin-bottom: 10px;
+      letter-spacing: 0.1em;
+    }
+    /* Section 2: Data Matrix Telemetry Table */
+    html[data-template="stem_blueprint"] .concept-glossary-table {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      border: 1px solid rgba(6, 182, 212, 0.35);
+    }
+    html[data-template="stem_blueprint"] .concept-glossary-table th {
+      background: #083344;
+      color: #67e8f9;
+      text-transform: uppercase;
+      font-size: 11px;
+      border-bottom: 1px solid #06b6d4;
+    }
+    html[data-template="stem_blueprint"] .concept-glossary-table td {
+      border-bottom: 1px solid rgba(6, 182, 212, 0.15);
+      color: #cbd5e1;
+    }
+    html[data-template="stem_blueprint"] .concept-glossary-table .concept-term {
+      color: #38bdf8;
+      font-weight: 700;
+    }
+    html[data-template="stem_blueprint"] .badge-exam {
+      background: rgba(6, 182, 212, 0.18);
+      color: #67e8f9;
+      border: 1px solid #06b6d4;
+      border-radius: 2px;
+    }
+    /* Section 4: Dual Engineering Modular Bays */
+    html[data-template="stem_blueprint"] .rules-breakdown-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      font-family: 'JetBrains Mono', monospace;
+    }
+    html[data-template="stem_blueprint"] .rule-box {
+      background: #052133;
+      border: 1px solid rgba(6, 182, 212, 0.3);
+      border-radius: 6px;
+      padding: 18px;
+    }
+    html[data-template="stem_blueprint"] .rule-box h4 {
+      font-size: 14px;
+      color: #67e8f9;
+      text-transform: uppercase;
+    }
+    html[data-template="stem_blueprint"] .formula-banner {
+      background: #02121c;
+      border: 1px solid #06b6d4;
+      color: #22d3ee;
+      font-size: 12px;
+      padding: 10px;
+      font-weight: 700;
+    }
+    /* Section 5: Industrial Safety Hazard Alert */
+    html[data-template="stem_blueprint"] .notes-section[data-block="warnings"] {
+      border: 1px solid #f59e0b;
+      background: rgba(245, 158, 11, 0.05);
+      border-radius: 6px;
+      padding: 20px;
+    }
+    html[data-template="stem_blueprint"] .warning-item {
+      border-left: 3px solid #f59e0b;
+      background: #072538;
+      padding: 12px 16px;
+      margin-bottom: 10px;
+      border-radius: 0 4px 4px 0;
+    }
+    html[data-template="stem_blueprint"] .warning-num {
+      background: #f59e0b;
+      color: #000;
+      font-family: 'JetBrains Mono', monospace;
+      border-radius: 2px;
+    }
+
+    /* -------------------------------------------------------------------------
+       3. VIBRANT & CREATIVE (Student Bento / Polaroid / Pastel Cards)
+       ------------------------------------------------------------------------- */
+    html[data-template="vibrant_creative"] body {
+      background-color: #f0fdf4;
+      background-image: radial-gradient(#86efac 1.2px, transparent 1.2px);
+      background-size: 22px 22px;
+    }
+    html[data-template="vibrant_creative"] .doc-container {
+      border-radius: 28px;
+      border: 2px solid #bbf7d0;
+      background: #ffffff;
+      box-shadow: 0 20px 40px -15px rgba(5, 150, 105, 0.12);
+    }
+    html[data-template="vibrant_creative"] .doc-header {
+      background: linear-gradient(135deg, #059669, #10b981);
+      border-radius: 26px 26px 0 0;
+    }
+    html[data-template="vibrant_creative"] header.cover {
+      background: linear-gradient(135deg, #ecfdf5, #fef3c7);
+      border-radius: 22px;
+      padding: 28px;
+      margin-bottom: 28px;
+      border: 1px solid #a7f3d0;
+    }
+    html[data-template="vibrant_creative"] header.cover h2 {
+      font-family: 'Outfit', 'Fredoka', sans-serif;
+      font-size: 32px;
+      color: #065f46;
+      font-weight: 800;
+    }
+    html[data-template="vibrant_creative"] header.cover p.lede {
+      font-family: 'Outfit', sans-serif;
+      font-size: 16px;
+      color: #047857;
+    }
+    /* Hero Image: Tilted Polaroid Photo with Shadow */
+    html[data-template="vibrant_creative"] .doc-image-frame {
+      transform: rotate(-1.2deg);
+      border: 8px solid #ffffff;
+      border-radius: 18px;
+      box-shadow: 0 16px 32px rgba(5, 150, 105, 0.18);
+      max-width: 680px;
+      margin: 30px auto;
+      overflow: hidden;
+      background: #ffffff;
+      position: relative;
+    }
+    html[data-template="vibrant_creative"] .doc-image-frame img {
+      border-radius: 12px;
+      max-height: 270px;
+      object-fit: cover;
+    }
+    html[data-template="vibrant_creative"] .doc-image-caption {
+      background: #ffffff;
+      border-top: none;
+      font-family: 'Outfit', sans-serif;
+      font-weight: 700;
+      color: #065f46;
+      font-size: 13px;
+      text-align: center;
+      padding: 12px;
+    }
+    /* Section 1: Friendly Bento Story Card */
+    html[data-template="vibrant_creative"] .notes-section[data-block="summary"] {
+      background: #ecfdf5;
+      border: 2px dashed #34d399;
+      border-radius: 20px;
+      padding: 24px;
+      margin-bottom: 28px;
+    }
+    html[data-template="vibrant_creative"] .notes-section[data-block="summary"] h3 {
+      font-family: 'Outfit', sans-serif;
+      font-size: 22px;
+      color: #065f46;
+    }
+    /* Section 2: Candy-Striped Flashcard Table */
+    html[data-template="vibrant_creative"] .concept-glossary-table {
+      border-radius: 18px;
+      overflow: hidden;
+      border: 2px solid #a7f3d0;
+    }
+    html[data-template="vibrant_creative"] .concept-glossary-table th {
+      background: #d1fae5;
+      color: #065f46;
+      font-family: 'Outfit', sans-serif;
+      font-weight: 800;
+      font-size: 14px;
+    }
+    html[data-template="vibrant_creative"] .concept-glossary-table tr:nth-child(even) {
+      background: #f0fdf4;
+    }
+    html[data-template="vibrant_creative"] .concept-glossary-table .concept-term {
+      color: #047857;
+      font-family: 'Outfit', sans-serif;
+      font-weight: 700;
+      font-size: 15px;
+    }
+    html[data-template="vibrant_creative"] .badge-exam {
+      background: #fef3c7;
+      color: #b45309;
+      border: 1px solid #fde68a;
+      border-radius: 999px;
+      font-weight: 800;
+    }
+    /* Section 4: Dual Pastel Bento Cards */
+    html[data-template="vibrant_creative"] .rules-breakdown-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+    html[data-template="vibrant_creative"] .rule-box:nth-child(1) {
+      background: #ecfdf5;
+      border: 2px solid #6ee7b7;
+      border-radius: 20px;
+      padding: 22px;
+    }
+    html[data-template="vibrant_creative"] .rule-box:nth-child(2) {
+      background: #fefce8;
+      border: 2px solid #fde047;
+      border-radius: 20px;
+      padding: 22px;
+    }
+    html[data-template="vibrant_creative"] .formula-banner {
+      background: #ffffff;
+      border-radius: 12px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+      font-weight: 800;
+      color: #047857;
+      text-align: center;
+    }
+    /* Section 5: Pinned Sticky Notes */
+    html[data-template="vibrant_creative"] .warning-item {
+      background: #fffbeb;
+      border: 1px solid #fde68a;
+      border-radius: 16px;
+      padding: 16px 20px;
+      margin-bottom: 12px;
+      box-shadow: 0 4px 12px rgba(217, 119, 6, 0.08);
+    }
+    html[data-template="vibrant_creative"] .warning-num {
+      background: #f59e0b;
+      color: #fff;
+      border-radius: 999px;
+      font-weight: 800;
+    }
+
+    /* -------------------------------------------------------------------------
+       4. GAMIFIED QUEST & DISCOVERY (RPG Quest Tracker / Sci-Fi HUD)
+       ------------------------------------------------------------------------- */
+    html[data-template="gamified_quest"] body {
+      background: radial-gradient(circle at 50% 0%, #2e1065 0%, #110722 80%);
+    }
+    html[data-template="gamified_quest"] .doc-container {
+      border-radius: 22px;
+      border: 2px solid rgba(168, 85, 247, 0.5);
+      background: #190a30;
+      box-shadow: 0 0 40px rgba(168, 85, 247, 0.25), inset 0 0 20px rgba(168, 85, 247, 0.1);
+    }
+    html[data-template="gamified_quest"] .doc-header {
+      background: #180931;
+      border-bottom: 2px solid rgba(168, 85, 247, 0.4);
+    }
+    html[data-template="gamified_quest"] header.cover {
+      background: rgba(46, 16, 85, 0.6);
+      border: 2px solid #a855f7;
+      border-radius: 18px;
+      padding: 26px;
+      margin-bottom: 26px;
+      box-shadow: 0 0 25px rgba(168, 85, 247, 0.2);
+    }
+    html[data-template="gamified_quest"] header.cover h2 {
+      font-family: 'Fredoka', 'Outfit', sans-serif;
+      font-size: 32px;
+      color: #facc15;
+      text-shadow: 0 0 12px rgba(250, 204, 21, 0.4);
+    }
+    html[data-template="gamified_quest"] header.cover p.lede {
+      font-size: 15px;
+      color: #d8b4fe;
+    }
+    html[data-template="gamified_quest"] .doc-image-frame {
+      border: 2px solid #c084fc;
+      border-radius: 16px;
+      background: #120524;
+      padding: 6px;
+      box-shadow: 0 0 30px rgba(168, 85, 247, 0.35);
+      position: relative;
+    }
+    html[data-template="gamified_quest"] .doc-image-frame img {
+      border-radius: 10px;
+      max-height: 280px;
+      object-fit: cover;
+    }
+    html[data-template="gamified_quest"] .doc-image-caption {
+      background: #1e0b3d;
+      border-top: 1px solid #a855f7;
+      font-family: 'Fredoka', sans-serif;
+      color: #fde047;
+      font-size: 12px;
+      padding: 10px 14px;
+    }
+    /* Section 1: Mission Directive Directive */
+    html[data-template="gamified_quest"] .notes-section[data-block="summary"] {
+      background: rgba(46, 16, 85, 0.7);
+      border: 1px solid #a855f7;
+      border-radius: 16px;
+      padding: 22px;
+      margin-bottom: 26px;
+      box-shadow: inset 0 0 15px rgba(168, 85, 247, 0.2);
+    }
+    html[data-template="gamified_quest"] .notes-section[data-block="summary"] h3 {
+      font-family: 'Fredoka', sans-serif;
+      color: #fde047;
+      font-size: 22px;
+    }
+    /* Section 2: RPG Lore Inventory Grid */
+    html[data-template="gamified_quest"] .concept-glossary-table {
+      border: 1px solid rgba(168, 85, 247, 0.4);
+      border-radius: 14px;
+      overflow: hidden;
+    }
+    html[data-template="gamified_quest"] .concept-glossary-table th {
+      background: #2e1065;
+      color: #fde047;
+      font-family: 'Fredoka', sans-serif;
+      font-size: 13px;
+    }
+    html[data-template="gamified_quest"] .concept-glossary-table td {
+      border-bottom: 1px solid rgba(168, 85, 247, 0.2);
+      color: #f3e8ff;
+    }
+    html[data-template="gamified_quest"] .concept-glossary-table .concept-term {
+      color: #e879f9;
+      font-weight: 700;
+    }
+    html[data-template="gamified_quest"] .badge-exam {
+      background: rgba(250, 204, 21, 0.2);
+      color: #fde047;
+      border: 1px solid #facc15;
+      font-family: 'Fredoka', sans-serif;
+    }
+    /* Section 4: Power Mechanics & Spell Cards */
+    html[data-template="gamified_quest"] .rules-breakdown-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 18px;
+    }
+    html[data-template="gamified_quest"] .rule-box {
+      background: #230f40;
+      border: 1px solid #a855f7;
+      border-radius: 16px;
+      padding: 20px;
+      box-shadow: 0 0 15px rgba(168, 85, 247, 0.2);
+    }
+    html[data-template="gamified_quest"] .rule-box h4 {
+      font-family: 'Fredoka', sans-serif;
+      color: #facc15;
+      font-size: 18px;
+    }
+    html[data-template="gamified_quest"] .formula-banner {
+      background: #140526;
+      border: 1px solid #facc15;
+      color: #fde047;
+      font-family: 'JetBrains Mono', monospace;
+      border-radius: 10px;
+    }
+    /* Section 5: Dungeon Traps & Boss Pitfalls */
+    html[data-template="gamified_quest"] .warning-item {
+      background: rgba(88, 28, 135, 0.5);
+      border: 1px solid #c084fc;
+      border-radius: 14px;
+      padding: 16px;
+      margin-bottom: 12px;
+    }
+    html[data-template="gamified_quest"] .warning-num {
+      background: #facc15;
+      color: #000;
+      font-family: 'Fredoka', sans-serif;
+      font-weight: 800;
+      border-radius: 6px;
+    }
+
+    /* -------------------------------------------------------------------------
+       5. HUMANITIES & WARM EDITORIAL (Magazine / Literary Long-Read)
+       ------------------------------------------------------------------------- */
+    html[data-template="warm_editorial"] body {
+      background-color: #fbf8f3;
+    }
+    html[data-template="warm_editorial"] .doc-container {
+      border-radius: 14px;
+      border: 1px solid #e7e5e4;
+      background: #ffffff;
+      box-shadow: 0 10px 30px rgba(67, 20, 7, 0.06);
+    }
+    html[data-template="warm_editorial"] .doc-header {
+      background: #431407;
+      border-bottom: 1px solid #78350f;
+    }
+    html[data-template="warm_editorial"] header.cover {
+      border-top: 1px solid #431407;
+      border-bottom: 3px double #c2410c;
+      padding: 28px 0;
+      margin-bottom: 32px;
+    }
+    html[data-template="warm_editorial"] header.cover h2 {
+      font-family: 'Playfair Display', Georgia, serif;
+      font-size: 34px;
+      color: #431407;
+      font-weight: 700;
+      line-height: 1.25;
+    }
+    html[data-template="warm_editorial"] header.cover p.lede {
+      font-family: 'Playfair Display', Georgia, serif;
+      font-style: italic;
+      font-size: 17px;
+      color: #78716c;
+    }
+    html[data-template="warm_editorial"] .doc-image-frame {
+      border: 1px solid #e7e5e4;
+      border-radius: 8px;
+      background: #fafaf9;
+      padding: 8px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.06);
+    }
+    html[data-template="warm_editorial"] .doc-image-frame img {
+      border-radius: 4px;
+      max-height: 300px;
+      object-fit: cover;
+    }
+    html[data-template="warm_editorial"] .doc-image-caption {
+      background: #fafaf9;
+      border-top: 1px solid #e7e5e4;
+      font-family: 'Playfair Display', serif;
+      font-style: italic;
+      color: #78716c;
+      font-size: 13px;
+      text-align: center;
+    }
+    /* Section 1: Lead Editorial Column with Drop-Cap */
+    html[data-template="warm_editorial"] .notes-section[data-block="summary"] {
+      border-left: 3px solid #c2410c;
+      padding-left: 24px;
+      margin-bottom: 32px;
+    }
+    html[data-template="warm_editorial"] .notes-section[data-block="summary"] p::first-letter {
+      font-family: 'Playfair Display', serif;
+      font-size: 3.6rem;
+      float: left;
+      line-height: 0.8;
+      margin: 4px 12px 0 0;
+      color: #c2410c;
+      font-weight: 700;
+    }
+    /* Section 2: Editorial Literary Index Table */
+    html[data-template="warm_editorial"] .concept-glossary-table {
+      border: none;
+      border-top: 1px solid #c2410c;
+      border-bottom: 1px solid #c2410c;
+    }
+    html[data-template="warm_editorial"] .concept-glossary-table th {
+      background: #ffedd5;
+      color: #7c2d12;
+      font-family: 'Playfair Display', serif;
+      font-weight: 700;
+      font-size: 14px;
+    }
+    html[data-template="warm_editorial"] .concept-glossary-table .concept-term {
+      color: #9a3412;
+      font-family: 'Playfair Display', serif;
+      font-weight: 700;
+      font-size: 15px;
+    }
+    html[data-template="warm_editorial"] .badge-exam {
+      background: #fed7aa;
+      color: #7c2d12;
+      border-radius: 4px;
+    }
+    /* Section 4: Scholarly Two-Column Deep Dive */
+    html[data-template="warm_editorial"] .rules-breakdown-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 24px;
+    }
+    html[data-template="warm_editorial"] .rule-box {
+      background: #fffaf5;
+      border: 1px solid #fed7aa;
+      border-radius: 10px;
+      padding: 24px;
+    }
+    html[data-template="warm_editorial"] .rule-box h4 {
+      font-family: 'Playfair Display', serif;
+      color: #7c2d12;
+      font-size: 20px;
+    }
+    html[data-template="warm_editorial"] .formula-banner {
+      background: #ffffff;
+      border: 1px solid #fdba74;
+      font-family: 'Playfair Display', serif;
+      font-style: italic;
+      color: #c2410c;
+      padding: 12px 18px;
+    }
+
+    /* -------------------------------------------------------------------------
+       6. MINIMALIST EXECUTIVE (Swiss High-Design / Ultra-Clean Contrast)
+       ------------------------------------------------------------------------- */
+    html[data-template="minimalist_clean"] body {
+      background-color: #ffffff;
+      color: #0f172a;
+    }
+    html[data-template="minimalist_clean"] .doc-container {
+      border-radius: 0;
+      border: 1px solid #0f172a;
+      background: #ffffff;
+      box-shadow: none;
+    }
+    html[data-template="minimalist_clean"] .doc-header {
+      background: #0f172a;
+      border-radius: 0;
+    }
+    html[data-template="minimalist_clean"] header.cover {
+      border-bottom: 2px solid #0f172a;
+      padding: 24px 0;
+      margin-bottom: 28px;
+    }
+    html[data-template="minimalist_clean"] header.cover h2 {
+      font-family: 'Inter', system-ui, sans-serif;
+      font-size: 30px;
+      color: #0f172a;
+      font-weight: 900;
+      letter-spacing: -0.04em;
+    }
+    html[data-template="minimalist_clean"] header.cover p.lede {
+      font-family: 'Inter', sans-serif;
+      font-size: 15px;
+      color: #475569;
+      font-weight: 500;
+    }
+    html[data-template="minimalist_clean"] .doc-image-frame {
+      border-radius: 0;
+      border: none;
+      border-left: 4px solid #0f172a;
+      background: #ffffff;
+      box-shadow: none;
+      margin: 24px 0;
+    }
+    html[data-template="minimalist_clean"] .doc-image-frame img {
+      border-radius: 0;
+      max-height: 280px;
+      object-fit: cover;
+    }
+    html[data-template="minimalist_clean"] .doc-image-caption {
+      background: #ffffff;
+      border-top: 1px solid #e2e8f0;
+      font-family: 'Inter', sans-serif;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: #0f172a;
+      font-weight: 800;
+      padding: 10px 0;
+    }
+    /* Section 1: Swiss Executive Memo */
+    html[data-template="minimalist_clean"] .notes-section[data-block="summary"] {
+      border-left: 3px solid #0f172a;
+      padding-left: 20px;
+      background: transparent;
+      margin-bottom: 30px;
+    }
+    html[data-template="minimalist_clean"] .notes-section[data-block="summary"] h3 {
+      font-family: 'Inter', sans-serif;
+      font-size: 18px;
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #0f172a;
+    }
+    html[data-template="minimalist_clean"] .notes-section[data-block="summary"] p {
+      color: #0f172a;
+      font-size: 15px;
+      font-weight: 500;
+      line-height: 1.7;
+    }
+    /* Section 2: High-Density Swiss Grid */
+    html[data-template="minimalist_clean"] .concept-glossary-table {
+      border-radius: 0;
+      border: 1px solid #0f172a;
+    }
+    html[data-template="minimalist_clean"] .concept-glossary-table th {
+      background: #0f172a;
+      color: #ffffff;
+      font-family: 'Inter', sans-serif;
+      font-weight: 800;
+      text-transform: uppercase;
+      font-size: 11px;
+      letter-spacing: 0.1em;
+      border: none;
+    }
+    html[data-template="minimalist_clean"] .concept-glossary-table td {
+      border-bottom: 1px solid #e2e8f0;
+      color: #0f172a;
+      font-family: 'Inter', sans-serif;
+    }
+    html[data-template="minimalist_clean"] .concept-glossary-table .concept-term {
+      color: #0f172a;
+      font-weight: 800;
+    }
+    html[data-template="minimalist_clean"] .badge-exam {
+      background: #0f172a;
+      color: #ffffff;
+      border-radius: 0;
+      font-size: 10px;
+      text-transform: uppercase;
+    }
+    /* Section 4: Modular Swiss Grid Blocks */
+    html[data-template="minimalist_clean"] .rules-breakdown-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+    html[data-template="minimalist_clean"] .rule-box {
+      border: 1px solid #0f172a;
+      border-radius: 0;
+      background: #ffffff;
+      padding: 20px;
+    }
+    html[data-template="minimalist_clean"] .rule-box h4 {
+      font-family: 'Inter', sans-serif;
+      font-weight: 900;
+      color: #0f172a;
+      font-size: 15px;
+      text-transform: uppercase;
+    }
+    html[data-template="minimalist_clean"] .formula-banner {
+      background: #f8fafc;
+      border: 1px solid #0f172a;
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 700;
+      color: #0f172a;
+      border-radius: 0;
+    }
+    /* Section 5: Brutalist Compliance Advisories */
+    html[data-template="minimalist_clean"] .warning-item {
+      border: 1px solid #cbd5e1;
+      border-left: 4px solid #0f172a;
+      border-radius: 0;
+      background: #ffffff;
+      padding: 14px 18px;
+      margin-bottom: 10px;
+    }
+    html[data-template="minimalist_clean"] .warning-num {
+      background: #0f172a;
+      color: #ffffff;
+      border-radius: 0;
+      font-family: 'Inter', sans-serif;
+      font-weight: 900;
+    }
+
+    /* -------------------------------------------------------------------------
+       7. INFOGRAPHIC & VISUAL FLOW (Neon Cyan / Process Map Flow)
+       ------------------------------------------------------------------------- */
+    html[data-template="infographic_visual"] body {
+      background-color: #060b19;
+    }
+    html[data-template="infographic_visual"] .doc-container {
+      border-radius: 20px;
+      border: 1px solid rgba(0, 180, 216, 0.4);
+      background: #0a1128;
+      box-shadow: 0 0 30px rgba(0, 180, 216, 0.2);
+    }
+    html[data-template="infographic_visual"] header.cover {
+      background: linear-gradient(135deg, rgba(0, 180, 216, 0.15), rgba(99, 102, 241, 0.15));
+      border: 1px solid rgba(0, 180, 216, 0.3);
+      border-radius: 16px;
+      padding: 28px;
+      margin-bottom: 28px;
+    }
+    html[data-template="infographic_visual"] header.cover h2 {
+      font-size: 32px;
+      font-weight: 800;
+      background: linear-gradient(90deg, #38bdf8, #818cf8);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    html[data-template="infographic_visual"] header.cover p.lede {
+      color: #94a3b8;
+      font-size: 15px;
+    }
+    html[data-template="infographic_visual"] .doc-image-frame {
+      border: 2px solid #00b4d8;
+      border-radius: 16px;
+      background: #060b19;
+      padding: 4px;
+      box-shadow: 0 0 25px rgba(0, 180, 216, 0.3);
+    }
+    html[data-template="infographic_visual"] .doc-image-frame img {
+      border-radius: 12px;
+      max-height: 280px;
+      object-fit: cover;
+    }
+    html[data-template="infographic_visual"] .doc-image-caption {
+      background: #0d1a3a;
+      border-top: 1px solid #00b4d8;
+      font-weight: 700;
+      color: #7dd3fc;
+      font-size: 12px;
+    }
+    /* Section 1: 3-Step Visual Pipeline */
+    html[data-template="infographic_visual"] .notes-section[data-block="summary"] {
+      background: rgba(13, 26, 58, 0.7);
+      border-left: 4px solid #00b4d8;
+      border-radius: 0 16px 16px 0;
+      padding: 24px;
+      margin-bottom: 28px;
+    }
+    /* Section 2: Glowing Cyan Metric Cards */
+    html[data-template="infographic_visual"] .concept-glossary-table {
+      border: 1px solid rgba(0, 180, 216, 0.3);
+      border-radius: 14px;
+      overflow: hidden;
+    }
+    html[data-template="infographic_visual"] .concept-glossary-table th {
+      background: #101f42;
+      color: #38bdf8;
+      font-weight: 800;
+    }
+    html[data-template="infographic_visual"] .concept-glossary-table td {
+      border-bottom: 1px solid rgba(0, 180, 216, 0.15);
+      color: #f8fafc;
+    }
+    html[data-template="infographic_visual"] .concept-glossary-table .concept-term {
+      color: #38bdf8;
+      font-weight: 700;
+    }
+    html[data-template="infographic_visual"] .badge-exam {
+      background: rgba(0, 180, 216, 0.2);
+      color: #7dd3fc;
+      border: 1px solid #00b4d8;
+      border-radius: 999px;
+    }
+    /* Section 4: Dual Comparative Columns */
+    html[data-template="infographic_visual"] .rules-breakdown-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+    html[data-template="infographic_visual"] .rule-box {
+      background: #0d1a3a;
+      border: 1px solid rgba(0, 180, 216, 0.35);
+      border-radius: 16px;
+      padding: 22px;
+      box-shadow: 0 0 15px rgba(0, 180, 216, 0.15);
+    }
+    html[data-template="infographic_visual"] .rule-box h4 {
+      color: #38bdf8;
+      font-size: 18px;
+    }
+    html[data-template="infographic_visual"] .formula-banner {
+      background: linear-gradient(90deg, rgba(0, 180, 216, 0.2), rgba(99, 102, 241, 0.2));
+      border: 1px solid #00b4d8;
+      color: #ffd166;
+      font-weight: 800;
+    }
+    /* Section 5: Visual Radar Warnings */
+    html[data-template="infographic_visual"] .warning-item {
+      background: rgba(245, 158, 11, 0.1);
+      border: 1px solid rgba(245, 158, 11, 0.4);
+      border-radius: 14px;
+      padding: 18px;
+      margin-bottom: 12px;
+    }
+    html[data-template="infographic_visual"] .warning-num {
+      background: #f59e0b;
+      color: #000;
+      border-radius: 999px;
+      font-weight: 800;
+    }
+
+    /* -------------------------------------------------------------------------
+       8. MODERN TECH (Dark Slate & Neon / Silicon Valley Dev Docs)
+       ------------------------------------------------------------------------- */
+    html[data-template="modern_tech"] body {
+      background-color: #0b0f19;
+    }
+    html[data-template="modern_tech"] .doc-container {
+      border-radius: 20px;
+      border: 1px solid rgba(99, 102, 241, 0.3);
+      background: #111827;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+      position: relative;
+    }
+    html[data-template="modern_tech"] .doc-container::before {
+      content: '';
+      display: block;
+      height: 3px;
+      background: linear-gradient(90deg, #6366f1, #a855f7, #ec4899);
+      border-radius: 20px 20px 0 0;
+    }
+    html[data-template="modern_tech"] .doc-header {
+      background: rgba(17, 24, 39, 0.95);
+      border-bottom: 1px solid rgba(99, 102, 241, 0.2);
+    }
+    html[data-template="modern_tech"] header.cover {
+      background: rgba(30, 41, 59, 0.5);
+      border: 1px solid rgba(99, 102, 241, 0.25);
+      border-radius: 16px;
+      padding: 26px;
+      margin-bottom: 28px;
+    }
+    html[data-template="modern_tech"] header.cover h2 {
+      font-size: 30px;
+      font-weight: 800;
+      color: #f8fafc;
+    }
+    html[data-template="modern_tech"] header.cover p.lede {
+      color: #94a3b8;
+      font-size: 15px;
+    }
+    html[data-template="modern_tech"] .doc-image-frame {
+      border: 1px solid rgba(99, 102, 241, 0.35);
+      border-radius: 14px;
+      background: #0f172a;
+      padding: 4px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.4);
+    }
+    html[data-template="modern_tech"] .doc-image-frame img {
+      border-radius: 10px;
+      max-height: 280px;
+      object-fit: cover;
+    }
+    html[data-template="modern_tech"] .doc-image-caption {
+      background: #1e293b;
+      border-top: 1px solid rgba(99, 102, 241, 0.25);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      color: #a5b4fc;
+    }
+    /* Section 1: Quickstart Architecture Guide */
+    html[data-template="modern_tech"] .notes-section[data-block="summary"] {
+      background: rgba(30, 41, 59, 0.6);
+      border: 1px solid rgba(99, 102, 241, 0.25);
+      border-radius: 14px;
+      padding: 22px;
+      margin-bottom: 26px;
+    }
+    /* Section 2: API Parameter Reference Table */
+    html[data-template="modern_tech"] .concept-glossary-table {
+      border: 1px solid rgba(99, 102, 241, 0.25);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+    html[data-template="modern_tech"] .concept-glossary-table th {
+      background: #1e293b;
+      color: #a5b4fc;
+      font-weight: 700;
+    }
+    html[data-template="modern_tech"] .concept-glossary-table td {
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      color: #f8fafc;
+    }
+    html[data-template="modern_tech"] .concept-glossary-table .concept-term {
+      color: #818cf8;
+      font-weight: 700;
+    }
+    html[data-template="modern_tech"] .badge-exam {
+      background: rgba(99, 102, 241, 0.2);
+      color: #a5b4fc;
+      border: 1px solid rgba(99, 102, 241, 0.4);
+      border-radius: 6px;
+    }
+    /* Section 4: Bento Tech Components */
+    html[data-template="modern_tech"] .rules-breakdown-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 18px;
+    }
+    html[data-template="modern_tech"] .rule-box {
+      background: rgba(30, 41, 59, 0.5);
+      border: 1px solid rgba(99, 102, 241, 0.25);
+      border-radius: 14px;
+      padding: 20px;
+    }
+    html[data-template="modern_tech"] .rule-box h4 {
+      color: #a5b4fc;
+      font-size: 16px;
+      font-weight: 700;
+    }
+    html[data-template="modern_tech"] .formula-banner {
+      background: #0f172a;
+      border: 1px solid rgba(99, 102, 241, 0.3);
+      color: #38bdf8;
+      font-family: 'JetBrains Mono', monospace;
+      border-radius: 8px;
+    }
+    /* Section 5: Linter Warning Cards */
+    html[data-template="modern_tech"] .warning-item {
+      background: rgba(245, 158, 11, 0.1);
+      border: 1px solid rgba(245, 158, 11, 0.3);
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 12px;
+    }
+    html[data-template="modern_tech"] .warning-num {
+      background: #f59e0b;
+      color: #000;
+      border-radius: 6px;
+      font-weight: 800;
     }
 CSS;
 
@@ -849,6 +2081,9 @@ CSS;
     function switchTheme(theme) {
       document.documentElement.setAttribute('data-template', theme);
       if (themeSelect) themeSelect.value = theme;
+      document.querySelectorAll('[data-template]').forEach(el => {
+        el.setAttribute('data-template', theme);
+      });
       localStorage.setItem('lms_viewer_theme', theme);
     }
 
@@ -1232,6 +2467,9 @@ HTML;
       document.documentElement.setAttribute('data-template', theme);
       const sel = document.getElementById('docThemeSelect');
       if (sel) sel.value = theme;
+      document.querySelectorAll('[data-template]').forEach(el => {
+        el.setAttribute('data-template', theme);
+      });
       localStorage.setItem('lms_viewer_theme', theme);
     }
 
