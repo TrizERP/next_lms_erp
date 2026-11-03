@@ -55,10 +55,54 @@ class ConceptImageSearchService
      */
     public array $searches = [];
 
+    /** Whether Wikimedia Commons' own search is asked too. Off unless a caller opts in, so every other screen searches exactly as before. */
+    protected bool $commons = false;
+
     public function available(): bool
     {
         return (bool) config('pal_content.image.enabled', true)
             && (bool) config('pal_content.image.external.enabled', true);
+    }
+
+    /**
+     * Also search Wikimedia Commons directly (see WikimediaCommonsImageSearch). Opt-in, for the pilot's picture editor and generation: Openverse
+     * is then the second source, asked only for what Commons did not fill, so a stalled Openverse no longer decides whether a photograph is found.
+     */
+    public function useCommons(bool $on = true): static
+    {
+        $this->commons = $on;
+
+        return $this;
+    }
+
+    /** Commons' answer for a query, ranked like any other source's. @return array<int,array<string,mixed>> */
+    protected function commonsRanked(string $query, int $limit, ?float $minScore): array
+    {
+        // Nothing else is touched for a caller that did not opt in (not even the container): the default search is exactly what it was.
+        if (! $this->commons) {
+            return [];
+        }
+        $search = app(WikimediaCommonsImageSearch::class);
+        if (! $search->available()) {
+            return [];
+        }
+        $started = microtime(true);
+        $candidates = $search->search($query, $limit * 3);
+        $floor = $minScore ?? (float) config('pal_content.image.external.min_score', 1.0);
+        $out = [];
+        foreach ($this->rank($candidates, $query, $minScore) as $row) {
+            if ($row['score'] < $floor) {
+                continue;
+            }
+            unset($row['score']);
+            $out[$row['url']] = $row + ['query' => $query];
+            if (count($out) >= $limit) {
+                break;
+            }
+        }
+        $this->noteSearch(['query' => $query, 'source' => 'commons', 'outcome' => 'ok', 'status' => null, 'ms' => (int) round((microtime(true) - $started) * 1000), 'raw' => count($candidates), 'usable' => count($out), 'retry_after' => null, 'cached' => false]);
+
+        return array_values($out);
     }
 
     /**
@@ -265,12 +309,17 @@ class ConceptImageSearchService
      */
     public function rankedImagesFor(string $query, int $limit = 5, ?float $minScore = null, ?string $source = null): array
     {
-        if (! $this->available()) {
-            return [];
-        }
-
         $floor = $minScore ?? (float) config('pal_content.image.external.min_score', 1.0);
         $out = [];
+
+        // Commons first when asked to: it answers in about a second. Openverse then tops up what is still missing.
+        foreach ($this->commonsRanked($query, $limit, $minScore) as $row) {
+            $out[$row['url']] = $row;
+        }
+        // Four photographs are enough to choose between: do not make a teacher wait on a second source for more.
+        if (count($out) >= ($this->commons ? min($limit, 4) : $limit) || ! $this->available()) {
+            return array_slice(array_values($out), 0, $limit);
+        }
 
         foreach ($this->queryVariants($query) as $variant) {
             $variant = $this->clipQuery($variant);
@@ -322,14 +371,33 @@ class ConceptImageSearchService
         }
         $queries = array_values(array_unique(array_filter($clip, fn ($q) => $q !== '')));
         $empty = array_fill_keys($queries, []);
-        if ($queries === [] || ! $this->available()) {
+        if ($queries === [] || (! $this->available() && ! $this->commons)) {
             return array_fill_keys($original, []);
+        }
+
+        // Commons first, all queries at once, when the caller opted in: it answers in about a second, so a stalled Openverse is only waited on
+        // for the queries Commons could not fill.
+        $fromCommons = [];
+        if ($this->commons && app(WikimediaCommonsImageSearch::class)->available()) {
+            $started = microtime(true);
+            $fromCommons = app(WikimediaCommonsImageSearch::class)->searchMany($queries, $limit * 3, $concurrency, $deadline);
+            $ms = (int) round((microtime(true) - $started) * 1000);
+            foreach ($fromCommons as $q => $rows) {
+                $this->noteSearch(['query' => $q, 'source' => 'commons', 'outcome' => 'ok', 'status' => null, 'ms' => $ms, 'raw' => count($rows), 'usable' => count($rows), 'retry_after' => null, 'cached' => false]);
+            }
         }
 
         $effectiveSource = $source ?? trim((string) config('pal_content.image.external.source', 'wikimedia'));
         $shaped = [];
         $pending = [];
         foreach ($queries as $q) {
+            if (($fromCommons[$q] ?? []) !== []) {
+                $shaped[$q] = $fromCommons[$q];
+                continue;
+            }
+            if (! $this->available()) {
+                continue;
+            }
             $cached = Cache::get('pal:image:openverse:' . sha1($effectiveSource . '|' . $q));
             if (is_array($cached)) {
                 $this->noteSearch(['query' => $q, 'source' => $effectiveSource ?: 'all', 'outcome' => 'cache', 'status' => null, 'ms' => 0, 'raw' => count($cached), 'usable' => count($cached), 'retry_after' => null, 'cached' => true]);

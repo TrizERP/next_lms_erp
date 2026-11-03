@@ -138,7 +138,8 @@ class SlidePlanner
                 . $slideCountGuidance . ' '
                 . 'Follow every TEACHING METHOD order rule exactly for each concept: when a concept has both required types, put the earlier phase first. '
                 . 'In particular, if the error says scenario then concept_intro, move that concept\'s scenario slide before its concept_intro slide. '
-                . 'If you must cut slides, merge or remove practice or review slides, never the cover.';
+                . 'If you must cut slides, merge or remove practice or review slides, never the cover.'
+                . (WorkflowRules::active($map['workflow'] ?? null) ? ' Keep "workflow_stage" and "outcome_refs" on every slide except the cover: a corrected plan that drops them is rejected again.' : '');
             [$plan, $errors] = $this->read($this->ask($retry), $map, $eligible);
         }
 
@@ -539,6 +540,8 @@ class SlidePlanner
 
         // A deck planned for a teaching method must contain what that method needs, in its order (off when none is named).
         array_push($errors, ...TeachingMethodProfile::planErrors($map['teaching_method'] ?? null, $slides));
+        // The pilot's staged workflow: stage identity, stage order and outcome coverage (off when no workflow is passed).
+        array_push($errors, ...WorkflowRules::errors($map['workflow'] ?? null, $slides, $map));
 
         $missing = array_diff($known, array_keys($taught));
         if ($missing) {
@@ -560,6 +563,13 @@ class SlidePlanner
             $s['h5p_pattern'] = $s['h5p_pattern'] ?? null;
             $s['visual'] = !empty($s['visual']['required']) ? $s['visual'] : null;
             $s['diagram'] = $s['visual'] !== null && is_array($s['diagram'] ?? null) && !DiagramRenderer::problems($s['diagram']) ? $s['diagram'] : null;
+            // Present only when the model was asked for them (the pilot workflow); other plans keep exactly their old shape.
+            if (array_key_exists('workflow_stage', $s)) {
+                $s['workflow_stage'] = WorkflowRules::stageOf($s);
+            }
+            if (array_key_exists('outcome_refs', $s)) {
+                $s['outcome_refs'] = WorkflowRules::refsOf($s);
+            }
         }
 
         return $plan;
@@ -650,7 +660,9 @@ class SlidePlanner
         $pictureRule = $this->pictureRule($maxV) . ($lim['require_concept_visuals']
             ? "\n- EVERY concept_intro and concept_visual slide MUST have a required visual: a photograph, map or real labelled figure where one exists, otherwise a role \"diagram\" with a \"diagram\" spec built only from words and numbers in the chapter text. A concept slide with no visual is rejected. Give each slide its own query (do not reuse one query for several slides)."
             : '');
-        $methodRule = TeachingMethodProfile::plannerRule($map['teaching_method'] ?? null);
+        $methodRule = TeachingMethodProfile::plannerRule($map['teaching_method'] ?? null, $map['workflow'] ?? null);
+        // The reply template lists the staged-workflow fields too (the model follows the template); empty for every other plan, so those prompts are unchanged.
+        $workflowSchema = WorkflowRules::schemaLines($map['workflow'] ?? null);
 
         return <<<PROMPT
 Plan a classroom study presentation of between {$min} and {$max} slides for the chapter below. Nothing is written yet; you are only planning.
@@ -686,7 +698,7 @@ Reply with this JSON and nothing else:
       "diagram": null or {"layout": "flow | hub | compare", "title": "...", "nodes": [...]} (see the diagram rules; only with a visual),
       "question_ids": [ids from the list, at most {$maxQ}],
       "h5p_pattern": null or {"type": "pattern id", "reason": "why it fits this concept"},
-      "uses_baseline": "kept | improved | new"
+      "uses_baseline": "kept | improved | new"{$workflowSchema}
     }
   ]
 }

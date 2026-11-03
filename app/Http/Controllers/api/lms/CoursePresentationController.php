@@ -17,6 +17,7 @@ use App\Services\CoursePresentation\WorkerHeartbeat;
 use App\Services\CoursePresentation\ModelAvailability;
 use App\Services\CoursePresentation\MethodSuitability;
 use App\Services\CoursePresentation\Options;
+use App\Services\CoursePresentation\PedagogicalWorkflow;
 use App\Services\CoursePresentation\PilotScope;
 use App\Services\CoursePresentation\SourceLoader;
 use App\Services\CoursePresentation\SourceRegistry;
@@ -37,6 +38,7 @@ class CoursePresentationController extends Controller
         private Options $options,
         private PilotScope $scope,
         private SourceLoader $loader,
+        private PedagogicalWorkflow $workflows,
     ) {
     }
 
@@ -54,7 +56,14 @@ class CoursePresentationController extends Controller
         $registry = new SourceRegistry((int) config('course_presentation_pilot.min_text_chars', 2000));
         $suitability = (new MethodSuitability())->evaluate($registry->semanticRow($chapter, $raw));
 
-        return response()->json(['status_code' => 1, 'chapter' => ['id' => (int) $chapter['id'], 'name' => $chapter['chapter_name']], 'suitability' => $suitability] + $this->options->forScreen());
+        $payload = ['status_code' => 1, 'chapter' => ['id' => (int) $chapter['id'], 'name' => $chapter['chapter_name']], 'suitability' => $suitability] + $this->options->forScreen();
+        // Chapter-scoped pilot: the method -> format map and availability come from the server; other chapters get the unchanged payload.
+        if ($this->workflows->appliesTo($chapter)) {
+            $keys = array_keys($this->workflows->methods());
+            $payload['workflow'] = ['enabled' => true, 'formats_by_method' => array_combine($keys, array_map(fn ($m) => $this->workflows->formatsFor($m), $keys))];
+        }
+
+        return response()->json($payload);
     }
 
     /** GET lms/course-presentation/preflight?chapter_id=&pedagogy=&format= */
@@ -73,6 +82,9 @@ class CoursePresentationController extends Controller
             return $error;
         }
 
+        if ($refusal = $this->workflowRefusal($chapter, $data['pedagogy'], $data['format'])) {
+            return $refusal;
+        }
         [$found, $methodFit, $fit, $raw] = $this->assess($chapter, $data['pedagogy'], $data['format']);
         // The server decides, not the screen: a combination that is unsuitable or unsupported does not continue.
         if (!$fit['continue_allowed']) {
@@ -122,6 +134,9 @@ class CoursePresentationController extends Controller
         $chapter = $this->verifiedChapter($request, (int) $data['chapter_id'], $error);
         if ($chapter === null) {
             return $error;
+        }
+        if ($refusal = $this->workflowRefusal($chapter, $data['pedagogy'], $data['format'])) {
+            return $refusal;
         }
         [, , $fit] = $this->assess($chapter, $data['pedagogy'], $data['format']);
         if (!$fit['continue_allowed'] || !$fit['generation_supported']) {
@@ -365,6 +380,70 @@ class CoursePresentationController extends Controller
         return response()->json(['status_code' => 1, 'can_edit' => true]);
     }
 
+    private function storedEditor(): \App\Services\CoursePresentation\StoredDeckImageEditor
+    {
+        return app(\App\Services\CoursePresentation\StoredDeckImageEditor::class);
+    }
+
+    /**
+     * GET lms/course-presentation/stored-image/states?chapter_id=&content_id= : per slide of an APPROVED, stored presentation, what may be done with
+     * its picture and whether the original can be put back. Read only. Pilot chapter only.
+     */
+    public function storedImageStates(Request $request): JsonResponse
+    {
+        $data = $request->validate(['chapter_id' => 'required|integer|min:1', 'content_id' => 'required|integer|min:1']);
+
+        return $this->imageEdit($request, $data, fn ($chapter, $tenant) => ['slide_images' => (object) $this->storedEditor()->states((int) $chapter['id'], $tenant, (int) $data['content_id'])]);
+    }
+
+    /** GET lms/course-presentation/stored-image/search?chapter_id=&content_id=&slide=&q= : photograph candidates for one slide of a stored presentation. Writes nothing. */
+    public function storedImageSearch(Request $request): JsonResponse
+    {
+        $data = $request->validate(['chapter_id' => 'required|integer|min:1', 'content_id' => 'required|integer|min:1', 'slide' => 'required|integer|min:1', 'q' => 'nullable|string|max:200']);
+
+        return $this->imageEdit($request, $data, fn ($chapter, $tenant) => $this->storedEditor()->search((int) $chapter['id'], $tenant, (int) $data['content_id'], (int) $data['slide'], $data['q'] ?? null));
+    }
+
+    /**
+     * POST lms/course-presentation/stored-image/replace : replaces ONE slide's picture in a stored presentation with a candidate the search offered
+     * (`candidate_id`) or an uploaded file (`image`, with `rights_confirmed`). The change is saved with the presentation and survives a reload.
+     */
+    public function storedImageReplace(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'chapter_id' => 'required|integer|min:1', 'content_id' => 'required|integer|min:1', 'slide' => 'required|integer|min:1',
+            'candidate_id' => 'nullable|string|regex:/^[0-9a-f]{16}$/|required_without:image',
+            'image' => 'nullable|file|required_without:candidate_id|max:8192',
+            'rights_confirmed' => 'nullable|boolean', 'credit' => 'nullable|string|max:200', 'alt' => 'nullable|string|max:300',
+        ]);
+        $userId = (int) $request->session()->get('user_id');
+
+        return $this->imageEdit($request, $data, function ($chapter, $tenant) use ($data, $request, $userId) {
+            if ($request->hasFile('image')) {
+                if (!$request->boolean('rights_confirmed')) {
+                    throw new \App\Services\CoursePresentation\DraftImageException('Confirm that you have the right to use this picture.', 422);
+                }
+                $file = $request->file('image');
+                if (!$file->isValid()) {
+                    throw new \App\Services\CoursePresentation\DraftImageException('The upload did not complete. Try again.', 422);
+                }
+
+                return $this->storedEditor()->replaceFromUpload((int) $chapter['id'], $tenant, (int) $data['content_id'], (int) $data['slide'], (string) file_get_contents($file->getRealPath()), (string) $file->getClientOriginalName(), $data['credit'] ?? null, $data['alt'] ?? null, $userId);
+            }
+
+            return $this->storedEditor()->replaceFromSearch((int) $chapter['id'], $tenant, (int) $data['content_id'], (int) $data['slide'], (string) $data['candidate_id'], $userId);
+        });
+    }
+
+    /** POST lms/course-presentation/stored-image/restore : puts the slide's original picture back. */
+    public function storedImageRestore(Request $request): JsonResponse
+    {
+        $data = $request->validate(['chapter_id' => 'required|integer|min:1', 'content_id' => 'required|integer|min:1', 'slide' => 'required|integer|min:1']);
+        $userId = (int) $request->session()->get('user_id');
+
+        return $this->imageEdit($request, $data, fn ($chapter, $tenant) => $this->storedEditor()->restore((int) $chapter['id'], $tenant, (int) $data['content_id'], (int) $data['slide'], $userId));
+    }
+
     /** The id of a story scene inside a slide: letters, digits and the separators the story generator uses. */
     private const NODE_RULE = ['nullable', 'string', 'max:64', 'regex:/^[A-Za-z0-9_.\/-]+$/'];
 
@@ -550,6 +629,9 @@ class CoursePresentationController extends Controller
         if ($chapter === null) {
             return $error;
         }
+        if ($refusal = $this->workflowRefusal($chapter, $data['pedagogy'], $data['format'])) {
+            return $refusal;
+        }
         [, , $fit] = $this->assess($chapter, $data['pedagogy'], $data['format']);
 
         return response()->json(['status_code' => 1, 'chapter' => ['id' => (int) $chapter['id'], 'name' => $chapter['chapter_name']], 'fit' => $fit]);
@@ -593,6 +675,43 @@ class CoursePresentationController extends Controller
     }
 
     /** @return array<string,mixed>|null the chapter row, or null with $error set */
+    /** GET lms/course-presentation/workflow?chapter_id=&pedagogy=&format= : the stages the teacher reviews before generating. */
+    public function workflow(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'chapter_id' => 'required|integer|min:1',
+            'pedagogy' => ['required', 'string', Rule::in(array_keys($this->options->pedagogies()))],
+            'format' => ['nullable', 'string', Rule::in(array_keys($this->options->formats()))],
+        ]);
+        $chapter = $this->verifiedChapter($request, (int) $data['chapter_id'], $error);
+        if ($chapter === null) {
+            return $error;
+        }
+        if (!$this->workflows->appliesTo($chapter)) {
+            return response()->json(['status_code' => 0, 'message' => 'The pedagogical workflow is not enabled for this chapter.'], 404);
+        }
+        if (!empty($data['format']) && ($refusal = $this->workflowRefusal($chapter, $data['pedagogy'], $data['format']))) {
+            return $refusal;
+        }
+        $workflow = $this->workflows->workflow($data['pedagogy']);
+        if ($workflow === null) {
+            return response()->json(['status_code' => 0, 'message' => 'This teaching method is not available for this chapter.'], 422);
+        }
+
+        return response()->json(['status_code' => 1, 'workflow' => $workflow, 'formats' => $this->workflows->formatsFor($data['pedagogy'])]);
+    }
+
+    /** For the pilot chapter only: refuse a method/format pair that is incompatible or has no generator. Null for every other chapter. */
+    private function workflowRefusal(array $chapter, string $pedagogy, string $format): ?JsonResponse
+    {
+        if (!$this->workflows->appliesTo($chapter)) {
+            return null;
+        }
+        $reason = $this->workflows->refusal($pedagogy, $format);
+
+        return $reason === null ? null : response()->json(['status_code' => 0, 'message' => $reason], 422);
+    }
+
     private function verifiedChapter(Request $request, int $chapterId, ?JsonResponse &$error): ?array
     {
         $tenant = (int) $request->session()->get('sub_institute_id');

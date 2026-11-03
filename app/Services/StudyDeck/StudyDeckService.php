@@ -137,6 +137,9 @@ class StudyDeckService
         if (!empty($map['teaching_method'])) {
             $plan['teaching_method'] = $map['teaching_method'];
         }
+        if (!empty($map['workflow'])) {
+            $plan['workflow'] = $map['workflow'];
+        }
         $say('plan', count($plan['slides']) . ' slides planned');
 
         $say('content', 'Stage 2: writing slide content with the model');
@@ -148,6 +151,9 @@ class StudyDeckService
         // one or a drawn diagram, as the ladder below already does for a slide with no suitable photograph. Nothing is invented.
         // Under the fast picture policy the stage has its own budget (one for the whole stage), so the run's target does not shorten it again.
         $fast = is_array($options['fast_images'] ?? null) ? $options['fast_images'] : null;
+        // The pilot's staged workflow (only ever present for chapter 8592 / school 1) asks for real photographs: Commons is searched too and a
+        // missing photograph is left missing, not replaced by a diagram. Every other deck keeps the ladder as it was.
+        $this->imagePlanner->photosFirst(!empty($map['workflow']));
         if ($fast !== null) {
             $this->imagePlanner->withFastPolicy($fast + ['tenant' => (int) ($options['tenant'] ?? 0), 'scope' => 't' . (int) ($options['tenant'] ?? 0)]);
         }
@@ -354,6 +360,10 @@ class StudyDeckService
         if (!empty($options['require_every_slide_image'])) {
             $map['limits']['require_every_slide_image'] = 1;
         }
+        // Opt-in and chapter-scoped (PedagogicalWorkflow): absent for every other run, so those prompts do not change.
+        if (!empty($options['workflow'])) {
+            $map['workflow'] = $options['workflow'];
+        }
         $say('map', 'Learning map built' . ($map['warnings'] ? ' (' . count($map['warnings']) . ' warning(s))' : ''));
 
         return [$context, $selection, $eligible, $map];
@@ -387,6 +397,14 @@ class StudyDeckService
             if ($methodErrors) {
                 $report['ok'] = false;
                 $report['errors'] = array_merge($report['errors'], $methodErrors);
+            }
+        }
+        // The pilot's staged workflow: what was checked, from the deck itself. The rules already ran in the validator (and failed the deck on a
+        // breach); this records the result so a run is never described as following a workflow that was not validated.
+        if (!empty($rendered['deck']['workflow'])) {
+            $report['workflow'] = $rendered['deck']['workflow']['validation'];
+            if (empty($report['workflow']['outcomes_checked']) && !empty($rendered['deck']['workflow']['outcomes_note'])) {
+                $report['warnings'][] = (string) $rendered['deck']['workflow']['outcomes_note'];
             }
         }
         $say('validate', $report['ok'] ? 'Validation passed' : count($report['errors']) . ' validation error(s)');

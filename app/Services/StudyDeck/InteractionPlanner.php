@@ -155,7 +155,9 @@ class InteractionPlanner
             }
         }
 
-        return $out;
+        // The retry above may answer with a capped kind (a fourth scenario) although it was told not to; the validator would then reject the
+        // whole deck. Apply the same cap again: it changes nothing while counts are within the caps.
+        return $this->capped($out, $plan, $caps);
     }
 
     /** The slide as the model sees it. @return array<string,mixed> */
@@ -588,7 +590,7 @@ class InteractionPlanner
         }, array_values($chunk));
         $input = json_encode($work, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
         $scenarios = implode(', ', self::SCENARIO_SLIDES);
-        $methodRule = TeachingMethodProfile::interactionRule($plan['teaching_method'] ?? null);
+        $methodRule = TeachingMethodProfile::interactionRule($plan['teaching_method'] ?? null, $plan['workflow'] ?? null);
 
         return <<<PROMPT
 This is a teacher-led classroom lesson that students also study on their own, shown as a full-screen presentation. The explanations, pictures and examples are already written. Your job: EVERY slide listed below should let the student DO something that teaches - explore, reveal, compare, connect, decide - not just read and press Continue. Write one interaction for each slide, choosing the kind that fits what the slide IS. It must feel like an interactive textbook, never like a quiz: nothing is scored and nothing has one right answer except where a real sequence or definition does.

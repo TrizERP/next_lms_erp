@@ -190,7 +190,7 @@ class StoryPlanner
             'acts' => array_map(fn ($a) => ['key' => $a['key'], 'title' => $a['title'], 'kind' => $a['kind'], 'concepts' => array_map(fn ($id) => $map['concepts'][$id]['name'], array_slice($a['concept_ids'], 0, 8))], $acts),
         ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
         $keys = implode(', ', array_column($acts, 'key'));
-        $methodRule = $this->methodLine($method);
+        $methodRule = $this->methodLine($method) . \App\Services\CoursePresentation\PedagogicalWorkflow::rule($map['workflow'] ?? null, 'story');
 
         return <<<PROMPT
 You are planning ONE continuous story that a student (age 14-15) plays through to learn the chapter below. The story has one act for each topic of the chapter and ends with a final mission. The same characters and the same setting run through every act, so the lesson feels like one story, not nine separate ones.
@@ -242,7 +242,7 @@ PROMPT;
         $sceneP = implode(' | ', \App\Services\StudyDeck\Branching\ScenarioBlueprint::SCENE_PURPOSES);
         $decP = implode(' | ', StorySkeleton::DECISION_PURPOSES);
         $out = implode(' | ', \App\Services\StudyDeck\Branching\ScenarioBlueprint::OUTCOMES);
-        $methodRule = $this->methodLine($method);
+        $methodRule = $this->methodLine($method) . \App\Services\CoursePresentation\PedagogicalWorkflow::rule($map['workflow'] ?? null, 'story');
         $mission = $act['kind'] === StoryActs::MISSION
             ? '- This is the FINAL MISSION: one real-life situation where the learner applies the chapter. Its scenes and decisions must meet every concept in required_concept_ids on every path.'
             : '- This act teaches the concepts of ONE topic through the story. EVERY path through the act must meet EVERY concept in required_concept_ids.';

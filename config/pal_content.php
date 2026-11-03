@@ -409,6 +409,17 @@ return [
             'timeout' => 8,
         ],
 
+        // Wikimedia Commons' own search (WikimediaCommonsImageSearch). Used where a caller opts in (the pilot's picture editor and generation):
+        // Openverse's search endpoint did not answer from this network on 2026-11-02 (connection opened, no reply for 45 s), Commons answers in ~1.5 s.
+        'commons' => [
+            'enabled' => env('PAL_COMMONS_IMAGES_ENABLED', true),
+            'endpoint' => env('COMMONS_API_ENDPOINT', 'https://commons.wikimedia.org/w/api.php'),
+            'timeout' => 10,
+            // Sharp enough to fill a slide's picture area.
+            'min_side' => 500,
+            'min_long_side' => 800,
+        ],
+
         'external' => [
             'enabled'  => env('PAL_IMAGE_EXTERNAL_ENABLED', true),
             'endpoint' => env('OPENVERSE_ENDPOINT', 'https://api.openverse.org/v1/images/'),

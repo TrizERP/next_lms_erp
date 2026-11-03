@@ -789,6 +789,7 @@ PROMPT;
             'skeleton' => $nodes,
         ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
         $methodLine = $method !== null && ($m = StoryTemplate::methodRule($method)) !== null ? "\n- TEACHING METHOD: $m" : '';
+        $methodLine .= \App\Services\CoursePresentation\PedagogicalWorkflow::rule($map['workflow'] ?? null, 'story');
 
         return <<<PROMPT
 Write the words of ONE act of an interactive story lesson. The structure is fixed (the skeleton below): you may not add, remove, rename or rewire a node. You write only the text of each node.
