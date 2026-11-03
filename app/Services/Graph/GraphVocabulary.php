@@ -169,6 +169,8 @@ class GraphVocabulary
         'ReceiptBook' => self::FAMILY_FINANCE,
         'PettyCashHead' => self::FAMILY_FINANCE,
         'Donation' => self::FAMILY_FINANCE,
+        'FeeRecord' => self::FAMILY_FINANCE,
+        'FeePayment' => self::FAMILY_FINANCE,
 
         // -- skills -----------------------------------------------------------
         'Skill' => self::FAMILY_SKILLS,

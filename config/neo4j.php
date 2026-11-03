@@ -168,13 +168,24 @@ return [
      *     `status`. The script's displayLabel for :Lesson referenced
      *     `row.curriculum_name`, a column of a different table entirely, which is
      *     why every live :Lesson node has no displayLabel at all. Fixed here.
-     *   - `lms_misconceptions`, `lms_learning_objectives`, `lms_competency_standards`,
-     *     `lms_chapter_standard_map` and `lms_assessment_typology` DO NOT EXIST in
-     *     this database, so :Misconception, :LearningObjects, :CompetencyStandards,
-     *     :ChapterStandardMap and :AssessmentTypology have no live source and are
-     *     deliberately absent. (Misconceptions do exist, under `pal_misconceptions`
-     *     / `pal_misconception_library`, but on the PAL model rather than the K12
+     *   - `lms_misconceptions`, `lms_learning_objectives`, `lms_competency_standards`
+     *     and `lms_chapter_standard_map` DO NOT EXIST in this database, so
+     *     :Misconception, :LearningObjects, :CompetencyStandards and
+     *     :ChapterStandardMap have no live source and are deliberately absent.
+     *     (Misconceptions do exist, under `pal_misconceptions` /
+     *     `pal_misconception_library`, but on the PAL model rather than the K12
      *     one — they are synced by the PAL coherence pass, not by this outbox.)
+     *     UPDATE 2026-11-03: a real migration
+     *     (`2026_05_21_102502_create_lms_assessment_typology_table`) does create
+     *     `lms_assessment_typology` with a real, DB-enforced `curriculum_id` FK
+     *     — but the table does NOT exist in this database today (confirmed via
+     *     `information_schema.TABLES`, not assumed), so this line's original
+     *     claim is still correct for THIS database, just for a different reason
+     *     than originally written: the migration exists but was never run here.
+     *     :AssessmentTypology's 3 live Neo4j nodes (from the original one-off
+     *     batch load, CSV-confirmed) therefore still have no live MySQL source
+     *     to sync from — left out of the Knowledge Graph coverage pass below
+     *     for this reason, not forced.
      *   - `suggested_content` exists but has none of the columns the script's
      *     :LearningContent block reads (no `concept_id`, `misconception_id`,
      *     `title`, `modality`, `bloom_level`). Projecting it would produce nodes
@@ -343,6 +354,31 @@ return [
             'academic_year',
             'hrms_departments',
             'school_setup',
+
+            // Knowledge Graph coverage pass (added 2026-11-03) — real, FK-
+            // verified entities/relationships that had no live sync at all
+            // (front_desk and the five new label tables). `lms_assessment_
+            // typology` was audited for this same pass but does NOT exist in
+            // this database (confirmed live — `information_schema.TABLES`
+            // has no such row, contradicting both the stale comment above
+            // and the audit that inferred it from a CSV backup rather than a
+            // live query) — deliberately left out, not added here.
+            'front_desk',
+            'admission_enquiry',
+            'consent_master',
+            'ptm_booking_master',
+            'ptm_time_slots_master',
+            'parent_communication',
+
+            // Fees Knowledge Graph pass (added 2026-11-03) — see entity specs
+            // below. Decentralized Fees tab had zero reusable Neo4j mapping at
+            // all (FeeHead/FeeTitle/FeeConfig/ReceiptBook are a different grain
+            // — fee catalog/receipt-book config, not per-student records — and
+            // are unmaintained CSV-ingest data, LIABLE_FOR had exactly 1 live
+            // edge), so these are genuinely new, not a backfill of an existing
+            // but unwired projection.
+            'fees_breackoff',
+            'fees_collect',
         ],
 
         'entities' => [
@@ -581,20 +617,6 @@ return [
                 ],
             ],
 
-            // ---------------------------------------------------------------
-            // Teacher  (spec only — no trigger, see `triggered` above)
-            // ---------------------------------------------------------------
-            'tbluser' => [
-                'label' => 'Teacher',
-                'properties' => [
-                    'user_profile_id'  => 'user_profile_id',
-                    'subject_ids'      => 'subject_ids',
-                    'sub_institute_id' => 'sub_institute_id',
-                ],
-                'casts' => ['subject_ids' => 'string'],
-                'display_label' => ['prefix' => 'Teacher:', 'column' => 'user_profile_id'],
-            ],
-
             /*
             |--------------------------------------------------------------------
             | Added 2026-09-04 — live sync for the eight module scripts
@@ -808,6 +830,13 @@ return [
                 ],
                 'casts' => ['sort_order' => 'int', 'term_id' => 'int', 'weightage' => 'float'],
                 'display_label' => ['prefix' => 'ExamType:', 'column' => 'ExamTitle'],
+                // Knowledge Graph coverage pass (2026-11-03): `ExamType` (NOT
+                // NULL, DB-enforced) is the real FK into result_exam_type_master
+                // — simply never declared before, so :ExamType and
+                // :ExamTypeCategory had nodes but zero edges between them.
+                'relationships' => [
+                    ['type' => 'OF_EXAM_TYPE_CATEGORY', 'from' => ['ExamType', 'Id'], 'to' => ['ExamTypeCategory', 'ExamType']],
+                ],
             ],
 
             'result_exam_type_master' => [
@@ -1308,6 +1337,206 @@ return [
                     'sub_institute_id' => 'Id',
                 ],
                 'display_label' => ['prefix' => 'Institute:', 'column' => 'SchoolName'],
+            ],
+
+            /*
+            |--------------------------------------------------------------------
+            | Knowledge Graph coverage pass (added 2026-11-03)
+            |--------------------------------------------------------------------
+            |
+            | Five real, FK-verified entities that previously had no graph
+            | mapping at all, plus one real relationship on an existing
+            | label (FrontDeskEntry). Every target label below was verified
+            | against the live schema and controller code, not guessed — see
+            | the audit behind this pass. `StuDetail` (not `Student`) is the
+            | correct target for every student-side edge: these tables all
+            | key off `tblstudent.id` (the master person record), which is
+            | `:StuDetail`, not `:Student` (the per-year enrollment) — the
+            | same inversion already documented on `:Student`/`:StuDetail`
+            | above.
+            */
+
+            'front_desk' => [
+                'label' => 'FrontDeskEntry',
+                'properties' => [
+                    'visitor_type'     => 'VISITOR_TYPE',
+                    'title'            => 'TITLE',
+                    'to_whom_meet'     => 'TO_WHOM_MEET',
+                    'date'             => 'DATE',
+                    'sub_institute_id' => 'SUB_INSTITUTE_ID',
+                ],
+                'display_label' => ['prefix' => 'FrontDeskEntry:', 'column' => 'TITLE'],
+                'relationships' => [
+                    // STUDENT_ID is `required` in the live API controller — a real, populated FK.
+                    ['type' => 'FOR_STUDENT', 'from' => ['FrontDeskEntry', 'ID'], 'to' => ['StuDetail', 'STUDENT_ID']],
+                ],
+            ],
+
+            // AssessmentTypology was audited for this pass (real DB-enforced
+            // `curriculum_id` FK per the migration, a drafted-but-never-
+            // effective repair Cypher, :Curriculum's dual-key fallback would
+            // have resolved it automatically via GraphDrain) but
+            // `lms_assessment_typology` does not exist in this database —
+            // confirmed live, not assumed. No spec/trigger added; see the
+            // coverage report for why this is "needs live-environment
+            // verification", not "implemented".
+
+            'admission_enquiry' => [
+                'label' => 'AdmissionEnquiry',
+                'properties' => [
+                    'enquiry_no'           => 'enquiry_no',
+                    'first_name'           => 'first_name',
+                    'last_name'            => 'last_name',
+                    'syear'                => 'syear',
+                    'status'               => 'status',
+                    'source_of_enquiry'    => 'source_of_enquiry',
+                    'sub_institute_id'     => 'sub_institute_id',
+                ],
+                'casts' => ['syear' => 'int'],
+                'display_label' => ['prefix' => 'AdmissionEnquiry:', 'column' => 'enquiry_no'],
+                'relationships' => [
+                    ['type' => 'APPLIES_TO_STANDARD', 'from' => ['AdmissionEnquiry', 'id'], 'to' => ['Standard', 'admission_standard']],
+                    ['type' => 'CREATED_BY', 'from' => ['AdmissionEnquiry', 'id'], 'to' => ['Staff', 'created_by']],
+                ],
+            ],
+            // `(:StuDetail)-[:HAS_ADMISSION_ENQUIRY]->(:AdmissionEnquiry)`:
+            // the FK (`tblstudent.admission_id`) lives on `tblstudent`, not
+            // on this table, so it cannot be declared here — a declarative
+            // relationship spec can only reference a column on the table it
+            // is declared against. Expressing it would mean editing
+            // `tblstudent`'s own entity spec/trigger, which is this
+            // database's hottest, most central table; deliberately out of
+            // scope for this pass given the risk. Existing rows are linked
+            // once via a one-off backfill script (GraphOutbox::relationship()
+            // directly, no spec involved) — this one edge, unlike every
+            // other one in this pass, will NOT automatically stay current as
+            // new admissions happen until a future, separately-scoped change
+            // touches `tblstudent`'s trigger. Documented, not silently
+            // claimed as fully live-synced.
+
+            'consent_master' => [
+                'label' => 'Consent',
+                'properties' => [
+                    'title'              => 'title',
+                    'date'               => 'date',
+                    'accountable_status' => 'accountable_status',
+                    'amount'             => 'amount',
+                    'status'             => 'status',
+                    'sub_institute_id'   => 'sub_institute_id',
+                ],
+                'display_label' => ['prefix' => 'Consent:', 'column' => 'title'],
+                'relationships' => [
+                    ['type' => 'HAS_CONSENT', 'from' => ['StuDetail', 'student_id'], 'to' => ['Consent', 'ID']],
+                    ['type' => 'IN_DIVISION', 'from' => ['Consent', 'ID'], 'to' => ['Division', 'division_id']],
+                    ['type' => 'APPLIES_TO_STANDARD', 'from' => ['Consent', 'ID'], 'to' => ['Standard', 'standard_id']],
+                ],
+                // `created_by` is stored as varchar on this table (unlike
+                // admission_enquiry's clean int) — not projected as a Staff
+                // edge this pass; a fuzzy cast isn't a verified relationship.
+            ],
+
+            'ptm_booking_master' => [
+                'label' => 'PtmBooking',
+                'properties' => [
+                    'date'                 => 'DATE',
+                    'confirm_status'       => 'CONFIRM_STATUS',
+                    'ptm_attended_status'  => 'PTM_ATTENDED_STATUS',
+                    'sub_institute_id'     => 'SUB_INSTITUTE_ID',
+                ],
+                'display_label' => ['prefix' => 'PtmBooking:', 'column' => 'DATE'],
+                'relationships' => [
+                    ['type' => 'BOOKED_PTM', 'from' => ['StuDetail', 'STUDENT_ID'], 'to' => ['PtmBooking', 'ID']],
+                    ['type' => 'IN_SLOT', 'from' => ['PtmBooking', 'ID'], 'to' => ['PtmTimeSlot', 'TIME_SLOT_ID']],
+                ],
+                // TEACHER_ID/PTM_ATTENDED_BY -> Staff deferred this pass — no
+                // existing relationship type fits cleanly; the core booking
+                // connection (student + slot) already resolves the "disconnected
+                // dot" problem without inventing a new type for a secondary edge.
+            ],
+
+            'ptm_time_slots_master' => [
+                'label' => 'PtmTimeSlot',
+                'properties' => [
+                    'ptm_date'         => 'ptm_date',
+                    'title'            => 'title',
+                    'from_time'        => 'from_time',
+                    'to_time'          => 'to_time',
+                    'sub_institute_id' => 'sub_institute_id',
+                ],
+                'display_label' => ['prefix' => 'PtmTimeSlot:', 'column' => 'title'],
+                'relationships' => [
+                    ['type' => 'APPLIES_TO_STANDARD', 'from' => ['PtmTimeSlot', 'id'], 'to' => ['Standard', 'standard_id']],
+                    ['type' => 'IN_DIVISION', 'from' => ['PtmTimeSlot', 'id'], 'to' => ['Division', 'division_id']],
+                ],
+            ],
+
+            'parent_communication' => [
+                'label' => 'ParentCommunication',
+                'properties' => [
+                    'title'            => 'title',
+                    'syear'            => 'syear',
+                    'date'             => 'date_',
+                    'sub_institute_id' => 'sub_institute_id',
+                ],
+                'casts' => ['syear' => 'int'],
+                'display_label' => ['prefix' => 'ParentCommunication:', 'column' => 'title'],
+                'relationships' => [
+                    ['type' => 'SENT_COMMUNICATION', 'from' => ['StuDetail', 'student_id'], 'to' => ['ParentCommunication', 'id']],
+                ],
+                // `reply_by` -> Staff deferred this pass, same reasoning as PTM's teacher edge.
+            ],
+
+            // ---------------------------------------------------------------
+            // FeeRecord (added 2026-11-03, 197,613 rows) — a per-standard/
+            // grade/section/month fee DEMAND SCHEDULE, not a per-student
+            // record: this table has no student_id column at all. Hangs off
+            // :Standard, which a student reaches via the existing
+            // ENROLLED_IN edge — not a direct student->FeeRecord edge, which
+            // the real schema cannot support.
+            // ---------------------------------------------------------------
+            'fees_breackoff' => [
+                'label' => 'FeeRecord',
+                'properties' => [
+                    'fee_type_id'      => 'fee_type_id',
+                    'grade_id'         => 'grade_id',
+                    'standard_id'      => 'standard_id',
+                    'section_id'       => 'section_id',
+                    'month_id'         => 'month_id',
+                    'amount'           => 'amount',
+                    'syear'            => 'syear',
+                    'sub_institute_id' => 'sub_institute_id',
+                ],
+                'display_label' => ['prefix' => 'FeeRecord:', 'column' => 'fee_type_id'],
+                'relationships' => [
+                    ['type' => 'HAS_FEE_SCHEDULE', 'from' => ['Standard', 'standard_id'], 'to' => ['FeeRecord', 'id']],
+                ],
+            ],
+
+            // ---------------------------------------------------------------
+            // FeePayment (added 2026-11-03, `fees_collect`) — a real per-
+            // student payment, unlike FeeRecord above (`student_id` is a
+            // genuine FK here). Only non-sensitive, graph-exploration-relevant
+            // columns are projected — bank/cheque details, free-text remarks,
+            // the generated `fees_html` blob, and the per-title_N itemised
+            // breakdown are deliberately left out of Neo4j.
+            // ---------------------------------------------------------------
+            'fees_collect' => [
+                'label' => 'FeePayment',
+                'properties' => [
+                    'student_id'       => 'student_id',
+                    'standard_id'      => 'standard_id',
+                    'term_id'          => 'term_id',
+                    'syear'            => 'syear',
+                    'amount'           => 'amount',
+                    'payment_mode'     => 'payment_mode',
+                    'receiptdate'      => 'receiptdate',
+                    'receipt_no'       => 'receipt_no',
+                    'sub_institute_id' => 'sub_institute_id',
+                ],
+                'display_label' => ['prefix' => 'Payment:', 'column' => 'receipt_no'],
+                'relationships' => [
+                    ['type' => 'MADE_PAYMENT', 'from' => ['StuDetail', 'student_id'], 'to' => ['FeePayment', 'id']],
+                ],
             ],
         ],
     ],

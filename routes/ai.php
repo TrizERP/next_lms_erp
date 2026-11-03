@@ -8,6 +8,7 @@ use App\Http\Controllers\AI\AskController;
 use App\Http\Controllers\AI\CapabilityController;
 use App\Http\Controllers\AI\CaseController;
 use App\Http\Controllers\AI\GenerationController;
+use App\Http\Controllers\AI\GraphBrowserController;
 use App\Http\Controllers\AI\KnowledgeRagController;
 use App\Http\Controllers\AI\OntologyController;
 use App\Http\Controllers\AI\OutcomeController;
@@ -239,6 +240,14 @@ Route::prefix(config('ai.route_prefix', 'api/ai'))
                 ->where('workflow', '[a-z0-9_\-]+');
             Route::post('/workspace/ontology-views/{view}', [WorkspaceController::class, 'ontologyView'])
                 ->where('view', '[a-z0-9_\-]+');
+            // The module-level sibling of the route above: views for a module before
+            // any record is selected, for the decentralized Knowledge Graph tab.
+            Route::match(['get', 'post'], '/workspace/module-views', [WorkspaceController::class, 'moduleViews']);
+            // Non-blocking sync health for both Knowledge Graph surfaces (centralized
+            // and decentralized) — real GraphDrain/outbox state, never a fabricated
+            // progress figure. Read-only, platform-wide (not tenant-scoped): the
+            // outbox tables carry no per-request tenant boundary of their own.
+            Route::match(['get', 'post'], '/workspace/graph-sync-status', [WorkspaceController::class, 'graphSyncStatus']);
 
             /*
             | Ask — the conversational front door.
@@ -382,6 +391,46 @@ Route::prefix(config('ai.route_prefix', 'api/ai'))
             Route::get('/knowledge-graph/relations/{entity}', [OntologyController::class, 'relations'])
                 ->where('entity', '[a-z_]+');
             Route::post('/knowledge-graph/query', [OntologyController::class, 'query']);
+
+            /*
+            | Centralized Knowledge Graph browser — Modules (GraphVocabulary
+            | families) -> Submodules (GraphSchema labels) -> the real connected
+            | subgraph for one label, read straight from Neo4j. See
+            | GraphModuleBrowser/GraphBrowserController; deliberately separate
+            | from the ontology-hybrid routes just above.
+            */
+            Route::get('/knowledge-graph/browser/modules', [GraphBrowserController::class, 'modules']);
+            Route::get('/knowledge-graph/browser/modules/{family}/submodules', [GraphBrowserController::class, 'submodules'])
+                ->where('family', '[a-z_]+');
+            Route::get('/knowledge-graph/browser/submodules/{label}/graph', [GraphBrowserController::class, 'graph'])
+                ->where('label', '[A-Za-z]+');
+
+            /*
+            | The real ERP module/submodule navigation (tblmenumaster-backed),
+            | layered on the same GraphModuleBrowser/Neo4j path as the three
+            | routes above. "All Modules" shows Institute ERP/LMS + PAL/etc.
+            | exactly as the rest of the app's own menus do, not GraphVocabulary's
+            | 10 engineering-facing families.
+            */
+            Route::get('/knowledge-graph/browser/erp-modules', [GraphBrowserController::class, 'erpModules']);
+            Route::get('/knowledge-graph/browser/erp-modules/{moduleId}/submodules', [GraphBrowserController::class, 'erpSubmodules'])
+                ->whereNumber('moduleId');
+            Route::get('/knowledge-graph/browser/erp-submodules/{submoduleId}/graph', [GraphBrowserController::class, 'erpSubmoduleGraph'])
+                ->whereNumber('submoduleId');
+
+            /*
+            | Rebuild additions: global search, path-finder, full node
+            | drill-down, and Organization Management's own staff/
+            | department/role graph (PR #988, reused via GraphModuleBrowser
+            | rather than duplicated). Same GraphBrowserController, same
+            | pure-Neo4j rule as the routes just above.
+            */
+            Route::get('/knowledge-graph/browser/search', [GraphBrowserController::class, 'search']);
+            Route::post('/knowledge-graph/browser/path', [GraphBrowserController::class, 'path']);
+            Route::get('/knowledge-graph/browser/node/{label}/{id}', [GraphBrowserController::class, 'nodeDetail'])
+                ->where('label', '[A-Za-z]+')
+                ->whereNumber('id');
+            Route::get('/knowledge-graph/browser/organization/staff-graph', [GraphBrowserController::class, 'organizationStaff']);
 
             /*
             | Generative AI.

@@ -61,7 +61,6 @@ class GraphSchema
         'Assessment'          => ['key' => 'assId',                'uid_syear' => null, 'uid_tenant' => null],
         'Result'              => ['key' => 'resultId',             'uid_syear' => null, 'uid_tenant' => null],
         'Question'            => ['key' => 'qId',                  'uid_syear' => null, 'uid_tenant' => null],
-        'Teacher'             => ['key' => 'teacherId',            'uid_syear' => null, 'uid_tenant' => null],
         'LearningContent'     => ['key' => 'contentId',            'uid_syear' => null, 'uid_tenant' => null],
         'LearningObjects'     => ['key' => 'learningobjectId',     'uid_syear' => null, 'uid_tenant' => null],
         'CompetencyStandards' => ['key' => 'competencystandardsId','uid_syear' => null, 'uid_tenant' => null],
@@ -100,7 +99,12 @@ class GraphSchema
         // rows as :Teacher, so :Staff holds the other 4,653. An HR edge naming
         // tbluser.id must reach whichever label actually holds that person —
         // without the sibling it would silently drop every edge for those 118.
-        'Staff'               => ['key' => 'staffId',              'uid_syear' => null, 'uid_tenant' => null, 'sibling' => 'Teacher'],
+        // No longer a sibling of :Teacher — see StaffGraphProjection's docblock.
+        // :Teacher is permanently gone (its only originator, the one-off
+        // reference ingest, is blocked from re-running) and :Staff is now the
+        // single canonical label for every `tbluser` row; "is this person a
+        // teacher" is the `is_teacher` property, not a separate label.
+        'Staff'               => ['key' => 'staffId',              'uid_syear' => null, 'uid_tenant' => null],
         'Holiday'             => ['key' => 'holidayId',            'uid_syear' => null, 'uid_tenant' => null],
         'LeaveType'           => ['key' => 'leavetypeId',          'uid_syear' => null, 'uid_tenant' => null],
         'PayrollType'         => ['key' => 'payrolltypeId',        'uid_syear' => null, 'uid_tenant' => null],
@@ -176,6 +180,19 @@ class GraphSchema
         'ReceiptBook'         => ['key' => 'receiptbookId',        'uid_syear' => null, 'uid_tenant' => null],
         'PettyCashHead'       => ['key' => 'pettycashheadId',      'uid_syear' => null, 'uid_tenant' => null],
         'Donation'            => ['key' => 'donationId',           'uid_syear' => null, 'uid_tenant' => null],
+
+        // Fees Knowledge Graph pass (added 2026-11-03) — live, Pipeline-A-synced,
+        // NOT part of the one-time CSV ingest above: no `authoritative:false`
+        // property. `fee_student`/`fee_record`/`fee_payment` (the ontology's own
+        // entities) had no reusable existing label — FeeHead/FeeTitle/FeeConfig/
+        // ReceiptBook are a different grain (fee catalog/receipt-book config, not
+        // per-student records) and are unmaintained (LIABLE_FOR had exactly 1 live
+        // edge). FeeRecord is `fees_breackoff` (a per-standard/grade/section/month
+        // fee demand schedule — it has no student_id at all, so it hangs off
+        // :Standard, not a student, directly); FeePayment is `fees_collect` (a
+        // real per-student payment row).
+        'FeeRecord'           => ['key' => 'feerecordId',          'uid_syear' => null, 'uid_tenant' => null],
+        'FeePayment'          => ['key' => 'feepaymentId',         'uid_syear' => null, 'uid_tenant' => null],
 
         // -- skills / SQAA / O*NET --------------------------------------------
         'Skill'               => ['key' => 'skillId',              'uid_syear' => null, 'uid_tenant' => null],
@@ -268,6 +285,17 @@ class GraphSchema
         //      this graph) is this app's own node for ITS own catalog.
         'CompetencyFramework' => ['key' => 'competencyframeworkId', 'uid_syear' => null, 'uid_tenant' => null],
         'Competency'          => ['key' => 'competencyId',          'uid_syear' => null, 'uid_tenant' => null],
+
+        // -- Knowledge Graph coverage pass (added 2026-11-03) ------------------
+        // Five real, live, FK-verified entities that previously had no graph
+        // mapping at all — see the audit behind this pass for the real table
+        // names and row counts. All five are tenant-owned, integer-keyed on
+        // their own table's `id`, no existing label reused.
+        'AdmissionEnquiry'    => ['key' => 'admissionenquiryId',    'uid_syear' => null, 'uid_tenant' => null],
+        'Consent'             => ['key' => 'consentId',             'uid_syear' => null, 'uid_tenant' => null],
+        'PtmBooking'          => ['key' => 'ptmbookingId',          'uid_syear' => null, 'uid_tenant' => null],
+        'PtmTimeSlot'         => ['key' => 'ptmtimeslotId',         'uid_syear' => null, 'uid_tenant' => null],
+        'ParentCommunication' => ['key' => 'parentcommunicationId', 'uid_syear' => null, 'uid_tenant' => null],
     ];
 
     /**
@@ -373,6 +401,23 @@ class GraphSchema
         // ASSESSES/MAPS_TO (PAL's `:Framework` seed uses MAPS_TO, a different
         // edge for a different label) or REQUIRES_SKILL_ELEMENT (O*NET, above).
         'HAS_COMPETENCY',
+
+        // Knowledge Graph coverage pass (added 2026-11-03) — four new types,
+        // each backed by one real, verified FK (see the audit behind this
+        // pass). Every existing already-whitelisted-but-unused type this pass
+        // also uses (APPLIES_TO_STANDARD, CREATED_BY, IN_DIVISION, BOOKED_PTM,
+        // IN_SLOT, SENT_COMMUNICATION, HAS_TYPOLOGY) needed no new entry here.
+        'FOR_STUDENT', 'OF_EXAM_TYPE_CATEGORY', 'HAS_ADMISSION_ENQUIRY', 'HAS_CONSENT',
+
+        // Fees Knowledge Graph pass (added 2026-11-03) — two new types for
+        // FeeRecord/FeePayment (see the finance section of LABELS above).
+        // (:Standard)-[:HAS_FEE_SCHEDULE]->(:FeeRecord), from `fees_breackoff`'s
+        // own `standard_id`. (:StuDetail)-[:MADE_PAYMENT]->(:FeePayment), from
+        // `fees_collect`'s own `student_id` (a real person FK, unlike
+        // `fees_breackoff`). Neither overloads an existing type — LIABLE_FOR/
+        // PAID/PAID_FEES above belong to the unmaintained CSV-ingest finance
+        // labels and are left exactly as they are.
+        'HAS_FEE_SCHEDULE', 'MADE_PAYMENT',
     ];
 
     public static function knowsLabel(string $label): bool
