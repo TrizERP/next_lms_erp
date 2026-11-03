@@ -230,7 +230,7 @@ class PedagogicalContentBuilder
       </div>
       <div class="slide-visual-col">
         <div class="slide-image-frame">
-          <img src="{$visuals['hook']}" alt="{$chap} Contextual Inquiry" loading="lazy">
+          <img src="{$visuals['hook']}" alt="{$chap} Contextual Inquiry" loading="lazy" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1497633762265-9d179a990aa6?auto=format&fit=crop&w=800&q=80';">
           <div class="slide-image-caption">
             <span>📷 Real-World Anchor:</span> {$visuals['caption']}
           </div>
@@ -461,7 +461,7 @@ HTML;
   </header>
 
   <div class="doc-image-frame">
-    <img src="{$visuals['hook']}" alt="{$chap} Classroom Activity" loading="lazy">
+    <img src="{$visuals['hook']}" alt="{$chap} Classroom Activity" loading="lazy" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1497633762265-9d179a990aa6?auto=format&fit=crop&w=800&q=80';">
     <div class="doc-image-caption">
       <strong>Collaborative Task Anchor:</strong> {$visuals['caption']}
     </div>
@@ -713,7 +713,7 @@ HTML;
   </header>
 
   <div class="doc-image-frame">
-    <img src="{$visuals['hero']}" alt="{$chap} Visual Reference" loading="lazy">
+    <img src="{$visuals['hero']}" alt="{$chap} Visual Reference" loading="lazy" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1497633762265-9d179a990aa6?auto=format&fit=crop&w=800&q=80';">
     <div class="doc-image-caption">
       <strong>Visual Anchor:</strong> {$visuals['caption']}
     </div>
@@ -902,7 +902,7 @@ HTML;
   </header>
 
   <div class="doc-image-frame">
-    <img src="{$visuals['hero']}" alt="{$chap} Remedial Scaffolding" loading="lazy">
+    <img src="{$visuals['hero']}" alt="{$chap} Remedial Scaffolding" loading="lazy" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1497633762265-9d179a990aa6?auto=format&fit=crop&w=800&q=80';">
     <div class="doc-image-caption">
       <strong>Cognitive Bridge Anchor:</strong> Intuitive visual model to demystify complex curriculum theorems.
     </div>
