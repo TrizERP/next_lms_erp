@@ -249,6 +249,8 @@ Route::match(['get', 'post'], 'lms-courses/search', [ApiLmsCourseController::cla
 Route::post('lms-chapter-concepts', [ApiLmsCourseController::class, 'getChapterConcepts']);
 Route::post('lms-chapters', [ApiLmsCourseController::class, 'chapters']);
 Route::post('lms-chapter-content', [ApiLmsCourseController::class, 'chapterContent']);
+// Dedicated responsive HTML viewer for AI-generated presentations, notes, activities, remedial, assessments
+Route::get('lms-content-view/{id}', [ApiLmsCourseController::class, 'viewContent'])->whereNumber('id');
 // The interactive deck behind a chapter's study-deck presentation (read-only; see StudyDeckApiController).
 Route::post('lms-study-deck', [\App\Http\Controllers\api\lms\StudyDeckApiController::class, 'show']);
 // The same deck's classroom PDF, scoped to the chapter, school and content item named in the request.

@@ -82,6 +82,10 @@ use App\Http\Controllers\lms\pedagogyEngineController;
 use App\Http\Controllers\FileController;
 
 // ============================================================
+// Dedicated responsive HTML viewer for AI-generated presentations, notes, activities, remedial, assessments
+Route::get('/lms-content-view/{id}', [\App\Http\Controllers\api\ApiLmsCourseController::class, 'viewContent'])->whereNumber('id');
+Route::get('/api/lms-content-view/{id}', [\App\Http\Controllers\api\ApiLmsCourseController::class, 'viewContent'])->whereNumber('id');
+
 // PHASE 4: PEDAGOGY ENGINE ROUTES
 // ============================================================
 
@@ -134,6 +138,10 @@ Route::get('/lms/spaced-repetition', [App\Http\Controllers\lms\assessmentQuestio
     ->name('spaced.repetition')->middleware('api.session');
 
 // ============================================================
+// Dedicated responsive HTML viewer for AI-generated presentations, notes, activities, remedial, assessments
+Route::get('/lms-content-view/{id}', [\App\Http\Controllers\api\ApiLmsCourseController::class, 'viewContent'])->whereNumber('id');
+Route::get('/api/lms-content-view/{id}', [\App\Http\Controllers\api\ApiLmsCourseController::class, 'viewContent'])->whereNumber('id');
+
 // PHASE 4: PEDAGOGY ENGINE ROUTES
 // ============================================================
 
