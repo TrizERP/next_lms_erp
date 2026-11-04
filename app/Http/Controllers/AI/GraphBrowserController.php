@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\AI;
 
 use App\Domain\KnowledgeGraph\GraphModuleBrowser;
+use App\Services\Graph\GraphSchema;
 use Illuminate\Http\Request;
 use Throwable;
 
@@ -121,20 +122,36 @@ class GraphBrowserController extends AiController
     }
 
     /** Cross-label text search — the rebuilt explorer's global search box. */
+    /**
+     * Cross-label search — a non-empty `q` searches every (or `labels`-
+     * scoped) matching node by name; an empty/absent `q` with `labels`
+     * given instead returns a few real sample nodes of those labels, no
+     * text filter at all — the "pick a starting point for this submodule"
+     * case the contextual-drill-down explorer uses instead of a flat
+     * cross-label sample.
+     */
     public function search(Request $request)
     {
         try {
             $scope = $this->scope($request);
 
             $validated = $request->validate([
-                'q' => 'required|string|min:1|max:200',
+                'q' => 'nullable|string|max:200',
                 'limit' => 'nullable|integer|min:1|max:100',
+                'labels' => 'nullable|array',
+                'labels.*' => 'string',
             ]);
 
+            $labels = array_values(array_filter(
+                $validated['labels'] ?? [],
+                fn ($label) => GraphSchema::knowsLabel($label)
+            ));
+
             return $this->success('Search complete.', $this->browser->search(
-                $validated['q'],
+                $validated['q'] ?? '',
                 $scope->selectedInstituteId,
                 $validated['limit'] ?? 30,
+                $labels,
             ));
         } catch (Throwable $exception) {
             return $this->handle($exception);
@@ -175,7 +192,12 @@ class GraphBrowserController extends AiController
         }
     }
 
-    /** One node's full properties plus a paginated page of its own relationships. */
+    /**
+     * One node's full properties plus a paginated page of its own
+     * relationships. `relation`/`direction`, when given, fetch just that
+     * one relationship-group — the progressive explorer's "expand this one
+     * branch" action, instead of the node's whole combined relationship list.
+     */
     public function nodeDetail(Request $request, string $label, string $id)
     {
         try {
@@ -184,6 +206,12 @@ class GraphBrowserController extends AiController
             $validated = $request->validate([
                 'relationship_limit' => 'nullable|integer|min:1|max:100',
                 'skip' => 'nullable|integer|min:0',
+                // Not re-validated against the whitelist here — nodeDetail()
+                // itself calls GraphSchema::assertRelationship(), the same
+                // guard every other method already relies on; an unknown
+                // value is rejected there and surfaces as a normal error.
+                'relation' => 'nullable|string|max:100',
+                'direction' => 'nullable|in:incoming,outgoing',
             ]);
 
             return $this->success('Node detail loaded.', $this->browser->nodeDetail(
@@ -192,6 +220,8 @@ class GraphBrowserController extends AiController
                 $scope->selectedInstituteId,
                 $validated['relationship_limit'] ?? 50,
                 $validated['skip'] ?? 0,
+                $validated['relation'] ?? null,
+                $validated['direction'] ?? null,
             ));
         } catch (Throwable $exception) {
             return $this->handle($exception);

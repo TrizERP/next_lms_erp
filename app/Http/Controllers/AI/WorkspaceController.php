@@ -635,6 +635,36 @@ class WorkspaceController extends AiController
     }
 
     /**
+     * Expand one node's real connections in every direction — the
+     * click-to-expand backend for the decentralized Knowledge Graph canvas.
+     * Unlike `ontologyView()`, this isn't anchored to a page route or a
+     * pre-authored view path: the frontend already has `entity`/`id` from
+     * whatever was just rendered (the view's root, or an item inside a
+     * previous expand response) and asks "what is actually connected to
+     * THIS specific node".
+     */
+    public function expandNode(Request $request, string $entity, string $id)
+    {
+        try {
+            $scope = $this->scope($request);
+
+            $validated = $request->validate([
+                'limit' => 'nullable|integer|min:1|max:50',
+            ]);
+
+            $result = $this->ontologyViews->expandNode($entity, $id, $scope, (int) ($validated['limit'] ?? 10));
+
+            if (! $result['found']) {
+                return $this->failure('That node is not available here.', 404);
+            }
+
+            return $this->success('Node expanded.', $result);
+        } catch (Throwable $exception) {
+            return $this->handle($exception);
+        }
+    }
+
+    /**
      * Non-blocking sync health for both Knowledge Graph surfaces — the
      * Centralized explorer and every decentralized module tab.
      *

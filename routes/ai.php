@@ -248,6 +248,10 @@ Route::prefix(config('ai.route_prefix', 'api/ai'))
             // progress figure. Read-only, platform-wide (not tenant-scoped): the
             // outbox tables carry no per-request tenant boundary of their own.
             Route::match(['get', 'post'], '/workspace/graph-sync-status', [WorkspaceController::class, 'graphSyncStatus']);
+            // Click-to-expand for the decentralized Knowledge Graph canvas: every
+            // real connection of one node, in every direction, not a fixed hop path.
+            Route::match(['get', 'post'], '/workspace/nodes/{entity}/{id}/expand', [WorkspaceController::class, 'expandNode'])
+                ->where('entity', '[a-z0-9_\-]+');
 
             /*
             | Ask — the conversational front door.
