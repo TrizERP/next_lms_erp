@@ -206,6 +206,187 @@ class GraphQueryService
         ));
     }
 
+    /**
+     * Expand one node's REAL connections in every direction the ontology
+     * knows about — every outgoing edge `relationshipsFrom()` declares, and
+     * every incoming edge `relationshipsTo()` declares — rather than one
+     * named relation at a time. This is what a click-to-expand canvas needs:
+     * "what is actually connected to this specific node", not a fixed,
+     * pre-authored hop sequence like `OntologyViewResolver::resolve()` walks.
+     *
+     * Incoming edges are graph-only for now (no generic reverse-SQL-join
+     * exists in this service, and none of the edges this is used against
+     * today need one) — an incoming edge that isn't `in_graph` is reported
+     * as unavailable with a reason, the same honesty `resolve()` already
+     * applies to outgoing edges, rather than silently omitted.
+     *
+     * @return array{node: GraphNode, outgoing: array, incoming: array}|null
+     */
+    public function expandNode(
+        string $entityKey,
+        int|string $id,
+        McpRequestContext $context,
+        int $limitPerRelation = 10
+    ): ?array {
+        $tenantId = $context->selectedInstituteId;
+        $entity = $this->registry->entity($entityKey, $tenantId);
+
+        if (! $entity) {
+            return null;
+        }
+
+        $node = $this->loadNode($entity, $id, $context);
+
+        if (! $node) {
+            return null;
+        }
+
+        $outgoing = [];
+
+        foreach ($this->registry->relationshipsFrom($entityKey, $tenantId) as $edge) {
+            if (! $edge->isSqlTraversable() && ! $edge->isGraphTraversable()) {
+                $outgoing[] = [
+                    'relation' => $edge->relation,
+                    'to_entity' => $edge->toEntityKey,
+                    'direction' => 'outgoing',
+                    'available' => false,
+                    'reason' => 'This relationship is not mapped in the current data model.',
+                    'items' => [],
+                ];
+
+                continue;
+            }
+
+            $spec = new TraversalSpec(startEntityKey: $entityKey, startId: $id, maxDepth: 1, limitPerHop: $limitPerRelation);
+
+            $outgoing[] = [
+                'relation' => $edge->relation,
+                'to_entity' => $edge->toEntityKey,
+                'direction' => 'outgoing',
+                'available' => true,
+                'source' => $edge->isGraphTraversable() ? 'graph' : 'sql',
+                'items' => $this->expand($node, $edge, $spec, $context, 1),
+            ];
+        }
+
+        $incoming = [];
+
+        foreach ($this->registry->relationshipsTo($entityKey, $tenantId) as $edge) {
+            if (! $edge->isGraphTraversable()) {
+                $incoming[] = [
+                    'relation' => $edge->relation,
+                    'from_entity' => $edge->fromEntityKey,
+                    'direction' => 'incoming',
+                    'available' => false,
+                    'reason' => 'Neo4j graph mapping not available for this relationship.',
+                    'items' => [],
+                ];
+
+                continue;
+            }
+
+            $incoming[] = [
+                'relation' => $edge->relation,
+                'from_entity' => $edge->fromEntityKey,
+                'direction' => 'incoming',
+                'available' => true,
+                'source' => 'graph',
+                'items' => $this->expandIncomingViaGraph($node, $edge, $context, $limitPerRelation) ?? [],
+            ];
+        }
+
+        return ['node' => $node, 'outgoing' => $outgoing, 'incoming' => $incoming];
+    }
+
+    /**
+     * The incoming mirror of `expandViaGraph()` — same label/key resolution,
+     * same tenant filter, same `FROM_LABEL_OVERRIDE`-aware bridge for the
+     * node being expanded, arrow direction reversed: `(a)-[:TYPE]->(b)`
+     * where `b` is this node, returning real `a` nodes.
+     *
+     * @return array<int, GraphNode>|null
+     */
+    private function expandIncomingViaGraph(
+        GraphNode $node,
+        RelationshipDefinition $edge,
+        McpRequestContext $context,
+        int $limit
+    ): ?array {
+        $sourceEntity = $this->registry->entity($edge->fromEntityKey, $context->selectedInstituteId);
+
+        if (! $sourceEntity || $node->id === null) {
+            return null;
+        }
+
+        $toLabel = self::FROM_LABEL_OVERRIDE[$node->entityKey][$edge->graphRelationshipType]
+            ?? $this->graphLabelFor($node->entityKey);
+        $fromLabel = $this->graphLabelFor($sourceEntity->key);
+
+        try {
+            $toKey = GraphSchema::key($toLabel);
+            $fromKey = GraphSchema::key($fromLabel);
+        } catch (InvalidArgumentException) {
+            return null;
+        }
+
+        $startIds = $this->resolveGraphStartIds($node, $toLabel, $context);
+
+        if ($startIds === null) {
+            return null;
+        }
+
+        if ($startIds === []) {
+            return [];
+        }
+
+        $cypher = sprintf(
+            'MATCH (b:%s) WHERE b.%s IN $startIds '
+            . 'MATCH (a:%s)-[:%s]->(b) '
+            . 'WHERE ($tenantId IS NULL OR a.sub_institute_id IS NULL OR a.sub_institute_id = $tenantId) '
+            . 'RETURN DISTINCT a LIMIT %d',
+            $toLabel,
+            $toKey,
+            $fromLabel,
+            $edge->graphRelationshipType,
+            $limit
+        );
+
+        try {
+            $result = $this->neo4j->run($cypher, ['startIds' => $startIds, 'tenantId' => $context->selectedInstituteId]);
+        } catch (Throwable) {
+            return null;
+        }
+
+        if ($result === null) {
+            return null;
+        }
+
+        $nodes = [];
+
+        foreach ($result as $record) {
+            $value = is_object($record) && method_exists($record, 'get') ? $record->get('a') : null;
+            $properties = (is_object($value) && method_exists($value, 'getProperties'))
+                ? (method_exists($value->getProperties(), 'toArray') ? $value->getProperties()->toArray() : (array) $value->getProperties())
+                : [];
+
+            if ($properties === []) {
+                continue;
+            }
+
+            $nodes[] = new GraphNode(
+                entityKey: $sourceEntity->key,
+                id: $properties[$fromKey] ?? null,
+                label: $this->labelFor($properties, $sourceEntity),
+                attributes: $this->attributesFor($properties, $sourceEntity),
+                viaRelation: $edge->relation,
+                depth: 1,
+                source: 'graph',
+            );
+        }
+
+        return $nodes;
+    }
+
     // ---------------------------------------------------------------- internals
 
     /**

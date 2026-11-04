@@ -248,6 +248,71 @@ class OntologyViewResolver
             ->all();
     }
 
+    /**
+     * Expand one node's real connections in every direction — the backend
+     * for a click-to-expand canvas, as opposed to `resolve()`'s fixed,
+     * pre-authored hop sequence. Same tenant scoping, same availability/
+     * reason shape as a `resolve()` hop, just keyed by relation+direction
+     * instead of by position in a configured path.
+     *
+     * @return array{found:bool, node:array|null, relations:array<int,array>}
+     */
+    public function expandNode(string $entityKey, int|string $id, McpRequestContext $scope, int $limitPerRelation = 10): array
+    {
+        $expansion = $this->graph->expandNode($entityKey, $id, $scope, $limitPerRelation);
+
+        if ($expansion === null) {
+            return ['found' => false, 'node' => null, 'relations' => []];
+        }
+
+        $node = $expansion['node'];
+        $relations = [];
+        $seen = [];
+
+        foreach ([...$expansion['outgoing'], ...$expansion['incoming']] as $group) {
+            $items = [];
+
+            foreach ($group['items'] as $item) {
+                /** @var GraphNode $item */
+                $fingerprint = $item->fingerprint();
+
+                if (isset($seen[$fingerprint])) {
+                    continue;
+                }
+
+                $seen[$fingerprint] = true;
+                $items[] = [
+                    'entity' => $item->entityKey,
+                    'id' => $item->id,
+                    'label' => $item->label,
+                    'attributes' => $item->attributes,
+                ];
+            }
+
+            $relations[] = [
+                'relation' => $group['relation'],
+                'direction' => $group['direction'],
+                'entity' => $group['to_entity'] ?? $group['from_entity'] ?? null,
+                'available' => $group['available'],
+                'reason' => $group['reason'] ?? null,
+                'source' => $group['source'] ?? null,
+                'total' => count($items),
+                'items' => $items,
+            ];
+        }
+
+        return [
+            'found' => true,
+            'node' => [
+                'entity' => $node->entityKey,
+                'id' => $node->id,
+                'label' => $node->label,
+                'attributes' => $node->attributes,
+            ],
+            'relations' => $relations,
+        ];
+    }
+
     private function findView(string $viewKey, AiContext $context): ?object
     {
         if (! Schema::hasTable('ai_ontology_views')) {

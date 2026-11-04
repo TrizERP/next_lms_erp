@@ -820,10 +820,30 @@ class GraphModuleBrowser
      * checked too (`m.sub_institute_id = $tenantId`, strict) — a
      * relationship to a node outside this tenant is never returned, not
      * merely hidden client-side.
+     *
+     * `$relation`/`$direction` (added for the progressive per-group
+     * explorer): when given, both the relationship fetch AND the count
+     * query are filtered to just that relationship type (and direction,
+     * `'incoming'|'outgoing'`) — so "expand this one group" gets its own
+     * accurate total/pagination rather than a slice of the node's combined
+     * relationship list. Omitted, behaviour is exactly as before (every
+     * relationship, mixed) — this is what the panel's initial "what groups
+     * exist" discovery still uses.
      */
-    public function nodeDetail(string $label, string $recordId, ?int $tenantId, int $relationshipLimit = 50, int $skip = 0): array
-    {
+    public function nodeDetail(
+        string $label,
+        string $recordId,
+        ?int $tenantId,
+        int $relationshipLimit = 50,
+        int $skip = 0,
+        ?string $relation = null,
+        ?string $direction = null
+    ): array {
         GraphSchema::assertLabel($label);
+        if ($relation !== null) {
+            GraphSchema::assertRelationship($relation);
+        }
+        $direction = in_array($direction, ['incoming', 'outgoing'], true) ? $direction : null;
         $relationshipLimit = max(1, min($relationshipLimit, self::MAX_RELATIONSHIP_LIMIT));
         $skip = max(0, $skip);
 
@@ -860,15 +880,18 @@ class GraphModuleBrowser
         $centerNode['attributes'] = $this->resolveReferenceProperties($centerNode['attributes'], $tenantId);
         $nodes[$centerId] = $centerNode;
 
+        $typeFilterOut = $relation !== null ? 'AND type(ro) = $relation ' : '';
+        $typeFilterIn = $relation !== null ? 'AND type(ri) = $relation ' : '';
+
         $inCount = 0;
         $outCount = 0;
         try {
             foreach ($this->neo4j->run(
                 'MATCH (n) WHERE id(n) = $recordId '
-                . 'OPTIONAL MATCH (n)-[ro]->(mo) WHERE mo.sub_institute_id = $tenantId '
-                . 'OPTIONAL MATCH (n)<-[ri]-(mi) WHERE mi.sub_institute_id = $tenantId '
+                . 'OPTIONAL MATCH (n)-[ro]->(mo) WHERE mo.sub_institute_id = $tenantId ' . $typeFilterOut
+                . 'OPTIONAL MATCH (n)<-[ri]-(mi) WHERE mi.sub_institute_id = $tenantId ' . $typeFilterIn
                 . 'RETURN count(DISTINCT ro) AS outCount, count(DISTINCT ri) AS inCount',
-                $nodeParams
+                $nodeParams + ['relation' => $relation]
             ) ?? [] as $row) {
                 $outCount = (int) $row->get('outCount');
                 $inCount = (int) $row->get('inCount');
@@ -877,16 +900,27 @@ class GraphModuleBrowser
             // Relationship counts are a convenience for "load more" — the node itself is still useful without them.
         }
 
+        if ($direction === 'outgoing') {
+            $inCount = 0;
+        } elseif ($direction === 'incoming') {
+            $outCount = 0;
+        }
+
+        $typeFilter = $relation !== null ? 'AND type(r) = $relation ' : '';
+        $directionFilter = $direction === 'outgoing'
+            ? 'AND startNode(r) = n '
+            : ($direction === 'incoming' ? 'AND endNode(r) = n ' : '');
+
         try {
             $relResult = $this->neo4j->run(
                 'MATCH (n) WHERE id(n) = $recordId '
-                . 'MATCH (n)-[r]-(m) WHERE m.sub_institute_id = $tenantId '
+                . 'MATCH (n)-[r]-(m) WHERE m.sub_institute_id = $tenantId ' . $typeFilter . $directionFilter
                 . 'WITH r, m, startNode(r) = n AS outgoing '
                 . 'ORDER BY id(r) '
                 . 'SKIP $skip LIMIT $limit '
                 . 'RETURN id(r) AS rId, type(r) AS rType, properties(r) AS rProps, outgoing, '
                 . '       id(m) AS mId, labels(m) AS mLabels, m AS mProps',
-                ['recordId' => (int) $recordId, 'tenantId' => $tenantId, 'skip' => $skip, 'limit' => $relationshipLimit]
+                ['recordId' => (int) $recordId, 'tenantId' => $tenantId, 'skip' => $skip, 'limit' => $relationshipLimit, 'relation' => $relation]
             );
         } catch (Throwable $exception) {
             return [
