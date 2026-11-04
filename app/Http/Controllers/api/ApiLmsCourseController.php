@@ -215,14 +215,14 @@ HTML;
 
         $themeStyles = <<<CSS
     /* ==========================================================================
-       8 DISTINCT VISUAL IDENTITY SYSTEMS (COLORS, TYPOGRAPHY, BACKGROUNDS, CARDS)
+       8 DISTINCT VISUAL IDENTITY & COMPLETE LAYOUT SYSTEMS
        ========================================================================== */
 
     /* 1. MODERN SLATE & NEON */
     :root, html[data-template="modern_tech"] {
       --bg-color: #0b0f19;
       --card-bg: #111827;
-      --card-border: rgba(99, 102, 241, 0.25);
+      --card-border: rgba(99, 102, 241, 0.3);
       --text-main: #f8fafc;
       --text-muted: #94a3b8;
       --primary: #6366f1;
@@ -256,10 +256,10 @@ HTML;
       --slide-bg: #ffffff;
       --table-header-bg: #f1f5f9;
       --table-zebra-bg: #fcfbf9;
-      --badge-bg: #e0e7ff;
+      --badge-bg: #eff6ff;
       --badge-text: #1e3a8a;
       --callout-bg: #fdfbf7;
-      --border-radius: 6px;
+      --border-radius: 4px;
     }
 
     /* 3. VIBRANT & CREATIVE (STUDENT BENTO / ENGAGING) */
@@ -281,21 +281,21 @@ HTML;
       --badge-bg: #dcfce7;
       --badge-text: #065f46;
       --callout-bg: #ecfdf5;
-      --border-radius: 24px;
+      --border-radius: 28px;
     }
 
     /* 4. STEM TECHNICAL BLUEPRINT (CAD / CARTESIAN GRID) */
     html[data-template="stem_blueprint"] {
       --bg-color: #031826;
       --card-bg: #072538;
-      --card-border: rgba(6, 182, 212, 0.35);
+      --card-border: rgba(6, 182, 212, 0.4);
       --text-main: #f1f5f9;
       --text-muted: #94a3b8;
       --primary: #06b6d4;
       --primary-glow: rgba(6, 182, 212, 0.25);
       --accent: #10b981;
       --header-bg: #042133;
-      --font-body: 'Plus Jakarta Sans', 'JetBrains Mono', monospace;
+      --font-body: 'JetBrains Mono', 'Plus Jakarta Sans', monospace;
       --font-heading: 'JetBrains Mono', monospace;
       --slide-bg: #072538;
       --table-header-bg: #083344;
@@ -303,7 +303,7 @@ HTML;
       --badge-bg: rgba(6, 182, 212, 0.15);
       --badge-text: #67e8f9;
       --callout-bg: rgba(8, 51, 68, 0.6);
-      --border-radius: 6px;
+      --border-radius: 4px;
     }
 
     /* 5. HUMANITIES & WARM EDITORIAL (MAGAZINE / ESSAY) */
@@ -317,7 +317,7 @@ HTML;
       --primary-glow: rgba(194, 65, 12, 0.18);
       --accent: #b45309;
       --header-bg: #431407;
-      --font-body: 'Plus Jakarta Sans', 'Merriweather', Georgia, serif;
+      --font-body: 'Plus Jakarta Sans', Georgia, serif;
       --font-heading: 'Playfair Display', Georgia, serif;
       --slide-bg: #ffffff;
       --table-header-bg: #ffedd5;
@@ -332,20 +332,20 @@ HTML;
     html[data-template="minimalist_clean"] {
       --bg-color: #ffffff;
       --card-bg: #ffffff;
-      --card-border: #cbd5e1;
-      --text-main: #0f172a;
+      --card-border: #000000;
+      --text-main: #000000;
       --text-muted: #475569;
-      --primary: #0f172a;
-      --primary-glow: rgba(15, 23, 42, 0.12);
-      --accent: #0f172a;
-      --header-bg: #0f172a;
+      --primary: #000000;
+      --primary-glow: rgba(0, 0, 0, 0.1);
+      --accent: #2563eb;
+      --header-bg: #000000;
       --font-body: 'Inter', system-ui, sans-serif;
       --font-heading: 'Inter', system-ui, sans-serif;
       --slide-bg: #ffffff;
       --table-header-bg: #f8fafc;
       --table-zebra-bg: #ffffff;
       --badge-bg: #f1f5f9;
-      --badge-text: #0f172a;
+      --badge-text: #000000;
       --callout-bg: #f8fafc;
       --border-radius: 0px;
     }
@@ -391,129 +391,186 @@ HTML;
       --badge-bg: rgba(250, 204, 21, 0.18);
       --badge-text: #fde047;
       --callout-bg: rgba(46, 16, 85, 0.7);
-      --border-radius: 20px;
+      --border-radius: 22px;
     }
 
-    /* Guarantee contrast on light templates — fixes white-on-white text bug */
+    /* Light Theme Typography Contrast */
     html[data-template="minimalist_clean"] .doc-body,
     html[data-template="minimalist_clean"] .doc-body p,
     html[data-template="minimalist_clean"] .doc-body h1,
     html[data-template="minimalist_clean"] .doc-body h2,
     html[data-template="minimalist_clean"] .doc-body h3,
     html[data-template="minimalist_clean"] .doc-body h4,
-    html[data-template="minimalist_clean"] .doc-body h5,
     html[data-template="minimalist_clean"] .doc-body li,
     html[data-template="minimalist_clean"] .doc-body td,
     html[data-template="minimalist_clean"] .doc-body th,
-    html[data-template="minimalist_clean"] .doc-body strong,
     html[data-template="academic_classic"] .doc-body,
     html[data-template="academic_classic"] .doc-body p,
     html[data-template="academic_classic"] .doc-body h1,
     html[data-template="academic_classic"] .doc-body h2,
     html[data-template="academic_classic"] .doc-body h3,
     html[data-template="academic_classic"] .doc-body h4,
-    html[data-template="academic_classic"] .doc-body h5,
     html[data-template="academic_classic"] .doc-body li,
-    html[data-template="academic_classic"] .doc-body td,
-    html[data-template="academic_classic"] .doc-body th,
     html[data-template="warm_editorial"] .doc-body,
     html[data-template="warm_editorial"] .doc-body p,
     html[data-template="warm_editorial"] .doc-body h1,
     html[data-template="warm_editorial"] .doc-body h2,
     html[data-template="warm_editorial"] .doc-body h3,
-    html[data-template="warm_editorial"] .doc-body h4,
-    html[data-template="warm_editorial"] .doc-body h5,
     html[data-template="vibrant_creative"] .doc-body,
     html[data-template="vibrant_creative"] .doc-body p,
     html[data-template="vibrant_creative"] .doc-body h1,
     html[data-template="vibrant_creative"] .doc-body h2,
-    html[data-template="vibrant_creative"] .doc-body h3,
-    html[data-template="vibrant_creative"] .doc-body h4,
-    html[data-template="vibrant_creative"] .doc-body h5 {
+    html[data-template="vibrant_creative"] .doc-body h3 {
       color: var(--text-main);
     }
 
     /* ==========================================================================
-       TEMPLATE-SPECIFIC STRUCTURAL LAYOUTS ACROSS ALL 5 CONTENT SECTIONS
+       TEMPLATE 1: ACADEMIC CLASSIC (CBSE / OXFORD TEXTBOOK SYSTEM)
        ========================================================================== */
-
-    /* -------------------------------------------------------------------------
-       1. ACADEMIC CLASSIC (CBSE / Formal Textbook)
-       ------------------------------------------------------------------------- */
+    html[data-template="academic_classic"] .slide-wrapper {
+      border: 4px double #1e3a8a;
+      border-radius: 4px;
+      background: #faf7f0;
+      box-shadow: 0 10px 30px rgba(30, 58, 138, 0.08);
+    }
+    html[data-template="academic_classic"] .slide-body {
+      background: #faf7f0;
+      color: #0f172a;
+      font-family: 'Merriweather', Georgia, serif;
+    }
+    html[data-template="academic_classic"] header.cover {
+      text-align: center;
+      border: none;
+    }
+    html[data-template="academic_classic"] .badge-row {
+      justify-content: center;
+      gap: 12px;
+    }
+    html[data-template="academic_classic"] .eyebrow-pill {
+      border-radius: 2px;
+      font-family: 'Merriweather', serif;
+      font-size: 10px;
+      background: #eff6ff;
+      color: #1e3a8a;
+      border: 1px solid #1e3a8a;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      padding: 4px 12px;
+    }
+    html[data-template="academic_classic"] .slide-title-hero {
+      font-family: 'Merriweather', Georgia, serif;
+      font-size: 34px;
+      font-weight: 700;
+      color: #1e3a8a;
+      border-top: 1px solid #1e3a8a;
+      border-bottom: 2px solid #1e3a8a;
+      padding: 14px 0;
+      margin: 14px auto;
+      text-align: center;
+      max-width: 900px;
+    }
+    html[data-template="academic_classic"] .slide-body p.lede {
+      font-family: 'Merriweather', serif;
+      font-style: italic;
+      text-align: center;
+      max-width: 850px;
+      margin: 0 auto 18px;
+      color: #475569;
+      font-size: 14px;
+    }
+    html[data-template="academic_classic"] .learning-intentions-box {
+      background: #ffffff;
+      border: 1px solid #cbd5e1;
+      border-left: 6px solid #1e3a8a;
+      border-radius: 0;
+      padding: 18px 24px;
+      text-align: left;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+    }
+    html[data-template="academic_classic"] .learning-intentions-box .box-title {
+      font-family: 'Merriweather', serif;
+      color: #1e3a8a;
+      text-transform: uppercase;
+      font-size: 12px;
+      letter-spacing: 0.1em;
+      border-bottom: 1px solid #e2e8f0;
+      padding-bottom: 8px;
+      margin-bottom: 14px;
+    }
+    html[data-template="academic_classic"] .intentions-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 20px;
+    }
+    html[data-template="academic_classic"] .intention-item {
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+    }
+    html[data-template="academic_classic"] .intention-num {
+      background: #1e3a8a;
+      color: #ffffff;
+      font-family: 'Merriweather', serif;
+      font-weight: 700;
+      border-radius: 2px;
+      width: 26px;
+      height: 26px;
+      font-size: 11px;
+      flex-shrink: 0;
+    }
+    html[data-template="academic_classic"] .slide-split-layout {
+      display: grid;
+      grid-template-columns: 1.15fr 0.85fr;
+      gap: 28px;
+      align-items: center;
+    }
+    html[data-template="academic_classic"] .slide-text-col p.intro-p::first-letter {
+      font-family: 'Merriweather', serif;
+      font-size: 3rem;
+      float: left;
+      line-height: 0.8;
+      margin: 4px 10px 0 0;
+      color: #1e3a8a;
+      font-weight: 700;
+    }
+    html[data-template="academic_classic"] .concept-def-box {
+      border: 2px double #1e3a8a;
+      background: #faf8f5;
+      border-radius: 0;
+      padding: 16px 20px;
+      font-family: 'Merriweather', serif;
+    }
+    html[data-template="academic_classic"] .slide-image-frame {
+      border: 1px solid #1e3a8a;
+      border-radius: 0;
+      background: #ffffff;
+      padding: 4px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.06);
+    }
+    html[data-template="academic_classic"] .slide-image-caption {
+      font-family: 'Merriweather', serif;
+      font-style: italic;
+      text-align: center;
+      background: #f8fafc;
+      font-size: 11px;
+      color: #475569;
+      border-top: 1px solid #e2e8f0;
+      padding: 8px 12px;
+    }
+    html[data-template="academic_classic"] .state-card,
+    html[data-template="academic_classic"] .comp-card,
+    html[data-template="academic_classic"] .activity-deck-card {
+      border: 1px solid #cbd5e1;
+      border-top: 3px solid #1e3a8a;
+      border-radius: 0;
+      background: #ffffff;
+    }
     html[data-template="academic_classic"] .doc-container {
       border: 4px double #1e3a8a;
       border-radius: 4px;
       box-shadow: 0 15px 35px rgba(30, 58, 138, 0.08);
       background: #ffffff;
     }
-    html[data-template="academic_classic"] .doc-header {
-      background: #1e3a8a;
-      border-bottom: 3px double #93c5fd;
-    }
-    html[data-template="academic_classic"] header.cover {
-      text-align: center;
-      border-bottom: 2px solid #1e3a8a;
-      border-top: 1px solid #1e3a8a;
-      padding: 24px 16px;
-      margin-bottom: 28px;
-      background: #faf8f5;
-    }
-    html[data-template="academic_classic"] header.cover h2 {
-      font-family: 'Merriweather', Georgia, serif;
-      font-size: 30px;
-      color: #1e3a8a;
-      font-weight: 700;
-    }
-    html[data-template="academic_classic"] header.cover p.lede {
-      font-family: 'Merriweather', Georgia, serif;
-      font-style: italic;
-      color: #475569;
-      max-width: 720px;
-      margin: 0 auto;
-    }
-    html[data-template="academic_classic"] .doc-image-frame {
-      border: 1px solid #cbd5e1;
-      border-radius: 4px;
-      padding: 8px;
-      background: #faf9f6;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-      margin: 24px auto;
-      max-width: 820px;
-      text-align: center;
-    }
-    html[data-template="academic_classic"] .doc-image-frame img {
-      border-radius: 2px;
-      filter: contrast(1.02);
-      max-height: 320px;
-      object-fit: cover;
-    }
-    html[data-template="academic_classic"] .doc-image-caption {
-      background: transparent;
-      border: none;
-      font-family: 'Merriweather', serif;
-      font-style: italic;
-      font-size: 13px;
-      color: #475569;
-      padding: 10px 0 2px;
-    }
-    /* Section 1: Scholarly Treatise with Drop Cap */
-    html[data-template="academic_classic"] .notes-section[data-block="summary"] {
-      border-left: 4px solid #1e3a8a;
-      padding: 20px 24px;
-      background: #fdfbf7;
-      border-radius: 0 8px 8px 0;
-      margin-bottom: 32px;
-    }
-    html[data-template="academic_classic"] .notes-section[data-block="summary"] p::first-letter {
-      font-family: 'Merriweather', Georgia, serif;
-      font-size: 3.4rem;
-      float: left;
-      line-height: 0.8;
-      margin: 4px 12px 0 0;
-      color: #1e3a8a;
-      font-weight: 700;
-    }
-    /* Section 2: Chicago/Oxford Academic Table */
     html[data-template="academic_classic"] .concept-glossary-table {
       border: none;
       border-top: 2px solid #1e3a8a;
@@ -525,528 +582,326 @@ HTML;
       color: #1e3a8a;
       border-bottom: 1.5px solid #1e3a8a;
       font-family: 'Merriweather', serif;
-      font-weight: 700;
     }
-    html[data-template="academic_classic"] .concept-glossary-table td {
-      border-bottom: 1px solid #e2e8f0;
-      font-family: 'Plus Jakarta Sans', sans-serif;
+
+    /* ==========================================================================
+       TEMPLATE 2: VIBRANT & CREATIVE (PLAYFUL BENTO & STICKY TILES)
+       ========================================================================== */
+    html[data-template="vibrant_creative"] .slide-wrapper {
+      border-radius: 32px;
+      background: #f0fdf4;
+      border: 2px solid #a7f3d0;
+      box-shadow: 0 20px 45px rgba(5, 150, 105, 0.12);
     }
-    html[data-template="academic_classic"] .concept-glossary-table .concept-term {
-      font-family: 'Merriweather', serif;
-      color: #1e3a8a;
-      font-size: 14px;
+    html[data-template="vibrant_creative"] .slide-body {
+      background: #f0fdf4;
+      color: #064e3b;
+      font-family: 'Outfit', 'Plus Jakarta Sans', sans-serif;
     }
-    html[data-template="academic_classic"] .badge-exam {
-      background: #eff6ff;
-      color: #1e3a8a;
-      border: 1px solid #bfdbfe;
-      border-radius: 4px;
+    html[data-template="vibrant_creative"] .eyebrow-pill {
+      border-radius: 999px;
+      background: #dcfce7;
+      color: #065f46;
+      border: 1.5px solid #86efac;
+      font-weight: 800;
+      padding: 6px 14px;
+      font-size: 11px;
     }
-    /* Section 3: Archival Plate Container */
-    html[data-template="academic_classic"] .notes-section[data-block="mindmap"] {
-      border: 1px solid #cbd5e1;
-      background: #faf9f6;
-      padding: 24px;
-      border-radius: 4px;
-      text-align: center;
+    html[data-template="vibrant_creative"] .slide-title-hero {
+      font-family: 'Outfit', sans-serif;
+      font-size: 40px;
+      font-weight: 800;
+      color: #047857;
+      letter-spacing: -0.02em;
     }
-    /* Section 4: Deep Dive Classic Theorems */
-    html[data-template="academic_classic"] .rules-breakdown-grid {
-      display: grid;
-      grid-template-columns: 1fr;
-      gap: 20px;
-    }
-    html[data-template="academic_classic"] .rule-box {
-      background: #ffffff;
-      border: 1px solid #cbd5e1;
-      border-top: 3px solid #1e3a8a;
-      border-radius: 4px;
-      padding: 22px;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.04);
-    }
-    html[data-template="academic_classic"] .rule-box h4 {
-      font-family: 'Merriweather', serif;
-      color: #1e3a8a;
-      font-size: 18px;
-    }
-    html[data-template="academic_classic"] .formula-banner {
-      background: #f8fafc;
-      border: 1px solid #e2e8f0;
-      border-left: 3px solid #1e3a8a;
-      font-family: 'Merriweather', serif;
-      font-style: italic;
-      color: #0f172a;
-      padding: 12px 18px;
-      text-align: center;
-    }
-    /* Section 5: NCERT Examiner Warning Plate & Board Self-Test */
-    html[data-template="academic_classic"] .notes-section[data-block="warnings"] {
-      border: 2px solid #881337;
-      background: #fffafb;
-      border-radius: 6px;
-      padding: 24px;
-    }
-    html[data-template="academic_classic"] .warning-item {
-      border-bottom: 1px dashed #fecdd3;
-      padding: 14px 0;
+    html[data-template="vibrant_creative"] .learning-intentions-box {
       background: transparent;
+      border: none;
+      padding: 0;
+      margin-top: 10px;
     }
-    html[data-template="academic_classic"] .warning-num {
-      background: #881337;
-      color: #ffffff;
-      font-family: 'Merriweather', serif;
-      border-radius: 4px;
+    html[data-template="vibrant_creative"] .learning-intentions-box .box-title {
+      font-family: 'Outfit', sans-serif;
+      font-size: 15px;
+      font-weight: 800;
+      color: #059669;
+      margin-bottom: 12px;
+    }
+    html[data-template="vibrant_creative"] .intentions-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+    }
+    html[data-template="vibrant_creative"] .intentions-grid .intention-item:nth-child(1) {
+      background: #ecfdf5;
+      border: 2px solid #6ee7b7;
+      border-radius: 24px;
+      padding: 18px;
+      transform: rotate(-1.5deg);
+      box-shadow: 0 8px 20px rgba(5, 150, 105, 0.1);
+      flex-direction: column;
+      gap: 10px;
+    }
+    html[data-template="vibrant_creative"] .intentions-grid .intention-item:nth-child(2) {
+      background: #fefce8;
+      border: 2px solid #fde047;
+      border-radius: 24px;
+      padding: 18px;
+      transform: rotate(0deg);
+      box-shadow: 0 8px 20px rgba(234, 179, 8, 0.1);
+      flex-direction: column;
+      gap: 10px;
+    }
+    html[data-template="vibrant_creative"] .intentions-grid .intention-item:nth-child(3) {
+      background: #fff7ed;
+      border: 2px solid #fdba74;
+      border-radius: 24px;
+      padding: 18px;
+      transform: rotate(1.5deg);
+      box-shadow: 0 8px 20px rgba(249, 115, 22, 0.1);
+      flex-direction: column;
+      gap: 10px;
+    }
+    html[data-template="vibrant_creative"] .intentions-grid .intention-num {
+      background: #059669;
+      color: #fff;
+      border-radius: 999px;
       width: 28px;
       height: 28px;
-    }
-    html[data-template="academic_classic"] .test-item {
-      border: 1px solid #cbd5e1;
-      border-radius: 4px;
-      padding: 18px;
-      background: #ffffff;
-      margin-bottom: 16px;
-    }
-    html[data-template="academic_classic"] .q-badge {
-      background: #1e3a8a;
-      color: #ffffff;
-      font-family: 'Merriweather', serif;
-      border-radius: 4px;
-    }
-
-    /* -------------------------------------------------------------------------
-       2. STEM TECHNICAL BLUEPRINT (Engineering CAD / Monospace Grid)
-       ------------------------------------------------------------------------- */
-    html[data-template="stem_blueprint"] body {
-      background-color: #031826;
-      background-image: linear-gradient(rgba(6, 182, 212, 0.08) 1px, transparent 1px), linear-gradient(90deg, rgba(6, 182, 212, 0.08) 1px, transparent 1px);
-      background-size: 24px 24px;
-    }
-    html[data-template="stem_blueprint"] .doc-container {
-      border: 1px solid rgba(6, 182, 212, 0.4);
-      border-radius: 8px;
-      background: #072538;
-      box-shadow: 0 0 35px rgba(6, 182, 212, 0.15);
-      position: relative;
-    }
-    html[data-template="stem_blueprint"] header.cover {
-      border-bottom: 2px dashed rgba(6, 182, 212, 0.4);
-      padding-bottom: 20px;
-      font-family: 'JetBrains Mono', monospace;
-    }
-    html[data-template="stem_blueprint"] header.cover h2 {
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 26px;
-      color: #67e8f9;
-      text-transform: uppercase;
-      letter-spacing: 0.04em;
-    }
-    html[data-template="stem_blueprint"] header.cover p.lede {
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 13px;
-      color: #94a3b8;
-    }
-    html[data-template="stem_blueprint"] .doc-image-frame {
-      border: 1px solid #06b6d4;
-      border-radius: 6px;
-      background: #041a29;
-      padding: 4px;
-      position: relative;
-      box-shadow: 0 0 20px rgba(6, 182, 212, 0.2);
-    }
-    html[data-template="stem_blueprint"] .doc-image-frame img {
-      filter: saturate(1.1) brightness(0.95);
-      border-radius: 4px;
-      max-height: 280px;
-    }
-    html[data-template="stem_blueprint"] .doc-image-caption {
-      background: #02121c;
-      border-top: 1px solid #06b6d4;
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 11px;
-      color: #67e8f9;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-    }
-    /* Section 1: Telemetry Terminal Console */
-    html[data-template="stem_blueprint"] .notes-section[data-block="summary"] {
-      background: #041c2c;
-      border: 1px solid rgba(6, 182, 212, 0.3);
-      border-radius: 6px;
-      padding: 20px;
-      font-family: 'JetBrains Mono', monospace;
-      position: relative;
-    }
-    html[data-template="stem_blueprint"] .notes-section[data-block="summary"]::before {
-      content: '> INITIATING TELEMETRY PARAMETER CONDUIT_';
-      display: block;
-      font-size: 10px;
-      font-weight: 800;
-      color: #22d3ee;
-      margin-bottom: 10px;
-      letter-spacing: 0.1em;
-    }
-    /* Section 2: Data Matrix Telemetry Table */
-    html[data-template="stem_blueprint"] .concept-glossary-table {
-      font-family: 'JetBrains Mono', monospace;
       font-size: 12px;
-      border: 1px solid rgba(6, 182, 212, 0.35);
-    }
-    html[data-template="stem_blueprint"] .concept-glossary-table th {
-      background: #083344;
-      color: #67e8f9;
-      text-transform: uppercase;
-      font-size: 11px;
-      border-bottom: 1px solid #06b6d4;
-    }
-    html[data-template="stem_blueprint"] .concept-glossary-table td {
-      border-bottom: 1px solid rgba(6, 182, 212, 0.15);
-      color: #cbd5e1;
-    }
-    html[data-template="stem_blueprint"] .concept-glossary-table .concept-term {
-      color: #38bdf8;
-      font-weight: 700;
-    }
-    html[data-template="stem_blueprint"] .badge-exam {
-      background: rgba(6, 182, 212, 0.18);
-      color: #67e8f9;
-      border: 1px solid #06b6d4;
-      border-radius: 2px;
-    }
-    /* Section 4: Dual Engineering Modular Bays */
-    html[data-template="stem_blueprint"] .rules-breakdown-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 16px;
-      font-family: 'JetBrains Mono', monospace;
-    }
-    html[data-template="stem_blueprint"] .rule-box {
-      background: #052133;
-      border: 1px solid rgba(6, 182, 212, 0.3);
-      border-radius: 6px;
-      padding: 18px;
-    }
-    html[data-template="stem_blueprint"] .rule-box h4 {
-      font-size: 14px;
-      color: #67e8f9;
-      text-transform: uppercase;
-    }
-    html[data-template="stem_blueprint"] .formula-banner {
-      background: #02121c;
-      border: 1px solid #06b6d4;
-      color: #22d3ee;
-      font-size: 12px;
-      padding: 10px;
-      font-weight: 700;
-    }
-    /* Section 5: Industrial Safety Hazard Alert */
-    html[data-template="stem_blueprint"] .notes-section[data-block="warnings"] {
-      border: 1px solid #f59e0b;
-      background: rgba(245, 158, 11, 0.05);
-      border-radius: 6px;
-      padding: 20px;
-    }
-    html[data-template="stem_blueprint"] .warning-item {
-      border-left: 3px solid #f59e0b;
-      background: #072538;
-      padding: 12px 16px;
-      margin-bottom: 10px;
-      border-radius: 0 4px 4px 0;
-    }
-    html[data-template="stem_blueprint"] .warning-num {
-      background: #f59e0b;
-      color: #000;
-      font-family: 'JetBrains Mono', monospace;
-      border-radius: 2px;
-    }
-
-    /* -------------------------------------------------------------------------
-       3. VIBRANT & CREATIVE (Student Bento / Polaroid / Pastel Cards)
-       ------------------------------------------------------------------------- */
-    html[data-template="vibrant_creative"] body {
-      background-color: #f0fdf4;
-      background-image: radial-gradient(#86efac 1.2px, transparent 1.2px);
-      background-size: 22px 22px;
-    }
-    html[data-template="vibrant_creative"] .doc-container {
-      border-radius: 28px;
-      border: 2px solid #bbf7d0;
-      background: #ffffff;
-      box-shadow: 0 20px 40px -15px rgba(5, 150, 105, 0.12);
-    }
-    html[data-template="vibrant_creative"] .doc-header {
-      background: linear-gradient(135deg, #059669, #10b981);
-      border-radius: 26px 26px 0 0;
-    }
-    html[data-template="vibrant_creative"] header.cover {
-      background: linear-gradient(135deg, #ecfdf5, #fef3c7);
-      border-radius: 22px;
-      padding: 28px;
-      margin-bottom: 28px;
-      border: 1px solid #a7f3d0;
-    }
-    html[data-template="vibrant_creative"] header.cover h2 {
-      font-family: 'Outfit', 'Fredoka', sans-serif;
-      font-size: 32px;
-      color: #065f46;
       font-weight: 800;
+      box-shadow: 0 3px 8px rgba(5, 150, 105, 0.3);
     }
-    html[data-template="vibrant_creative"] header.cover p.lede {
-      font-family: 'Outfit', sans-serif;
-      font-size: 16px;
-      color: #047857;
-    }
-    /* Hero Image: Tilted Polaroid Photo with Shadow */
-    html[data-template="vibrant_creative"] .doc-image-frame {
-      transform: rotate(-1.2deg);
-      border: 8px solid #ffffff;
-      border-radius: 18px;
-      box-shadow: 0 16px 32px rgba(5, 150, 105, 0.18);
-      max-width: 680px;
-      margin: 30px auto;
-      overflow: hidden;
+    html[data-template="vibrant_creative"] .scenario-highlight-card {
       background: #ffffff;
-      position: relative;
-    }
-    html[data-template="vibrant_creative"] .doc-image-frame img {
-      border-radius: 12px;
-      max-height: 270px;
-      object-fit: cover;
-    }
-    html[data-template="vibrant_creative"] .doc-image-caption {
-      background: #ffffff;
-      border-top: none;
-      font-family: 'Outfit', sans-serif;
-      font-weight: 700;
-      color: #065f46;
-      font-size: 13px;
-      text-align: center;
-      padding: 12px;
-    }
-    /* Section 1: Friendly Bento Story Card */
-    html[data-template="vibrant_creative"] .notes-section[data-block="summary"] {
-      background: #ecfdf5;
-      border: 2px dashed #34d399;
-      border-radius: 20px;
-      padding: 24px;
-      margin-bottom: 28px;
-    }
-    html[data-template="vibrant_creative"] .notes-section[data-block="summary"] h3 {
-      font-family: 'Outfit', sans-serif;
-      font-size: 22px;
-      color: #065f46;
-    }
-    /* Section 2: Candy-Striped Flashcard Table */
-    html[data-template="vibrant_creative"] .concept-glossary-table {
-      border-radius: 18px;
-      overflow: hidden;
       border: 2px solid #a7f3d0;
+      border-radius: 22px;
+      padding: 18px;
+      box-shadow: 0 6px 18px rgba(5, 150, 105, 0.08);
     }
-    html[data-template="vibrant_creative"] .concept-glossary-table th {
-      background: #d1fae5;
-      color: #065f46;
-      font-family: 'Outfit', sans-serif;
-      font-weight: 800;
-      font-size: 14px;
-    }
-    html[data-template="vibrant_creative"] .concept-glossary-table tr:nth-child(even) {
-      background: #f0fdf4;
-    }
-    html[data-template="vibrant_creative"] .concept-glossary-table .concept-term {
-      color: #047857;
-      font-family: 'Outfit', sans-serif;
-      font-weight: 700;
-      font-size: 15px;
-    }
-    html[data-template="vibrant_creative"] .badge-exam {
-      background: #fef3c7;
-      color: #b45309;
-      border: 1px solid #fde68a;
-      border-radius: 999px;
-      font-weight: 800;
-    }
-    /* Section 4: Dual Pastel Bento Cards */
-    html[data-template="vibrant_creative"] .rules-breakdown-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 20px;
-    }
-    html[data-template="vibrant_creative"] .rule-box:nth-child(1) {
+    html[data-template="vibrant_creative"] .concept-def-box {
       background: #ecfdf5;
       border: 2px solid #6ee7b7;
       border-radius: 20px;
-      padding: 22px;
+      padding: 18px;
     }
-    html[data-template="vibrant_creative"] .rule-box:nth-child(2) {
-      background: #fefce8;
-      border: 2px solid #fde047;
-      border-radius: 20px;
-      padding: 22px;
+    html[data-template="vibrant_creative"] .slide-image-frame {
+      border: 2px solid #6ee7b7;
+      border-radius: 24px;
+      overflow: hidden;
+      transform: rotate(1deg);
+      box-shadow: 0 10px 25px rgba(5, 150, 105, 0.15);
     }
-    html[data-template="vibrant_creative"] .formula-banner {
+    html[data-template="vibrant_creative"] .state-card,
+    html[data-template="vibrant_creative"] .comp-card {
+      border: 2px solid #a7f3d0;
+      border-radius: 24px;
       background: #ffffff;
-      border-radius: 12px;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.05);
-      font-weight: 800;
-      color: #047857;
-      text-align: center;
     }
-    /* Section 5: Pinned Sticky Notes */
-    html[data-template="vibrant_creative"] .warning-item {
-      background: #fffbeb;
-      border: 1px solid #fde68a;
-      border-radius: 16px;
-      padding: 16px 20px;
-      margin-bottom: 12px;
-      box-shadow: 0 4px 12px rgba(217, 119, 6, 0.08);
-    }
-    html[data-template="vibrant_creative"] .warning-num {
-      background: #f59e0b;
-      color: #fff;
-      border-radius: 999px;
-      font-weight: 800;
+    html[data-template="vibrant_creative"] .doc-container {
+      border: 2px solid #86efac;
+      border-radius: 28px;
+      background: #ffffff;
+      box-shadow: 0 15px 40px rgba(5, 150, 105, 0.1);
     }
 
-    /* -------------------------------------------------------------------------
-       4. GAMIFIED QUEST & DISCOVERY (RPG Quest Tracker / Sci-Fi HUD)
-       ------------------------------------------------------------------------- */
-    html[data-template="gamified_quest"] body {
-      background: radial-gradient(circle at 50% 0%, #2e1065 0%, #110722 80%);
+    /* ==========================================================================
+       TEMPLATE 3: STEM TECHNICAL BLUEPRINT (CAD TELEMETRY & MONOSPACE GRID)
+       ========================================================================== */
+    html[data-template="stem_blueprint"] .slide-wrapper {
+      background-color: #031826;
+      background-image: linear-gradient(rgba(6, 182, 212, 0.12) 1px, transparent 1px), linear-gradient(90deg, rgba(6, 182, 212, 0.12) 1px, transparent 1px);
+      background-size: 24px 24px;
+      border: 1px solid #06b6d4;
+      border-radius: 4px;
+      box-shadow: 0 0 35px rgba(6, 182, 212, 0.2);
     }
-    html[data-template="gamified_quest"] .doc-container {
-      border-radius: 22px;
-      border: 2px solid rgba(168, 85, 247, 0.5);
-      background: #190a30;
-      box-shadow: 0 0 40px rgba(168, 85, 247, 0.25), inset 0 0 20px rgba(168, 85, 247, 0.1);
+    html[data-template="stem_blueprint"] .slide-body {
+      background: transparent;
+      color: #e0f2fe;
+      font-family: 'JetBrains Mono', monospace;
     }
-    html[data-template="gamified_quest"] .doc-header {
-      background: #180931;
-      border-bottom: 2px solid rgba(168, 85, 247, 0.4);
+    html[data-template="stem_blueprint"] .eyebrow-pill {
+      background: #041c2c;
+      border: 1px solid #06b6d4;
+      color: #67e8f9;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      font-weight: 800;
+      border-radius: 2px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
     }
-    html[data-template="gamified_quest"] header.cover {
-      background: rgba(46, 16, 85, 0.6);
-      border: 2px solid #a855f7;
-      border-radius: 18px;
-      padding: 26px;
-      margin-bottom: 26px;
-      box-shadow: 0 0 25px rgba(168, 85, 247, 0.2);
+    html[data-template="stem_blueprint"] .slide-title-hero {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 30px;
+      font-weight: 800;
+      color: #22d3ee;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      text-shadow: 0 0 12px rgba(34, 211, 238, 0.4);
     }
-    html[data-template="gamified_quest"] header.cover h2 {
-      font-family: 'Fredoka', 'Outfit', sans-serif;
-      font-size: 32px;
-      color: #facc15;
-      text-shadow: 0 0 12px rgba(250, 204, 21, 0.4);
-    }
-    html[data-template="gamified_quest"] header.cover p.lede {
-      font-size: 15px;
-      color: #d8b4fe;
-    }
-    html[data-template="gamified_quest"] .doc-image-frame {
-      border: 2px solid #c084fc;
-      border-radius: 16px;
-      background: #120524;
-      padding: 6px;
-      box-shadow: 0 0 30px rgba(168, 85, 247, 0.35);
-      position: relative;
-    }
-    html[data-template="gamified_quest"] .doc-image-frame img {
-      border-radius: 10px;
-      max-height: 280px;
-      object-fit: cover;
-    }
-    html[data-template="gamified_quest"] .doc-image-caption {
-      background: #1e0b3d;
-      border-top: 1px solid #a855f7;
-      font-family: 'Fredoka', sans-serif;
-      color: #fde047;
-      font-size: 12px;
-      padding: 10px 14px;
-    }
-    /* Section 1: Mission Directive Directive */
-    html[data-template="gamified_quest"] .notes-section[data-block="summary"] {
-      background: rgba(46, 16, 85, 0.7);
-      border: 1px solid #a855f7;
-      border-radius: 16px;
-      padding: 22px;
-      margin-bottom: 26px;
-      box-shadow: inset 0 0 15px rgba(168, 85, 247, 0.2);
-    }
-    html[data-template="gamified_quest"] .notes-section[data-block="summary"] h3 {
-      font-family: 'Fredoka', sans-serif;
-      color: #fde047;
-      font-size: 22px;
-    }
-    /* Section 2: RPG Lore Inventory Grid */
-    html[data-template="gamified_quest"] .concept-glossary-table {
-      border: 1px solid rgba(168, 85, 247, 0.4);
-      border-radius: 14px;
-      overflow: hidden;
-    }
-    html[data-template="gamified_quest"] .concept-glossary-table th {
-      background: #2e1065;
-      color: #fde047;
-      font-family: 'Fredoka', sans-serif;
+    html[data-template="stem_blueprint"] .slide-body p.lede {
+      font-family: 'JetBrains Mono', monospace;
+      color: #94a3b8;
       font-size: 13px;
     }
-    html[data-template="gamified_quest"] .concept-glossary-table td {
-      border-bottom: 1px solid rgba(168, 85, 247, 0.2);
-      color: #f3e8ff;
-    }
-    html[data-template="gamified_quest"] .concept-glossary-table .concept-term {
-      color: #e879f9;
-      font-weight: 700;
-    }
-    html[data-template="gamified_quest"] .badge-exam {
-      background: rgba(250, 204, 21, 0.2);
-      color: #fde047;
-      border: 1px solid #facc15;
-      font-family: 'Fredoka', sans-serif;
-    }
-    /* Section 4: Power Mechanics & Spell Cards */
-    html[data-template="gamified_quest"] .rules-breakdown-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 18px;
-    }
-    html[data-template="gamified_quest"] .rule-box {
-      background: #230f40;
-      border: 1px solid #a855f7;
-      border-radius: 16px;
-      padding: 20px;
-      box-shadow: 0 0 15px rgba(168, 85, 247, 0.2);
-    }
-    html[data-template="gamified_quest"] .rule-box h4 {
-      font-family: 'Fredoka', sans-serif;
-      color: #facc15;
-      font-size: 18px;
-    }
-    html[data-template="gamified_quest"] .formula-banner {
-      background: #140526;
-      border: 1px solid #facc15;
-      color: #fde047;
+    html[data-template="stem_blueprint"] .learning-intentions-box {
+      background: #041a29;
+      border: 1px solid rgba(6, 182, 212, 0.5);
+      border-radius: 4px;
+      padding: 16px 20px;
+      box-shadow: inset 0 0 15px rgba(6, 182, 212, 0.1);
       font-family: 'JetBrains Mono', monospace;
-      border-radius: 10px;
     }
-    /* Section 5: Dungeon Traps & Boss Pitfalls */
-    html[data-template="gamified_quest"] .warning-item {
-      background: rgba(88, 28, 135, 0.5);
-      border: 1px solid #c084fc;
-      border-radius: 14px;
-      padding: 16px;
-      margin-bottom: 12px;
+    html[data-template="stem_blueprint"] .learning-intentions-box .box-title {
+      color: #22d3ee;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
     }
-    html[data-template="gamified_quest"] .warning-num {
-      background: #facc15;
-      color: #000;
-      font-family: 'Fredoka', sans-serif;
+    html[data-template="stem_blueprint"] .intentions-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+    }
+    html[data-template="stem_blueprint"] .intention-item {
+      background: #02121c;
+      border: 1px solid rgba(6, 182, 212, 0.25);
+      border-radius: 3px;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    html[data-template="stem_blueprint"] .intention-num {
+      background: #083344;
+      color: #67e8f9;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
       font-weight: 800;
-      border-radius: 6px;
+      border: 1px solid #06b6d4;
+      border-radius: 2px;
+      padding: 2px 6px;
+      width: fit-content;
+    }
+    html[data-template="stem_blueprint"] .concept-def-box {
+      background: #041c2c;
+      border: 1px solid rgba(6, 182, 212, 0.4);
+      border-left: 3px solid #22d3ee;
+      border-radius: 3px;
+      font-family: 'JetBrains Mono', monospace;
+    }
+    html[data-template="stem_blueprint"] .slide-image-frame {
+      border: 1px solid #06b6d4;
+      border-radius: 4px;
+      background: #02121c;
+      padding: 4px;
+      box-shadow: 0 0 20px rgba(6, 182, 212, 0.2);
+    }
+    html[data-template="stem_blueprint"] .doc-container {
+      border: 1px solid rgba(6, 182, 212, 0.4);
+      border-radius: 4px;
+      background: #072538;
+      box-shadow: 0 0 35px rgba(6, 182, 212, 0.15);
+      font-family: 'JetBrains Mono', monospace;
     }
 
-    /* -------------------------------------------------------------------------
-       5. HUMANITIES & WARM EDITORIAL (Magazine / Literary Long-Read)
-       ------------------------------------------------------------------------- */
-    html[data-template="warm_editorial"] body {
-      background-color: #fbf8f3;
+    /* ==========================================================================
+       TEMPLATE 4: HUMANITIES & WARM EDITORIAL (MAGAZINE SPREAD)
+       ========================================================================== */
+    html[data-template="warm_editorial"] .slide-wrapper {
+      background: #fcfaf7;
+      border: 1px solid #e7e5e4;
+      border-radius: 12px;
+      box-shadow: 0 10px 30px rgba(67, 20, 7, 0.06);
+    }
+    html[data-template="warm_editorial"] .slide-body {
+      background: #fcfaf7;
+      color: #292524;
+      font-family: 'Plus Jakarta Sans', Georgia, serif;
+    }
+    html[data-template="warm_editorial"] .eyebrow-pill {
+      background: #ffedd5;
+      color: #7c2d12;
+      border: 1px solid #fed7aa;
+      border-radius: 4px;
+      font-family: 'Playfair Display', Georgia, serif;
+      font-style: italic;
+      font-size: 11px;
+    }
+    html[data-template="warm_editorial"] .slide-title-hero {
+      font-family: 'Playfair Display', Georgia, serif;
+      font-size: 38px;
+      font-weight: 700;
+      color: #431407;
+      line-height: 1.25;
+    }
+    html[data-template="warm_editorial"] .slide-body p.lede {
+      font-family: 'Playfair Display', Georgia, serif;
+      font-style: italic;
+      font-size: 16px;
+      color: #78716c;
+    }
+    html[data-template="warm_editorial"] .learning-intentions-box {
+      background: #fff7ed;
+      border-top: 1px solid #c2410c;
+      border-bottom: 3px double #c2410c;
+      border-left: none;
+      border-right: none;
+      border-radius: 0;
+      padding: 18px 0;
+      margin-top: 12px;
+    }
+    html[data-template="warm_editorial"] .intentions-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 24px;
+    }
+    html[data-template="warm_editorial"] .intention-item {
+      display: flex;
+      gap: 10px;
+      align-items: baseline;
+    }
+    html[data-template="warm_editorial"] .intention-num {
+      font-family: 'Playfair Display', Georgia, serif;
+      font-style: italic;
+      font-size: 18px;
+      font-weight: 700;
+      color: #c2410c;
+      background: transparent;
+      width: auto;
+      height: auto;
+    }
+    html[data-template="warm_editorial"] .slide-split-layout {
+      display: grid;
+      grid-template-columns: 1.25fr 0.75fr;
+      gap: 28px;
+    }
+    html[data-template="warm_editorial"] .slide-text-col p.intro-p::first-letter {
+      font-family: 'Playfair Display', Georgia, serif;
+      font-size: 3.2rem;
+      float: left;
+      line-height: 0.8;
+      margin: 4px 10px 0 0;
+      color: #9a3412;
+      font-weight: 700;
+    }
+    html[data-template="warm_editorial"] .concept-def-box {
+      background: #fff7ed;
+      border-left: 3px solid #c2410c;
+      border-radius: 0;
+      padding: 14px 18px;
+      font-family: 'Playfair Display', serif;
+      font-style: italic;
+    }
+    html[data-template="warm_editorial"] .slide-image-frame {
+      border: 1px solid #e7e5e4;
+      border-radius: 8px;
+      background: #fafaf9;
+      padding: 6px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.06);
     }
     html[data-template="warm_editorial"] .doc-container {
       border-radius: 14px;
@@ -1054,519 +909,378 @@ HTML;
       background: #ffffff;
       box-shadow: 0 10px 30px rgba(67, 20, 7, 0.06);
     }
-    html[data-template="warm_editorial"] .doc-header {
-      background: #431407;
-      border-bottom: 1px solid #78350f;
-    }
-    html[data-template="warm_editorial"] header.cover {
-      border-top: 1px solid #431407;
-      border-bottom: 3px double #c2410c;
-      padding: 28px 0;
-      margin-bottom: 32px;
-    }
-    html[data-template="warm_editorial"] header.cover h2 {
-      font-family: 'Playfair Display', Georgia, serif;
-      font-size: 34px;
-      color: #431407;
-      font-weight: 700;
-      line-height: 1.25;
-    }
-    html[data-template="warm_editorial"] header.cover p.lede {
-      font-family: 'Playfair Display', Georgia, serif;
-      font-style: italic;
-      font-size: 17px;
-      color: #78716c;
-    }
-    html[data-template="warm_editorial"] .doc-image-frame {
-      border: 1px solid #e7e5e4;
-      border-radius: 8px;
-      background: #fafaf9;
-      padding: 8px;
-      box-shadow: 0 8px 24px rgba(0,0,0,0.06);
-    }
-    html[data-template="warm_editorial"] .doc-image-frame img {
-      border-radius: 4px;
-      max-height: 300px;
-      object-fit: cover;
-    }
-    html[data-template="warm_editorial"] .doc-image-caption {
-      background: #fafaf9;
-      border-top: 1px solid #e7e5e4;
-      font-family: 'Playfair Display', serif;
-      font-style: italic;
-      color: #78716c;
-      font-size: 13px;
-      text-align: center;
-    }
-    /* Section 1: Lead Editorial Column with Drop-Cap */
-    html[data-template="warm_editorial"] .notes-section[data-block="summary"] {
-      border-left: 3px solid #c2410c;
-      padding-left: 24px;
-      margin-bottom: 32px;
-    }
-    html[data-template="warm_editorial"] .notes-section[data-block="summary"] p::first-letter {
-      font-family: 'Playfair Display', serif;
-      font-size: 3.6rem;
-      float: left;
-      line-height: 0.8;
-      margin: 4px 12px 0 0;
-      color: #c2410c;
-      font-weight: 700;
-    }
-    /* Section 2: Editorial Literary Index Table */
-    html[data-template="warm_editorial"] .concept-glossary-table {
-      border: none;
-      border-top: 1px solid #c2410c;
-      border-bottom: 1px solid #c2410c;
-    }
-    html[data-template="warm_editorial"] .concept-glossary-table th {
-      background: #ffedd5;
-      color: #7c2d12;
-      font-family: 'Playfair Display', serif;
-      font-weight: 700;
-      font-size: 14px;
-    }
-    html[data-template="warm_editorial"] .concept-glossary-table .concept-term {
-      color: #9a3412;
-      font-family: 'Playfair Display', serif;
-      font-weight: 700;
-      font-size: 15px;
-    }
-    html[data-template="warm_editorial"] .badge-exam {
-      background: #fed7aa;
-      color: #7c2d12;
-      border-radius: 4px;
-    }
-    /* Section 4: Scholarly Two-Column Deep Dive */
-    html[data-template="warm_editorial"] .rules-breakdown-grid {
-      display: grid;
-      grid-template-columns: 1fr;
-      gap: 24px;
-    }
-    html[data-template="warm_editorial"] .rule-box {
-      background: #fffaf5;
-      border: 1px solid #fed7aa;
-      border-radius: 10px;
-      padding: 24px;
-    }
-    html[data-template="warm_editorial"] .rule-box h4 {
-      font-family: 'Playfair Display', serif;
-      color: #7c2d12;
-      font-size: 20px;
-    }
-    html[data-template="warm_editorial"] .formula-banner {
-      background: #ffffff;
-      border: 1px solid #fdba74;
-      font-family: 'Playfair Display', serif;
-      font-style: italic;
-      color: #c2410c;
-      padding: 12px 18px;
-    }
 
-    /* -------------------------------------------------------------------------
-       6. MINIMALIST EXECUTIVE (Swiss High-Design / Ultra-Clean Contrast)
-       ------------------------------------------------------------------------- */
-    html[data-template="minimalist_clean"] body {
-      background-color: #ffffff;
-      color: #0f172a;
-    }
-    html[data-template="minimalist_clean"] .doc-container {
-      border-radius: 0;
-      border: 1px solid #0f172a;
+    /* ==========================================================================
+       TEMPLATE 5: MINIMALIST EXECUTIVE (SWISS TYPOGRAPHY & STARK GRID)
+       ========================================================================== */
+    html[data-template="minimalist_clean"] .slide-wrapper {
       background: #ffffff;
-      box-shadow: none;
-    }
-    html[data-template="minimalist_clean"] .doc-header {
-      background: #0f172a;
+      border: 1px solid #000000;
       border-radius: 0;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.05);
     }
-    html[data-template="minimalist_clean"] header.cover {
-      border-bottom: 2px solid #0f172a;
-      padding: 24px 0;
-      margin-bottom: 28px;
+    html[data-template="minimalist_clean"] .slide-body {
+      background: #ffffff;
+      color: #000000;
+      font-family: 'Inter', system-ui, sans-serif;
     }
-    html[data-template="minimalist_clean"] header.cover h2 {
+    html[data-template="minimalist_clean"] .eyebrow-pill {
+      background: transparent;
+      border: 1px solid #000000;
+      color: #000000;
+      font-family: 'Inter', system-ui, sans-serif;
+      font-size: 10px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      border-radius: 0;
+      padding: 3px 8px;
+    }
+    html[data-template="minimalist_clean"] .slide-title-hero {
+      font-family: 'Inter', system-ui, sans-serif;
+      font-size: 42px;
+      font-weight: 900;
+      color: #000000;
+      letter-spacing: -0.04em;
+      line-height: 1.1;
+      margin: 14px 0 8px;
+    }
+    html[data-template="minimalist_clean"] .slide-body p.lede {
+      color: #475569;
+      font-size: 14px;
+      font-weight: 500;
+      letter-spacing: -0.01em;
+      margin-bottom: 20px;
+    }
+    html[data-template="minimalist_clean"] .learning-intentions-box {
+      background: transparent;
+      border: none;
+      border-top: 2px solid #000000;
+      border-radius: 0;
+      padding: 18px 0 0;
+      margin-top: 10px;
+    }
+    html[data-template="minimalist_clean"] .learning-intentions-box .box-title {
+      color: #000;
+      font-family: 'Inter', system-ui, sans-serif;
+      font-size: 11px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.15em;
+      margin-bottom: 14px;
+    }
+    html[data-template="minimalist_clean"] .intentions-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 28px;
+    }
+    html[data-template="minimalist_clean"] .intention-item {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      align-items: flex-start;
+    }
+    html[data-template="minimalist_clean"] .intention-num {
       font-family: 'Inter', system-ui, sans-serif;
       font-size: 30px;
-      color: #0f172a;
       font-weight: 900;
-      letter-spacing: -0.04em;
+      color: #000000;
+      background: transparent;
+      width: auto;
+      height: auto;
+      line-height: 1;
+      letter-spacing: -0.05em;
+      border-bottom: 2px solid #2563eb;
+      padding-bottom: 4px;
+      display: inline-block;
     }
-    html[data-template="minimalist_clean"] header.cover p.lede {
-      font-family: 'Inter', sans-serif;
-      font-size: 15px;
-      color: #475569;
-      font-weight: 500;
+    html[data-template="minimalist_clean"] .slide-split-layout {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 32px;
     }
-    html[data-template="minimalist_clean"] .doc-image-frame {
+    html[data-template="minimalist_clean"] .concept-def-box {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
       border-radius: 0;
-      border: none;
-      border-left: 4px solid #0f172a;
+      border-left: 3px solid #000000;
+      padding: 14px 18px;
+    }
+    html[data-template="minimalist_clean"] .slide-image-frame {
+      border: 1px solid #000000;
+      border-radius: 0;
+      box-shadow: none;
+    }
+    html[data-template="minimalist_clean"] .state-card,
+    html[data-template="minimalist_clean"] .comp-card,
+    html[data-template="minimalist_clean"] .activity-deck-card {
+      border: 1px solid #000000;
+      border-radius: 0;
+      background: #ffffff;
+    }
+    html[data-template="minimalist_clean"] .doc-container {
+      border: 1px solid #000000;
+      border-radius: 0;
       background: #ffffff;
       box-shadow: none;
-      margin: 24px 0;
-    }
-    html[data-template="minimalist_clean"] .doc-image-frame img {
-      border-radius: 0;
-      max-height: 280px;
-      object-fit: cover;
-    }
-    html[data-template="minimalist_clean"] .doc-image-caption {
-      background: #ffffff;
-      border-top: 1px solid #e2e8f0;
-      font-family: 'Inter', sans-serif;
-      font-size: 11px;
-      text-transform: uppercase;
-      letter-spacing: 0.1em;
-      color: #0f172a;
-      font-weight: 800;
-      padding: 10px 0;
-    }
-    /* Section 1: Swiss Executive Memo */
-    html[data-template="minimalist_clean"] .notes-section[data-block="summary"] {
-      border-left: 3px solid #0f172a;
-      padding-left: 20px;
-      background: transparent;
-      margin-bottom: 30px;
-    }
-    html[data-template="minimalist_clean"] .notes-section[data-block="summary"] h3 {
-      font-family: 'Inter', sans-serif;
-      font-size: 18px;
-      font-weight: 900;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      color: #0f172a;
-    }
-    html[data-template="minimalist_clean"] .notes-section[data-block="summary"] p {
-      color: #0f172a;
-      font-size: 15px;
-      font-weight: 500;
-      line-height: 1.7;
-    }
-    /* Section 2: High-Density Swiss Grid */
-    html[data-template="minimalist_clean"] .concept-glossary-table {
-      border-radius: 0;
-      border: 1px solid #0f172a;
-    }
-    html[data-template="minimalist_clean"] .concept-glossary-table th {
-      background: #0f172a;
-      color: #ffffff;
-      font-family: 'Inter', sans-serif;
-      font-weight: 800;
-      text-transform: uppercase;
-      font-size: 11px;
-      letter-spacing: 0.1em;
-      border: none;
-    }
-    html[data-template="minimalist_clean"] .concept-glossary-table td {
-      border-bottom: 1px solid #e2e8f0;
-      color: #0f172a;
-      font-family: 'Inter', sans-serif;
-    }
-    html[data-template="minimalist_clean"] .concept-glossary-table .concept-term {
-      color: #0f172a;
-      font-weight: 800;
-    }
-    html[data-template="minimalist_clean"] .badge-exam {
-      background: #0f172a;
-      color: #ffffff;
-      border-radius: 0;
-      font-size: 10px;
-      text-transform: uppercase;
-    }
-    /* Section 4: Modular Swiss Grid Blocks */
-    html[data-template="minimalist_clean"] .rules-breakdown-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 16px;
-    }
-    html[data-template="minimalist_clean"] .rule-box {
-      border: 1px solid #0f172a;
-      border-radius: 0;
-      background: #ffffff;
-      padding: 20px;
-    }
-    html[data-template="minimalist_clean"] .rule-box h4 {
-      font-family: 'Inter', sans-serif;
-      font-weight: 900;
-      color: #0f172a;
-      font-size: 15px;
-      text-transform: uppercase;
-    }
-    html[data-template="minimalist_clean"] .formula-banner {
-      background: #f8fafc;
-      border: 1px solid #0f172a;
-      font-family: 'JetBrains Mono', monospace;
-      font-weight: 700;
-      color: #0f172a;
-      border-radius: 0;
-    }
-    /* Section 5: Brutalist Compliance Advisories */
-    html[data-template="minimalist_clean"] .warning-item {
-      border: 1px solid #cbd5e1;
-      border-left: 4px solid #0f172a;
-      border-radius: 0;
-      background: #ffffff;
-      padding: 14px 18px;
-      margin-bottom: 10px;
-    }
-    html[data-template="minimalist_clean"] .warning-num {
-      background: #0f172a;
-      color: #ffffff;
-      border-radius: 0;
-      font-family: 'Inter', sans-serif;
-      font-weight: 900;
     }
 
-    /* -------------------------------------------------------------------------
-       7. INFOGRAPHIC & VISUAL FLOW (Neon Cyan / Process Map Flow)
-       ------------------------------------------------------------------------- */
-    html[data-template="infographic_visual"] body {
-      background-color: #060b19;
-    }
-    html[data-template="infographic_visual"] .doc-container {
-      border-radius: 20px;
-      border: 1px solid rgba(0, 180, 216, 0.4);
-      background: #0a1128;
-      box-shadow: 0 0 30px rgba(0, 180, 216, 0.2);
-    }
-    html[data-template="infographic_visual"] header.cover {
-      background: linear-gradient(135deg, rgba(0, 180, 216, 0.15), rgba(99, 102, 241, 0.15));
-      border: 1px solid rgba(0, 180, 216, 0.3);
-      border-radius: 16px;
-      padding: 28px;
-      margin-bottom: 28px;
-    }
-    html[data-template="infographic_visual"] header.cover h2 {
-      font-size: 32px;
-      font-weight: 800;
-      background: linear-gradient(90deg, #38bdf8, #818cf8);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-    }
-    html[data-template="infographic_visual"] header.cover p.lede {
-      color: #94a3b8;
-      font-size: 15px;
-    }
-    html[data-template="infographic_visual"] .doc-image-frame {
-      border: 2px solid #00b4d8;
-      border-radius: 16px;
+    /* ==========================================================================
+       TEMPLATE 6: INFOGRAPHIC VISUAL (PIPELINE & KPI METRIC DONUTS)
+       ========================================================================== */
+    html[data-template="infographic_visual"] .slide-wrapper {
       background: #060b19;
-      padding: 4px;
-      box-shadow: 0 0 25px rgba(0, 180, 216, 0.3);
+      border: 1px solid rgba(0, 180, 216, 0.4);
+      border-radius: 20px;
+      box-shadow: 0 0 40px rgba(0, 180, 216, 0.15);
     }
-    html[data-template="infographic_visual"] .doc-image-frame img {
-      border-radius: 12px;
-      max-height: 280px;
-      object-fit: cover;
-    }
-    html[data-template="infographic_visual"] .doc-image-caption {
-      background: #0d1a3a;
-      border-top: 1px solid #00b4d8;
-      font-weight: 700;
-      color: #7dd3fc;
-      font-size: 12px;
-    }
-    /* Section 1: 3-Step Visual Pipeline */
-    html[data-template="infographic_visual"] .notes-section[data-block="summary"] {
-      background: rgba(13, 26, 58, 0.7);
-      border-left: 4px solid #00b4d8;
-      border-radius: 0 16px 16px 0;
-      padding: 24px;
-      margin-bottom: 28px;
-    }
-    /* Section 2: Glowing Cyan Metric Cards */
-    html[data-template="infographic_visual"] .concept-glossary-table {
-      border: 1px solid rgba(0, 180, 216, 0.3);
-      border-radius: 14px;
-      overflow: hidden;
-    }
-    html[data-template="infographic_visual"] .concept-glossary-table th {
-      background: #101f42;
-      color: #38bdf8;
-      font-weight: 800;
-    }
-    html[data-template="infographic_visual"] .concept-glossary-table td {
-      border-bottom: 1px solid rgba(0, 180, 216, 0.15);
+    html[data-template="infographic_visual"] .slide-body {
+      background: #060b19;
       color: #f8fafc;
     }
-    html[data-template="infographic_visual"] .concept-glossary-table .concept-term {
-      color: #38bdf8;
-      font-weight: 700;
-    }
-    html[data-template="infographic_visual"] .badge-exam {
+    html[data-template="infographic_visual"] .eyebrow-pill {
       background: rgba(0, 180, 216, 0.2);
-      color: #7dd3fc;
       border: 1px solid #00b4d8;
+      color: #7dd3fc;
       border-radius: 999px;
+      font-weight: 800;
+      font-size: 11px;
     }
-    /* Section 4: Dual Comparative Columns */
-    html[data-template="infographic_visual"] .rules-breakdown-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 20px;
+    html[data-template="infographic_visual"] .slide-title-hero {
+      font-size: 38px;
+      font-weight: 800;
+      color: #38bdf8;
+      text-shadow: 0 0 20px rgba(56, 189, 248, 0.3);
     }
-    html[data-template="infographic_visual"] .rule-box {
-      background: #0d1a3a;
+    html[data-template="infographic_visual"] .learning-intentions-box {
+      background: rgba(13, 26, 58, 0.7);
       border: 1px solid rgba(0, 180, 216, 0.35);
       border-radius: 16px;
-      padding: 22px;
-      box-shadow: 0 0 15px rgba(0, 180, 216, 0.15);
+      padding: 20px;
+      position: relative;
+      margin-top: 12px;
     }
-    html[data-template="infographic_visual"] .rule-box h4 {
-      color: #38bdf8;
-      font-size: 18px;
+    html[data-template="infographic_visual"] .intentions-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
     }
-    html[data-template="infographic_visual"] .formula-banner {
-      background: linear-gradient(90deg, rgba(0, 180, 216, 0.2), rgba(99, 102, 241, 0.2));
+    html[data-template="infographic_visual"] .intention-item {
+      background: #0d1e44;
       border: 1px solid #00b4d8;
-      color: #ffd166;
-      font-weight: 800;
-    }
-    /* Section 5: Visual Radar Warnings */
-    html[data-template="infographic_visual"] .warning-item {
-      background: rgba(245, 158, 11, 0.1);
-      border: 1px solid rgba(245, 158, 11, 0.4);
       border-radius: 14px;
-      padding: 18px;
-      margin-bottom: 12px;
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      align-items: center;
+      text-align: center;
+      box-shadow: 0 0 15px rgba(0, 180, 216, 0.2);
     }
-    html[data-template="infographic_visual"] .warning-num {
-      background: #f59e0b;
-      color: #000;
+    html[data-template="infographic_visual"] .intention-num {
+      background: linear-gradient(135deg, #00b4d8, #6366f1);
+      color: #fff;
+      width: 32px;
+      height: 32px;
       border-radius: 999px;
+      font-size: 12px;
       font-weight: 800;
+      box-shadow: 0 0 12px rgba(0, 180, 216, 0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    html[data-template="infographic_visual"] .slide-split-layout {
+      display: grid;
+      grid-template-columns: 0.9fr 1.1fr;
+      gap: 24px;
+    }
+    html[data-template="infographic_visual"] .slide-image-frame {
+      border: 2px solid #00b4d8;
+      border-radius: 16px;
+      box-shadow: 0 0 25px rgba(0, 180, 216, 0.25);
+    }
+    html[data-template="infographic_visual"] .doc-container {
+      border-radius: 16px;
+      border: 1px solid rgba(0, 180, 216, 0.4);
+      background: #0a1128;
+      box-shadow: 0 15px 40px rgba(0, 180, 216, 0.2);
     }
 
-    /* -------------------------------------------------------------------------
-       8. MODERN TECH (Dark Slate & Neon / Silicon Valley Dev Docs)
-       ------------------------------------------------------------------------- */
-    html[data-template="modern_tech"] body {
-      background-color: #0b0f19;
+    /* ==========================================================================
+       TEMPLATE 7: GAMIFIED QUEST (RPG HUD & ACHIEVEMENTS)
+       ========================================================================== */
+    html[data-template="gamified_quest"] .slide-wrapper {
+      background: #110722;
+      border: 2px solid #a855f7;
+      border-radius: 22px;
+      box-shadow: 0 0 45px rgba(168, 85, 247, 0.35), inset 0 0 20px rgba(168, 85, 247, 0.15);
     }
-    html[data-template="modern_tech"] .doc-container {
-      border-radius: 20px;
-      border: 1px solid rgba(99, 102, 241, 0.3);
+    html[data-template="gamified_quest"] .slide-body {
+      background: #110722;
+      color: #fdf4ff;
+      font-family: 'Fredoka', 'Outfit', sans-serif;
+    }
+    html[data-template="gamified_quest"] .eyebrow-pill {
+      background: rgba(250, 204, 21, 0.2);
+      border: 1px solid #facc15;
+      color: #fde047;
+      font-family: 'Fredoka', sans-serif;
+      font-size: 11px;
+      font-weight: 800;
+      border-radius: 8px;
+      padding: 4px 12px;
+      text-shadow: 0 0 8px rgba(250, 204, 21, 0.5);
+    }
+    html[data-template="gamified_quest"] .slide-title-hero {
+      font-family: 'Fredoka', 'Outfit', sans-serif;
+      font-size: 38px;
+      font-weight: 800;
+      color: #facc15;
+      text-shadow: 0 0 16px rgba(250, 204, 21, 0.5);
+      letter-spacing: 0.02em;
+    }
+    html[data-template="gamified_quest"] .learning-intentions-box {
+      background: rgba(46, 16, 85, 0.85);
+      border: 2px solid #a855f7;
+      border-radius: 18px;
+      padding: 18px 22px;
+      box-shadow: 0 0 25px rgba(168, 85, 247, 0.25);
+      margin-top: 12px;
+    }
+    html[data-template="gamified_quest"] .intentions-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+    }
+    html[data-template="gamified_quest"] .intention-item {
+      background: #230f40;
+      border: 1.5px solid #c084fc;
+      border-radius: 14px;
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      box-shadow: 0 0 15px rgba(168, 85, 247, 0.2);
+    }
+    html[data-template="gamified_quest"] .intention-num {
+      background: #facc15;
+      color: #000;
+      font-family: 'Fredoka', sans-serif;
+      font-weight: 800;
+      border-radius: 8px;
+      width: 28px;
+      height: 28px;
+      font-size: 13px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 0 10px rgba(250, 204, 21, 0.6);
+    }
+    html[data-template="gamified_quest"] .concept-def-box {
+      background: #230f40;
+      border: 1.5px solid #a855f7;
+      border-radius: 14px;
+    }
+    html[data-template="gamified_quest"] .slide-image-frame {
+      border: 2px solid #c084fc;
+      border-radius: 16px;
+      background: #120524;
+      padding: 4px;
+      box-shadow: 0 0 30px rgba(168, 85, 247, 0.35);
+    }
+    html[data-template="gamified_quest"] .doc-container {
+      border-radius: 22px;
+      border: 2px solid rgba(168, 85, 247, 0.5);
+      background: #190a30;
+      box-shadow: 0 0 40px rgba(168, 85, 247, 0.25);
+    }
+
+    /* ==========================================================================
+       TEMPLATE 8: MODERN TECH (SILICON VALLEY GLASSMORPHISM BENTO)
+       ========================================================================== */
+    html[data-template="modern_tech"] .slide-wrapper {
       background: #111827;
-      box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+      border: 1px solid rgba(99, 102, 241, 0.35);
+      border-radius: 20px;
+      box-shadow: 0 20px 45px rgba(0, 0, 0, 0.6);
       position: relative;
     }
-    html[data-template="modern_tech"] .doc-container::before {
+    html[data-template="modern_tech"] .slide-wrapper::before {
       content: '';
-      display: block;
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
       height: 3px;
-      background: linear-gradient(90deg, #6366f1, #a855f7, #ec4899);
+      background: linear-gradient(90deg, #6366f1, #a855f7, #06b6d4);
       border-radius: 20px 20px 0 0;
+      z-index: 10;
     }
-    html[data-template="modern_tech"] .doc-header {
-      background: rgba(17, 24, 39, 0.95);
-      border-bottom: 1px solid rgba(99, 102, 241, 0.2);
+    html[data-template="modern_tech"] .eyebrow-pill {
+      background: rgba(99, 102, 241, 0.2);
+      border: 1px solid rgba(99, 102, 241, 0.4);
+      color: #a5b4fc;
+      border-radius: 6px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      font-weight: 700;
     }
-    html[data-template="modern_tech"] header.cover {
-      background: rgba(30, 41, 59, 0.5);
-      border: 1px solid rgba(99, 102, 241, 0.25);
-      border-radius: 16px;
-      padding: 26px;
-      margin-bottom: 28px;
-    }
-    html[data-template="modern_tech"] header.cover h2 {
-      font-size: 30px;
+    html[data-template="modern_tech"] .slide-title-hero {
+      font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+      font-size: 36px;
       font-weight: 800;
-      color: #f8fafc;
+      color: #ffffff;
+      text-shadow: 0 0 20px rgba(99, 102, 241, 0.25);
     }
-    html[data-template="modern_tech"] header.cover p.lede {
-      color: #94a3b8;
-      font-size: 15px;
+    html[data-template="modern_tech"] .learning-intentions-box {
+      background: rgba(15, 23, 42, 0.8);
+      border: 1px solid rgba(99, 102, 241, 0.3);
+      border-radius: 16px;
+      padding: 20px;
     }
-    html[data-template="modern_tech"] .doc-image-frame {
+    html[data-template="modern_tech"] .intentions-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+    }
+    html[data-template="modern_tech"] .intention-item {
+      background: rgba(30, 41, 59, 0.5);
+      border: 1px solid rgba(99, 102, 241, 0.2);
+      border-radius: 12px;
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    html[data-template="modern_tech"] .intention-num {
+      background: #6366f1;
+      color: #fff;
+      font-family: 'JetBrains Mono', monospace;
+      border-radius: 6px;
+      padding: 2px 8px;
+      font-size: 10px;
+      font-weight: 800;
+      align-self: flex-start;
+    }
+    html[data-template="modern_tech"] .concept-def-box {
+      background: rgba(30, 41, 59, 0.6);
+      border: 1px solid rgba(99, 102, 241, 0.3);
+      border-left: 3px solid #6366f1;
+      border-radius: 10px;
+    }
+    html[data-template="modern_tech"] .slide-image-frame {
       border: 1px solid rgba(99, 102, 241, 0.35);
       border-radius: 14px;
       background: #0f172a;
       padding: 4px;
       box-shadow: 0 10px 25px rgba(0,0,0,0.4);
     }
-    html[data-template="modern_tech"] .doc-image-frame img {
-      border-radius: 10px;
-      max-height: 280px;
-      object-fit: cover;
-    }
-    html[data-template="modern_tech"] .doc-image-caption {
-      background: #1e293b;
-      border-top: 1px solid rgba(99, 102, 241, 0.25);
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 11px;
-      color: #a5b4fc;
-    }
-    /* Section 1: Quickstart Architecture Guide */
-    html[data-template="modern_tech"] .notes-section[data-block="summary"] {
-      background: rgba(30, 41, 59, 0.6);
-      border: 1px solid rgba(99, 102, 241, 0.25);
-      border-radius: 14px;
-      padding: 22px;
-      margin-bottom: 26px;
-    }
-    /* Section 2: API Parameter Reference Table */
-    html[data-template="modern_tech"] .concept-glossary-table {
-      border: 1px solid rgba(99, 102, 241, 0.25);
-      border-radius: 12px;
-      overflow: hidden;
-    }
-    html[data-template="modern_tech"] .concept-glossary-table th {
-      background: #1e293b;
-      color: #a5b4fc;
-      font-weight: 700;
-    }
-    html[data-template="modern_tech"] .concept-glossary-table td {
-      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-      color: #f8fafc;
-    }
-    html[data-template="modern_tech"] .concept-glossary-table .concept-term {
-      color: #818cf8;
-      font-weight: 700;
-    }
-    html[data-template="modern_tech"] .badge-exam {
-      background: rgba(99, 102, 241, 0.2);
-      color: #a5b4fc;
-      border: 1px solid rgba(99, 102, 241, 0.4);
-      border-radius: 6px;
-    }
-    /* Section 4: Bento Tech Components */
-    html[data-template="modern_tech"] .rules-breakdown-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 18px;
-    }
-    html[data-template="modern_tech"] .rule-box {
-      background: rgba(30, 41, 59, 0.5);
-      border: 1px solid rgba(99, 102, 241, 0.25);
-      border-radius: 14px;
-      padding: 20px;
-    }
-    html[data-template="modern_tech"] .rule-box h4 {
-      color: #a5b4fc;
-      font-size: 16px;
-      font-weight: 700;
-    }
-    html[data-template="modern_tech"] .formula-banner {
-      background: #0f172a;
+    html[data-template="modern_tech"] .doc-container {
+      border-radius: 20px;
       border: 1px solid rgba(99, 102, 241, 0.3);
-      color: #38bdf8;
-      font-family: 'JetBrains Mono', monospace;
-      border-radius: 8px;
-    }
-    /* Section 5: Linter Warning Cards */
-    html[data-template="modern_tech"] .warning-item {
-      background: rgba(245, 158, 11, 0.1);
-      border: 1px solid rgba(245, 158, 11, 0.3);
-      border-radius: 12px;
-      padding: 16px;
-      margin-bottom: 12px;
-    }
-    html[data-template="modern_tech"] .warning-num {
-      background: #f59e0b;
-      color: #000;
-      border-radius: 6px;
-      font-weight: 800;
+      background: #111827;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.5);
     }
 CSS;
 
@@ -2065,6 +1779,8 @@ CSS;
       fill.style.width = ((currentIdx + 1) / slides.length * 100) + '%';
       prevBtn.disabled = currentIdx === 0;
       nextBtn.disabled = currentIdx === slides.length - 1;
+      const currentTheme = localStorage.getItem('lms_viewer_theme') || (themeSelect ? themeSelect.value : '{$initialTemplate}');
+      applyTemplateLayout(currentTheme);
     }
 
     function nextSlide() { renderSlide(currentIdx + 1); }
@@ -2078,12 +1794,71 @@ CSS;
       }
     }
 
-    function switchTheme(theme) {
+    function applyTemplateLayout(theme) {
       document.documentElement.setAttribute('data-template', theme);
       if (themeSelect) themeSelect.value = theme;
       document.querySelectorAll('[data-template]').forEach(el => {
         el.setAttribute('data-template', theme);
       });
+      
+      const slideStage = document.getElementById('slideStage');
+      if (slideStage) {
+        slideStage.setAttribute('data-active-template', theme);
+      }
+
+      const cover = stage.querySelector('header.cover');
+      if (cover) {
+        let decor = cover.querySelector('.template-decor-banner');
+        if (!decor) {
+          decor = document.createElement('div');
+          decor.className = 'template-decor-banner';
+          cover.insertBefore(decor, cover.firstChild);
+        }
+        if (theme === 'academic_classic') {
+          decor.innerHTML = '<div style="font-family:Merriweather,serif; font-size:11px; font-weight:700; color:#1e3a8a; letter-spacing:0.12em; text-transform:uppercase; margin-bottom:8px; border-bottom:1px solid #bfdbfe; padding-bottom:4px;">🏛️ CENTRAL BOARD OF SECONDARY EDUCATION &bull; SYLLABUS SPECIFICATION</div>';
+        } else if (theme === 'stem_blueprint') {
+          decor.innerHTML = '<div style="font-family:JetBrains Mono,monospace; font-size:10px; font-weight:700; color:#22d3ee; letter-spacing:0.08em; text-transform:uppercase; margin-bottom:8px;">[DWG-2026-ENG-42] TECHNICAL TELEMETRY CONSOLE &bull; TOLERANCE &plusmn;0.01</div>';
+        } else if (theme === 'gamified_quest') {
+          decor.innerHTML = '<div style="font-family:Fredoka,sans-serif; font-size:11px; font-weight:800; color:#facc15; letter-spacing:0.05em; text-transform:uppercase; margin-bottom:8px; text-shadow:0 0 10px rgba(250,204,21,0.5);">⚔️ QUEST LOG: MISSION INITIATION &bull; [⭐ +500 XP AVAILABLE]</div>';
+        } else if (theme === 'minimalist_clean') {
+          decor.innerHTML = '<div style="font-family:Inter,sans-serif; font-size:10px; font-weight:800; color:#000000; letter-spacing:0.15em; text-transform:uppercase; margin-bottom:8px;">STANDARD SPECIFICATION &bull; UNIT 04 &bull; EXECUTIVE BRIEFING</div>';
+        } else if (theme === 'infographic_visual') {
+          decor.innerHTML = '<div style="font-size:11px; font-weight:800; color:#38bdf8; letter-spacing:0.08em; text-transform:uppercase; margin-bottom:8px;">📊 MILESTONE ROADMAP &bull; VISUAL PROCESS PIPELINE</div>';
+        } else if (theme === 'vibrant_creative') {
+          decor.innerHTML = '<div style="font-family:Outfit,sans-serif; font-size:12px; font-weight:800; color:#059669; margin-bottom:8px;">🎈 CLASSROOM DISCOVERY ADVENTURE &bull; INTERACTIVE DECK</div>';
+        } else if (theme === 'warm_editorial') {
+          decor.innerHTML = '<div style="font-family:Playfair Display,serif; font-style:italic; font-size:12px; font-weight:700; color:#c2410c; margin-bottom:8px;">THE ACADEMIC OBSERVER &bull; SPECIAL MONOGRAPH ISSUE</div>';
+        } else {
+          decor.innerHTML = '<div style="font-family:JetBrains Mono,monospace; font-size:10px; font-weight:700; color:#a5b4fc; margin-bottom:8px;">⚡ CYBER-DECK 4.0 &bull; BUILD: PROD-2026 &bull; SYS_ACTIVE</div>';
+        }
+
+        const nums = cover.querySelectorAll('.intention-num');
+        nums.forEach((num, i) => {
+          if (theme === 'academic_classic') {
+            const romans = ['I', 'II', 'III', 'IV', 'V'];
+            num.innerText = romans[i] || (i + 1);
+          } else if (theme === 'stem_blueprint') {
+            num.innerText = '0' + (i + 1);
+          } else if (theme === 'gamified_quest') {
+            num.innerText = 'Q' + (i + 1);
+          } else if (theme === 'minimalist_clean') {
+            num.innerText = '0' + (i + 1);
+          } else if (theme === 'infographic_visual') {
+            num.innerText = '➔ ' + (i + 1);
+          } else if (theme === 'vibrant_creative') {
+            const icons = ['📌', '💡', '🎯', '✨'];
+            num.innerText = icons[i] || '🎯';
+          } else if (theme === 'warm_editorial') {
+            num.innerText = '§ ' + (i + 1);
+          } else {
+            num.innerText = '0' + (i + 1);
+          }
+        });
+      }
+    }
+
+    function switchTheme(theme) {
+      applyTemplateLayout(theme);
       localStorage.setItem('lms_viewer_theme', theme);
     }
 
@@ -2470,6 +2245,10 @@ HTML;
       document.querySelectorAll('[data-template]').forEach(el => {
         el.setAttribute('data-template', theme);
       });
+      const docBody = document.getElementById('docBody');
+      if (docBody) {
+        docBody.setAttribute('data-active-template', theme);
+      }
       localStorage.setItem('lms_viewer_theme', theme);
     }
 
