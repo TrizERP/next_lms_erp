@@ -28,6 +28,10 @@ class GraphBrowserController extends AiController
         try {
             $scope = $this->scope($request);
 
+            if ($request->query('view') === 'erp' || $request->query('type') === 'erp' || $request->query('mode') === 'erp' || $request->boolean('erp')) {
+                return $this->success('Modules loaded.', ['modules' => $this->browser->erpModules($scope)]);
+            }
+
             return $this->success('Modules loaded.', ['modules' => $this->browser->modules($scope)]);
         } catch (Throwable $exception) {
             return $this->handle($exception);
@@ -38,6 +42,14 @@ class GraphBrowserController extends AiController
     {
         try {
             $scope = $this->scope($request);
+
+            if (is_numeric($family)) {
+                return $this->success('Submodules loaded.', [
+                    'module_id' => (int) $family,
+                    'family' => $family,
+                    'submodules' => $this->browser->erpSubmodules($scope, (int) $family),
+                ]);
+            }
 
             return $this->success('Submodules loaded.', [
                 'family' => $family,
@@ -57,6 +69,15 @@ class GraphBrowserController extends AiController
                 'sample_size' => 'nullable|integer|min:1|max:100',
                 'limit' => 'nullable|integer|min:1|max:1000',
             ]);
+
+            if (is_numeric($label)) {
+                return $this->success('Graph loaded.', $this->browser->graphForSubmodule(
+                    $scope,
+                    (int) $label,
+                    $validated['sample_size'] ?? 12,
+                    $validated['limit'] ?? 300,
+                ));
+            }
 
             return $this->success('Graph loaded.', $this->browser->graph(
                 $label,

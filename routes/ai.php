@@ -410,9 +410,9 @@ Route::prefix(config('ai.route_prefix', 'api/ai'))
             */
             Route::get('/knowledge-graph/browser/modules', [GraphBrowserController::class, 'modules']);
             Route::get('/knowledge-graph/browser/modules/{family}/submodules', [GraphBrowserController::class, 'submodules'])
-                ->where('family', '[a-z_]+');
+                ->where('family', '[a-zA-Z0-9_\-]+');
             Route::get('/knowledge-graph/browser/submodules/{label}/graph', [GraphBrowserController::class, 'graph'])
-                ->where('label', '[A-Za-z]+');
+                ->where('label', '[a-zA-Z0-9_\-]+');
 
             /*
             | The real ERP module/submodule navigation (tblmenumaster-backed),

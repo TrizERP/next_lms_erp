@@ -76,6 +76,7 @@ class GraphModuleBrowser
             ->get()
             ->map(fn ($row) => [
                 'id' => (int) $row->id,
+                'key' => (string) $row->id,
                 'label' => $this->menuLabel($row),
                 // The real count behind this module's own card — the stacked-card UI
                 // draws one layer per submodule (capped visually), from this exact
@@ -83,6 +84,7 @@ class GraphModuleBrowser
                 // same label-dedup as erpSubmodules() itself, so the count on the
                 // module card always matches what clicking into it actually shows.
                 'submodule_count' => count($this->submodulesFor($scope, (int) $row->id, $allowed)),
+                'label_count' => count($this->submodulesFor($scope, (int) $row->id, $allowed)),
             ])
             ->values()
             ->all();
@@ -130,6 +132,7 @@ class GraphModuleBrowser
 
             $submodules[] = [
                 'id' => (int) $row->id,
+                'key' => (string) $row->id,
                 'label' => $label,
                 'mapped' => $labels !== [],
                 // The resolved GraphSchema labels themselves — so the frontend
@@ -137,6 +140,7 @@ class GraphModuleBrowser
                 // exactly this submodule, instead of defaulting to
                 // graphForSubmodule()'s flat sample of everything at once.
                 'labels' => $labels,
+                'node_count' => count($labels),
             ];
         }
 
@@ -151,8 +155,14 @@ class GraphModuleBrowser
         $allowed = $this->rights->allowedMenuIds($scope);
 
         if ($allowed === null || $allowed === [] || ! $this->rights->allows($allowed, $moduleId)) {
-            return ['module_id' => $moduleId, 'labels' => [], 'nodes' => [], 'edges' => []];
+            return ['module_id' => $moduleId, 'label' => '', 'labels' => [], 'nodes' => [], 'edges' => []];
         }
+
+        $row = $this->tenantScopedMenus($scope, 1, null, $allowed)
+            ->where('id', $moduleId)
+            ->first(['id', 'menu_title', 'name']);
+
+        $moduleLabel = $row ? $this->menuLabel($row) : ('Module #' . $moduleId);
 
         $submodules = $this->submodulesFor($scope, $moduleId, $allowed);
         $allLabels = [];
@@ -164,12 +174,16 @@ class GraphModuleBrowser
         $labels = array_values(array_unique($allLabels));
 
         if ($labels === []) {
-            return ['module_id' => $moduleId, 'labels' => [], 'nodes' => [], 'edges' => []];
+            return ['module_id' => $moduleId, 'label' => $moduleLabel, 'labels' => [], 'nodes' => [], 'edges' => []];
         }
 
         $result = $this->graphForLabels($labels, $scope->selectedInstituteId, $sampleSizePerLabel, $limit);
 
-        return array_merge(['module_id' => $moduleId], $result);
+        return array_merge([
+            'module_id' => $moduleId,
+            'label' => $moduleLabel,
+            'module' => $moduleLabel,
+        ], $result);
     }
 
     /**
@@ -189,7 +203,7 @@ class GraphModuleBrowser
         $allowed = $this->rights->allowedMenuIds($scope);
 
         if ($allowed === null || ! $this->rights->allows($allowed, $submoduleId)) {
-            return ['submodule' => null, 'labels' => [], 'nodes' => [], 'edges' => []];
+            return ['submodule' => null, 'label' => '', 'labels' => [], 'nodes' => [], 'edges' => []];
         }
 
         $row = $this->tenantScopedMenus($scope, 2, null, $allowed)
@@ -197,19 +211,22 @@ class GraphModuleBrowser
             ->first(['id', 'menu_title', 'name']);
 
         if (! $row) {
-            return ['submodule' => null, 'labels' => [], 'nodes' => [], 'edges' => []];
+            return ['submodule' => null, 'label' => '', 'labels' => [], 'nodes' => [], 'edges' => []];
         }
 
         $label = $this->menuLabel($row);
         $labels = $this->mapper->labelsFor($label, $this->screenNames($submoduleId));
 
         if ($labels === []) {
-            return ['submodule' => $label, 'labels' => [], 'nodes' => [], 'edges' => []];
+            return ['submodule' => $label, 'label' => $label, 'labels' => [], 'nodes' => [], 'edges' => []];
         }
 
         $result = $this->graphForLabels($labels, $scope->selectedInstituteId, $sampleSizePerLabel, $limit);
 
-        return array_merge(['submodule' => $label], $result);
+        return array_merge([
+            'submodule' => $label,
+            'label' => $label,
+        ], $result);
     }
 
     /**
@@ -283,11 +300,15 @@ class GraphModuleBrowser
             );
         }
 
+        $targetFilter = count($labels) > 1
+            ? 'WHERE any(l IN labels(m) WHERE l IN $labels) '
+            : '';
+
         $cypher = 'CALL { ' . implode(' UNION ', $parts) . ' } '
             . 'WITH n '
             . 'CALL { '
             . '  WITH n '
-            . '  OPTIONAL MATCH (n)-[r]-(m) WHERE any(l IN labels(m) WHERE l IN $labels) '
+            . '  OPTIONAL MATCH (n)-[r]-(m) ' . $targetFilter
             . '  RETURN r, m '
             . '  LIMIT $perNodeLimit '
             . '} '
@@ -316,14 +337,13 @@ class GraphModuleBrowser
         $edges = [];
 
         foreach ($result as $row) {
-            $this->collectNode($nodes, $row->get('nId'), $row->get('nLabels'), $row->get('nProps'));
-
             $rId = $row->get('rId');
 
             if ($rId === null) {
                 continue;
             }
 
+            $this->collectNode($nodes, $row->get('nId'), $row->get('nLabels'), $row->get('nProps'));
             $this->collectNode($nodes, $row->get('mId'), $row->get('mLabels'), $row->get('mProps'));
 
             $outgoing = (bool) $row->get('rOutgoing');
@@ -336,6 +356,14 @@ class GraphModuleBrowser
                 'target' => $outgoing ? $mId : $nId,
                 'relation' => (string) $row->get('rType'),
             ];
+        }
+
+        // If no relationships exist between the labels, fall back to collecting all sampled nodes
+        // so an honest empty-relationship view is displayed rather than an empty screen.
+        if (empty($edges)) {
+            foreach ($result as $row) {
+                $this->collectNode($nodes, $row->get('nId'), $row->get('nLabels'), $row->get('nProps'));
+            }
         }
 
         return [
