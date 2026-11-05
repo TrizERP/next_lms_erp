@@ -179,6 +179,29 @@ class PalAgentController extends AiController
      * GET /api/ai/pal/agent/eso
      * Returns the complete Executive Skill Object (ESO) for all three agents.
      */
+        /**
+     * GET /api/ai/pal/agent/memory
+     * Returns the active pedagogical memory file status, loaded frameworks, and verification.
+     */
+    public function memory(Request $request, \App\Services\PAL\Pedagogy\PedagogicalMemoryService $memoryService): JsonResponse
+    {
+        try {
+            $memory = $memoryService->loadMemory();
+
+            return $this->success('Pedagogical memory loaded successfully.', [
+                'file_path' => $memory['file_path'],
+                'file_size' => $memory['file_size'],
+                'last_modified' => $memory['last_modified'],
+                'frameworks' => array_keys($memory['frameworks']),
+                'deliverables_count' => count($memory['deliverables']),
+                'standards' => $memory['standards'],
+                'loaded_at' => $memory['loaded_at'],
+            ]);
+        } catch (Throwable $e) {
+            return $this->handle($e);
+        }
+    }
+
     public function eso(Request $request): JsonResponse
     {
         try {

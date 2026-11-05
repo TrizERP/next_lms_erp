@@ -495,6 +495,10 @@ class PalAgentPipelineService
                 'status_label' => 'Idle - Ready for PAL mastery sweep',
             ],
             'recent_findings' => [],
+            'pedagogical_memory' => [
+                'file' => \App\Services\PAL\Pedagogy\PedagogicalMemoryService::MEMORY_RELATIVE_PATH,
+                'active' => true,
+            ],
         ];
 
         if (!Schema::hasTable('lms_pal_agent_state')) {

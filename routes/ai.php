@@ -368,6 +368,7 @@ Route::prefix(config('ai.route_prefix', 'api/ai'))
 
             Route::prefix('pal/agent')->group(function () {
                 Route::get('state', [\App\Http\Controllers\AI\PalAgentController::class, 'state']);
+                Route::get('memory', [\App\Http\Controllers\AI\PalAgentController::class, 'memory']);
                 Route::post('start', [\App\Http\Controllers\AI\PalAgentController::class, 'start']);
                 Route::post('stop', [\App\Http\Controllers\AI\PalAgentController::class, 'stop']);
                 Route::post('run-now', [\App\Http\Controllers\AI\PalAgentController::class, 'runNow']);

@@ -442,7 +442,7 @@ class ContentModelEnrichmentService
                     'checkpoints' => is_array($data['checkpoints'] ?? null) ? array_values($data['checkpoints']) : [],
                 ];
             },
-            $this->variantSystemPrompt($spec),
+            app(\App\Services\PAL\Pedagogy\PedagogicalMemoryService::class)->enrichPrompt($this->variantSystemPrompt($spec), 'variant_draft', $input),
             $this->variantUserPrompt($input)
         );
     }

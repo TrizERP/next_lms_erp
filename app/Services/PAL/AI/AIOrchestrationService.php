@@ -4,10 +4,11 @@ namespace App\Services\PAL\AI;
 
 use App\Domain\AI\Configuration\AiConfigurationException;
 use App\Domain\AI\Configuration\AiModelClientFactory;
-use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\DB;
 use App\Models\PAL\Remediation;
+use App\Services\PAL\Pedagogy\PedagogicalMemoryService;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 /**
  * AI Orchestration Service
@@ -19,6 +20,13 @@ class AIOrchestrationService
 
     /** The school this service acts for; null means platform keys only. */
     protected int|string|null $subInstituteId = null;
+
+    protected PedagogicalMemoryService $memory;
+
+    public function __construct(?PedagogicalMemoryService $memory = null)
+    {
+        $this->memory = $memory ?? app(PedagogicalMemoryService::class);
+    }
 
     /**
      * A copy scoped to one school, so that school's `pal_intelligence` AI configuration applies.
@@ -224,6 +232,19 @@ class AIOrchestrationService
 
     protected function callAI(string $systemPrompt, array $metadata = [], int|string|null $subInstituteId = null): array
     {
+        $taskType = $metadata['type'] ?? $metadata['style'] ?? 'content_generation';
+
+        // Mandatory Workflow: Check if task requires content generation and load memory first
+        if ($this->memory->isContentGenerationTask((string) $taskType)) {
+            $systemPrompt = $this->memory->enrichPrompt($systemPrompt, (string) $taskType, $metadata);
+            $metadata['pedagogical_memory'] = [
+                'file' => PedagogicalMemoryService::MEMORY_RELATIVE_PATH,
+                'loaded' => true,
+                'task_type' => $taskType,
+                'loaded_at' => now()->toIso8601String(),
+            ];
+        }
+
         try {
             // Provider, model, key and fallbacks come from the school's saved PAL Intelligence configuration.
             $client = app(AiModelClientFactory::class)->for('pal_intelligence', $subInstituteId ?? $this->subInstituteId);
@@ -241,10 +262,12 @@ class AIOrchestrationService
             );
 
             if (is_string($content) && trim($content) !== '') {
+                $validation = $this->memory->validateGeneratedContent($content, (string) $taskType);
+
                 return [
                     'content' => $content,
                     'model' => $client->lastUsed()?->model,
-                    'metadata' => $metadata,
+                    'metadata' => array_merge($metadata, ['pedagogical_validation' => $validation]),
                     'generated_at' => now()->toIso8601String(),
                 ];
             }
