@@ -374,4 +374,3 @@ Whenever the user requests content generation, the assistant must follow this st
 
 ---
 *End of Master Pedagogical Memory File. This document is active, persistent, and authoritative.*
-

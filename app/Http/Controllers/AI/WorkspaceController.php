@@ -15,6 +15,7 @@ use App\Domain\GenerativeAI\GenerationService;
 use App\Services\Mcp\AiReportGenerator;
 use App\Domain\Workflow\WorkflowEngine;
 use Illuminate\Http\Request;
+use App\Services\AI\ConversationalSettingsService;
 use App\Services\Graph\GraphDrain;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -45,6 +46,7 @@ class WorkspaceController extends AiController
         private readonly AgentRunner $agents,
         private readonly WorkflowEngine $workflows,
         private readonly GenerationService $generation,
+        private readonly ConversationalSettingsService $conversationalSettings = new ConversationalSettingsService(),
     ) {
     }
 
@@ -72,9 +74,13 @@ class WorkspaceController extends AiController
             $context = $this->contextService->resolve($validated['route'], $scope, $validated);
             $suggestions = $this->capabilities->resolve($context);
 
+            $projectId = $request->header('x-project-id') ?: 'lms_k12';
+            $channelSettings = $this->conversationalSettings->getCentralizedSettings($projectId);
+
             return $this->success('AI workspace context resolved.', [
                 'context' => $context->toArray(),
                 'suggestions' => $suggestions,
+                'channel_settings' => $channelSettings,
                 // Anything already running or waiting on this record, so the panel can
                 // show progress instead of offering to start something twice.
                 'active' => [
