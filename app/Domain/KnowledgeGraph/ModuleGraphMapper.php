@@ -147,8 +147,12 @@ class ModuleGraphMapper
     }
 
     /** @return string[] */
-    private function matchKeywords(string $text): array
+    private function matchKeywords(?string $text): array
     {
+        if ($text === null || trim($text) === '') {
+            return [];
+        }
+
         $haystack = mb_strtolower($text);
         $labels = [];
 
