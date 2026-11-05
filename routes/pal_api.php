@@ -66,6 +66,8 @@ Route::prefix('api/pal')->middleware('pal.auth')->group(function () {
     | RecommendationFeedController's own docblock for the full accounting.
     */
     Route::get('/recommendations/next', [RecommendationFeedController::class, 'next']);
+    Route::get('/context-graph/{learnerId}', [\App\Http\Controllers\api\PAL\ContextGraphController::class, 'show'])
+        ->where('learnerId', '[0-9]+');
 
     /*
     |--------------------------------------------------------------------------

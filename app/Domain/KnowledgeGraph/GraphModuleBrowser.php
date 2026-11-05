@@ -904,18 +904,25 @@ class GraphModuleBrowser
         $relationshipLimit = max(1, min($relationshipLimit, self::MAX_RELATIONSHIP_LIMIT));
         $skip = max(0, $skip);
 
-        $nodeParams = ['recordId' => (int) $recordId, 'tenantId' => $tenantId];
+        $keyProp = GraphSchema::key($label);
+        $intId = is_numeric($recordId) ? (int) $recordId : null;
+        $nodeParams = [
+            'recordId' => $intId ?? -1,
+            'rawId' => (string) $recordId,
+            'tenantId' => $tenantId,
+        ];
         $empty = ['node' => null, 'nodes' => [], 'edges' => [], 'total_incoming' => 0, 'total_outgoing' => 0, 'has_more' => false];
 
         try {
-            $nodeResult = $this->neo4j->run(
-                sprintf(
-                    'MATCH (n:%s) WHERE id(n) = $recordId AND n.sub_institute_id = $tenantId '
-                    . 'RETURN id(n) AS nId, labels(n) AS nLabels, n AS nProps',
-                    $label
-                ),
-                $nodeParams
+            $matchClause = sprintf(
+                'MATCH (n:%s) WHERE (id(n) = $recordId OR n.%s = $recordId OR toString(n.%s) = $rawId) '
+                . 'AND (n.sub_institute_id = $tenantId OR n.sub_institute_id IS NULL) '
+                . 'RETURN id(n) AS nId, labels(n) AS nLabels, n AS nProps LIMIT 1',
+                $label,
+                $keyProp,
+                $keyProp
             );
+            $nodeResult = $this->neo4j->run($matchClause, $nodeParams);
         } catch (Throwable $exception) {
             return $empty + ['error' => $exception->getMessage()];
         }
@@ -929,6 +936,9 @@ class GraphModuleBrowser
         if ($nodeRow === null) {
             return $empty;
         }
+
+        $realInternalId = (int) $nodeRow->get('nId');
+        $nodeParams['recordId'] = $realInternalId;
 
         $nodes = [];
         $this->collectNode($nodes, $nodeRow->get('nId'), $nodeRow->get('nLabels'), $nodeRow->get('nProps'));
@@ -977,7 +987,7 @@ class GraphModuleBrowser
                 . 'SKIP $skip LIMIT $limit '
                 . 'RETURN id(r) AS rId, type(r) AS rType, properties(r) AS rProps, outgoing, '
                 . '       id(m) AS mId, labels(m) AS mLabels, m AS mProps',
-                ['recordId' => (int) $recordId, 'tenantId' => $tenantId, 'skip' => $skip, 'limit' => $relationshipLimit, 'relation' => $relation]
+                ['recordId' => $realInternalId, 'tenantId' => $tenantId, 'skip' => $skip, 'limit' => $relationshipLimit, 'relation' => $relation]
             );
         } catch (Throwable $exception) {
             return [
