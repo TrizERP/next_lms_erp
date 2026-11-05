@@ -5,9 +5,9 @@
 | Pedagogical workflow pilot (Course Presentation card)
 |--------------------------------------------------------------------------
 |
-| Data only. SCOPE: Std 9 chapter 1 of Science (8592), Mathematics (8594), English (8622) and Social Science (8608), school 1.
-| Every other chapter keeps the existing card and pipeline untouched; PedagogicalWorkflow::appliesTo() is the only gate and
-| the backend checks chapter, standard, subject and school together (the frontend flag is a convenience, not the guard).
+| Data only. STAGED WORKFLOW SCOPE: Std 9 chapter 1 of Science (8592), Mathematics (8594), English (8622) and Social Science (8608), school 1.
+| Other chapters enabled in course_presentation_pilot use the same generator and the general method/format choices, without these
+| chapter-specific staged profiles. PedagogicalWorkflow::appliesTo() gates staged context; the backend also checks the chapter scope.
 |
 | `methods` hold the staged workflow of each teaching method (keys match config course_presentation_pilot.pedagogies
 | and StudyDeck\TeachingMethodProfile). `formats` hold the delivery formats; a format is selectable only when its

@@ -211,7 +211,14 @@ class SlidePlanner
         try {
             $plan = $this->tidy($this->extractJson($reply));
         } catch (\RuntimeException $e) {
-            return [[], ['Your reply was not valid JSON (' . json_last_error_msg() . '). Nested objects were probably left unclosed.']];
+            // The model sometimes garbles the keys INSIDE a diagram spec (`Vnodes:` for `"nodes":`), which spoils the whole reply for the sake of
+            // an optional fallback drawing. The reply is read again without its diagrams before a whole repair round is spent on it.
+            try {
+                $plan = $this->tidy($this->extractJson($this->withoutDiagrams($reply)));
+                $this->repairs[] = 'a reply with damaged diagram specs was read without them (the picture search still runs for those slides)';
+            } catch (\RuntimeException) {
+                return [[], ['Your reply was not valid JSON (' . json_last_error_msg() . '). Nested objects were probably left unclosed.']];
+            }
         }
 
         $plan = $this->repairPlanStructure($plan, $map);
@@ -244,6 +251,19 @@ class SlidePlanner
             $this->repairs[] = "$dropped bank question placement(s) beyond the limits were dropped";
         }
 
+        // A drawn diagram is only the fallback for a picture that cannot be found (see tidy()). One that labels itself with numbers the chapter
+        // does not give is dropped rather than sent back: the slide keeps its picture search, and the model is not asked to redraw it.
+        $ungrounded = [];
+        foreach ($plan['slides'] as $i => $s) {
+            if (!empty($s['diagram']) && GroundedNumbers::ungrounded(GroundedNumbers::wording($s['diagram']), $this->allowed) !== []) {
+                $plan['slides'][$i]['diagram'] = null;
+                $ungrounded[] = $i + 1;
+            }
+        }
+        if ($ungrounded !== []) {
+            $this->repairs[] = 'the fallback diagram of slide(s) ' . implode(', ', $ungrounded) . ' used numbers the chapter does not give, so it was dropped (the picture search still runs)';
+        }
+
         // The plan's problems by KIND and how many of each: slide numbers are masked, because removing a slide renumbers the rest. The slide
         // count is left out (it is what trimming changes on purpose). A change is kept only if it adds no problem of any kind, so it can
         // cure one fault but never pay for that with another.
@@ -263,6 +283,21 @@ class SlidePlanner
             }
         }
 
+        // What sorting could not fix because moving a slide broke the teaching method's own order of slide types (a misconception slide the
+        // model labelled "Evaluate" in the middle of its topic): the slide types are put in the method's order first, then the stage labels
+        // that no longer fit their neighbours are corrected. Kept on the same terms as every other step above.
+        if ($faults($plan) !== [] && (WorkflowRules::active($map['workflow'] ?? null) || TeachingMethodProfile::orderViolations($map['teaching_method'] ?? null, $plan['slides']) !== [])) {
+            $fixed = $plan;
+            $fixed['slides'] = $this->inMethodOrder($plan['slides'], $map['teaching_method'] ?? null);
+            if (WorkflowRules::active($map['workflow'] ?? null)) {
+                $fixed['slides'] = WorkflowRules::withStagesInOrder($fixed['slides'], $map);
+            }
+            if ($fixed['slides'] !== $plan['slides'] && array_sum($faults($fixed)) < array_sum($faults($plan)) && !$adds($faults($fixed), $faults($plan))) {
+                $plan = $fixed;
+                $this->repairs[] = 'slides were put in the teaching method\'s order of slide types and the workflow stage labels that no longer fitted were corrected (inferred, not stated by the model)';
+            }
+        }
+
         // Workflow coverage a repair round keeps failing to get right (it fixes one rule and breaks another): a competency named only through
         // its outcomes gets its own ref on the slide that lists the outcome, and a stage no slide carries is given to slides that can take it.
         if (WorkflowRules::active($map['workflow'] ?? null)) {
@@ -272,6 +307,26 @@ class SlidePlanner
                 $this->repairs[] = 'competency ref(s) ' . implode(', ', array_keys($added)) . ' were added to the slide that already lists one of their outcomes (inferred from the outcome code, not stated by the model)';
             }
             $plan = $this->fillMissingStages($plan, $map, $faults, $adds);
+        }
+
+        // Teaching method required slide types (e.g. experiential needs concept_visual):
+        $method = $map['teaching_method'] ?? null;
+        if ($method !== null && ($p = TeachingMethodProfile::get($method)) !== null && !empty($p['min'])) {
+            $counts = array_count_values(array_map(fn ($s) => (string) ($s['slide_type'] ?? ''), $plan['slides']));
+            foreach ($p['min'] as $neededType => $reqCount) {
+                $targetCount = min((int) $reqCount, max(1, intdiv(count($plan['slides']), 6)));
+                $current = $counts[$neededType] ?? 0;
+                if ($current < $targetCount) {
+                    $diff = $targetCount - $current;
+                    foreach ($plan['slides'] as $i => $s) {
+                        if (($s['slide_type'] ?? '') === 'concept_intro' && $diff > 0) {
+                            $plan['slides'][$i]['slide_type'] = $neededType;
+                            $diff--;
+                            $this->repairs[] = "slide " . ($i + 1) . " type set to $neededType for teaching method $method";
+                        }
+                    }
+                }
+            }
         }
 
         // Too many slides, or too many practice slides: take out the least valuable one at a time, as long as that adds no problem
@@ -291,6 +346,29 @@ class SlidePlanner
         }
 
         return $plan;
+    }
+
+    /**
+     * Each slide that the teaching method wants earlier than the slide now in front of it (a misconception before its concept_intro) is moved
+     * to just before that slide. Only the position changes; the caller judges the result.
+     *
+     * @param array<int,array<string,mixed>> $slides
+     * @return array<int,array<string,mixed>>
+     */
+    private function inMethodOrder(array $slides, ?string $method): array
+    {
+        $slides = array_values($slides);
+        for ($guard = 0; $guard < count($slides); $guard++) {
+            $violations = TeachingMethodProfile::orderViolations($method, $slides);
+            if ($violations === []) {
+                break;
+            }
+            [$from, $to] = $violations[0];
+            $moved = array_splice($slides, $from, 1);
+            array_splice($slides, $to, 0, $moved);
+        }
+
+        return $slides;
     }
 
     /**
@@ -603,6 +681,44 @@ class SlidePlanner
         $plan['slides'] = $slides;
 
         return $plan;
+    }
+
+    /** The reply with every `"diagram": { ... }` object replaced by `"diagram": null`. Braces inside quoted strings do not count. */
+    private function withoutDiagrams(string $reply): string
+    {
+        $out = '';
+        $pos = 0;
+        while (preg_match('/"diagram"\s*:\s*\{/', $reply, $m, PREG_OFFSET_CAPTURE, $pos)) {
+            $start = $m[0][1];
+            $open = $start + strlen($m[0][0]) - 1;
+            $depth = 0;
+            $inString = false;
+            $end = null;
+            for ($i = $open, $n = strlen($reply); $i < $n; $i++) {
+                $c = $reply[$i];
+                if ($inString) {
+                    if ($c === '\\') {
+                        $i++;
+                    } elseif ($c === '"') {
+                        $inString = false;
+                    }
+                } elseif ($c === '"') {
+                    $inString = true;
+                } elseif ($c === '{') {
+                    $depth++;
+                } elseif ($c === '}' && --$depth === 0) {
+                    $end = $i;
+                    break;
+                }
+            }
+            if ($end === null) {
+                break;
+            }
+            $out .= substr($reply, $pos, $start - $pos) . '"diagram": null';
+            $pos = $end + 1;
+        }
+
+        return $out . substr($reply, $pos);
     }
 
     private function ask(string $prompt): string

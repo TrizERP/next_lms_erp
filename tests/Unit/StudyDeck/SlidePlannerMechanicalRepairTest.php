@@ -200,6 +200,53 @@ class SlidePlannerMechanicalRepairTest extends TestCase
         $this->assertStringContainsString('workflow stage order', implode(' ', $planner->repairs));
     }
 
+    public function test_a_reply_with_a_damaged_diagram_spec_is_read_without_the_diagram_instead_of_costing_a_repair_round(): void
+    {
+        [$context, $map, $eligible] = $this->mapFor(6, 8);
+        // The model once wrote `Vnodes:` for `"nodes":` inside a diagram; the rest of the reply was fine.
+        $reply = str_replace('"slide_type":"cover"', '"slide_type":"cover","diagram":{"layout":"flow","title":"A } brace","Vnodes":["a"],s:["b"]}', json_encode($this->plan()), $n);
+        $this->assertSame(1, $n);
+        $this->assertNull(json_decode($reply), 'the fixture reply really is invalid JSON');
+
+        $model = $this->completer([$reply]);
+        $planner = new SlidePlanner($model);
+        $result = $planner->plan($context, $map, $eligible);
+
+        $this->assertCount(1, $model->prompts, 'no repair round was needed');
+        $this->assertStringContainsString('damaged diagram specs', implode(' ', $planner->repairs));
+        $this->assertCount(7, $result['slides']);
+    }
+
+    public function test_withStagesInOrder_relabels_the_slide_that_breaks_the_order_and_keeps_every_slide_in_place(): void
+    {
+        $map = ['workflow' => ['stages' => array_map(fn ($n) => ['number' => $n, 'name' => "S$n"], range(1, 6))], 'concepts' => [1 => ['topic_id' => 10], 2 => ['topic_id' => 10], 3 => ['topic_id' => 11]]];
+        $s = fn (string $t, array $c, ?int $stage) => ['slide_type' => $t, 'title' => $t . $stage, 'concept_ids' => $c, 'workflow_stage' => $stage];
+        $slides = [
+            $s('cover', [], null),
+            $s('concept_visual', [1], 3),
+            $s('concept_intro', [1], 4),
+            $s('misconception', [1], 6),   // labelled Evaluate in the middle of the topic
+            $s('concept_intro', [2], 4),
+            $s('concept_intro', [3], 2),   // another topic: untouched
+        ];
+
+        $out = WorkflowRules::withStagesInOrder($slides, $map);
+
+        $this->assertSame(array_column($slides, 'title'), array_column($out, 'title'), 'no slide moved');
+        $this->assertSame([null, 3, 4, 4, 4, 2], array_column($out, 'workflow_stage'));
+        $this->assertSame([], array_values(array_filter(WorkflowRules::errors($map['workflow'], $out, $map), fn ($e) => str_contains($e, 'follows stage'))));
+    }
+
+    public function test_orderViolations_names_each_slide_the_method_wants_earlier(): void
+    {
+        $s = fn (string $t, array $c) => ['slide_type' => $t, 'concept_ids' => $c];
+        $slides = [$s('cover', []), $s('concept_intro', [5]), $s('misconception', [5]), $s('concept_intro', [6])];
+
+        // inquiry_based: misconception before concept_intro. The misconception (position 2) must go before the intro (position 1).
+        $this->assertSame([[2, 1]], \App\Services\StudyDeck\TeachingMethodProfile::orderViolations('inquiry_based', $slides));
+        $this->assertSame([], \App\Services\StudyDeck\TeachingMethodProfile::orderViolations(null, $slides));
+    }
+
     public function test_inStageOrder_only_moves_slides_inside_their_own_topic_and_never_across_a_slide_it_cannot_place(): void
     {
         $map = ['concepts' => [1 => ['topic_id' => 10], 2 => ['topic_id' => 10], 3 => ['topic_id' => 11]]];

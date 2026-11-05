@@ -66,6 +66,7 @@ final class GroundedNumbers
         if (trim($allowed) === '') {
             return [];
         }
+        $allowed = preg_replace('/(?<=\d),\s+(?=\d)/u', ',', $allowed) ?? $allowed;
         // Slide and step numbers are navigation, not claims about the subject.
         $text = preg_replace('/\b(?:slide|step)\s+\d+\b/i', '', $text) ?? $text;
         preg_match_all('/\d+(?:[.,]\d+)?/u', $text, $found);

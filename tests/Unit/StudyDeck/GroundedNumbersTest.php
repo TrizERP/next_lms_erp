@@ -50,7 +50,7 @@ class GroundedNumbersTest extends TestCase
 
     // ---- each stage repairs its own numbers ------------------------------------------------------------------------------------
 
-    public function test_a_diagram_label_with_a_number_the_chapter_does_not_give_goes_back_to_the_planner_for_a_repair_round(): void
+    public function test_a_diagram_label_with_a_number_the_chapter_does_not_give_is_dropped_in_code_without_a_repair_round(): void
     {
         $context = (new ConceptContextBuilder())->assemble($this->raw());
         $sel = (new QuestionSelector())->select($this->raw()['questions']);
@@ -58,12 +58,15 @@ class GroundedNumbersTest extends TestCase
         $bad = $this->planWithRoom();
         $bad['slides'][2]['diagram']['nodes'] = ['Ignore ' . self::BAD . ' details', 'Keep the question'];
 
-        $model = $this->completer([json_encode($bad), json_encode($this->planWithRoom())]);
-        $result = (new SlidePlanner($model))->plan($context, $map, $sel['eligible']);
+        $model = $this->completer([json_encode($bad)]);
+        $planner = new SlidePlanner($model);
+        $result = $planner->plan($context, $map, $sel['eligible']);
 
-        $this->assertCount(2, $model->prompts, 'one repair round');
-        $this->assertStringContainsString('the diagram uses the number(s) ' . self::BAD . ', which are not in the chapter text', $model->prompts[1]);
-        $this->assertStringNotContainsString(self::BAD, json_encode($result['slides']), 'the repaired plan has no such number');
+        $this->assertCount(1, $model->prompts, 'a fallback diagram is dropped, not redrawn by the model');
+        $this->assertStringContainsString('slide(s) 3 used numbers the chapter does not give', implode(' ', $planner->repairs));
+        $this->assertNull($result['slides'][2]['diagram']);
+        $this->assertNotNull($result['slides'][2]['visual'], 'the picture search still runs for the slide');
+        $this->assertStringNotContainsString(self::BAD, json_encode($result['slides']), 'the plan has no such number');
     }
 
     public function test_slide_text_with_a_number_the_chapter_does_not_give_is_sent_back_by_the_content_stage(): void

@@ -38,6 +38,7 @@ class GenerateStudyDocumentCommand extends Command
         {--concepts= : comma-separated concept ids to write about (default: every concept of the chapter)}
         {--per-concept=4 : most bank questions offered per concept}
         {--compact : a compact pack of any kind: every part written short and the bank questions fitted to --pages}
+        {--profile= : revision_notes or remedial design: purpose (default) or standard}
         {--pages=5 : with --compact, the exact number of pages both copies of the PDF must come to (the most, with --min-pages)}
         {--min-pages= : with --compact, accept a range: both copies must come to --min-pages up to --pages pages, and be the same length}
         {--draft= : the draft.json of an earlier compact or purpose-based run: its wording is reused and only the page fit is made again (no model call)}
@@ -68,9 +69,26 @@ class GenerateStudyDocumentCommand extends Command
         $tenant = (int) $this->option('tenant');
         $executor = (string) ($this->option('executor') ?: config('claude.executor', 'api'));
         $compact = (bool) $this->option('compact');
+        $profile = trim((string) $this->option('profile'));
+        if ($profile !== '' && !in_array($profile, ['purpose', 'standard'], true)) {
+            $this->error('--profile must be purpose or standard.');
+
+            return self::FAILURE;
+        }
+        if ($compact && $profile !== '') {
+            $this->error('--profile cannot be combined with --compact.');
+
+            return self::FAILURE;
+        }
+        if ($kind === DocumentKind::Activities && $profile === 'purpose') {
+            $this->error('Classroom activities use the standard profile.');
+
+            return self::FAILURE;
+        }
         $pages = max(1, (int) $this->option('pages'));
         // Revision notes and a remedial class have a purpose-based design by default; activities have only the standard one.
-        $purpose = !$compact && $kind !== DocumentKind::Activities;
+        $purpose = !$compact && $profile !== 'standard' && $kind !== DocumentKind::Activities;
+        $standard = $profile === 'standard' && $kind !== DocumentKind::Activities;
         $draft = null;
         if ($this->option('draft')) {
             if ((!$compact && !$purpose) || !is_file((string) $this->option('draft'))) {
@@ -123,20 +141,22 @@ class GenerateStudyDocumentCommand extends Command
 
             return self::FAILURE;
         }
-        $dir = rtrim((string) ($this->option('out') ?: storage_path('app/study-deck/chapter-' . $chapterId . '/' . $kind->value . ($compact ? '_compact' : ($purpose ? '_purpose' : '')) . ($interactive ? '_interactive' : ''))), '/\\');
+        $design = $compact ? '_compact' : ($purpose ? '_purpose' : ($standard ? '_standard' : ''));
+        $dir = rtrim((string) ($this->option('out') ?: storage_path('app/study-deck/chapter-' . $chapterId . '/' . $kind->value . $design . ($interactive ? '_interactive' : ''))), '/\\');
         $store = (bool) $this->option('store');
         $concepts = array_values(array_unique(array_filter(array_map('intval', array_map('trim', explode(',', (string) $this->option('concepts')))))));
 
         $this->line('Executor: <options=bold>' . $executor . '</>' . ($executor === 'cli' ? ' (dev-only, tools disabled)' : ''));
-        $this->line($kind->label() . ' for chapter ' . $chapterId . ($concepts ? ' (' . count($concepts) . ' concept(s) chosen)' : ' (the whole chapter)') . ($compact ? ', compact: ' . $pages . ' pages' : ($purpose ? ', purpose-based design: 5 to 15 pages' : '')));
+        $this->line($kind->label() . ' for chapter ' . $chapterId . ($concepts ? ' (' . count($concepts) . ' concept(s) chosen)' : ' (the whole chapter)') . ($compact ? ', compact: ' . $pages . ' pages' : ($purpose ? ', purpose-based design: 5 to 15 pages' : ($standard ? ', standard design' : ''))));
 
         try {
-            $service = $this->service($this->completer($executor), $tenant, $chapterId);
+            $service = $this->service($this->completer($executor, $tenant), $tenant, $chapterId);
 
             $result = $service->generate($kind, $chapterId, $tenant, [
                 'concept_ids' => $concepts,
                 'per_concept' => (int) $this->option('per-concept'),
                 'compact' => $compact,
+                'profile' => $profile,
                 'pages' => $pages,
                 'min_pages' => $this->option('min-pages') !== null ? (int) $this->option('min-pages') : null,
                 'fuller' => $this->option('fuller') ? true : null,
@@ -214,7 +234,7 @@ class GenerateStudyDocumentCommand extends Command
     }
 
     /** The model to ask. The service's own key resolution and streaming call, reached through a subclass so this command carries no Anthropic code of its own. */
-    protected function completer(string $executor): Completer
+    protected function completer(string $executor, int $tenant): Completer
     {
         if ($executor === 'cli') {
             return new ClaudeCliCompleter();
@@ -222,13 +242,15 @@ class GenerateStudyDocumentCommand extends Command
 
         config(['claude.executor' => 'api']);
         $bridge = new class extends ContentGenerationService {
-            public function completer(): ?Completer
+            public function completer(int $tenant): ?Completer
             {
+                $this->useAiTenant($tenant);
+
                 return $this->studyCompleter();
             }
         };
 
-        return $bridge->completer()
+        return $bridge->completer($tenant)
             ?? throw new \RuntimeException('No Anthropic API key (ai_api_keys / ANTHROPIC_API_KEY). Use --executor=cli for a dev run.');
     }
 

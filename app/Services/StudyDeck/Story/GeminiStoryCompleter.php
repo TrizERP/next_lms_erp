@@ -90,6 +90,9 @@ class GeminiStoryCompleter implements Completer, ParallelCompleter, DeadlineAwar
     /** The model asked instead of the configured one after repeated overload; null while the configured model is in use. */
     private ?string $fallbackInUse = null;
 
+    /** The configured alternatives, tried in order when one model stays overloaded. */
+    private ?array $fallbackModels = null;
+
     /** @var Closure(float,float):float picks a number between the two (tests replace it, so the jitter is exact) */
     private ?Closure $random = null;
 
@@ -162,22 +165,28 @@ class GeminiStoryCompleter implements Completer, ParallelCompleter, DeadlineAwar
     }
 
     /**
-     * After repeated overload, switches to the FIRST fallback model the platform already has configured (never a new one, never another key).
-     * The switch is logged with both model names, so it is never silent. True when a fallback is now in use.
+     * After repeated overload, advances through the configured fallback models (never a new one, never another key).
+     * Every switch is logged with both model names, so it is never silent. True when a fallback is now in use.
      */
     private function considerFallback(int $overloaded): bool
     {
-        if ($this->fallbackInUse !== null) {
-            return true;
-        }
         if ($overloaded < self::FALLBACK_AFTER || !(bool) config('ai.provider.gemini.overload_fallback', true)) {
-            return false;
+            return $this->fallbackInUse !== null;
         }
-        $from = $this->client->defaultModel();
-        $to = $this->client->fallbackModels()[0] ?? null;
-        if ($to === null || $to === $from) {
-            return false;
+        $this->fallbackModels ??= $this->client->fallbackModels();
+        $nextIndex = 0;
+        if ($this->fallbackInUse !== null) {
+            $currentIndex = array_search($this->fallbackInUse, $this->fallbackModels, true);
+            if ($currentIndex === false) {
+                return true;
+            }
+            $nextIndex = $currentIndex + 1;
         }
+        if (!isset($this->fallbackModels[$nextIndex])) {
+            return $this->fallbackInUse !== null;
+        }
+        $from = $this->modelInUse();
+        $to = $this->fallbackModels[$nextIndex];
         $this->fallbackInUse = $to;
         try {
             \Illuminate\Support\Facades\Log::warning('[gemini] model overloaded, using the configured fallback model', ['from' => $from, 'to' => $to, 'after_overloaded_answers' => $overloaded]);

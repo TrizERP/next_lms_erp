@@ -80,6 +80,8 @@ class WorkflowRules
         $stages = array_column((array) $workflow['stages'], 'name', 'number');
         $count = count($stages);
         $errors = [];
+        // Order faults come from one mislabelled slide many times over; they go last so the cap below never hides a missing stage or outcome.
+        $orderErrors = [];
         $seen = [];
         $noStage = [];
         $lastTopic = null;
@@ -107,7 +109,7 @@ class WorkflowRules
                     $lastStage = 0;
                 }
                 if ($stage < $lastStage) {
-                    $errors[] = "Slide $n is stage $stage ({$stages[$stage]}) but follows stage $lastStage ({$stages[$lastStage]}) in the same topic; stages keep their order within a topic.";
+                    $orderErrors[] = "Slide $n is stage $stage ({$stages[$stage]}) but follows stage $lastStage ({$stages[$lastStage]}) in the same topic; stages keep their order within a topic.";
                 }
                 $lastStage = max($lastStage, $stage);
             }
@@ -141,7 +143,7 @@ class WorkflowRules
             }
         }
 
-        return array_slice(array_values(array_unique($errors)), 0, self::MAX_ERRORS);
+        return array_slice(array_values(array_unique(array_merge($errors, $orderErrors))), 0, self::MAX_ERRORS);
     }
 
     /**
@@ -184,6 +186,101 @@ class WorkflowRules
         $flush();
 
         return $out;
+    }
+
+    /**
+     * The slides with the stage LABELS that break the order inside a topic corrected, where inStageOrder() would have to move the slide
+     * instead (and moving it can break another rule, such as the teaching method's own order of slide types). Within each topic stretch
+     * (the same stretches inStageOrder() uses) the longest run of labels that never goes backwards is kept as the model wrote it; every
+     * other slide gets the stage nearest its own label that fits between its kept neighbours. Slides keep their places. A label is the
+     * model's judgement of where the slide sits, so this only changes it where the slide's neighbours say it cannot be what was written.
+     *
+     * @param array<int,array<string,mixed>> $slides
+     * @param array<string,mixed> $map LearningPlanBuilder::build()
+     * @return array<int,array<string,mixed>>
+     */
+    public static function withStagesInOrder(array $slides, array $map): array
+    {
+        $top = count((array) ($map['workflow']['stages'] ?? [])) ?: 99;
+        $out = array_values($slides);
+        $run = [];
+        $topic = null;
+        $flush = static function () use (&$out, &$run, $top): void {
+            foreach (self::relabelRun(array_map(fn ($i) => $out[$i], $run), $top) as $k => $slide) {
+                $out[$run[$k]] = $slide;
+            }
+            $run = [];
+        };
+        foreach ($out as $i => $s) {
+            $stage = is_array($s) ? self::stageOf($s) : null;
+            $first = is_array($s) ? (array) ($s['concept_ids'] ?? []) : [];
+            $own = $first ? ($map['concepts'][(int) $first[0]]['topic_id'] ?? null) : null;
+            if ($stage === null || $own === null || ($s['slide_type'] ?? '') === 'cover') {
+                $flush();
+                $topic = null;
+                continue;
+            }
+            if ($own !== $topic) {
+                $flush();
+                $topic = $own;
+            }
+            $run[] = $i;
+        }
+        $flush();
+
+        return $out;
+    }
+
+    /**
+     * @param array<int,array<string,mixed>> $slides one topic stretch, every slide with a valid stage
+     * @return array<int,array<string,mixed>>
+     */
+    private static function relabelRun(array $slides, int $top): array
+    {
+        $n = count($slides);
+        if ($n < 2) {
+            return $slides;
+        }
+        $stage = array_map(fn ($s) => (int) self::stageOf($s), $slides);
+        // Longest non-decreasing run of labels (the labels to trust); ties keep the earlier run.
+        $len = array_fill(0, $n, 1);
+        $prev = array_fill(0, $n, -1);
+        $best = 0;
+        for ($i = 0; $i < $n; $i++) {
+            for ($j = 0; $j < $i; $j++) {
+                if ($stage[$j] <= $stage[$i] && $len[$j] + 1 > $len[$i]) {
+                    $len[$i] = $len[$j] + 1;
+                    $prev[$i] = $j;
+                }
+            }
+            // On a tie the lower final stage wins: a stray late label (Evaluate in the middle of a topic) is the one to correct.
+            if ($len[$i] > $len[$best] || ($len[$i] === $len[$best] && $stage[$i] < $stage[$best])) {
+                $best = $i;
+            }
+        }
+        $kept = [];
+        for ($i = $best; $i >= 0; $i = $prev[$i]) {
+            $kept[$i] = true;
+        }
+        $assigned = 0;
+        foreach ($slides as $i => $s) {
+            if (isset($kept[$i])) {
+                $assigned = $stage[$i];
+                continue;
+            }
+            $lo = max(1, $assigned);
+            $hi = $top;
+            for ($k = $i + 1; $k < $n; $k++) {
+                if (isset($kept[$k])) {
+                    $hi = $stage[$k];
+                    break;
+                }
+            }
+            $assigned = max($lo, min($stage[$i], $hi));
+            $slides[$i]['workflow_stage'] = $assigned;
+        }
+
+        return $slides;
     }
 
     /**
@@ -320,6 +417,15 @@ class WorkflowRules
                         continue 3;
                     }
                 }
+            }
+            // Standalone competency with no child -LO- outcome: attach to a suitable learning/application slide
+            foreach ($slides as $i => $s) {
+                if (!is_array($s) || in_array($s['slide_type'] ?? '', ['cover', 'hook', 'objectives'], true)) {
+                    continue;
+                }
+                $slides[$i]['outcome_refs'] = array_values(array_unique(array_merge((array) ($s['outcome_refs'] ?? []), [$competency])));
+                $added[$competency] = $i;
+                break;
             }
         }
 

@@ -98,7 +98,7 @@ final class StoryTemplate
             // The parts of a story act, in the order a learner meets them.
             'parts' => ['intro', 'teaching_scene', 'decision', 'consequence', 'merge', 'ending', 'mission'],
             // Per act (one act per topic, plus the closing mission): scenes, decisions and endings it may hold.
-            'nodes' => [8, 20],
+            'nodes' => [8, 24],
             'decisions' => [2, 5],
             // Different paths end differently: an act has two or three endings.
             'endings' => [2, 3],

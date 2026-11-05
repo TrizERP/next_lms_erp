@@ -307,6 +307,21 @@ class SlideContentGenerator
             }
         }
 
+        if (count($out) < count($wanted)) {
+            $rawSlides = array_values(array_filter((array) ($json['slides'] ?? []), fn ($s) => is_array($s) && $this->str($s['title'] ?? '') !== ''));
+            if (count($rawSlides) === count($wanted)) {
+                $positional = [];
+                foreach (array_values($wanted) as $idx => $wn) {
+                    $s = $rawSlides[$idx];
+                    $s['n'] = $wn;
+                    $positional[$wn] = $this->clean($s);
+                }
+                if (count($positional) > count($out)) {
+                    $out = $positional;
+                }
+            }
+        }
+
         return $out;
     }
 

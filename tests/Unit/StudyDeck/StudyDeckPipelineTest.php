@@ -693,6 +693,21 @@ class StudyDeckPipelineTest extends TestCase
         $this->assertStringContainsString('words of body text', $joined);
     }
 
+    public function test_final_grounding_accepts_coordinate_commas_with_different_spacing(): void
+    {
+        $errors = [];
+        $warnings = [];
+        $context = [
+            'ground_truth' => 'Point H has coordinates (0, 4).',
+            'concepts' => [],
+            'chapter' => ['chapter_name' => 'Coordinates', 'subject_name' => 'Mathematics', 'standard_name' => '9'],
+        ];
+
+        (new DeckValidator())->groundingCheck('<p>Point H is at (0,4).</p>', '', $context, [], $errors, $warnings);
+
+        $this->assertSame([], $errors);
+    }
+
     public function test_validator_allows_decorative_creator_symbols_but_still_rejects_emoji(): void
     {
         $r = $this->deck();
