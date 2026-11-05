@@ -90,6 +90,8 @@ class NewPalReportService
         $flaggedLearners = $args['flagged_learners'] ?? [];
         $coherenceSummary = $args['coherence_summary'] ?? [];
 
+        $memoryService = app(\App\Services\PAL\Pedagogy\PedagogicalMemoryService::class);
+        $memory = $memoryService->loadMemory();
         $draftNotes = [];
         $now = Carbon::now();
 
@@ -125,6 +127,12 @@ class NewPalReportService
             'sub_institute_id' => $tenant,
             'draft_notes_count' => count($draftNotes),
             'draft_notes' => $draftNotes,
+            'pedagogical_memory' => [
+                'file' => \App\Services\PAL\Pedagogy\PedagogicalMemoryService::MEMORY_RELATIVE_PATH,
+                'loaded' => true,
+                'frameworks_applied' => ['Inquiry-Based Learning', 'Experiential Learning', 'Bloom\'s Taxonomy', 'NEP 2020'],
+                'mtime' => $memory['last_modified'],
+            ],
             'governance' => [
                 'safety_policy' => 'draft_only',
                 'max_verb' => 'recommend',
