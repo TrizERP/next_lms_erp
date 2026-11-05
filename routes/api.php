@@ -1231,6 +1231,10 @@ Route::prefix('live-chat')->middleware(['api.session', 'livechat.identity'])->gr
     Route::post('meet', [\App\Http\Controllers\AI\AiLiveChatController::class, 'meetPost']);
 });
 
+// Centralized Conversational AI Settings (Voice & Language synchronization across LMS K12, Enterprise, Brain, G2G)
+Route::match(['get'], 'ai/conversation/settings', [\App\Http\Controllers\AI\ConversationalSettingsController::class, 'getSettings']);
+Route::match(['put', 'post'], 'ai/conversation/settings', [\App\Http\Controllers\AI\ConversationalSettingsController::class, 'saveSettings']);
+
 // Course Presentation pilot: the two choices and a read-only source pre-flight. See CoursePresentationController.
 Route::middleware(['api.session', 'staff.only'])->prefix('lms/course-presentation')->group(function () {
     Route::get('options', [\App\Http\Controllers\api\lms\CoursePresentationController::class, 'options']);

@@ -7,6 +7,7 @@ use App\Http\Controllers\AI\AiTemplateController;
 use App\Http\Controllers\AI\AskController;
 use App\Http\Controllers\AI\CapabilityController;
 use App\Http\Controllers\AI\CaseController;
+use App\Http\Controllers\AI\ConversationalSettingsController;
 use App\Http\Controllers\AI\GenerationController;
 use App\Http\Controllers\AI\GraphBrowserController;
 use App\Http\Controllers\AI\KnowledgeRagController;
@@ -224,6 +225,10 @@ Route::prefix(config('ai.route_prefix', 'api/ai'))
                 ->where('id', '[0-9]+');
             Route::delete('/policies/{id}', [\App\Http\Controllers\AI\AiPolicyController::class, 'destroy'])
                 ->where('id', '[0-9]+');
+
+            // Centralized Conversational AI Settings (Voice & Language synchronization)
+            Route::match(['get'], '/conversation/settings', [ConversationalSettingsController::class, 'getSettings']);
+            Route::match(['put', 'post'], '/conversation/settings', [ConversationalSettingsController::class, 'saveSettings']);
 
             Route::match(['get', 'post'], '/workspace/context', [WorkspaceController::class, 'context']);
             Route::match(['get', 'post'], '/workspace/flow', [WorkspaceController::class, 'flowState']);
