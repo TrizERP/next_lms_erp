@@ -94,7 +94,13 @@ class McpToolCaller
         // A tool the module is not bound to is not refused at the transport — it is
         // never reached. Recording it as a blocked call would blame the role gate for a
         // configuration decision made here.
-        if (! in_array($tool, $context->module->mcpTools, true)) {
+        $allowedTools = $context->module->mcpTools;
+        foreach ($context->federatedModules as $fed) {
+            $allowedTools = array_merge($allowedTools, $fed->mcpTools);
+        }
+        $allowedTools = array_values(array_unique($allowedTools));
+
+        if (! in_array($tool, $allowedTools, true)) {
             $this->record($context, [
                 'tool' => $tool,
                 'status' => 'unavailable',
@@ -175,7 +181,13 @@ class McpToolCaller
      */
     public function confirmable(StageContext $context, string $tool, array $arguments, string $why): array
     {
-        if (! in_array($tool, $context->module->mcpTools, true)) {
+        $allowedTools = $context->module->mcpTools;
+        foreach ($context->federatedModules as $fed) {
+            $allowedTools = array_merge($allowedTools, $fed->mcpTools);
+        }
+        $allowedTools = array_values(array_unique($allowedTools));
+
+        if (! in_array($tool, $allowedTools, true)) {
             return [
                 'token' => null,
                 'preview' => [],

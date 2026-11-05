@@ -228,7 +228,12 @@ abstract class AbstractMcpTool extends Tool implements McpToolInterface
 
     protected function authorize(McpRequestContext $context): void
     {
-        if (! in_array($context->role, $this->allowedRoles(), true)) {
+        if ($context->isAdmin) {
+            return;
+        }
+
+        $allowed = array_map('strtolower', $this->allowedRoles());
+        if (! in_array(strtolower($context->role), $allowed, true)) {
             throw new AuthorizationException('You do not have permission to use this MCP tool.');
         }
     }

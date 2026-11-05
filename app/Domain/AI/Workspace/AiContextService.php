@@ -50,12 +50,41 @@ class AiContextService
         $entityKey = null;
         $entityId = null;
 
+        if (empty($module['row']) && ! empty($hints['module'])) {
+            $hintedMod = strtolower(trim($hints['module']));
+            foreach ($this->modules($scope->selectedInstituteId) as $mRow) {
+                if ($mRow->module_key === $hintedMod) {
+                    $module['row'] = $mRow;
+                    break;
+                }
+            }
+        }
+
         if ($module['row'] ?? null) {
             $entityKey = $module['row']->entity_key ?: null;
             $entityParam = $module['row']->entity_param ?: null;
 
             if ($entityKey && $entityParam && isset($routeParams[$entityParam])) {
                 $entityId = $routeParams[$entityParam];
+            }
+        }
+
+        if (! $entityKey && ($module['row'] ?? null)) {
+            $modKey = $module['row']->module_key;
+            if (in_array($modKey, ['students', 'student'], true)) {
+                $entityKey = 'student';
+            } elseif (in_array($modKey, ['teachers', 'teacher'], true)) {
+                $entityKey = 'teacher';
+            }
+        }
+
+        if ($entityKey && $entityId === null) {
+            if (isset($routeParams['studentId'])) {
+                $entityId = $routeParams['studentId'];
+            } elseif (isset($routeParams['id'])) {
+                $entityId = $routeParams['id'];
+            } elseif (preg_match('#/(?:students|student|fees/collect)/([0-9]+)#i', $normalizedRoute, $mMatches)) {
+                $entityId = $mMatches[1];
             }
         }
 

@@ -63,6 +63,12 @@ class McpToolSelectionStage implements LifecycleStage
         $selected = [];
         $dropped = [];
 
+        $allowedTools = $context->module->mcpTools;
+        foreach ($context->federatedModules as $fed) {
+            $allowedTools = array_merge($allowedTools, $fed->mcpTools);
+        }
+        $allowedTools = array_values(array_unique($allowedTools));
+
         foreach ($candidates as $candidate) {
             if (! in_array($candidate, $registered, true)) {
                 $dropped[$candidate] = 'not registered in the tool registry';
@@ -70,8 +76,8 @@ class McpToolSelectionStage implements LifecycleStage
                 continue;
             }
 
-            if (! in_array($candidate, $context->module->mcpTools, true)) {
-                $dropped[$candidate] = sprintf('not bound to the %s module', $context->module->label);
+            if (! in_array($candidate, $allowedTools, true)) {
+                $dropped[$candidate] = sprintf('not bound to the %s module or federated modules', $context->module->label);
 
                 continue;
             }

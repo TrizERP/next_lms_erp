@@ -241,7 +241,17 @@ class WorkflowEngine
         }
 
         if ($approval->status !== 'pending') {
-            throw new RuntimeException('This approval has already been resolved.');
+            if ($approval->status === ($decision === 'approved' ? 'approved' : 'rejected')) {
+                return [
+                    'approval_id' => $approvalId,
+                    'status' => $approval->status,
+                    'message' => "Approval #{$approvalId} was already resolved as {$approval->status}.",
+                    'idempotent' => true,
+                    'run' => $this->status((int) $approval->run_id, $scope),
+                ];
+            }
+
+            throw new RuntimeException('This approval has already been resolved as ' . $approval->status . '.');
         }
 
         if ($approval->expires_at !== null && now()->greaterThan($approval->expires_at)) {

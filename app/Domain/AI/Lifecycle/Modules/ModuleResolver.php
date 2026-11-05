@@ -143,7 +143,26 @@ class ModuleResolver
         $decided = $this->decisiveLeader($scores, $modules);
 
         if ($decided !== null) {
-            return $this->answer($modules[$decided['key']], $decided['source'], $scores);
+            $federated = [];
+            foreach ($scores as $sKey => $sVal) {
+                if ($sKey !== $decided['key'] && $sVal >= 3.0 && isset($modules[$sKey])) {
+                    $federated[] = $modules[$sKey];
+                }
+            }
+            return $this->answer($modules[$decided['key']], $decided['source'], $scores, null, $federated);
+        }
+
+        // Multi-module query federation fallback: when multiple modules score strongly
+        $candidatesAboveFloor = array_filter($scores, static fn (float $s) => $s >= 3.0);
+        if (count($candidatesAboveFloor) > 1) {
+            $primaryKey = array_key_first($scores);
+            $federated = [];
+            foreach (array_keys($candidatesAboveFloor) as $cKey) {
+                if ($cKey !== $primaryKey && isset($modules[$cKey])) {
+                    $federated[] = $modules[$cKey];
+                }
+            }
+            return $this->answer($modules[$primaryKey], 'cross_module_federation', $scores, null, $federated);
         }
 
         return $this->answer(
@@ -332,7 +351,8 @@ class ModuleResolver
         ModuleCapability $module,
         string $source,
         array $scores,
-        ?string $stoodDown = null
+        ?string $stoodDown = null,
+        array $federated = []
     ): array {
         return [
             'module' => $module,
@@ -342,6 +362,7 @@ class ModuleResolver
             // it was asked on has to say so, or the trace describes a question nobody
             // asked and the next reader cannot tell routing from a bug.
             'stood_down' => $stoodDown,
+            'federated' => $federated,
         ];
     }
 
@@ -367,6 +388,14 @@ class ModuleResolver
 
         return match ($key) {
             'student_profiles' => isset($modules['student']) ? 'student' : (isset($modules['students']) ? 'students' : null),
+            'books' => isset($modules['library']) ? 'library' : null,
+            'hrms-report', 'hrit-management', 'talent-management' => isset($modules['hr']) ? 'hr' : null,
+            'organization-management' => isset($modules['institute']) ? 'institute' : null,
+            'career-counseling', 'career-awareness', 'career-explorer' => isset($modules['career-counselling']) ? 'career-counselling' : null,
+            'stock-verification' => isset($modules['inventory']) ? 'inventory' : null,
+            'other-reports', 'capability-intelligence' => isset($modules['reports']) ? 'reports' : null,
+            'platform-services' => isset($modules['migration-modules']) ? 'migration-modules' : null,
+            'skill-assessment', 'skill-management' => isset($modules['teach_learn']) ? 'teach_learn' : null,
             default => null,
         };
     }

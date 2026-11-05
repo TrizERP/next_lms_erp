@@ -93,7 +93,7 @@ class AiConfigIntegrityTest extends TestCase
                 // exactly, not by module, so Fees cannot quietly gain a second write tool: the
                 // tool previews first, sends only on confirmation, is administrator-only, and
                 // is not read-only so it is never offered as a report source or fallback read.
-                $deliberate = ['fees' => ['fees.send_reminders']];
+                $deliberate = ['fees' => ['fees.send_reminders'], 'easy_com' => ['communication.send_parent_message']];
 
                 if (! $byName[$tool]
                     && $moduleKey !== 'admissions'

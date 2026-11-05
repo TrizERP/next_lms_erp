@@ -191,6 +191,80 @@ class ReportController extends AiController
         }
     }
 
+    
+    /**
+     * Export report as HTML, printable format, or CSV.
+     */
+    public function export(Request $request, int $report)
+    {
+        try {
+            $context = $this->scope($request);
+            $row = $this->find($context, $report);
+
+            if (! $row) {
+                return $this->failure('That report could not be found.', 404);
+            }
+
+            $format = strtolower((string) $request->input('format', 'html'));
+            $title = (string) ($row->title ?? 'AI Report');
+            $safeName = preg_replace('/[^a-zA-Z0-9_\-]/', '_', $title);
+            $html = (string) $row->html_content;
+
+            if ($format === 'csv') {
+                $csv = $this->extractCsvFromHtml($html);
+                return response($csv, 200, [
+                    'Content-Type' => 'text/csv; charset=UTF-8',
+                    'Content-Disposition' => 'attachment; filename="' . $safeName . '.csv"',
+                ]);
+            }
+
+            $printable = "<!doctype html><html><head><meta charset=\"utf-8\"><title>" . htmlspecialchars($title) . "</title>"
+                . "<style>@page { margin: 16mm; } body { font-family: Inter, system-ui, sans-serif; margin: 24px; color: #0f172a; } "
+                . "h2 { font-size: 20px; margin-bottom: 12px; } "
+                . "table { width: 100%; border-collapse: collapse; margin-top: 16px; font-size: 13px; } "
+                . "th, td { border: 1px solid #cbd5e1; padding: 8px 12px; text-align: left; } "
+                . "th { background: #f8fafc; font-weight: 600; color: #334155; } "
+                . "@media print { body { margin: 0; } }</style></head><body>"
+                . "<h2>" . htmlspecialchars($title) . "</h2>"
+                . $html
+                . "</body></html>";
+
+            return response($printable, 200, [
+                'Content-Type' => 'text/html; charset=UTF-8',
+                'Content-Disposition' => 'inline; filename="' . $safeName . ($format === 'pdf' ? '.pdf' : '.html') . '"',
+            ]);
+        } catch (Throwable $exception) {
+            return $this->handle($exception);
+        }
+    }
+
+    private function extractCsvFromHtml(string $html): string
+    {
+        if (preg_match('/<table[^>]*>(.*?)<\/table>/is', $html, $tableMatch)) {
+            $tableHtml = $tableMatch[1];
+            $lines = [];
+            if (preg_match_all('/<tr[^>]*>(.*?)<\/tr>/is', $tableHtml, $rowMatches)) {
+                foreach ($rowMatches[1] as $rowHtml) {
+                    $cells = [];
+                    if (preg_match_all('/<(?:th|td)[^>]*>(.*?)<\/(?:th|td)>/is', $rowHtml, $cellMatches)) {
+                        foreach ($cellMatches[1] as $cell) {
+                            $text = trim(strip_tags($cell));
+                            $cells[] = '"' . str_replace('"', '""', $text) . '"';
+                        }
+                    }
+                    if ($cells !== []) {
+                        $lines[] = implode(',', $cells);
+                    }
+                }
+            }
+            if ($lines !== []) {
+                return implode("\r\n", $lines);
+            }
+        }
+
+        return "Report,Title\r\n\"" . str_replace('"', '""', strip_tags($html)) . "\"";
+    }
+
     private function find($context, int $report)
     {
         // Both tables, current one first — see `GeneratedReportStore`. A report written

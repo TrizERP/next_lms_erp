@@ -101,6 +101,10 @@ class LlmPlanner implements Planner
     private function availableTools(StageContext $context): array
     {
         $permitted = $context->module->mcpTools;
+        foreach ($context->federatedModules as $fed) {
+            $permitted = array_merge($permitted, $fed->mcpTools);
+        }
+        $permitted = array_values(array_unique($permitted));
 
         if ($permitted === []) {
             return [];

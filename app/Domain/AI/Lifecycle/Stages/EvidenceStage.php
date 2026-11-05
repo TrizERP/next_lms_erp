@@ -182,6 +182,86 @@ class EvidenceStage implements LifecycleStage
             );
         }
 
+        // Check if live tool calls produced real database rows to cite as factual evidence
+        $stepResults = (array) $context->get('mcp_step_results', []);
+        $feesStudent = $context->get('fees_student_flow');
+        if (is_array($feesStudent) && ! empty($feesStudent['accounts'])) {
+            $stepResults['fees_student_flow'] = ['accounts' => $feesStudent['accounts']];
+        }
+        $completedCalls = array_filter(
+            $context->toolCalls(),
+            static fn (array $c) => ($c['status'] ?? null) === 'completed'
+        );
+
+        if ($stepResults !== [] || $completedCalls !== []) {
+            $evidenceItems = [];
+            foreach ($stepResults as $stepId => $res) {
+                if (! is_array($res)) {
+                    continue;
+                }
+                $candidates = [];
+                if (isset($res['data']) && is_array($res['data'])) {
+                    $candidates[] = $res['data'];
+                }
+                $candidates[] = $res;
+
+                foreach ($candidates as $container) {
+                    foreach ($container as $key => $val) {
+                        if (is_array($val) && isset($val[0]) && (is_array($val[0]) || is_object($val[0]))) {
+                            foreach (array_slice($val, 0, 10) as $row) {
+                                $row = (array) $row;
+                                $subjectId = $row['student_id'] ?? $row['user_id'] ?? $row['id'] ?? 0;
+                                $summary = '';
+                                if (isset($row['student_name'])) {
+                                    $summary .= $row['student_name'] . ': ';
+                                } elseif (isset($row['name'])) {
+                                    $summary .= $row['name'] . ': ';
+                                } elseif (isset($row['title'])) {
+                                    $summary .= $row['title'] . ': ';
+                                }
+                                $facts = [];
+                                foreach ($row as $k => $v) {
+                                    if (is_scalar($v) && ! str_contains($k, 'id') && strlen((string) $v) < 60) {
+                                        $facts[] = "{$k}: {$v}";
+                                    }
+                                }
+                                $summary .= implode(', ', array_slice($facts, 0, 4));
+                                $evidenceItems[] = [
+                                    'id' => (int) $subjectId,
+                                    'kind' => 'tool_record',
+                                    'summary' => $summary ?: "Record from step {$stepId}",
+                                    'source' => ['table' => (string) $stepId, 'id' => $subjectId],
+                                    'verified' => true,
+                                    'is_generated' => false,
+                                ];
+                            }
+                        }
+                    }
+                }
+            }
+
+            if ($evidenceItems !== []) {
+                $context->evidence = $evidenceItems;
+                $context->addSection($this->compose->evidence(
+                    'Evidence from live queries',
+                    array_slice($evidenceItems, 0, 6)
+                ));
+
+                return StageOutcome::ran(
+                    sprintf(
+                        '%d verified evidence row%s extracted from live tool queries across %d tool call%s.',
+                        count($evidenceItems),
+                        count($evidenceItems) === 1 ? '' : 's',
+                        count($completedCalls),
+                        count($completedCalls) === 1 ? '' : 's'
+                    ),
+                    ['source_tools' => array_column($completedCalls, 'tool'), 'sample_ids' => array_column(array_slice($evidenceItems, 0, 5), 'id')],
+                    ['table' => 'ai_evidence', 'ids' => array_column(array_slice($evidenceItems, 0, 10), 'id')],
+                    ['api' => '/' . trim((string) config('ai.route_prefix', 'api/ai'), '/') . '/evidence']
+                );
+            }
+        }
+
         return StageOutcome::skipped(
             'No case or signal was in play, so there was nothing to store or cite as evidence.',
             []

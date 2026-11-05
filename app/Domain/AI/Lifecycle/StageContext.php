@@ -73,6 +73,9 @@ final class StageContext
     /** The drafted recommendation waiting on a person, when there is one. */
     public ?array $pendingRecommendation = null;
 
+    /** Secondary / federated modules participating in a multi-module query. @var array<int, \AppDomain\AI\Lifecycle\Modules\ModuleCapability> */
+    public array $federatedModules = [];
+
     /**
      * @param  array<string, mixed>  $options
      */

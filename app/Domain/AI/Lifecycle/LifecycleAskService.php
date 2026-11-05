@@ -96,6 +96,8 @@ class LifecycleAskService
             conversationId: $conversationId,
         );
 
+        $context->federatedModules = $resolution['federated'] ?? [];
+
         $context->set('module_source', $resolution['source']);
         $context->set('modules_considered', $resolution['considered']);
         // Named on the context so the trace can say the turn ran somewhere other than

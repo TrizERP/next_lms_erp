@@ -625,7 +625,7 @@ return [
             'teach_learn' => [
                 'read_hints' => ['lms.course_summary' => ['chapter', 'lesson plan', 'syllabus', 'summarise', 'summarize']],
                 // Widens the ai_modules row's patterns for screens it predates (see ModuleResolver::fromRoute).
-                'route_patterns' => ['/lms/global-mapping', '/lms/global-mapping/**'],
+                'route_patterns' => ['/lms/global-mapping', '/lms/global-mapping/**', '/modules/skill-assessment', '/modules/skill-assessment/**', '/modules/skill-management', '/modules/skill-management/**'],
                 'detail_tools' => ['standard_id' => 'lms.course_summary', 'subject_id' => 'lms.course_summary'],
                 'mcp_tools' => [
                     'lms.courses',
@@ -1221,6 +1221,7 @@ return [
             */
             'inventory' => [
                 'label' => 'Inventory',
+                'route_patterns' => ['/modules/stock-verification', '/modules/stock-verification/**', '/stock-verification', '/stock-verification/**'],
                 'description' => 'Items, the stock figure recorded against them, requisitions and purchase orders.',
                 'detail_tools' => ['item_id' => 'inventory.items'],
                 'mcp_tools' => [
@@ -1452,6 +1453,7 @@ return [
             */
             'migration-modules' => [
                 'label' => 'Utility',
+                'route_patterns' => ['/modules/platform-services', '/modules/platform-services/**'],
                 'description' => 'Bulk data operations: rollover, student transfer and custom modules.',
                 'mcp_tools' => [
                     'utility.custom_modules',
@@ -1581,6 +1583,7 @@ return [
             */
             'library' => [
                 'label' => 'Library',
+                'route_patterns' => ['/modules/books', '/modules/books/**', '/books', '/books/**'],
                 'description' => 'The catalogue, the copies held, and the loans out against them.',
                 'detail_tools' => ['book_id' => 'library.catalogue', 'student_id' => 'library.circulation'],
                 'mcp_tools' => [
@@ -1606,6 +1609,7 @@ return [
 
             'hr' => [
                 'label' => 'Staff & departments',
+                'route_patterns' => ['/modules/hrms-report', '/modules/hrms-report/**', '/hrms-report', '/hrms-report/**', '/modules/hrit-management', '/modules/hrit-management/**', '/modules/talent-management', '/modules/talent-management/**'],
                 'description' => 'Teachers, staff and the departments they sit in.',
                 'mcp_tools' => ['teachers.directory', 'teachers.daily_report', 'hr.departments', 'academics.class_teachers'],
                 'depth_reason' => 'Staff questions are answered from the directory and department '
@@ -1685,10 +1689,12 @@ return [
             ],
 
             'institute' => [
+                'route_patterns' => ['/modules/organization-management', '/modules/organization-management/**', '/organization-management', '/organization-management/**'],
                 'mcp_tools' => ['academics.structure', 'hr.departments', 'teachers.directory'],
             ],
 
             'reports' => [
+                'route_patterns' => ['/modules/other-reports', '/modules/other-reports/**', '/other-reports', '/other-reports/**', '/modules/capability-intelligence', '/modules/capability-intelligence/**'],
                 'mcp_tools' => [
                     'fees.collection_report',
                     'attendance.overview',
@@ -1696,6 +1702,30 @@ return [
                     'students.directory',
                     'academics.structure',
                 ],
+            ],
+
+            'career-counselling' => [
+                'label' => 'Career Counselling',
+                'description' => 'Career exploration, counselling sessions and career cluster intelligence.',
+                'route_patterns' => [
+                    '/career-counselling',
+                    '/career-counselling/**',
+                    '/modules/career-counseling',
+                    '/modules/career-counseling/**',
+                    '/modules/career-awareness',
+                    '/modules/career-awareness/**',
+                    '/modules/career-explorer',
+                    '/modules/career-explorer/**',
+                ],
+                'mcp_tools' => [
+                    'students.directory',
+                    'students.search',
+                    'academics.structure',
+                    'ai.templates.list',
+                    'ai.templates.render',
+                    'ai.templates.generate',
+                ],
+                'depth_reason' => 'Career guidance profiles and exploration clusters are accessible. Session actions stay counselor-led.',
             ],
 
             'dashboard' => [
@@ -1734,6 +1764,10 @@ return [
         | across a table and a file is how they drift apart.
         */
         'module_keywords' => [
+            'career-counselling' => [
+                'career' => 3.0, 'counselling' => 3.0, 'counseling' => 3.0, 'guidance' => 2.5,
+                'cluster' => 2.0, 'pathway' => 2.0, 'profession' => 2.0,
+            ],
             'student' => [
                 'student' => 2.0, 'pupil' => 2.0, 'learner' => 2.0, 'child' => 1.5,
                 'at risk' => 3.0, 'at-risk' => 3.0, 'struggling' => 3.0, 'intervention' => 2.5,

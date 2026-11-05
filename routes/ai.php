@@ -138,13 +138,13 @@ Route::prefix(config('ai.route_prefix', 'api/ai'))
             // Before `/{id}`, or "preview" is matched as an id and rejected by the
             // numeric constraint rather than reaching the handler.
             Route::post('/templates/preview', [AiTemplateController::class, 'preview']);
-            Route::post('/templates', [AiTemplateController::class, 'store']);
+            Route::post('/templates', [AiTemplateController::class, 'store'])->middleware('admin.only');
             Route::get('/templates/{id}', [AiTemplateController::class, 'show'])
                 ->where('id', '[0-9]+');
             Route::put('/templates/{id}', [AiTemplateController::class, 'update'])
-                ->where('id', '[0-9]+');
+                ->where('id', '[0-9]+')->middleware('admin.only');
             Route::delete('/templates/{id}', [AiTemplateController::class, 'destroy'])
-                ->where('id', '[0-9]+');
+                ->where('id', '[0-9]+')->middleware('admin.only');
 
             /*
             | One module's own AI usage and guardrails.
@@ -484,6 +484,7 @@ Route::prefix(config('ai.route_prefix', 'api/ai'))
             | one; the rest are the read and the save behind that page's editor.
             */
             Route::get('/reports/{report}', [ReportController::class, 'show'])->whereNumber('report');
+            Route::get('/reports/{report}/export', [ReportController::class, 'export'])->whereNumber('report');
             Route::post('/reports/{report}', [ReportController::class, 'save'])->whereNumber('report');
             Route::post('/reports/{report}/regenerate', [ReportController::class, 'regenerate'])
                 ->whereNumber('report');
