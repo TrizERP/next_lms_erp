@@ -708,7 +708,7 @@ return [
             */
             'new_pal' => [
                 // Widens the ai_modules row's patterns for screens it predates (see ModuleResolver::fromRoute).
-                'route_patterns' => ['/new_pal', '/new_pal/**', '/coherence/**'],
+                'route_patterns' => ['/pal', '/pal/**', '/new_pal', '/new_pal/**', '/coherence/**'],
                 'agent_key' => 'k12_new_pal',
                 'workflow_key' => 'pal_intervention_followup',
                 'case_type' => 'pal_intervention_review',
@@ -2141,7 +2141,7 @@ return [
                 'call log' => 3.0, 'meeting note' => 3.0,
             ],
             'new_pal' => [
-                'personalised learning' => 4.0, 'personalized learning' => 4.0,
+                'pal' => 4.0, 'learning journey' => 4.0, 'diagnostic assessment' => 4.0, 'concept mastery' => 3.5, 'eso' => 4.0, 'adaptive learning' => 4.0, 'personalised learning' => 4.0, 'personalized learning' => 4.0,
                 'gamification' => 3.5, 'coherence map' => 4.0,
                 'learning intelligence' => 3.5, 'learning progress' => 3.0,
             ],
