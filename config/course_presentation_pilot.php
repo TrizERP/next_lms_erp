@@ -7,17 +7,16 @@
 |
 | Data only. Nothing here reads or writes the database.
 |
-| SCOPE: one chapter. A chapter is allowed only when its id, standard, subject AND school (sub_institute_id)
+| SCOPE: listed chapters only. A chapter is allowed only when its id, standard, subject AND school (sub_institute_id)
 | all match an entry below; every other chapter is refused (403). Widening the pilot is a decision made by
 | adding an entry here (and its id to lms_k12/lib/coursePresentation/scope.ts), not a code change.
 |
 | CAPABILITY: what the generators in this codebase can really do, stated so the pre-flight never overstates it.
-|   - No generator takes a teaching method as an input. Choosing one is recorded in the request only.
-|   - Only two of the seven formats have a generator (an Artisan command), and neither can be started from
-|     the application: there is no HTTP trigger, and the model executor is configured outside this screen.
+|   - The existing study-deck generator accepts a teaching method and can be started from the application as a
+|     reviewed draft; the teacher approves it before it is stored.
+|   - Only two of the seven formats have a generator (interactive slides and branching scenarios).
 |   - The other five formats have no generator at all.
-| A choice the pipeline cannot honour keeps its label and is reported as such; it is never mapped to a
-| different method or format.
+| Other formats stay unavailable; a choice is never mapped to a different method or format.
 */
 
 return [
@@ -25,9 +24,22 @@ return [
     'resource' => 'course_presentation',
 
     'scope' => [
-        'label' => 'the Std 9 Science pilot chapter and the four Std 4 EVS "Water" chapters',
+        'label' => 'chapter 1 of Std 8 and Std 9 subjects and the four Std 4 EVS "Water" chapters',
         'chapters' => [
+            // Std 8, chapter 1 of every subject for school 1 (verified against chapter_master on 2026-11-04).
+            ['chapter_id' => 25837, 'standard_id' => 41, 'subject_id' => 3975, 'sub_institute_id' => 1], // Science
+            ['chapter_id' => 25850, 'standard_id' => 41, 'subject_id' => 3976, 'sub_institute_id' => 1], // Mathematics
+            ['chapter_id' => 25900, 'standard_id' => 41, 'subject_id' => 3977, 'sub_institute_id' => 1], // Hindi-A
+            ['chapter_id' => 25863, 'standard_id' => 41, 'subject_id' => 3978, 'sub_institute_id' => 1], // English
+            ['chapter_id' => 25879, 'standard_id' => 41, 'subject_id' => 4064, 'sub_institute_id' => 1], // Social Science
+            ['chapter_id' => 25871, 'standard_id' => 41, 'subject_id' => 4435, 'sub_institute_id' => 1], // English-2
+            ['chapter_id' => 25884, 'standard_id' => 41, 'subject_id' => 4469, 'sub_institute_id' => 1], // Social Sciences-2
+            ['chapter_id' => 25892, 'standard_id' => 41, 'subject_id' => 4470, 'sub_institute_id' => 1], // Social Sciences-3
             ['chapter_id' => 8592, 'standard_id' => 42, 'subject_id' => 3975, 'sub_institute_id' => 1],
+            // Std 9 chapter 1 of the other subjects (verified against chapter_master 2026-11-03). Their methods and formats: config/pedagogical_workflow.php `profiles`.
+            ['chapter_id' => 8594, 'standard_id' => 42, 'subject_id' => 3976, 'sub_institute_id' => 1],
+            ['chapter_id' => 8622, 'standard_id' => 42, 'subject_id' => 3978, 'sub_institute_id' => 1],
+            ['chapter_id' => 8608, 'standard_id' => 42, 'subject_id' => 4469, 'sub_institute_id' => 1],
             // Std 4 EVS (subject 48385), school 341: verified against chapter_master, document_extractions and semantic_intelligence.
             ['chapter_id' => 41675, 'standard_id' => 4258, 'subject_id' => 48385, 'sub_institute_id' => 341],
             ['chapter_id' => 41676, 'standard_id' => 4258, 'subject_id' => 48385, 'sub_institute_id' => 341],
@@ -65,8 +77,8 @@ return [
     ],
 
     'pedagogy_support' => [
-        'applied_by_generator' => false,
-        'message' => 'The generators do not take a teaching method as an input yet, so this choice would be recorded with the request but would not change what is generated.',
+        'applied_by_generator' => true,
+        'message' => 'The study-deck generator uses the selected teaching method to shape the plan, content and interactions.',
     ],
 
     // The seven delivery formats. `generator` names the existing command that could build the format, or null.
@@ -191,8 +203,8 @@ return [
         'socratic_dialogue' => ['viewer' => null, 'viewer_label' => null, 'required_sources' => ['textbook'], 'admin_commands' => []],
     ],
 
-    // GENERATION. Only interactive slides can be started from the application: a background job runs the existing
-    // study-deck pipeline (the chosen teaching method shapes its plan, text and interactions) into a review folder
+    // GENERATION. Interactive slides and branching scenarios can be started from the application: a background job
+    // runs the existing study-deck pipeline (the chosen teaching method shapes its plan, text and interactions) into a review folder
     // outside the stored decks. Nothing is stored until a teacher approves the draft. `enabled` means the
     // application endpoint exists; whether a model key is configured is checked per request, never exposed.
     'generation' => [
@@ -224,7 +236,10 @@ return [
             'rounds' => 2,
             'source' => (string) env('COURSE_PRESENTATION_IMAGE_SOURCE', ''),
         ],
-        'hard_limit_seconds' => (int) env('COURSE_PRESENTATION_HARD_LIMIT_SECONDS', 240),
+        // A slides run is three model stages in a row (plan, write, interactions) and one plan or repair reply alone takes 20-90 s; the
+        // only complete run on record took 630 s. At 240 s a run ran out of time inside planning even when nothing was wrong, so it
+        // could not succeed from the application. 900 matches the per-stage cap above.
+        'hard_limit_seconds' => (int) env('COURSE_PRESENTATION_HARD_LIMIT_SECONDS', 900),
         'run_dir' => 'app/course-presentation',
     ],
     // Where an earlier, unstored study-deck bundle of a chapter is looked for (read only, its report.json). Tests point it elsewhere.

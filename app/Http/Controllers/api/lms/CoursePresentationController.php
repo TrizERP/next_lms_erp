@@ -59,8 +59,10 @@ class CoursePresentationController extends Controller
         $payload = ['status_code' => 1, 'chapter' => ['id' => (int) $chapter['id'], 'name' => $chapter['chapter_name']], 'suitability' => $suitability] + $this->options->forScreen();
         // Chapter-scoped pilot: the method -> format map and availability come from the server; other chapters get the unchanged payload.
         if ($this->workflows->appliesTo($chapter)) {
-            $keys = array_keys($this->workflows->methods());
-            $payload['workflow'] = ['enabled' => true, 'formats_by_method' => array_combine($keys, array_map(fn ($m) => $this->workflows->formatsFor($m), $keys))];
+            // The subject's own methods, in its order (the screen lists exactly these) and the formats that suit each.
+            $workflows = $this->workflows->forChapter($chapter);
+            $keys = array_keys($workflows->methods());
+            $payload['workflow'] = ['enabled' => true, 'formats_by_method' => array_combine($keys, array_map(fn ($m) => $workflows->formatsFor($m), $keys))];
         }
 
         return response()->json($payload);
@@ -396,22 +398,26 @@ class CoursePresentationController extends Controller
         return $this->imageEdit($request, $data, fn ($chapter, $tenant) => ['slide_images' => (object) $this->storedEditor()->states((int) $chapter['id'], $tenant, (int) $data['content_id'])]);
     }
 
-    /** GET lms/course-presentation/stored-image/search?chapter_id=&content_id=&slide=&q= : photograph candidates for one slide of a stored presentation. Writes nothing. */
+    /**
+     * GET lms/course-presentation/stored-image/search?chapter_id=&content_id=&slide=&item=&q= : photograph candidates for one slide of a stored
+     * presentation, or for one `item` of its interaction. Writes nothing.
+     */
     public function storedImageSearch(Request $request): JsonResponse
     {
-        $data = $request->validate(['chapter_id' => 'required|integer|min:1', 'content_id' => 'required|integer|min:1', 'slide' => 'required|integer|min:1', 'q' => 'nullable|string|max:200']);
+        $data = $request->validate(['chapter_id' => 'required|integer|min:1', 'content_id' => 'required|integer|min:1', 'slide' => 'required|integer|min:1', 'item' => self::NODE_RULE, 'q' => 'nullable|string|max:200']);
 
-        return $this->imageEdit($request, $data, fn ($chapter, $tenant) => $this->storedEditor()->search((int) $chapter['id'], $tenant, (int) $data['content_id'], (int) $data['slide'], $data['q'] ?? null));
+        return $this->imageEdit($request, $data, fn ($chapter, $tenant) => $this->storedEditor()->search((int) $chapter['id'], $tenant, (int) $data['content_id'], (int) $data['slide'], $data['q'] ?? null, $data['item'] ?? null));
     }
 
     /**
-     * POST lms/course-presentation/stored-image/replace : replaces ONE slide's picture in a stored presentation with a candidate the search offered
-     * (`candidate_id`) or an uploaded file (`image`, with `rights_confirmed`). The change is saved with the presentation and survives a reload.
+     * POST lms/course-presentation/stored-image/replace : replaces ONE picture in a stored presentation (a slide's, or with `item` one item's) with a
+     * candidate the search offered (`candidate_id`) or an uploaded file (`image`, with `rights_confirmed`). The change is saved with the
+     * presentation and survives a reload.
      */
     public function storedImageReplace(Request $request): JsonResponse
     {
         $data = $request->validate([
-            'chapter_id' => 'required|integer|min:1', 'content_id' => 'required|integer|min:1', 'slide' => 'required|integer|min:1',
+            'chapter_id' => 'required|integer|min:1', 'content_id' => 'required|integer|min:1', 'slide' => 'required|integer|min:1', 'item' => self::NODE_RULE,
             'candidate_id' => 'nullable|string|regex:/^[0-9a-f]{16}$/|required_without:image',
             'image' => 'nullable|file|required_without:candidate_id|max:8192',
             'rights_confirmed' => 'nullable|boolean', 'credit' => 'nullable|string|max:200', 'alt' => 'nullable|string|max:300',
@@ -428,20 +434,20 @@ class CoursePresentationController extends Controller
                     throw new \App\Services\CoursePresentation\DraftImageException('The upload did not complete. Try again.', 422);
                 }
 
-                return $this->storedEditor()->replaceFromUpload((int) $chapter['id'], $tenant, (int) $data['content_id'], (int) $data['slide'], (string) file_get_contents($file->getRealPath()), (string) $file->getClientOriginalName(), $data['credit'] ?? null, $data['alt'] ?? null, $userId);
+                return $this->storedEditor()->replaceFromUpload((int) $chapter['id'], $tenant, (int) $data['content_id'], (int) $data['slide'], (string) file_get_contents($file->getRealPath()), (string) $file->getClientOriginalName(), $data['credit'] ?? null, $data['alt'] ?? null, $userId, $data['item'] ?? null);
             }
 
-            return $this->storedEditor()->replaceFromSearch((int) $chapter['id'], $tenant, (int) $data['content_id'], (int) $data['slide'], (string) $data['candidate_id'], $userId);
+            return $this->storedEditor()->replaceFromSearch((int) $chapter['id'], $tenant, (int) $data['content_id'], (int) $data['slide'], (string) $data['candidate_id'], $userId, $data['item'] ?? null);
         });
     }
 
-    /** POST lms/course-presentation/stored-image/restore : puts the slide's original picture back. */
+    /** POST lms/course-presentation/stored-image/restore : puts the original picture back (the slide's, or with `item` that item's). */
     public function storedImageRestore(Request $request): JsonResponse
     {
-        $data = $request->validate(['chapter_id' => 'required|integer|min:1', 'content_id' => 'required|integer|min:1', 'slide' => 'required|integer|min:1']);
+        $data = $request->validate(['chapter_id' => 'required|integer|min:1', 'content_id' => 'required|integer|min:1', 'slide' => 'required|integer|min:1', 'item' => self::NODE_RULE]);
         $userId = (int) $request->session()->get('user_id');
 
-        return $this->imageEdit($request, $data, fn ($chapter, $tenant) => $this->storedEditor()->restore((int) $chapter['id'], $tenant, (int) $data['content_id'], (int) $data['slide'], $userId));
+        return $this->imageEdit($request, $data, fn ($chapter, $tenant) => $this->storedEditor()->restore((int) $chapter['id'], $tenant, (int) $data['content_id'], (int) $data['slide'], $userId, $data['item'] ?? null));
     }
 
     /** The id of a story scene inside a slide: letters, digits and the separators the story generator uses. */
@@ -693,12 +699,13 @@ class CoursePresentationController extends Controller
         if (!empty($data['format']) && ($refusal = $this->workflowRefusal($chapter, $data['pedagogy'], $data['format']))) {
             return $refusal;
         }
-        $workflow = $this->workflows->workflow($data['pedagogy']);
+        $workflows = $this->workflows->forChapter($chapter);
+        $workflow = $workflows->workflow($data['pedagogy']);
         if ($workflow === null) {
             return response()->json(['status_code' => 0, 'message' => 'This teaching method is not available for this chapter.'], 422);
         }
 
-        return response()->json(['status_code' => 1, 'workflow' => $workflow, 'formats' => $this->workflows->formatsFor($data['pedagogy'])]);
+        return response()->json(['status_code' => 1, 'workflow' => $workflow, 'formats' => $workflows->formatsFor($data['pedagogy'])]);
     }
 
     /** For the pilot chapter only: refuse a method/format pair that is incompatible or has no generator. Null for every other chapter. */
@@ -707,7 +714,7 @@ class CoursePresentationController extends Controller
         if (!$this->workflows->appliesTo($chapter)) {
             return null;
         }
-        $reason = $this->workflows->refusal($pedagogy, $format);
+        $reason = $this->workflows->forChapter($chapter)->refusal($pedagogy, $format);
 
         return $reason === null ? null : response()->json(['status_code' => 0, 'message' => $reason], 422);
     }

@@ -715,13 +715,7 @@ class DeckValidator
         // Numbered slide navigation is not a chapter fact and should not trip the grounding check.
         $text = preg_replace('/\b(?:slide|step)\s+\d+\b/i', '', $text) ?? $text;
 
-        preg_match_all('/\d+(?:[.,]\d+)?/u', $text, $nums);
-        $badNumbers = [];
-        foreach (array_unique($nums[0]) as $num) {
-            if (!preg_match('/(?<![\d.])' . preg_quote($num, '/') . '(?![\d])/u', $allowed)) {
-                $badNumbers[] = $num;
-            }
-        }
+        $badNumbers = GroundedNumbers::ungrounded($text, $allowed);
         if ($badNumbers) {
             $errors[] = 'Numbers in slide text that are not in the chapter text: ' . implode(', ', array_slice($badNumbers, 0, 12));
         }

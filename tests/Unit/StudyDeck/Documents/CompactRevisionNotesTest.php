@@ -275,6 +275,34 @@ class CompactRevisionNotesTest extends TestCase
         $this->assertSame(['The answers-hidden copy comes to 4 pages; the compact pack must be exactly 5.'], $r['report']['errors']);
     }
 
+    public function test_a_pack_may_be_asked_for_a_range_of_pages_with_both_copies_alike(): void
+    {
+        $fixed = fn (int $shown, int $hidden) => fn () => ['revision' => $shown, 'practice' => $hidden];
+        // One service for each run: it is given a script of model replies, one set per run.
+        $run = function (array $options) {
+            [$service] = $this->service();
+
+            return $service->fromRaw(DocumentKind::RevisionNotes, $this->raw(), ['compact' => true] + $options);
+        };
+
+        $inside = $run(['pages' => 6, 'min_pages' => 5, 'measure' => $fixed(5, 5)]);
+        $this->assertTrue($inside['report']['ok'], implode(' ', $inside['report']['errors']));
+        $this->assertSame(5, $inside['document']['compact']['min_pages']);
+        $this->assertSame(6, $inside['document']['compact']['target_pages']);
+
+        $short = $run(['pages' => 6, 'min_pages' => 5, 'measure' => $fixed(4, 4)]);
+        $this->assertFalse($short['report']['ok']);
+        $this->assertStringContainsString('must be 5 to 6', implode(' ', $short['report']['errors']));
+
+        $unlike = $run(['pages' => 6, 'min_pages' => 5, 'measure' => $fixed(6, 5)]);
+        $this->assertFalse($unlike['report']['ok']);
+        $this->assertStringContainsString('must be the same length', implode(' ', $unlike['report']['errors']));
+
+        // Without min_pages nothing changes: the count is exact and the document carries no range.
+        $exact = $run(['pages' => 5, 'measure' => $fixed(5, 5)]);
+        $this->assertArrayNotHasKey('min_pages', $exact['document']['compact']);
+    }
+
     public function test_a_compact_pack_needs_a_way_to_measure_its_pages(): void
     {
         [$service] = $this->service();

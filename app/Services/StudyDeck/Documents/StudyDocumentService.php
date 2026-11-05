@@ -88,14 +88,22 @@ class StudyDocumentService
     /** The writers' key for the remedial class's objectives, mix-ups and teacher's guide. */
     private const FRAME = 'remedial:frame';
 
-    /** The most questions a revision pack's "test yourself" holds. */
-    public const REVISION_CHECK_QUESTIONS = 10;
+    /**
+     * The most questions a revision pack's "test yourself" holds (the validator's own limit for it). The fit starts here and gives
+     * questions up until the pages are inside the aim, so a chapter with few topics, whose sheets are short, uses the room it has.
+     */
+    public const REVISION_CHECK_QUESTIONS = 14;
 
     /**
      * The questions the remedial class leaves to the revision notes: a few more than the notes use, so that a pack trimmed to fit its
      * pages still takes none of the class's questions. The notes' questions are a prefix of this list.
      */
-    public const REVISION_CHECK_RESERVED = 12;
+    public const REVISION_CHECK_RESERVED = 16;
+
+    /** The compact classroom-activity pack a drawer request writes comes to 5 to 6 pages (both copies alike). */
+    public const ACTIVITY_PAGES = 6;
+
+    public const ACTIVITY_PAGES_MIN = 5;
 
     /**
      * The bank questions of each part of a document, by the name of the part: what was asked where.
@@ -170,7 +178,7 @@ class StudyDocumentService
         $say('load', 'Loading chapter data (read-only)');
         $raw = $this->contextBuilder->load($chapterId, $tenantId);
         if (trim($raw['ground_truth']) === '') {
-            throw new \RuntimeException('Chapter ' . $chapterId . ' has no ground-truth text (document_extractions.md_content); refusing to generate.');
+            throw ChapterHasNoSourceText::forChapter($chapterId);
         }
 
         return $this->fromRaw($kind, $raw, $options, $say);
@@ -307,13 +315,19 @@ class StudyDocumentService
             }
         }
         if ($compact) {
-            // The page count is a requirement of the pack, so a pack that missed it does not pass.
+            // The page count is a requirement of the pack, so a pack that missed it does not pass. It is an exact count, or
+            // (min_pages below the target) a range; either way the two copies must come out the same length.
             $target = (int) $document['compact']['target_pages'];
+            $least = (int) ($document['compact']['min_pages'] ?? $target);
             $report['stats']['pages'] = $document['compact']['pages'];
             foreach ($document['compact']['pages'] as $copy => $n) {
-                if ($n !== $target) {
-                    $report['errors'][] = 'The ' . ($copy === 'revision' ? 'answers-shown' : 'answers-hidden') . ' copy comes to ' . $n . ' pages; the compact pack must be exactly ' . $target . '.';
+                if ($n < $least || $n > $target) {
+                    $report['errors'][] = 'The ' . ($copy === 'revision' ? 'answers-shown' : 'answers-hidden') . ' copy comes to ' . $n . ' pages; the compact pack must be '
+                        . ($least === $target ? 'exactly ' . $target : $least . ' to ' . $target) . '.';
                 }
+            }
+            if ($least < $target && count(array_unique($document['compact']['pages'])) > 1) {
+                $report['errors'][] = 'The two copies of a compact pack must be the same length; they come to ' . $document['compact']['pages']['revision'] . ' and ' . $document['compact']['pages']['practice'] . ' pages.';
             }
             $report['ok'] = $report['errors'] === [];
         }
@@ -368,8 +382,11 @@ class StudyDocumentService
     // document with different field names if both were "a part for every concept". They are not: each is built for what it
     // is used for, from its own plan of the chapter, with its own questions (see DocumentAssembler's purpose section).
 
+    /** A chapter with this many topics or fewer has its revision sheets written at their fullest (see TopicRevisionWriter::fuller()). */
+    public const FULLER_SHEETS_UP_TO_TOPICS = 5;
+
     /** The pages each purpose-based kind is aimed at (it must come to 5 to 15 whatever the aim). */
-    private const PURPOSE_TARGET = ['revision_notes' => [5, 10], 'remedial' => [8, 15]];
+    private const PURPOSE_TARGET = ['revision_notes' => [8, 10], 'remedial' => [10, 12]];
 
     /**
      * Revision notes: a sheet for every topic, the key terms, and a small exam-style set of the bank's questions.
@@ -385,6 +402,11 @@ class StudyDocumentService
             $draft['topics'] = TopicRevisionWriter::dedupe($draft['topics']);
             $say('write', 'Using the draft of an earlier run (no model call)');
         } else {
+            // A chapter of few topics has few sheets, and a revision pack built from them alone comes to fewer pages than it is
+            // aimed at; its sheets are written at their fullest (`fuller` forces it either way).
+            if ($writer instanceof TopicRevisionWriter) {
+                $writer->fuller((bool) ($options['fuller'] ?? count($map['topics']) <= self::FULLER_SHEETS_UP_TO_TOPICS));
+            }
             $draft = $writer->write($context, $map, $scope, [], $step);
         }
 
@@ -613,6 +635,9 @@ class StudyDocumentService
             throw new \InvalidArgumentException('A compact pack is fitted to its page count by drawing it; a way to measure the pages is required.');
         }
         $target = max(1, (int) ($options['pages'] ?? 5));
+        // `min_pages` turns the exact count into a range (a pack of 5 to 6 pages): the fit still keeps the most questions that
+        // stay inside the target, and the pack passes if that comes to at least this many pages.
+        $least = min($target, max(1, (int) ($options['min_pages'] ?? $target)));
 
         // Revision notes and a remedial class take their placed questions after the writing (a compact one attaches none to
         // the model's work); activities are planned and written first, and a question joins the activity that covers its concept.
@@ -656,7 +681,7 @@ class StudyDocumentService
             'pages' => ['revision' => $pages['revision'], 'practice' => $pages['practice']],
             'questions_offered' => count($ordered),
             'questions_printed' => $low,
-        ];
+        ] + ($least < $target ? ['min_pages' => $least] : []);
         $say('fit', $low . ' of ' . count($ordered) . ' questions fit: ' . $pages['revision'] . ' pages (answers shown), ' . $pages['practice'] . ' pages (answers hidden)');
 
         return [$document, $draft];

@@ -95,7 +95,10 @@ class IntelligenceContentGenerationApiController extends Controller
             ], 403);
         }
 
-        if (!$this->service->handles($chapter->id)) {
+        // Study documents are open to more chapters than the rest (see ContentGenerationService::servesStudyDocuments),
+        // so a chapter Claude does not otherwise serve is still allowed through for them.
+        $isServedStudyDocument = $isStudyDocument && $this->service->servesStudyDocuments($chapter->id);
+        if (!$isServedStudyDocument && !$this->service->handles($chapter->id)) {
             return response()->json([
                 'success' => false,
                 'status_code' => 0,

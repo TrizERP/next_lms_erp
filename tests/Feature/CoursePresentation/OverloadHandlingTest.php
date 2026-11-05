@@ -254,6 +254,25 @@ class OverloadHandlingTest extends CoursePresentationTestCase
         $this->assertSame(['gemini-primary', 'gemini-fallback'], [$logged[0][1]['from'], $logged[0][1]['to']], 'never silent');
     }
 
+    public function test_a_second_configured_fallback_is_tried_if_the_first_fallback_is_also_overloaded(): void
+    {
+        $client = $this->client(['gemini-fallback', 'gemini-other']);
+        $models = [];
+        $client->shouldReceive('chat')->andReturnUsing(function ($messages, $model) use (&$models) {
+            $models[] = $model;
+            if ($model !== 'gemini-other') {
+                throw $this->overload();
+            }
+
+            return '{"ok":"from ' . $model . '"}';
+        });
+        [$completer, $sleeps] = $this->completer($client);
+
+        $this->assertSame('{"ok":"from gemini-other"}', $completer->complete('s', 'p'));
+        $this->assertSame([null, null, 'gemini-fallback', 'gemini-other'], $models);
+        $this->assertSame([2, 4, 8], $sleeps->getArrayCopy());
+    }
+
     public function test_with_no_fallback_configured_or_the_switch_turned_off_the_configured_model_is_kept(): void
     {
         $none = $this->client([]);

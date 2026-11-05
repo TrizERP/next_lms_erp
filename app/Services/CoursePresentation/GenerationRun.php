@@ -211,7 +211,7 @@ class GenerationRun
     /** True when a file of the generation pipeline was changed after this process started: a long-running worker still holds the older code. */
     public function codeChangedSince(int $startedAt): bool
     {
-        foreach (['Services/CoursePresentation/GenerationRun.php', 'Services/CoursePresentation/GenerationProgress.php', 'Services/StudyDeck/StudyDeckService.php', 'Services/StudyDeck/ImagePlanner.php', 'Services/StudyDeck/SlideContentGenerator.php', 'Services/StudyDeck/InteractionPlanner.php', 'Services/StudyDeck/SlidePlanner.php', 'Console/Commands/LMS/GenerateStudyDeckCommand.php'] as $file) {
+        foreach (['Services/CoursePresentation/GenerationRun.php', 'Services/CoursePresentation/GenerationProgress.php', 'Services/StudyDeck/StudyDeckService.php', 'Services/StudyDeck/ImagePlanner.php', 'Services/StudyDeck/SlideContentGenerator.php', 'Services/StudyDeck/InteractionPlanner.php', 'Services/StudyDeck/SlidePlanner.php', 'Services/StudyDeck/Story/GeminiStoryCompleter.php', 'Domain/AI/Support/GeminiClient.php', 'Console/Commands/LMS/GenerateStudyDeckCommand.php'] as $file) {
             $path = app_path($file);
             if (is_file($path) && (int) filemtime($path) > $startedAt + 2) {
                 return true;
@@ -365,7 +365,7 @@ class GenerationRun
             // The story format is the same pipeline built with the story template; the teaching method shapes the story.
             $args = ['chapter' => $chapterId, '--tenant' => $tenant, '--out' => $bundle, '--teaching-method' => $status['method']];
             // Pedagogical workflow pilot: only the one configured chapter; every other chapter's arguments stay as they were.
-            $workflows = app(PedagogicalWorkflow::class);
+            $workflows = app(PedagogicalWorkflow::class)->forIds($chapterId, $tenant);
             if ($workflows->appliesToIds($chapterId, $tenant)) {
                 $context = $workflows->generationContext((string) $status['method'], (string) ($status['format'] ?? ''));
                 if ($context !== null) {

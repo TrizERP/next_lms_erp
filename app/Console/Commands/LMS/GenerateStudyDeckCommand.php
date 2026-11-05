@@ -72,7 +72,7 @@ class GenerateStudyDeckCommand extends Command
 
     protected $description = 'Generate a 30-35 slide classroom study deck from a chapter\'s LMS data';
 
-    public function handle(ContentGenerationService $content): int
+    public function handle(): int
     {
         $chapterId = (int) $this->argument('chapter');
         $tenant = (int) $this->option('tenant');
@@ -117,7 +117,7 @@ class GenerateStudyDeckCommand extends Command
             if (!$replay && $this->option('images-from')) {
                 throw new RuntimeException('--images-from works with --replay (it changes the pictures of a deck that is already planned).');
             }
-            $completer = $replay ? $this->noModel() : ($gemini ? $this->geminiCompleter($tenant) : $this->completer($executor, $content));
+            $completer = $replay ? $this->noModel() : ($gemini ? $this->geminiCompleter($tenant) : $this->completer($executor, $tenant));
             // Pictures go straight into the database (study_deck_images) and the bundle carries only their
             // references: a run writes no picture file anywhere. Publishing is lms:store-study-deck's job.
             // The clock of a time-boxed run starts here, so a model call can never outlast the run's own limit.
@@ -372,7 +372,7 @@ class GenerateStudyDeckCommand extends Command
         return $completer;
     }
 
-    private function completer(string $executor, ContentGenerationService $content): Completer
+    private function completer(string $executor, int $tenant): Completer
     {
         if ($executor === 'cli') {
             return new ClaudeCliCompleter();
@@ -381,14 +381,16 @@ class GenerateStudyDeckCommand extends Command
         // The service's own key resolution and streaming call, reached through a
         // closure so this command carries no Anthropic code of its own.
         $bridge = new class extends ContentGenerationService {
-            public function completer(): ?ClaudeApiCompleter
+            public function completer(int $tenant): ?ClaudeApiCompleter
             {
                 // Providers, model and keys come from the 'content_generation' AI configuration.
+                $this->useAiTenant($tenant);
+
                 return new ClaudeApiCompleter(fn (string $s, string $p, int $m): array => $this->callClaude($p, $s, $m));
             }
         };
 
-        return $bridge->completer()
+        return $bridge->completer($tenant)
             ?? throw new \RuntimeException('No AI provider configured for Content Generation. Use --executor=cli for a dev run.');
     }
 

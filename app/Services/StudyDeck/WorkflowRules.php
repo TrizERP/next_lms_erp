@@ -80,6 +80,8 @@ class WorkflowRules
         $stages = array_column((array) $workflow['stages'], 'name', 'number');
         $count = count($stages);
         $errors = [];
+        // Order faults come from one mislabelled slide many times over; they go last so the cap below never hides a missing stage or outcome.
+        $orderErrors = [];
         $seen = [];
         $noStage = [];
         $lastTopic = null;
@@ -107,7 +109,7 @@ class WorkflowRules
                     $lastStage = 0;
                 }
                 if ($stage < $lastStage) {
-                    $errors[] = "Slide $n is stage $stage ({$stages[$stage]}) but follows stage $lastStage ({$stages[$lastStage]}) in the same topic; stages keep their order within a topic.";
+                    $orderErrors[] = "Slide $n is stage $stage ({$stages[$stage]}) but follows stage $lastStage ({$stages[$lastStage]}) in the same topic; stages keep their order within a topic.";
                 }
                 $lastStage = max($lastStage, $stage);
             }
@@ -141,7 +143,293 @@ class WorkflowRules
             }
         }
 
-        return array_slice(array_values(array_unique($errors)), 0, self::MAX_ERRORS);
+        return array_slice(array_values(array_unique(array_merge($errors, $orderErrors))), 0, self::MAX_ERRORS);
+    }
+
+    /**
+     * The slides with each topic's stretch put into stage order, which is what errors() asks of them ("inside one topic it never goes
+     * backwards"). Only slides next to each other that share a topic are reordered, and only by their stage; ties keep their order. A slide
+     * with no concept or no valid stage stays where it is and ends the stretch, so nothing moves across it.
+     *
+     * @param array<int,array<string,mixed>> $slides
+     * @param array<string,mixed> $map LearningPlanBuilder::build()
+     * @return array<int,array<string,mixed>>
+     */
+    public static function inStageOrder(array $slides, array $map): array
+    {
+        $out = [];
+        $run = [];
+        $topic = null;
+        $flush = static function () use (&$out, &$run): void {
+            usort($run, fn ($a, $b) => [$a[0], $a[1]] <=> [$b[0], $b[1]]);
+            foreach ($run as $entry) {
+                $out[] = $entry[2];
+            }
+            $run = [];
+        };
+        foreach (array_values($slides) as $i => $s) {
+            $stage = is_array($s) ? self::stageOf($s) : null;
+            $first = is_array($s) ? (array) ($s['concept_ids'] ?? []) : [];
+            $own = $first ? ($map['concepts'][(int) $first[0]]['topic_id'] ?? null) : null;
+            if ($stage === null || $own === null || ($s['slide_type'] ?? '') === 'cover') {
+                $flush();
+                $out[] = $s;
+                $topic = null;
+                continue;
+            }
+            if ($own !== $topic) {
+                $flush();
+                $topic = $own;
+            }
+            $run[] = [$stage, $i, $s];
+        }
+        $flush();
+
+        return $out;
+    }
+
+    /**
+     * The slides with the stage LABELS that break the order inside a topic corrected, where inStageOrder() would have to move the slide
+     * instead (and moving it can break another rule, such as the teaching method's own order of slide types). Within each topic stretch
+     * (the same stretches inStageOrder() uses) the longest run of labels that never goes backwards is kept as the model wrote it; every
+     * other slide gets the stage nearest its own label that fits between its kept neighbours. Slides keep their places. A label is the
+     * model's judgement of where the slide sits, so this only changes it where the slide's neighbours say it cannot be what was written.
+     *
+     * @param array<int,array<string,mixed>> $slides
+     * @param array<string,mixed> $map LearningPlanBuilder::build()
+     * @return array<int,array<string,mixed>>
+     */
+    public static function withStagesInOrder(array $slides, array $map): array
+    {
+        $top = count((array) ($map['workflow']['stages'] ?? [])) ?: 99;
+        $out = array_values($slides);
+        $run = [];
+        $topic = null;
+        $flush = static function () use (&$out, &$run, $top): void {
+            foreach (self::relabelRun(array_map(fn ($i) => $out[$i], $run), $top) as $k => $slide) {
+                $out[$run[$k]] = $slide;
+            }
+            $run = [];
+        };
+        foreach ($out as $i => $s) {
+            $stage = is_array($s) ? self::stageOf($s) : null;
+            $first = is_array($s) ? (array) ($s['concept_ids'] ?? []) : [];
+            $own = $first ? ($map['concepts'][(int) $first[0]]['topic_id'] ?? null) : null;
+            if ($stage === null || $own === null || ($s['slide_type'] ?? '') === 'cover') {
+                $flush();
+                $topic = null;
+                continue;
+            }
+            if ($own !== $topic) {
+                $flush();
+                $topic = $own;
+            }
+            $run[] = $i;
+        }
+        $flush();
+
+        return $out;
+    }
+
+    /**
+     * @param array<int,array<string,mixed>> $slides one topic stretch, every slide with a valid stage
+     * @return array<int,array<string,mixed>>
+     */
+    private static function relabelRun(array $slides, int $top): array
+    {
+        $n = count($slides);
+        if ($n < 2) {
+            return $slides;
+        }
+        $stage = array_map(fn ($s) => (int) self::stageOf($s), $slides);
+        // Longest non-decreasing run of labels (the labels to trust); ties keep the earlier run.
+        $len = array_fill(0, $n, 1);
+        $prev = array_fill(0, $n, -1);
+        $best = 0;
+        for ($i = 0; $i < $n; $i++) {
+            for ($j = 0; $j < $i; $j++) {
+                if ($stage[$j] <= $stage[$i] && $len[$j] + 1 > $len[$i]) {
+                    $len[$i] = $len[$j] + 1;
+                    $prev[$i] = $j;
+                }
+            }
+            // On a tie the lower final stage wins: a stray late label (Evaluate in the middle of a topic) is the one to correct.
+            if ($len[$i] > $len[$best] || ($len[$i] === $len[$best] && $stage[$i] < $stage[$best])) {
+                $best = $i;
+            }
+        }
+        $kept = [];
+        for ($i = $best; $i >= 0; $i = $prev[$i]) {
+            $kept[$i] = true;
+        }
+        $assigned = 0;
+        foreach ($slides as $i => $s) {
+            if (isset($kept[$i])) {
+                $assigned = $stage[$i];
+                continue;
+            }
+            $lo = max(1, $assigned);
+            $hi = $top;
+            for ($k = $i + 1; $k < $n; $k++) {
+                if (isset($kept[$k])) {
+                    $hi = $stage[$k];
+                    break;
+                }
+            }
+            $assigned = max($lo, min($stage[$i], $hi));
+            $slides[$i]['workflow_stage'] = $assigned;
+        }
+
+        return $slides;
+    }
+
+    /**
+     * The workflow stages (numbers) that no slide carries, in order. The cover never carries one.
+     *
+     * @param array<int,array<string,mixed>> $slides
+     * @return array<int,int>
+     */
+    public static function missingStages(?array $workflow, array $slides): array
+    {
+        if (!self::active($workflow)) {
+            return [];
+        }
+        $have = [];
+        foreach ($slides as $s) {
+            if (is_array($s) && ($s['slide_type'] ?? '') !== 'cover' && ($stage = self::stageOf($s)) !== null) {
+                $have[$stage] = true;
+            }
+        }
+        $missing = array_values(array_filter(array_map('intval', array_keys(array_column((array) $workflow['stages'], 'name', 'number'))), fn ($n) => !isset($have[$n])));
+        sort($missing);
+
+        return $missing;
+    }
+
+    /**
+     * The slide types that clearly carry a stage, judged by the stage's NAME, or null when the name says nothing certain (then no slide is given
+     * the stage in code, and the model is asked as before). A stage is not a slide type, so this is deliberately short: only types whose job is
+     * the stage's job. A concept explanation never stands in for a reflection.
+     *
+     * @return array<int,string>|null
+     */
+    public static function typesFittingStage(string $stageName): ?array
+    {
+        $name = mb_strtolower($stageName);
+        foreach ([
+            'reflect' => ['challenge', 'scenario', 'relationship', 'summary', 'misconception'],
+            'experiment' => ['scenario', 'challenge', 'worked_example'],
+            'application' => ['application', 'scenario', 'challenge'],
+        ] as $word => $types) {
+            if (str_contains($name, $word)) {
+                return $types;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Slides that could carry a stage the plan left out, best first, as [position, topic] pairs. A slide qualifies only when
+     *   - it has a topic and a valid stage of its own, and is not the cover;
+     *   - its own stage appears at least twice in its topic, so the topic keeps that stage (a topic is never left without its explanation);
+     *   - giving it the stage keeps the order inside the topic (the slide before it is not a later stage, the one after not an earlier one).
+     * The nearest stage in the method's own sequence comes first (a Conceptualization slide before an Observation one for Reflection), then
+     * the earlier slide. The caller still checks the whole plan afterwards.
+     *
+     * @param array<int,array<string,mixed>> $slides
+     * @param array<string,mixed> $map LearningPlanBuilder::build()
+     * @return array<int,array{0:int,1:mixed}>
+     */
+    public static function stageCandidates(array $slides, array $map, int $stage, ?array $types = null): array
+    {
+        $slides = array_values($slides);
+        $topicOf = static function ($s) use ($map) {
+            $first = is_array($s) ? (array) ($s['concept_ids'] ?? []) : [];
+
+            return $first ? ($map['concepts'][(int) $first[0]]['topic_id'] ?? null) : null;
+        };
+        $stageOf = static fn ($s) => is_array($s) && ($s['slide_type'] ?? '') !== 'cover' ? self::stageOf($s) : null;
+        $inTopic = [];
+        foreach ($slides as $s) {
+            if (($t = $topicOf($s)) !== null && ($st = $stageOf($s)) !== null) {
+                $inTopic[$t][$st] = ($inTopic[$t][$st] ?? 0) + 1;
+            }
+        }
+        $found = [];
+        foreach ($slides as $i => $s) {
+            $topic = $topicOf($s);
+            $own = $stageOf($s);
+            if ($topic === null || $own === null || $own === $stage || ($inTopic[$topic][$own] ?? 0) < 2) {
+                continue;
+            }
+            // Only a slide whose own type fits the stage may take it (see typesFittingStage); null = any type.
+            if ($types !== null && !in_array($s['slide_type'] ?? '', $types, true)) {
+                continue;
+            }
+            $before = $i > 0 && $topicOf($slides[$i - 1]) === $topic ? $stageOf($slides[$i - 1]) : null;
+            $after = isset($slides[$i + 1]) && $topicOf($slides[$i + 1]) === $topic ? $stageOf($slides[$i + 1]) : null;
+            if (($before !== null && $before > $stage) || ($after !== null && $after < $stage)) {
+                continue;
+            }
+            $found[] = [abs($own - $stage), $i, $topic];
+        }
+        usort($found, fn ($a, $b) => [$a[0], $a[1]] <=> [$b[0], $b[1]]);
+
+        return array_map(fn ($f) => [$f[1], $f[2]], $found);
+    }
+
+    /**
+     * The competencies whose OWN ref no slide lists, although a slide lists one of their learning outcomes (code "<competency>-LO-<n>"):
+     * that slide develops the competency, so the competency's ref is added to the first such slide's outcome_refs. This keeps the rule that
+     * a competency needs its own ref (it is not a heading over its outcomes); it only stops a plan being rejected for leaving out a ref the
+     * slide's own outcome already implies. A competency none of whose outcomes any slide lists is left for the model.
+     *
+     * @param array<int,array<string,mixed>> $slides
+     * @return array{0:array<int,array<string,mixed>>,1:array<string,int>} the slides, and competency ref => position of the slide it was added to
+     */
+    public static function withCompetencyRefs(?array $workflow, array $slides): array
+    {
+        $slides = array_values($slides);
+        $competencies = array_column(array_filter(self::outcomes($workflow), fn ($o) => ($o['type'] ?? '') === 'competency'), 'ref');
+        if ($competencies === []) {
+            return [$slides, []];
+        }
+        $listed = [];
+        foreach ($slides as $s) {
+            foreach (is_array($s) ? self::refsOf($s) : [] as $ref) {
+                $listed[$ref] = true;
+            }
+        }
+        $added = [];
+        foreach ($competencies as $competency) {
+            if (isset($listed[$competency])) {
+                continue;
+            }
+            foreach ($slides as $i => $s) {
+                if (!is_array($s)) {
+                    continue;
+                }
+                foreach (self::refsOf($s) as $ref) {
+                    if (str_starts_with($ref, $competency . '-LO-')) {
+                        $slides[$i]['outcome_refs'] = array_values(array_unique(array_merge((array) ($s['outcome_refs'] ?? []), [$competency])));
+                        $added[$competency] = $i;
+                        continue 3;
+                    }
+                }
+            }
+            // Standalone competency with no child -LO- outcome: attach to a suitable learning/application slide
+            foreach ($slides as $i => $s) {
+                if (!is_array($s) || in_array($s['slide_type'] ?? '', ['cover', 'hook', 'objectives'], true)) {
+                    continue;
+                }
+                $slides[$i]['outcome_refs'] = array_values(array_unique(array_merge((array) ($s['outcome_refs'] ?? []), [$competency])));
+                $added[$competency] = $i;
+                break;
+            }
+        }
+
+        return [$slides, $added];
     }
 
     /**

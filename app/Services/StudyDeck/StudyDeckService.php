@@ -141,9 +141,12 @@ class StudyDeckService
             $plan['workflow'] = $map['workflow'];
         }
         $say('plan', count($plan['slides']) . ' slides planned');
+        if ($this->planner->repairs !== []) {
+            $say('plan', 'Fixed in code, without asking the model again: ' . implode('; ', array_unique($this->planner->repairs)) . '.');
+        }
 
         $say('content', 'Stage 2: writing slide content with the model');
-        $content = $this->contentGenerator->generate($context, $map, $plan, fn ($done, $total) => $say('content', "$done/$total slides written"));
+        $content = $this->contentGenerator->groundedIn($eligible)->generate($context, $map, $plan, fn ($done, $total) => $say('content', "$done/$total slides written"));
 
         $say('images', 'Finding openly licensed images');
         // Pictures are the optional part of the budget: the search runs until the target time less what the interactions and checks
@@ -151,9 +154,10 @@ class StudyDeckService
         // one or a drawn diagram, as the ladder below already does for a slide with no suitable photograph. Nothing is invented.
         // Under the fast picture policy the stage has its own budget (one for the whole stage), so the run's target does not shorten it again.
         $fast = is_array($options['fast_images'] ?? null) ? $options['fast_images'] : null;
-        // The pilot's staged workflow (only ever present for chapter 8592 / school 1) asks for real photographs: Commons is searched too and a
-        // missing photograph is left missing, not replaced by a diagram. Every other deck keeps the ladder as it was.
-        $this->imagePlanner->photosFirst(!empty($map['workflow']));
+        // The pilot's staged workflow (only ever present for the pilot chapters / school 1) asks for real photographs: Commons is searched too and a
+        // missing photograph is left missing, not replaced by a diagram. Every other deck keeps the ladder as it was, and so does a workflow whose
+        // subject profile says its pictures are diagrams (Mathematics, English: a coordinate grid or a word diagram has no photograph).
+        $this->imagePlanner->photosFirst(!empty($map['workflow']) && ($map['workflow']['images'] ?? 'photographs') !== 'diagrams');
         if ($fast !== null) {
             $this->imagePlanner->withFastPolicy($fast + ['tenant' => (int) ($options['tenant'] ?? 0), 'scope' => 't' . (int) ($options['tenant'] ?? 0)]);
         }
@@ -178,7 +182,7 @@ class StudyDeckService
         }
 
         $say('interact', 'Stage 3: deciding which slides earn an interaction');
-        $interactions = $this->interactionPlanner?->plan($context, $map, $plan, $content, $images, fn ($found, $total) => $say('interact', "$found interaction(s) so far")) ?? [];
+        $interactions = $this->interactionPlanner?->groundedIn($eligible)->plan($context, $map, $plan, $content, $images, fn ($found, $total) => $say('interact', "$found interaction(s) so far")) ?? [];
 
         return $this->finish($context, $selection, $eligible, $map, $plan, $content, $images, $interactions, $say);
     }

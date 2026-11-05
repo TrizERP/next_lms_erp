@@ -47,6 +47,12 @@ class SlidePlanner
     /** Slide types that are practice rather than teaching: a few at most. */
     public const PRACTICE_SLIDES = ['recall', 'practice', 'exit_ticket'];
 
+    /** Most practice slides a deck may carry. */
+    public const MAX_PRACTICE_SLIDES = 3;
+
+    /** Most slides one missing workflow stage is given to in code (see fillMissingStages). */
+    public const STAGE_FILL_SLIDES = 3;
+
     /** Patterns that are interactions the system writes itself (InteractionPlanner), not bank-question shapes. */
     public const NOT_FOR_BANK = ['branching', 'image_hotspots'];
 
@@ -85,6 +91,12 @@ class SlidePlanner
     /** The most recent raw model replies, kept so a rejected plan can be inspected. */
     public array $replies = [];
 
+    /** What was fixed in code instead of asking the model again (see repairMechanicalFaults), for the run's log. @var array<int,string> */
+    public array $repairs = [];
+
+    /** What a number on a diagram label may be found in (GroundedNumbers::allowedText), set by plan(); '' = not judged (validate() called on its own). */
+    private string $allowed = '';
+
     public function __construct(
         private readonly Completer $completer,
         private readonly H5pPatternSelector $patterns = new H5pPatternSelector(),
@@ -99,6 +111,7 @@ class SlidePlanner
      */
     public function plan(array $context, array $map, array $eligible): array
     {
+        $this->allowed = GroundedNumbers::allowedText($context, $eligible);
         $prompt = $this->prompt($context, $map, $eligible);
         [$plan, $errors] = $this->read($this->ask($prompt), $map, $eligible);
 
@@ -198,13 +211,313 @@ class SlidePlanner
         try {
             $plan = $this->tidy($this->extractJson($reply));
         } catch (\RuntimeException $e) {
-            return [[], ['Your reply was not valid JSON (' . json_last_error_msg() . '). Nested objects were probably left unclosed.']];
+            // The model sometimes garbles the keys INSIDE a diagram spec (`Vnodes:` for `"nodes":`), which spoils the whole reply for the sake of
+            // an optional fallback drawing. The reply is read again without its diagrams before a whole repair round is spent on it.
+            try {
+                $plan = $this->tidy($this->extractJson($this->withoutDiagrams($reply)));
+                $this->repairs[] = 'a reply with damaged diagram specs was read without them (the picture search still runs for those slides)';
+            } catch (\RuntimeException) {
+                return [[], ['Your reply was not valid JSON (' . json_last_error_msg() . '). Nested objects were probably left unclosed.']];
+            }
         }
 
         $plan = $this->repairPlanStructure($plan, $map);
         $plan = $this->makeDuplicateTitlesDistinct($plan, $map);
+        $plan = $this->repairMechanicalFaults($plan, $map, $eligible);
 
         return [$plan, $this->validate($plan, $map, $eligible)];
+    }
+
+    /**
+     * Fixes in code the faults a repair round would only fix by deleting or reordering: bank questions beyond the caps, slides beyond the
+     * maximum and stages out of order inside a topic. A repair round is a whole 16,000-token reply (20 s and more), and a plan that was
+     * 3 slides too long once cost six of them. Each step below is kept only when validate() then reports no more problems than before, so a
+     * fix can never trade one fault for another; what it cannot fix reaches the model as before.
+     *
+     * @param array<string,mixed> $plan
+     * @param array<string,mixed> $map
+     * @param array<int,array<int,array<string,mixed>>> $eligible
+     * @return array<string,mixed>
+     */
+    private function repairMechanicalFaults(array $plan, array $map, array $eligible): array
+    {
+        if (!is_array($plan['slides'] ?? null) || count($plan['slides']) < 2) {
+            return $plan;
+        }
+        $plan['slides'] = array_values($plan['slides']);
+
+        [$plan, $dropped] = $this->dropSurplusQuestions($plan, $map, $eligible);
+        if ($dropped > 0) {
+            $this->repairs[] = "$dropped bank question placement(s) beyond the limits were dropped";
+        }
+
+        // A drawn diagram is only the fallback for a picture that cannot be found (see tidy()). One that labels itself with numbers the chapter
+        // does not give is dropped rather than sent back: the slide keeps its picture search, and the model is not asked to redraw it.
+        $ungrounded = [];
+        foreach ($plan['slides'] as $i => $s) {
+            if (!empty($s['diagram']) && GroundedNumbers::ungrounded(GroundedNumbers::wording($s['diagram']), $this->allowed) !== []) {
+                $plan['slides'][$i]['diagram'] = null;
+                $ungrounded[] = $i + 1;
+            }
+        }
+        if ($ungrounded !== []) {
+            $this->repairs[] = 'the fallback diagram of slide(s) ' . implode(', ', $ungrounded) . ' used numbers the chapter does not give, so it was dropped (the picture search still runs)';
+        }
+
+        // The plan's problems by KIND and how many of each: slide numbers are masked, because removing a slide renumbers the rest. The slide
+        // count is left out (it is what trimming changes on purpose). A change is kept only if it adds no problem of any kind, so it can
+        // cure one fault but never pay for that with another.
+        $faults = fn (array $p): array => array_count_values(array_map(
+            fn (string $e) => (string) preg_replace('/\d+/', '#', $e),
+            array_values(array_filter($this->validate($p, $map, $eligible), fn (string $e) => !str_starts_with($e, 'Plan has '))),
+        ));
+        $adds = fn (array $after, array $before): bool => array_filter($after, fn (int $n, string $kind) => $n > ($before[$kind] ?? 0), ARRAY_FILTER_USE_BOTH) !== [];
+
+        // Stage order: only the workflow's own order rule is touched; kept if it adds no problem and removes at least one.
+        if (WorkflowRules::active($map['workflow'] ?? null) && $faults($plan) !== []) {
+            $sorted = $plan;
+            $sorted['slides'] = WorkflowRules::inStageOrder($plan['slides'], $map);
+            if ($sorted['slides'] !== $plan['slides'] && array_sum($faults($sorted)) < array_sum($faults($plan)) && !$adds($faults($sorted), $faults($plan))) {
+                $plan = $sorted;
+                $this->repairs[] = 'slides were put back into workflow stage order inside their topics';
+            }
+        }
+
+        // What sorting could not fix because moving a slide broke the teaching method's own order of slide types (a misconception slide the
+        // model labelled "Evaluate" in the middle of its topic): the slide types are put in the method's order first, then the stage labels
+        // that no longer fit their neighbours are corrected. Kept on the same terms as every other step above.
+        if ($faults($plan) !== [] && (WorkflowRules::active($map['workflow'] ?? null) || TeachingMethodProfile::orderViolations($map['teaching_method'] ?? null, $plan['slides']) !== [])) {
+            $fixed = $plan;
+            $fixed['slides'] = $this->inMethodOrder($plan['slides'], $map['teaching_method'] ?? null);
+            if (WorkflowRules::active($map['workflow'] ?? null)) {
+                $fixed['slides'] = WorkflowRules::withStagesInOrder($fixed['slides'], $map);
+            }
+            if ($fixed['slides'] !== $plan['slides'] && array_sum($faults($fixed)) < array_sum($faults($plan)) && !$adds($faults($fixed), $faults($plan))) {
+                $plan = $fixed;
+                $this->repairs[] = 'slides were put in the teaching method\'s order of slide types and the workflow stage labels that no longer fitted were corrected (inferred, not stated by the model)';
+            }
+        }
+
+        // Workflow coverage a repair round keeps failing to get right (it fixes one rule and breaks another): a competency named only through
+        // its outcomes gets its own ref on the slide that lists the outcome, and a stage no slide carries is given to slides that can take it.
+        if (WorkflowRules::active($map['workflow'] ?? null)) {
+            [$tagged, $added] = WorkflowRules::withCompetencyRefs($map['workflow'], $plan['slides']);
+            if ($added !== []) {
+                $plan['slides'] = $tagged;
+                $this->repairs[] = 'competency ref(s) ' . implode(', ', array_keys($added)) . ' were added to the slide that already lists one of their outcomes (inferred from the outcome code, not stated by the model)';
+            }
+            $plan = $this->fillMissingStages($plan, $map, $faults, $adds);
+        }
+
+        // Teaching method required slide types (e.g. experiential needs concept_visual):
+        $method = $map['teaching_method'] ?? null;
+        if ($method !== null && ($p = TeachingMethodProfile::get($method)) !== null && !empty($p['min'])) {
+            $counts = array_count_values(array_map(fn ($s) => (string) ($s['slide_type'] ?? ''), $plan['slides']));
+            foreach ($p['min'] as $neededType => $reqCount) {
+                $targetCount = min((int) $reqCount, max(1, intdiv(count($plan['slides']), 6)));
+                $current = $counts[$neededType] ?? 0;
+                if ($current < $targetCount) {
+                    $diff = $targetCount - $current;
+                    foreach ($plan['slides'] as $i => $s) {
+                        if (($s['slide_type'] ?? '') === 'concept_intro' && $diff > 0) {
+                            $plan['slides'][$i]['slide_type'] = $neededType;
+                            $diff--;
+                            $this->repairs[] = "slide " . ($i + 1) . " type set to $neededType for teaching method $method";
+                        }
+                    }
+                }
+            }
+        }
+
+        // Too many slides, or too many practice slides: take out the least valuable one at a time, as long as that adds no problem
+        // (and never below the slide minimum).
+        $min = (int) ($map['target_slides']['min'] ?? 0);
+        $max = (int) ($map['target_slides']['max'] ?? 0);
+        [$plan, $removed] = $this->removeWhile($plan, fn (array $p) => $max > 0 && count($p['slides']) > $max,
+            fn (array $p) => $this->leastValuableFirst($p['slides']), $faults, $adds, $min);
+        if ($removed > 0) {
+            $this->repairs[] = "$removed surplus slide(s) were removed to meet the slide limit";
+        }
+        $isPractice = fn (array $s) => in_array($s['slide_type'] ?? '', self::PRACTICE_SLIDES, true);
+        [$plan, $removed] = $this->removeWhile($plan, fn (array $p) => count(array_filter($p['slides'], $isPractice)) > self::MAX_PRACTICE_SLIDES,
+            fn (array $p) => array_values(array_filter($this->leastValuableFirst($p['slides']), fn ($i) => $isPractice($p['slides'][$i]))), $faults, $adds, $min);
+        if ($removed > 0) {
+            $this->repairs[] = "$removed surplus practice slide(s) were removed";
+        }
+
+        return $plan;
+    }
+
+    /**
+     * Each slide that the teaching method wants earlier than the slide now in front of it (a misconception before its concept_intro) is moved
+     * to just before that slide. Only the position changes; the caller judges the result.
+     *
+     * @param array<int,array<string,mixed>> $slides
+     * @return array<int,array<string,mixed>>
+     */
+    private function inMethodOrder(array $slides, ?string $method): array
+    {
+        $slides = array_values($slides);
+        for ($guard = 0; $guard < count($slides); $guard++) {
+            $violations = TeachingMethodProfile::orderViolations($method, $slides);
+            if ($violations === []) {
+                break;
+            }
+            [$from, $to] = $violations[0];
+            $moved = array_splice($slides, $from, 1);
+            array_splice($slides, $to, 0, $moved);
+        }
+
+        return $slides;
+    }
+
+    /**
+     * A workflow stage no slide carries is given to slides that can take it without breaking anything (WorkflowRules::stageCandidates): at
+     * most STAGE_FILL_SLIDES, in different topics, so a stage the plan left out (the model labels a stage-4 slide where an experiential topic
+     * wants a reflection one) still appears across the deck. The slide's stage decides how its text is written, so it then reads as that stage.
+     * A change is kept only if it adds no problem of any kind, and the first one must remove one (the missing stage itself).
+     *
+     * @param array<string,mixed> $plan
+     * @param array<string,mixed> $map
+     * @param callable(array<string,mixed>):array<string,int> $faults problems by kind and count
+     * @param callable(array<string,int>,array<string,int>):bool $adds true when the first holds a problem the second does not
+     * @return array<string,mixed>
+     */
+    private function fillMissingStages(array $plan, array $map, callable $faults, callable $adds): array
+    {
+        $names = array_column((array) ($map['workflow']['stages'] ?? []), 'name', 'number');
+        foreach (WorkflowRules::missingStages($map['workflow'] ?? null, $plan['slides']) as $stage) {
+            // Only where the stage's name says which slide types clearly carry it; otherwise the model is asked as before.
+            $types = WorkflowRules::typesFittingStage((string) ($names[$stage] ?? ''));
+            if ($types === null) {
+                continue;
+            }
+            $given = [];
+            $topics = [];
+            foreach (WorkflowRules::stageCandidates($plan['slides'], $map, $stage, $types) as [$i, $topic]) {
+                if (count($given) >= self::STAGE_FILL_SLIDES || isset($topics[$topic])) {
+                    continue;
+                }
+                $try = $plan;
+                $try['slides'][$i]['workflow_stage'] = $stage;
+                $before = $faults($plan);
+                $after = $faults($try);
+                $better = $given === [] ? array_sum($after) < array_sum($before) : array_sum($after) <= array_sum($before);
+                if ($better && !$adds($after, $before)) {
+                    $plan = $try;
+                    $given[] = $i + 1;
+                    $topics[$topic] = true;
+                }
+            }
+            if ($given !== []) {
+                $this->repairs[] = 'workflow stage ' . $stage . ' (' . ($names[$stage] ?? '?') . ') had no slide, so slide(s) ' . implode(', ', $given) . ' of a fitting type were given it (inferred, not stated by the model)';
+            }
+        }
+
+        return $plan;
+    }
+
+    /**
+     * Takes slides out one at a time while $tooMany($plan) holds: each time the first of $candidates($plan) (positions, best to lose first)
+     * whose removal leaves no more problems than before. Stops when none qualifies, or when the plan is down to $floor slides.
+     *
+     * @param array<string,mixed> $plan
+     * @param callable(array<string,mixed>):bool $tooMany
+     * @param callable(array<string,mixed>):array<int,int> $candidates
+     * @param callable(array<string,mixed>):array<string,int> $faults problems by kind and count
+     * @param callable(array<string,int>,array<string,int>):bool $adds true when the first holds a problem the second does not
+     * @return array{0:array<string,mixed>,1:int} the plan and how many slides were removed
+     */
+    private function removeWhile(array $plan, callable $tooMany, callable $candidates, callable $faults, callable $adds, int $floor): array
+    {
+        $removed = 0;
+        while (count($plan['slides']) > $floor && $tooMany($plan)) {
+            $before = $faults($plan);
+            $taken = false;
+            foreach ($candidates($plan) as $i) {
+                $try = $plan;
+                array_splice($try['slides'], $i, 1);
+                if (!$adds($faults($try), $before)) {
+                    $plan = $try;
+                    $removed++;
+                    $taken = true;
+                    break;
+                }
+            }
+            if (!$taken) {
+                break;
+            }
+        }
+
+        return [$plan, $removed];
+    }
+
+    /**
+     * Every bank question placement the validator would reject, removed: an id that is not eligible, one used before, one on a framing slide,
+     * more than a slide may carry, more than the deck may carry. The first placements in slide order are the ones kept.
+     *
+     * @param array<string,mixed> $plan
+     * @param array<string,mixed> $map
+     * @param array<int,array<int,array<string,mixed>>> $eligible
+     * @return array{0:array<string,mixed>,1:int} the plan and how many placements were dropped
+     */
+    private function dropSurplusQuestions(array $plan, array $map, array $eligible): array
+    {
+        $lim = self::limits($map);
+        $known = [];
+        foreach ($eligible as $list) {
+            foreach ($list as $q) {
+                $known[(int) $q['id']] = true;
+            }
+        }
+        $used = [];
+        $dropped = 0;
+        foreach ($plan['slides'] as $i => $s) {
+            if (!is_array($s) || !is_array($s['question_ids'] ?? null)) {
+                continue;
+            }
+            $keep = [];
+            foreach (array_map('intval', $s['question_ids']) as $qid) {
+                $fits = !in_array($s['slide_type'] ?? '', self::FRAMING, true)
+                    && isset($known[$qid]) && !isset($used[$qid])
+                    && count($keep) < $lim['questions_per_slide'] && count($used) < $lim['max_practice'];
+                if ($fits) {
+                    $keep[] = $qid;
+                    $used[$qid] = true;
+                } else {
+                    $dropped++;
+                }
+            }
+            $plan['slides'][$i]['question_ids'] = $keep;
+        }
+
+        return [$plan, $dropped];
+    }
+
+    /**
+     * Positions of the slides that can be taken out, the cheapest to lose first: practice slides, then framing and summary slides, then the
+     * rest, a slide that teaches nothing before one that teaches, a later slide before an earlier one. The cover (position 0) is never offered.
+     *
+     * @param array<int,array<string,mixed>> $slides
+     * @return array<int,int>
+     */
+    private function leastValuableFirst(array $slides): array
+    {
+        $rank = static fn (array $s): int => match (true) {
+            in_array($s['slide_type'] ?? '', self::PRACTICE_SLIDES, true) => 0,
+            in_array($s['slide_type'] ?? '', ['hook', 'objectives', 'prior_knowledge', 'summary', 'concept_map'], true) => 1,
+            in_array($s['slide_type'] ?? '', ['challenge', 'worked_example', 'relationship'], true) => 2,
+            default => 3,
+        };
+        $order = [];
+        foreach ($slides as $i => $s) {
+            if ($i > 0) {
+                $order[$i] = [$rank($s), count((array) ($s['taught_concept_ids'] ?? [])), -$i];
+            }
+        }
+        uasort($order, fn ($a, $b) => $a <=> $b);
+
+        return array_keys($order);
     }
 
     /**
@@ -370,6 +683,44 @@ class SlidePlanner
         return $plan;
     }
 
+    /** The reply with every `"diagram": { ... }` object replaced by `"diagram": null`. Braces inside quoted strings do not count. */
+    private function withoutDiagrams(string $reply): string
+    {
+        $out = '';
+        $pos = 0;
+        while (preg_match('/"diagram"\s*:\s*\{/', $reply, $m, PREG_OFFSET_CAPTURE, $pos)) {
+            $start = $m[0][1];
+            $open = $start + strlen($m[0][0]) - 1;
+            $depth = 0;
+            $inString = false;
+            $end = null;
+            for ($i = $open, $n = strlen($reply); $i < $n; $i++) {
+                $c = $reply[$i];
+                if ($inString) {
+                    if ($c === '\\') {
+                        $i++;
+                    } elseif ($c === '"') {
+                        $inString = false;
+                    }
+                } elseif ($c === '"') {
+                    $inString = true;
+                } elseif ($c === '{') {
+                    $depth++;
+                } elseif ($c === '}' && --$depth === 0) {
+                    $end = $i;
+                    break;
+                }
+            }
+            if ($end === null) {
+                break;
+            }
+            $out .= substr($reply, $pos, $start - $pos) . '"diagram": null';
+            $pos = $end + 1;
+        }
+
+        return $out . substr($reply, $pos);
+    }
+
     private function ask(string $prompt): string
     {
         return $this->replies[] = $this->completer->complete(self::SYSTEM, $prompt, 16000);
@@ -524,6 +875,10 @@ class SlidePlanner
                 foreach (DiagramRenderer::problems((array) $s["diagram"]) as $problem) {
                     $errors[] = "Slide $n: diagram $problem.";
                 }
+                // A drawn label is slide wording: a number the chapter does not give fails the finished deck, when it can no longer be redrawn.
+                if (($loose = GroundedNumbers::ungrounded(GroundedNumbers::wording($s['diagram']), $this->allowed)) !== []) {
+                    $errors[] = "Slide $n: the diagram uses the number(s) " . implode(', ', array_slice($loose, 0, 4)) . ', which are not in the chapter text. Use only numbers the chapter gives, copied exactly as written there, or none.';
+                }
             }
         }
 
@@ -531,8 +886,8 @@ class SlidePlanner
             $errors[] = 'The plan places ' . count($usedQuestions) . ' bank questions; place at most ' . $lim['max_practice'] . ' in the whole deck.';
         }
         $practiceSlides = count(array_filter($slides, fn ($s) => in_array($s['slide_type'] ?? '', self::PRACTICE_SLIDES, true)));
-        if ($practiceSlides > 3) {
-            $errors[] = "The plan has $practiceSlides recall/practice/exit_ticket slides; at most 3. Teach, show and discuss instead.";
+        if ($practiceSlides > self::MAX_PRACTICE_SLIDES) {
+            $errors[] = "The plan has $practiceSlides recall/practice/exit_ticket slides; at most " . self::MAX_PRACTICE_SLIDES . '. Teach, show and discuss instead.';
         }
         if ($visuals > $lim['max_visuals']) {
             $errors[] = "The plan asks for $visuals visuals; ask for at most " . $lim['max_visuals'] . ', only where a picture or diagram truly teaches.';

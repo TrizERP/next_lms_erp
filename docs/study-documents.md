@@ -138,9 +138,9 @@ reading and regenerating old documents. `--compact` (the exact-N-page grid) is u
 | Parts | overview, `topic` sheets, `glossary`, `check` | overview, `diagnostic`, `gaps`, `unit`s, `clinic`, `independent`, `exit`, `teacher` |
 | Every concept appears | in a row of its topic's sheet (one short line) | in the table of potential difficulties (taught, tabled or named) |
 | Misconceptions | the **first** listed one, as a "do not confuse" pair | the **last** listed one, as a mix-up to judge and settle |
-| Questions (bank only) | 6 to 10, from the harder, exam-like end, a few per topic | diagnostic (one per topic, plainest), guided (1 to 2 per lesson, easiest first, with hints), independent, exit (one per lesson); **none of the revision notes'** |
+| Questions (bank only) | 6 to 14, from the harder, exam-like end, a few per topic | diagnostic (one per topic, plainest), guided (1 to 2 per lesson, easiest first, with hints), independent, exit (one per lesson); **none of the revision notes'** |
 | Diagrams | at most 4: comparison and "around an idea" (`compare`, `hub`) | at most 2: processes (`flow`) |
-| Aim / limit | 5 to 10 pages / 5 to 15 | 8 to 15 pages / 5 to 15 |
+| Aim / limit | 8 to 10 pages / 5 to 15 | 10 to 12 pages / 5 to 15 |
 | Answers hidden copy | no answers or reasons | no answers, no corrections, no "why the other choices do not fit", **no teacher's guide** |
 
 **Which concepts get a lesson (`GapAnalysis`).** No record of how a class performed exists for the chapter (the learner-response
@@ -158,7 +158,7 @@ stem, options, answer and reason within fixed lengths; the bank's text is never 
 
 **Pages (`StudyDocumentService::fitPurpose`).** Both PDFs are drawn and counted. The limit (5 to 15 in each copy) is a
 requirement, an error if missed; each kind's aim is advice, a warning. If a document is over its aim the fit gives it less
-*optional* content, never half a part: a revision pack takes fewer "test yourself" questions (10 down to 6); a class takes less
+*optional* content, never half a part: a revision pack takes fewer "test yourself" questions (14 down to 6); a class takes less
 practice on its own, then loses its lowest-ranked lesson (never below four), and only then has its guided practice cut to one
 question per lesson (`remedialLadder()`). If nothing fits, the run stops (`rejected-<kind>-purpose-replies.json`) instead of
 producing a document that breaks the limit.
@@ -199,9 +199,14 @@ Bundle: `storage/app/study-deck/chapter-<id>/<kind>_purpose/` for revision notes
 removed by `study-deck:images-prune`. `--executor=cli` is the dev-only path with the tools disabled.
 
 From the content drawer: `POST lms/gamma-content-master` and `POST api/intelligence/content/generate` hand "Revision Notes",
-"Remedial Class" and "Classroom Activity" to this pipeline when `claude.chapter_ids` serves the chapter. Set
-`CLAUDE_STUDY_DOCUMENTS=false` (`config/claude.php`: `study_documents`) to go back to the earlier single-prompt documents for
-every chapter at once, with no deploy.
+"Remedial Class" and "Classroom Activity" to this pipeline when `ContentGenerationService::servesStudyDocuments()` says the
+chapter is served: every chapter listed in `claude.study_document_chapter_ids` (env `CLAUDE_STUDY_DOCUMENT_CHAPTER_IDS`,
+default `*` = every chapter of every subject) and every chapter `claude.chapter_ids` already serves. The two lists are separate
+on purpose: `chapter_ids` also moves presentations and every other content type from Gamma/Gemini to Claude, and opening
+study documents to all chapters must not do that. Set `CLAUDE_STUDY_DOCUMENT_CHAPTER_IDS=` (empty) to limit them to the
+`chapter_ids` chapters again, or `CLAUDE_STUDY_DOCUMENTS=false` (`config/claude.php`: `study_documents`) to go back to the
+earlier single-prompt documents for every chapter at once, with no deploy. A chapter with no extracted textbook text
+(`document_extractions.md_content`) is refused with a 422 that says so (`ChapterHasNoSourceText`), not a generic 500.
 
 ## Compact documents (a pack of a given page count)
 
@@ -282,8 +287,8 @@ Laravel; the model is a script).
   photograph (only the deck's slides do), so a part with nothing worth drawing has no picture rather than a loosely related one.
 * **Wording is the model's.** The checks catch numbers, structure, coverage, listed misconceptions and unsupported names; they
   cannot prove every sentence. Read the PDFs of a new chapter before storing (that is what the review bundle is for).
-* A narrowed document (some concepts) is written by the same pipeline and filed under its own scope; the drawer does not
-  offer narrowing yet, the API (`concept_names` on the gamma endpoint, `concept_ids` on the intelligence endpoint) does.
+* A narrowed document (some concepts) is written by the same pipeline and filed under its own scope. The drawer sends the
+  concepts a teacher ticked as `concept_names` on the gamma endpoint (the intelligence endpoint takes `concept_ids`).
 
 ## Tests
 

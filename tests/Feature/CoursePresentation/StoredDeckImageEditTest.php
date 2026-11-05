@@ -67,10 +67,13 @@ class StoredDeckImageEditTest extends CoursePresentationTestCase
             'source_kind' => 'web', 'asset_id' => 'orig' . $id];
     }
 
-    /** Slide 1 cover, 2 a photograph, 3 a drawn fallback diagram, 4 a diagram with hotspots, 5 no picture. */
+    /**
+     * Slide 1 cover, 2 a photograph, 3 a drawn fallback diagram, 4 a diagram with hotspots, 5 no picture, 6 a drawn diagram with three items opened
+     * one at a time beside it: the magnifying glass and the compass have no picture of their own, the map has one.
+     */
     private function storeDeck(): array
     {
-        foreach ([2, 3, 4] as $n) {
+        foreach ([2, 3, 4, 6, 7] as $n) {
             $this->ids[$n] = $this->store->put($this->png(300 + $n, 220, $n), self::TENANT, self::CHAPTER)['id'];
         }
         $diagram = ['type' => 'diagram', 'alt' => 'Diagram: Goals', 'caption' => 'Goals', 'url' => StudyDeckImages::ref($this->ids[3]), 'texts' => ['Goals', 'Goals'], 'sha1' => 'x', 'licence' => null, 'source_url' => null,
@@ -82,8 +85,15 @@ class StoredDeckImageEditTest extends CoursePresentationTestCase
                 'visual' => ['required' => true, 'role' => 'instrument', 'query' => 'compass on map', 'purpose' => 'Symbolizes the direction of the lesson.']],
             ['n' => 4, 'title' => 'Parts', 'slide_type' => 'concept_intro', 'taught_concept_ids' => [1], 'content' => ['body' => 'Text 4'], 'image' => ['type' => 'diagram'] + $this->photo($this->ids[4], 'Parts'), 'interaction' => ['kind' => 'hotspots', 'spots' => [['label' => 'Rain', 'x' => 10, 'y' => 10, 'w' => 20, 'h' => 20]]]],
             ['n' => 5, 'title' => 'Exit ticket', 'slide_type' => 'exit_ticket', 'taught_concept_ids' => [1], 'content' => ['body' => 'Text 5'], 'image' => null, 'image_missing' => 'no sufficiently relevant, openly licensed image found', 'interaction' => null],
+            ['n' => 6, 'title' => 'The tools of an explorer', 'slide_type' => 'hook', 'taught_concept_ids' => [1], 'content' => ['body' => 'Text 6'], 'visual' => ['required' => true, 'role' => 'object', 'query' => 'explorer tools on a desk'],
+                'image' => ['alt' => 'Diagram: The tools of an explorer', 'caption' => 'Tools', 'purpose' => 'Generated educational diagram for Tools', 'asset_id' => 'orig6'] + ['type' => 'diagram', 'url' => StudyDeckImages::ref($this->ids[6])],
+                'interaction' => ['kind' => 'reveal', 'reason' => 'Tools', 'intro' => 'Select a tool.', 'wrapup' => 'Both help.', 'items' => [
+                    ['id' => 'i1', 'label' => 'The magnifying glass', 'text' => 'Careful observation.'],
+                    ['id' => 'i2', 'label' => 'The compass', 'text' => 'Purposeful direction.'],
+                    ['id' => 'i3', 'label' => 'The map', 'text' => 'Where you are going.', 'image' => $this->photo($this->ids[7], 'A map')],
+                ]]],
         ];
-        $deck = ['version' => 3, 'chapter' => ['id' => self::CHAPTER, 'name' => 'Water'], 'chapter_id' => self::CHAPTER, 'slide_count' => 5, 'concepts' => [1 => ['name' => 'Water cycle']], 'slides' => $slides,
+        $deck = ['version' => 3, 'chapter' => ['id' => self::CHAPTER, 'name' => 'Water'], 'chapter_id' => self::CHAPTER, 'slide_count' => 6, 'concepts' => [1 => ['name' => 'Water cycle']], 'slides' => $slides,
             'workflow' => ['method' => 'inquiry_based', 'stages' => [['number' => 3, 'name' => 'Explore']]], 'assets' => ['orig2' => ['image_id' => $this->ids[2]]]];
 
         DB::table('content_master')->insert(['id' => self::CONTENT, 'standard_id' => self::STANDARD, 'subject_id' => self::SUBJECT, 'chapter_id' => self::CHAPTER, 'sub_institute_id' => self::TENANT,
@@ -125,17 +135,28 @@ class StoredDeckImageEditTest extends CoursePresentationTestCase
 
             public function rankedImagesFor(string $query, int $limit = 5, ?float $minScore = null, ?string $source = null): array
             {
-                return $this->t->found();
+                return $this->t->found($query);
             }
         };
-        $png = $this->png(640, 480, 99);
-        $planner = fn (int $tenant, int $chapter) => new ImagePlanner($search, StudyImageStores::database($tenant, $chapter), fn (string $url) => $this->downloadFails ? null : ['bytes' => $png, 'mime' => 'image/png', 'width' => 640, 'height' => 480, 'source' => $url]);
+        // Each address downloads its own picture, as in life: two items given different photographs get two different stored pictures.
+        $planner = fn (int $tenant, int $chapter) => new ImagePlanner($search, StudyImageStores::database($tenant, $chapter), fn (string $url) => $this->downloadFails ? null : ['bytes' => $this->png(640, 480, crc32($url) % 250), 'mime' => 'image/png', 'width' => 640, 'height' => 480, 'source' => $url]);
         $this->app->instance(DraftImageEditor::class, new DraftImageEditor(app(GenerationRun::class), $search, null, $planner));
     }
 
-    /** @return array<int,array<string,mixed>> */
-    public function found(): array
+    /**
+     * The photographs a search returns: a search for a tool finds that tool's own photograph, any other search finds the rain.
+     *
+     * @return array<int,array<string,mixed>>
+     */
+    public function found(string $query = ''): array
     {
+        foreach (['magnifying' => 'Magnifying_glass', 'compass' => 'Compass'] as $word => $file) {
+            if (stripos($query, $word) !== false) {
+                return [['url' => "https://upload.test/wikipedia/commons/c/c1/$file.jpg", 'thumbnail_url' => "https://upload.test/thumb/$file.jpg", 'title' => str_replace('_', ' ', $file), 'creator' => 'Bo Photo', 'license' => 'BY-SA 4.0',
+                    'source_url' => "https://commons.test/wiki/File:$file.jpg", 'provider' => 'wikimedia', 'width' => 3000, 'height' => 2000, 'tags' => [$word]]];
+            }
+        }
+
         return $this->found;
     }
 
@@ -452,5 +473,224 @@ class StoredDeckImageEditTest extends CoursePresentationTestCase
 
         $this->assertSame($before['slides'][1]['image'], $this->sidecar()['slides'][1]['image']);
         $this->assertCount(3, $this->sidecar()['image_edits']['2']['history']);
+    }
+
+    // ------------------------------------------------------------------------------------------------ the pictures of a slide's items
+
+    /** One item of slide 6 as the sidecar holds it. */
+    private function item(array $sidecar, string $id): array
+    {
+        return collect($sidecar['slides'][5]['interaction']['items'])->firstWhere('id', $id);
+    }
+
+    private function itemCandidate(string $item, string $q): string
+    {
+        return $this->read('search', ['slide' => 6, 'item' => $item, 'q' => $q])->assertOk()->json('candidates.0.id');
+    }
+
+    private function editItem(string $action, string $item, array $extra = [])
+    {
+        return $this->edit($action, ['slide' => 6, 'item' => $item] + $extra);
+    }
+
+    private function itemPictureId(array $sidecar, string $id): ?int
+    {
+        return StudyDeckImages::idFromRef($this->item($sidecar, $id)['image']['url'] ?? null);
+    }
+
+    public function test_a_slide_whose_items_open_beside_its_picture_says_which_item_pictures_can_be_changed(): void
+    {
+        $this->storeDeck();
+        $this->useEditors();
+
+        $s = $this->read('states')->assertOk()->json('slide_images');
+
+        $items = $s['6']['items'];
+        $this->assertSame(['i1', 'i2', 'i3'], array_keys($items));
+        $this->assertTrue($items['i1']['can_add'] && !$items['i1']['has_image'] && $items['i1']['kind'] === 'none' && $items['i1']['title'] === 'The magnifying glass');
+        $this->assertTrue($items['i2']['can_add'] && !$items['i2']['has_image']);
+        $this->assertTrue($items['i3']['can_replace'] && !$items['i3']['can_add'] && $items['i3']['kind'] === 'photo');
+        foreach ($items as $state) {
+            $this->assertFalse($state['can_remove'] || $state['can_restore'], 'nothing is taken away, and nothing has been changed yet');
+        }
+        $this->assertTrue($s['6']['can_replace'], 'the slide keeps its own picture, changed separately');
+        foreach (['1', '2', '3', '4', '5'] as $n) {
+            $this->assertArrayNotHasKey('items', $s[$n], 'a slide with no items to open has no item pictures');
+        }
+    }
+
+    public function test_an_item_is_searched_for_by_its_own_name_not_the_slides_topic(): void
+    {
+        $this->storeDeck();
+        $this->useEditors();
+        $before = $this->sidecarRaw();
+
+        $glass = $this->read('search', ['slide' => 6, 'item' => 'i1'])->assertOk();
+        $compass = $this->read('search', ['slide' => 6, 'item' => 'i2'])->assertOk();
+
+        $this->assertSame('magnifying glass', $glass->json('query'), 'the article is dropped');
+        $this->assertSame('compass', $compass->json('query'));
+        $this->assertSame([['label' => 'Item name', 'query' => 'compass'], ['label' => 'Slide picture', 'query' => 'explorer tools on a desk'], ['label' => 'Slide topic', 'query' => 'The tools of an explorer']], $compass->json('suggestions'), 'the name, what the slide\'s picture was planned to show, and the slide\'s topic');
+        $this->assertNotSame($glass->json('candidates.0.id'), $compass->json('candidates.0.id'), 'each item is offered its own photographs');
+        $this->assertSame('brass compass', $this->read('search', ['slide' => 6, 'item' => 'i2', 'q' => 'brass compass'])->json('query'), 'the teacher\'s own words win');
+        $this->assertSame($before, $this->sidecarRaw(), 'a search writes nothing');
+    }
+
+    public function test_choosing_a_photograph_for_one_item_changes_that_item_only(): void
+    {
+        $this->storeDeck();
+        $this->useEditors();
+        $before = $this->sidecar();
+
+        $res = $this->editItem('replace', 'i1', ['candidate_id' => $this->itemCandidate('i1', 'magnifying glass')])->assertOk();
+
+        $this->assertSame(['add', 'i1', 6], [$res->json('action'), $res->json('item'), $res->json('slide')]);
+        $this->assertTrue($res->json('can_restore'));
+        $this->assertStringContainsString('/api/study-deck/images/', $res->json('image.url'));
+
+        $after = $this->sidecar();
+        $glass = $this->item($after, 'i1');
+        $this->assertNotNull($this->itemPictureId($after, 'i1'));
+        $this->assertSame(['photo', 'BY-SA 4.0', 'Bo Photo', 'wikimedia', 'Magnifying glass'], [$glass['image']['type'], $glass['image']['licence'], $glass['image']['creator'], $glass['image']['provider'], $glass['image']['title']]);
+        $this->assertSame($before['slides'][5]['image'], $after['slides'][5]['image'], 'the slide\'s own picture is untouched');
+        $this->assertArrayNotHasKey('image', $this->item($after, 'i2'), 'the other tool is not given this picture');
+        $this->assertSame($this->item($before, 'i3'), $this->item($after, 'i3'));
+        $this->assertSame($this->item($before, 'i1')['text'], $glass['text'], 'the explanation is untouched');
+        $this->assertArrayNotHasKey('6', $after['image_edits'], 'the slide\'s picture has no edit record: only the item was changed');
+        $this->assertNull($after['image_edits']['6/i1']['original'], 'the item began without a picture, and that is what is kept');
+        $this->assertContains($this->itemPictureId($after, 'i1'), $this->store->linkedImageIds(self::CONTENT));
+        $this->assertSame($this->sidecarBackup(), json_encode($before, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES), 'the untouched sidecar is kept beside it');
+    }
+
+    public function test_two_items_keep_their_own_pictures_and_each_restores_on_its_own(): void
+    {
+        $this->storeDeck();
+        $this->useEditors();
+
+        $this->editItem('replace', 'i1', ['candidate_id' => $this->itemCandidate('i1', 'magnifying glass')])->assertOk();
+        $this->editItem('replace', 'i2', ['candidate_id' => $this->itemCandidate('i2', 'compass')])->assertOk();
+
+        $both = $this->sidecar();
+        $glass = $this->itemPictureId($both, 'i1');
+        $compass = $this->itemPictureId($both, 'i2');
+        $this->assertNotNull($glass);
+        $this->assertNotNull($compass);
+        $this->assertNotSame($glass, $compass, 'two items never share a picture');
+
+        $res = $this->editItem('restore', 'i1')->assertOk();
+
+        $this->assertSame(['restore', 'i1', null, false], [$res->json('action'), $res->json('item'), $res->json('image'), $res->json('can_restore')]);
+        $after = $this->sidecar();
+        $this->assertArrayNotHasKey('image', $this->item($after, 'i1'), 'the item is back to having none, as it began');
+        $this->assertSame($compass, $this->itemPictureId($after, 'i2'), 'the other item keeps what was saved for it');
+        $states = $this->read('states')->json('slide_images.6.items');
+        $this->assertFalse($states['i1']['can_restore']);
+        $this->assertTrue($states['i2']['can_restore']);
+        $this->assertSame($both['slides'][5]['image'], $after['slides'][5]['image']);
+        $this->assertCount(2, $after['image_edits']['6/i1']['history'], 'what was done is kept');
+    }
+
+    public function test_the_same_picture_is_not_given_to_two_items(): void
+    {
+        $this->storeDeck();
+        $this->useEditors();
+        $this->editItem('replace', 'i1', ['candidate_id' => $this->itemCandidate('i1', 'magnifying glass')])->assertOk();
+        $other = $this->itemCandidate('i2', 'magnifying glass');
+        $before = $this->sidecarRaw();
+        $links = $this->store->linkedImageIds(self::CONTENT);
+
+        $res = $this->editItem('replace', 'i2', ['candidate_id' => $other])->assertStatus(422);
+
+        $this->assertStringContainsString('The magnifying glass', $res->json('message'));
+        $this->assertSame($before, $this->sidecarRaw());
+        $this->assertSame($links, $this->store->linkedImageIds(self::CONTENT));
+    }
+
+    public function test_an_item_picture_is_still_there_when_the_presentation_is_opened_again(): void
+    {
+        $this->storeDeck();
+        $this->useEditors();
+        $this->editItem('replace', 'i1', ['candidate_id' => $this->itemCandidate('i1', 'magnifying glass')])->assertOk();
+        $this->editItem('replace', 'i2', ['candidate_id' => $this->itemCandidate('i2', 'compass')])->assertOk();
+
+        $items = collect($this->playerDeck()['slides'])->firstWhere('n', 6)['interaction']['items'];
+
+        $ids = [];
+        foreach (['i1', 'i2', 'i3'] as $k => $id) {
+            $img = $items[$k]['image'];
+            $this->assertSame($id, $items[$k]['id']);
+            $this->assertStringContainsString('/api/study-deck/images/', $img['url'], 'the player is given a signed address for every item picture');
+            preg_match('#/study-deck/images/(\d+)#', $img['url'], $m);
+            $ids[$id] = (int) $m[1];
+        }
+        $this->assertCount(3, array_unique($ids), 'each item shows its own picture');
+        $this->assertSame(hash('sha256', (string) $this->store->bytes($ids['i2'])), $items[1]['image']['asset_id'], 'the address resolves to the compass picture');
+        $this->assertTrue($this->read('states')->json('slide_images.6.items.i1.can_restore'), 'the states a reload would fetch agree');
+    }
+
+    public function test_an_item_that_began_with_a_picture_gets_exactly_that_picture_back(): void
+    {
+        $this->storeDeck();
+        $this->useEditors();
+        $before = $this->sidecar();
+
+        $res = $this->editItem('replace', 'i3', ['candidate_id' => $this->itemCandidate('i3', 'map')])->assertOk();
+        $this->assertSame('replace', $res->json('action'));
+        $this->assertNotSame($this->ids[7], $this->itemPictureId($this->sidecar(), 'i3'));
+
+        $res = $this->editItem('restore', 'i3')->assertOk();
+
+        $this->assertFalse($res->json('can_restore'));
+        $this->assertSame($this->item($before, 'i3')['image'], $this->item($this->sidecar(), 'i3')['image'], 'the original record, exactly as it was');
+        $this->assertNotNull($this->store->meta($this->ids[7]), 'the original picture was never deleted');
+    }
+
+    public function test_an_item_can_be_given_the_teachers_own_picture(): void
+    {
+        $this->storeDeck();
+        $this->useEditors();
+        $file = UploadedFile::fake()->createWithContent('compass.png', $this->png(800, 600, 5));
+
+        $res = $this->editItem('replace', 'i2', ['image' => $file, 'rights_confirmed' => '1', 'credit' => 'Ms Rao', 'alt' => 'A brass compass'])->assertOk();
+
+        $img = $this->item($this->sidecar(), 'i2')['image'];
+        $this->assertSame(['i2', 'add', 'teacher_upload', 'Ms Rao', 'A brass compass'], [$res->json('item'), $res->json('action'), $img['provider'], $img['creator'], $img['alt']]);
+        $this->assertArrayNotHasKey('image', $this->item($this->sidecar(), 'i1'));
+    }
+
+    public function test_the_slides_own_picture_and_its_items_pictures_are_changed_separately(): void
+    {
+        $this->storeDeck();
+        $this->useEditors();
+        $this->editItem('replace', 'i1', ['candidate_id' => $this->itemCandidate('i1', 'magnifying glass')])->assertOk();
+        $glass = $this->itemPictureId($this->sidecar(), 'i1');
+
+        $this->edit('replace', ['slide' => 6, 'candidate_id' => $this->candidateId(6)])->assertOk();
+
+        $after = $this->sidecar();
+        $this->assertSame('photo', $after['slides'][5]['image']['type']);
+        $this->assertSame($glass, $this->itemPictureId($after, 'i1'), 'changing the slide\'s picture leaves the item\'s');
+        $this->assertArrayHasKey('6', $after['image_edits'], 'the slide\'s own picture has its edit record');
+        $this->assertArrayHasKey('6/i1', $after['image_edits'], 'and the item has its own');
+        $this->edit('restore', ['slide' => 6])->assertOk();
+        $this->assertSame($glass, $this->itemPictureId($this->sidecar(), 'i1'), 'and restoring the slide\'s picture leaves it too');
+    }
+
+    public function test_item_pictures_are_refused_where_the_slide_has_no_items_to_open_or_the_item_is_unknown(): void
+    {
+        $this->storeDeck();
+        $this->useEditors();
+        $before = $this->sidecarRaw();
+        $id = $this->candidateId();
+
+        $this->read('search', ['slide' => 6, 'item' => 'nope'])->assertStatus(404);
+        $this->edit('replace', ['slide' => 6, 'item' => 'nope', 'candidate_id' => $id])->assertStatus(404);
+        $this->edit('replace', ['slide' => 2, 'item' => 'i1', 'candidate_id' => $id])->assertStatus(422);   // a slide with no items
+        $this->edit('replace', ['slide' => 4, 'item' => 'h1', 'candidate_id' => $id])->assertStatus(422);   // hotspots keep one picture
+        $this->editItem('restore', 'i1')->assertStatus(422);   // never changed
+        $this->editItem('replace', 'i1;drop', ['candidate_id' => $id])->assertStatus(422);   // not an item name
+        $this->editItem('replace', 'i1', ['candidate_id' => str_repeat('a', 16)])->assertStatus(422);   // not offered by the search
+
+        $this->assertSame($before, $this->sidecarRaw());
     }
 }

@@ -67,6 +67,15 @@ return [
     'study_documents' => (bool) env('CLAUDE_STUDY_DOCUMENTS', true),
 
     /*
+    | Which chapters get study documents. Comma-separated chapter_master ids, or `*` for every chapter of every subject.
+    | Deliberately separate from `chapter_ids`: that list also moves presentations and every other content type from
+    | Gamma/Gemini to Claude, which opening revision notes, remedial classes and classroom activities to all chapters
+    | must not do. Empty disables study documents (those three then keep the earlier single-prompt behaviour unless
+    | `chapter_ids` serves the chapter).
+    */
+    'study_document_chapter_ids' => env('CLAUDE_STUDY_DOCUMENT_CHAPTER_IDS', '*'),
+
+    /*
     | Runtime controls.
     |
     | NOTE: temperature / top_p / top_k are deliberately absent. Claude Opus 5

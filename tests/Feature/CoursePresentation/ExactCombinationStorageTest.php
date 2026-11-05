@@ -187,6 +187,23 @@ class ExactCombinationStorageTest extends CoursePresentationTestCase
         $ask([])->assertStatus(404);
         $this->assertSame('inquiry', $ask(['content_id' => 2])->assertOk()->json('data.slides.0.title'));
     }
+    public function test_the_shipped_scope_includes_all_std8_chapter_one_subjects_and_only_those_chapters(): void
+    {
+        $scope = new \App\Services\CoursePresentation\PilotScope();
+        $chapters = [
+            25837 => 3975, 25850 => 3976, 25900 => 3977, 25863 => 3978,
+            25879 => 4064, 25871 => 4435, 25884 => 4469, 25892 => 4470,
+        ];
+        foreach ($chapters as $id => $subject) {
+            $chapter = ['id' => $id, 'standard_id' => 41, 'subject_id' => $subject, 'sub_institute_id' => 1];
+            $this->assertTrue($scope->allows($chapter), "Std 8 chapter $id");
+            $this->assertFalse($scope->allows(array_replace($chapter, ['standard_id' => 42])), "chapter $id with another standard");
+            $this->assertFalse($scope->allows(array_replace($chapter, ['subject_id' => 3975 + $subject])), "chapter $id with another subject");
+            $this->assertFalse($scope->allows(array_replace($chapter, ['sub_institute_id' => 2])), "chapter $id of another school");
+        }
+        $this->assertFalse($scope->allows(['id' => 25838, 'standard_id' => 41, 'subject_id' => 3975, 'sub_institute_id' => 1]), 'Std 8 chapter 2');
+    }
+
     public function test_the_shipped_scope_is_the_four_verified_std4_evs_chapters_of_school_341_and_nothing_near_them(): void
     {
         $scope = new \App\Services\CoursePresentation\PilotScope();

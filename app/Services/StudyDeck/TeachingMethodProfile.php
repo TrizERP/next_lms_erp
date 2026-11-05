@@ -56,11 +56,25 @@ class TeachingMethodProfile
             ],
             'problem_based' => [
                 'label' => 'Problem-based learning',
-                'phases' => ['Authentic problem', 'Investigation', 'Solution', 'Reflection'],
-                'directive' => 'Each topic starts from a real problem. A scenario slide poses the problem, the concept_intro and worked_example slides are the investigation that equips students to solve it, an application slide is the solution, and a closing slide reflects on it. Never explain before the problem is posed.',
-                'content' => 'Frame each slide as part of solving a problem: say what the problem is, what we need to find out, and how the idea solves it. The "check" asks students to apply the idea to the problem or reflect on how they solved it.',
-                'interaction' => 'Prefer "scenario" (a problem with decisions and consequences), then "steps" for a solution method and "compare" for weighing options.',
-                'min' => ['scenario' => 3, 'application' => 2, 'worked_example' => 2],
+                'phases' => [
+                    'Real-World Problem Introduction',
+                    'Understanding the Problem',
+                    'Identifying What We Know & Need to Learn',
+                    'Investigation & Chapter Concepts',
+                    'Analysing Evidence',
+                    'Comparing & Developing Solutions',
+                    'Presenting, Feedback & Reflection',
+                ],
+                'directive' => 'The entire presentation follows ONE authentic real-world problem introduced at the start (e.g. "Our village is facing a shortage of natural resources. Water sources are declining, trees are disappearing, and energy consumption is increasing. How can we manage these resources responsibly while protecting the needs of future generations?"). Every chapter concept is learned as an essential tool to investigate and resolve this central problem. Follow the 12-stage learning progression: Problem Introduction, Understanding, Known vs Needed Knowledge, Investigation, Concept Learning, Evidence Analysis, Solution Comparison, Practical Solution Development, Defense & Peer Review, and Reflection.',
+                'content' => 'Frame every slide around the central crisis. Guide students from identifying who is affected and gathering evidence, to mastering the textbook concepts, weighing multiple solutions, creating a conservation action plan, and reflecting on sustainable development. The "check" prompts must require students to justify decisions using evidence.',
+                'markers' => [
+                    ['a central problem or crisis scenario prompt', '/central problem|real-world problem|crisis|shortage|declining|depletion|village/iu', 3],
+                    ['an investigation or evidence analysis prompt', '/investigat|evidence|observation|data|research|findings|analyze/iu', 4],
+                    ['a solution comparison or practical action proposal', '/solution|action plan|conserve|alternative|trade-off|decision|strategy|reduce/iu', 4],
+                    ['a reflection or justification prompt', '/justify|reflect|reasoning|why did you choose|future generations|duty/iu', 2],
+                ],
+                'interaction' => 'Prefer "scenario" (a problem with decisions and consequences), "compare" for evaluating competing solutions, and "steps" for implementing action plans.',
+                'min' => ['scenario' => 3, 'application' => 3, 'worked_example' => 2],
                 'min_any' => [],
                 'order' => [['scenario', 'concept_intro'], ['concept_intro', 'worked_example'], ['concept_intro', 'application']],
             ],
@@ -77,7 +91,7 @@ class TeachingMethodProfile
             'experiential' => [
                 'label' => 'Experiential / learning by doing',
                 'phases' => ['Task and materials', 'Do it, step by step', 'Record observations', 'Discuss the result', 'Apply to real life'],
-                'directive' => 'Students act first and learn from what they did. For each topic: (1) an activity slide (concept_visual) that names the hands-on task, the MATERIALS students need and how to set up; (2) numbered, step-by-step student actions (a "steps" interaction); (3) a prompt to RECORD what they observe (a table or notes); (4) a discussion of the result; and only then (5) the concept_intro that explains what the activity showed, and (6) an application slide that takes it to real life. Use the school\'s practical_activities and the textbook\'s own activities wherever one matches. Every activity must be doable in a Std 4 classroom with ordinary, safe materials and teacher supervision.',
+                'directive' => 'Students act first and learn from what they did. For each topic: (1) an activity slide (concept_visual) that names the hands-on task, the MATERIALS students need and how to set up; (2) numbered, step-by-step student actions (a "steps" interaction); (3) a prompt to RECORD what they observe (a table or notes); (4) a discussion of the result; and only then (5) the concept_intro that explains what the activity showed, and (6) an application slide that takes it to real life. Use the school\'s practical_activities and the textbook\'s own activities wherever one matches. Every activity must be doable in an ordinary classroom of the standard this deck is for, with everyday, safe materials and teacher supervision.',
                 'content' => 'Write each activity slide as instructions to students: "You will need...", then numbered actions, then "Record...". Keep materials ordinary and safe. Explain only AFTER the doing, and make the "check" ask what students noticed and how it connects to daily life.',
                 'markers' => [
                     ['the materials and preparation ("You will need...")', '/you will need|materials|equipment|set up|get ready|prepare/iu', 3],
@@ -203,6 +217,38 @@ class TeachingMethodProfile
         }
 
         return array_slice($errors, 0, 12);
+    }
+
+    /**
+     * Where the method's own order of slide types is broken: [position of the slide that must come first, position of the slide that comes
+     * before it but must come after], one pair per concept and rule. The same rule planErrors() reports (which names only the first concept).
+     *
+     * @param array<int,array<string,mixed>> $slides plan slides (slide_type, concept_ids)
+     * @return array<int,array{0:int,1:int}>
+     */
+    public static function orderViolations(?string $key, array $slides): array
+    {
+        $p = self::get($key);
+        if ($p === null) {
+            return [];
+        }
+        $found = [];
+        foreach ((array) $p['order'] as [$before, $after]) {
+            $firstOf = [];
+            foreach ($slides as $i => $s) {
+                foreach ((array) ($s['concept_ids'] ?? []) as $cid) {
+                    $firstOf[$s['slide_type'] ?? ''][(int) $cid] ??= $i;
+                }
+            }
+            foreach ((array) ($firstOf[$before] ?? []) as $cid => $iBefore) {
+                $iAfter = $firstOf[$after][$cid] ?? null;
+                if ($iAfter !== null && $iAfter < $iBefore) {
+                    $found[] = [$iBefore, $iAfter];
+                }
+            }
+        }
+
+        return $found;
     }
 
     /**

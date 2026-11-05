@@ -35,9 +35,26 @@ class SlideContentGenerator
     /** Word budget for everything on a slide outside the callouts, the validator's 60 less furniture. */
     public const BODY_BUDGET = 54;
 
+    /** What a slide's picture adds to that count: its caption and credit, each shortened by SlideHtmlRenderer::caption (6 words, 4 for the creator, the licence). */
+    public const VISUAL_WORDS = 12;
+
     public const EXPLANATION_WORDS = 24;
 
     public const MIN_EXPLANATION_WORDS = 6;
+
+    /** What a number in the slide text may be found in (GroundedNumbers::allowedText), set by generate(); '' = not judged. */
+    private string $allowed = '';
+
+    /** The bank questions the deck may use: the validator accepts a number found in one of them, so this stage must too. @var array<int,array<int,array<string,mixed>>> */
+    private array $eligible = [];
+
+    /** @param array<int,array<int,array<string,mixed>>> $eligible concept_id => questions */
+    public function groundedIn(array $eligible): static
+    {
+        $this->eligible = $eligible;
+
+        return $this;
+    }
 
     public function __construct(private readonly Completer $completer, private readonly int $chunkSize = 8)
     {
@@ -51,6 +68,7 @@ class SlideContentGenerator
      */
     public function generate(array $context, array $map, array $plan, ?callable $progress = null): array
     {
+        $this->allowed = GroundedNumbers::allowedText($context, $this->eligible);
         $content = [];
 
         $chunks = array_chunk($plan['slides'], $this->chunkSize);
@@ -210,10 +228,17 @@ class SlideContentGenerator
                 continue;
             }
 
+            // A picture's caption and credit count towards the validator's 60 words too; they are shortened to about 12 words (SlideHtmlRenderer::caption).
             $words = 2 + str_word_count($c['title'] . ' ' . $c['body'] . ' ' . self::explanationText($c) . ' ' . implode(' ', $c['bullets']))
-                + ($plan['visual'] ? 8 : 0);
+                + ($plan['visual'] ? self::VISUAL_WORDS : 0);
             if ($words > self::BODY_BUDGET) {
                 $out[$n][] = "It has about $words words of body text; the limit is 60 including the title, so shorten the explanations and cut the bullets (aim for 35).";
+            }
+
+            // The validator rejects the whole deck for a number the chapter does not give, and by then nobody can fix it: this stage's own repair round does.
+            $loose = GroundedNumbers::ungrounded(GroundedNumbers::wording($c), $this->allowed);
+            if ($loose !== []) {
+                $out[$n][] = GroundedNumbers::complaint($loose);
             }
 
             $explained = array_column($c['explanations'], 'concept_id');
@@ -279,6 +304,21 @@ class SlideContentGenerator
             $n = (int) ($s['n'] ?? 0);
             if (in_array($n, $wanted, true) && $this->str($s['title'] ?? '') !== '') {
                 $out[$n] = $this->clean($s);
+            }
+        }
+
+        if (count($out) < count($wanted)) {
+            $rawSlides = array_values(array_filter((array) ($json['slides'] ?? []), fn ($s) => is_array($s) && $this->str($s['title'] ?? '') !== ''));
+            if (count($rawSlides) === count($wanted)) {
+                $positional = [];
+                foreach (array_values($wanted) as $idx => $wn) {
+                    $s = $rawSlides[$idx];
+                    $s['n'] = $wn;
+                    $positional[$wn] = $this->clean($s);
+                }
+                if (count($positional) > count($out)) {
+                    $out = $positional;
+                }
             }
         }
 
