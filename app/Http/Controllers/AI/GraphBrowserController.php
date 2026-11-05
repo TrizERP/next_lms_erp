@@ -99,6 +99,28 @@ class GraphBrowserController extends AiController
         }
     }
 
+    /** One ERP module's real connected data flow across all its submodules. */
+    public function erpModuleGraph(Request $request, int $moduleId)
+    {
+        try {
+            $scope = $this->scope($request);
+
+            $validated = $request->validate([
+                'sample_size' => 'nullable|integer|min:1|max:100',
+                'limit' => 'nullable|integer|min:1|max:1000',
+            ]);
+
+            return $this->success('Graph loaded.', $this->browser->graphForModule(
+                $scope,
+                $moduleId,
+                $validated['sample_size'] ?? 8,
+                $validated['limit'] ?? 300,
+            ));
+        } catch (Throwable $exception) {
+            return $this->handle($exception);
+        }
+    }
+
     /** One submodule's real connected data flow. */
     public function erpSubmoduleGraph(Request $request, int $submoduleId)
     {

@@ -144,6 +144,35 @@ class GraphModuleBrowser
     }
 
     /**
+     * The real connected subgraph for an entire ERP module (all its submodules combined).
+     */
+    public function graphForModule(McpRequestContext $scope, int $moduleId, int $sampleSizePerLabel = 8, int $limit = 300): array
+    {
+        $allowed = $this->rights->allowedMenuIds($scope);
+
+        if ($allowed === null || $allowed === [] || ! $this->rights->allows($allowed, $moduleId)) {
+            return ['module_id' => $moduleId, 'labels' => [], 'nodes' => [], 'edges' => []];
+        }
+
+        $submodules = $this->submodulesFor($scope, $moduleId, $allowed);
+        $allLabels = [];
+        foreach ($submodules as $sub) {
+            if (! empty($sub['labels'])) {
+                $allLabels = array_merge($allLabels, $sub['labels']);
+            }
+        }
+        $labels = array_values(array_unique($allLabels));
+
+        if ($labels === []) {
+            return ['module_id' => $moduleId, 'labels' => [], 'nodes' => [], 'edges' => []];
+        }
+
+        $result = $this->graphForLabels($labels, $scope->selectedInstituteId, $sampleSizePerLabel, $limit);
+
+        return array_merge(['module_id' => $moduleId], $result);
+    }
+
+    /**
      * The real connected subgraph for one ERP submodule: its GraphSchema
      * labels (via ModuleGraphMapper), each sampled, plus every relationship
      * those nodes actually carry to each other or to anything else — the

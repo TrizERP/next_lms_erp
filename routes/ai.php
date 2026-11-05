@@ -421,6 +421,8 @@ Route::prefix(config('ai.route_prefix', 'api/ai'))
             | 10 engineering-facing families.
             */
             Route::get('/knowledge-graph/browser/erp-modules', [GraphBrowserController::class, 'erpModules']);
+            Route::get('/knowledge-graph/browser/erp-modules/{moduleId}/graph', [GraphBrowserController::class, 'erpModuleGraph'])
+                ->whereNumber('moduleId');
             Route::get('/knowledge-graph/browser/erp-modules/{moduleId}/submodules', [GraphBrowserController::class, 'erpSubmodules'])
                 ->whereNumber('moduleId');
             Route::get('/knowledge-graph/browser/erp-submodules/{submoduleId}/graph', [GraphBrowserController::class, 'erpSubmoduleGraph'])
