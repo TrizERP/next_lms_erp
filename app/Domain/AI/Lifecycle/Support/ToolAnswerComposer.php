@@ -154,6 +154,22 @@ class ToolAnswerComposer
             array_map(fn (array $item) => $this->record($item, $this->moneyFields($answer)), $shown)
         ));
 
+        // When multiple tools responded across federated modules, render the other lists too
+        if (count($lists) > 1 && (count($context->federatedModules) > 0 || $context->get('module_source') === 'cross_module_federation')) {
+            foreach ($lists as $otherList) {
+                if ($otherList['tool'] === $answer['tool']) {
+                    continue;
+                }
+                $otherShown = array_slice($otherList['items'], 0, 10);
+                if ($otherShown !== []) {
+                    $context->addSection($this->compose->records(
+                        $this->sectionTitle($otherList),
+                        array_map(fn (array $item) => $this->record($item, $this->moneyFields($otherList)), $otherShown)
+                    ));
+                }
+            }
+        }
+
         // The tool's own total, not the length of what came back: a tool with a limit can hold more
         // than it returned, and the headline already states that total.
         $total = max((int) ($answer['payload']['count'] ?? 0), count($answer['items']));

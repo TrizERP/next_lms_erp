@@ -161,6 +161,9 @@ class AiTemplateController extends AiController
     {
         try {
             $scope = $this->scope($request);
+            if (! $scope->isAdmin) {
+                return $this->failure('Only administrators may modify AI templates.', 403);
+            }
             $institute = $scope->selectedInstituteId;
 
             $data = $this->validated($request, $institute);

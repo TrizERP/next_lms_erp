@@ -71,7 +71,7 @@ class GeminiDailyQuotaFallbackTest extends TestCase
         Http::fake(['*' => Http::response($this->dailyQuota(), 429)]);
 
         $this->expectException(\RuntimeException::class);
-        $this->expectExceptionMessage('rate limit');
+        $this->expectExceptionMessage('quota');
 
         $this->client()->chat([['role' => 'user', 'content' => 'hi']], 'exhausted-model');
     }

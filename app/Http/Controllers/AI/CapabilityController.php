@@ -434,6 +434,16 @@ class CapabilityController extends AiController
             return ['state' => 'unavailable', 'count' => 0, 'missing_tables' => $missing];
         }
 
+        if (empty(self::TABLES[$capability])) {
+            $count = $this->count('ai_api_keys', $institute);
+
+            return [
+                'state' => $count > 0 ? 'live' : 'empty',
+                'count' => $count,
+                'primary_table' => null,
+            ];
+        }
+
         $primary = self::TABLES[$capability][0];
         $count = $this->count($primary, $institute);
 

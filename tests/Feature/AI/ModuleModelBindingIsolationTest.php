@@ -75,14 +75,7 @@ class ModuleModelBindingIsolationTest extends TestCase
 
     private function resolver(): AiConfigurationResolver
     {
-        return new AiConfigurationResolver(
-            app(ProviderCatalog::class),
-            app(ModelCatalog::class),
-            app(AiModuleRegistry::class),
-            app(ProviderKeyResolver::class),
-            app(SchemaCache::class),
-            $this->bindings,
-        );
+        return app(AiConfigurationResolver::class);
     }
 
     private function resolve(string $capability, int $subInstituteId, ?string $productModule)

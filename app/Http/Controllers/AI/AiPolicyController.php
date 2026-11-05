@@ -46,6 +46,9 @@ class AiPolicyController extends AiController
     {
         try {
             $scope = $this->scope($request);
+            if (! $scope->isAdmin) {
+                return $this->failure('Only administrators may modify AI policies.', 403);
+            }
 
             return $this->success('AI policy options resolved.', [
                 'policy_types' => $this->resolver->policyTypeOptions(),
@@ -131,6 +134,9 @@ class AiPolicyController extends AiController
     {
         try {
             $scope = $this->scope($request);
+            if (! $scope->isAdmin) {
+                return $this->failure('Only administrators may modify AI policies.', 403);
+            }
             $institute = $scope->selectedInstituteId;
             $data = $this->validatedPolicy($request);
 

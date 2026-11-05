@@ -12,6 +12,76 @@ use App\Models\PAL\AssessmentResult;
  */
 class PredictiveInterventionEngine
 {
+    /**
+     * Persist computed risk signal and evidence into ai_signals / ai_evidence.
+     */
+    public function persistRiskSignal(int $learnerId, string $type, float $riskScore, array $signals, ?\App\Services\Mcp\McpRequestContext $scope = null): ?int
+    {
+        if (! \Illuminate\Support\Facades\Schema::hasTable('ai_signals')) {
+            return null;
+        }
+
+        try {
+            $instituteId = $scope?->selectedInstituteId;
+            if (! $instituteId) {
+                $instituteId = (int) (\Illuminate\Support\Facades\DB::table('tblstudent_enrollment')
+                    ->where('student_id', $learnerId)
+                    ->value('sub_institute_id') ?? 1);
+            }
+
+            $context = $scope ?? new \App\Services\Mcp\McpRequestContext(
+                userId: 1,
+                role: 'system',
+                selectedInstituteId: $instituteId,
+                allowedInstituteIds: [$instituteId],
+                userProfileId: null,
+                clientId: null,
+                academicYear: null,
+                termId: null,
+                isAdmin: true,
+                isStudent: false,
+            );
+
+            $evidence = [];
+            if (\Illuminate\Support\Facades\Schema::hasTable('ai_evidence')) {
+                $evidence[] = \App\Domain\AI\Evidence\EvidenceItem::fromRecord(
+                    kind: 'risk_metric',
+                    subjectEntityKey: 'student',
+                    subjectId: $learnerId,
+                    summary: sprintf('Computed %s score of %.2f based on session and performance indicators.', str_replace('_', ' ', $type), $riskScore),
+                    sourceTable: 'pal_assessment_results',
+                    sourceId: $learnerId,
+                    value: $signals,
+                    numericValue: $riskScore,
+                    observedAt: now()->toIso8601String(),
+                    unit: 'score'
+                );
+            }
+
+            $signal = new \App\Domain\AI\Signals\DetectedSignal(
+                signalKey: 'pal_' . $type . '_risk',
+                subjectEntityKey: 'student',
+                subjectId: $learnerId,
+                score: $riskScore,
+                severity: $this->classifyRisk($riskScore),
+                evidence: $evidence,
+                components: $signals,
+                confidence: 0.85,
+                subjectLabel: 'Learner #' . $learnerId,
+                domain: 'k12',
+                context: ['signals' => $signals],
+                detectedAt: now()->toIso8601String()
+            );
+
+            $store = app(\App\Domain\AI\Signals\SignalStore::class);
+            $result = $store->store($signal, $context);
+
+            return $result['signal_id'] ?? null;
+        } catch (\Throwable) {
+            return null;
+        }
+    }
+
     protected float $disengagementThreshold = 0.6;
     protected float $failureThreshold = 0.7;
     protected float $burnoutThreshold = 0.75;
@@ -53,6 +123,7 @@ class PredictiveInterventionEngine
             'trigger_intervention' => $hasData && $riskScore > $this->disengagementThreshold,
             'predicted_days_until_disengage' => $hasData ? $this->predictDaysUntilDisengage($riskScore) : null,
             'recommended_actions' => $hasData ? $this->getDisengagementActions($riskScore) : [],
+            'signal_id' => $hasData && $riskScore > 0 ? $this->persistRiskSignal($learnerId, 'disengagement', $riskScore, $signals) : null,
         ];
     }
 
@@ -89,6 +160,7 @@ class PredictiveInterventionEngine
             'signals' => $signals,
             'trigger_intervention' => $hasData && $riskScore > $this->failureThreshold,
             'recommended_actions' => $hasData ? $this->getFailureActions($riskScore) : [],
+            'signal_id' => $hasData && $riskScore > 0 ? $this->persistRiskSignal($learnerId, 'failure', $riskScore, $signals) : null,
         ];
     }
 
@@ -121,6 +193,7 @@ class PredictiveInterventionEngine
             'signals' => $signals,
             'trigger_intervention' => $hasData && $riskScore > $this->burnoutThreshold,
             'recommended_actions' => $hasData ? $this->getBurnoutActions($riskScore) : [],
+            'signal_id' => $hasData && $riskScore > 0 ? $this->persistRiskSignal($learnerId, 'burnout', $riskScore, $signals) : null,
         ];
     }
 

@@ -62,6 +62,7 @@ class WorkspaceController extends AiController
 
             $validated = $request->validate([
                 'route' => 'required|string|max:500',
+                'module' => 'nullable|string|max:100',
                 'entity_type' => 'nullable|string|max:100',
                 'entity_id' => 'nullable',
                 'selected_records' => 'nullable|array|max:100',

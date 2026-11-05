@@ -155,10 +155,9 @@ class CommandCenterService
         $frameworks = (clone $this->baseCount('s_competency_frameworks', $sid, $scopeRoles))
             ->where('status', 'active')->count();
 
-        // DEGRADED: s_competency_assessments does not exist in this target
-        // (assessment cycles were out of scope for this port). Reports 0
-        // rather than throwing or blocking the rest of the dashboard.
-        $assessments = 0;
+        $assessments = Schema::hasTable('s_competency_assessments')
+            ? (clone $this->baseCount('s_competency_assessments', $sid, $scopeRoles))->whereIn('status', ['in_progress', 'active', 'pending'])->count()
+            : 0;
 
         $certifications = (clone $this->baseCount('s_competency_certifications', $sid, $scopeRoles))
             ->where('status', 'valid')->count();
@@ -185,12 +184,15 @@ class CommandCenterService
         // Role mapping completion (from Skill/Role tables)
         $rolePercent = $totalRoles > 0 ? round(($rolesWithSkills / $totalRoles) * 100) : 0;
 
-        // DEGRADED: assessment completion needs s_competency_assessments,
-        // which does not exist in this target. Reports 0/0 (0%) rather than
-        // throwing.
-        $totalAssessments = 0;
-        $completedAssessments = 0;
-        $assessmentPercent = 0;
+        if (Schema::hasTable('s_competency_assessments')) {
+            $totalAssessments = (clone $this->baseCount('s_competency_assessments', $sid, $scopeRoles))->count();
+            $completedAssessments = (clone $this->baseCount('s_competency_assessments', $sid, $scopeRoles))->where('status', 'completed')->count();
+            $assessmentPercent = $totalAssessments > 0 ? round(($completedAssessments / $totalAssessments) * 100) : 0;
+        } else {
+            $totalAssessments = 0;
+            $completedAssessments = 0;
+            $assessmentPercent = 0;
+        }
 
         // Certification compliance: valid certifications / all still-relevant
         // (non-revoked) certifications. Count-based so it stays meaningful
@@ -233,10 +235,13 @@ class CommandCenterService
                 ->count();
         }
 
-        // DEGRADED: pending reviews / open assessments need s_competency_assessments,
-        // which does not exist in this target. Reports 0 rather than throwing.
-        $pendingReviews = 0;
-        $openAssessments = 0;
+        if (Schema::hasTable('s_competency_assessments')) {
+            $pendingReviews = (clone $this->baseCount('s_competency_assessments', $sid, $scopeRoles))->where('review_status', 'pending_review')->count();
+            $openAssessments = (clone $this->baseCount('s_competency_assessments', $sid, $scopeRoles))->where('status', 'in_progress')->count();
+        } else {
+            $pendingReviews = 0;
+            $openAssessments = 0;
+        }
 
         $expiringCerts = (clone $this->baseCount('s_competency_certifications', $sid, $scopeRoles))
             ->whereIn('status', ['valid', 'expiring'])
@@ -300,9 +305,37 @@ class CommandCenterService
 
     private function assessmentCalendar(int $sid, ?array $scopeRoles): array
     {
+        $cycle = null;
+        $upcomingCount = 0;
+
+        if (Schema::hasTable('s_competency_assessment_cycles')) {
+            $activeCycle = DB::table('s_competency_assessment_cycles')
+                ->where('sub_institute_id', $sid)
+                ->whereNull('deleted_at')
+                ->where('status', 'active')
+                ->orderByDesc('id')
+                ->first();
+
+            if ($activeCycle) {
+                $cycle = [
+                    'id' => $activeCycle->id,
+                    'name' => $activeCycle->name ?? 'Active Cycle',
+                    'start_date' => $activeCycle->start_date ?? null,
+                    'end_date' => $activeCycle->end_date ?? null,
+                ];
+            }
+        }
+
+        if (Schema::hasTable('s_competency_assessments')) {
+            $upcomingCount = (clone $this->baseCount('s_competency_assessments', $sid, $scopeRoles))
+                ->where('due_date', '>=', Carbon::today()->toDateString())
+                ->whereIn('status', ['pending', 'in_progress'])
+                ->count();
+        }
+
         return [
-            'cycle'          => null,
-            'upcoming_count' => 0,
+            'cycle'          => $cycle,
+            'upcoming_count' => $upcomingCount,
         ];
     }
 

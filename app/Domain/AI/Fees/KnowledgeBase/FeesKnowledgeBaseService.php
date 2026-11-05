@@ -17,12 +17,20 @@ class FeesKnowledgeBaseService
             return [];
         }
 
-        return DB::table('knowledge_base_detail')
+        $query = DB::table('knowledge_base_detail')
             ->where('sub_institute_id', $subInstituteId)
             ->whereIn('category', $categories)
-            ->where('status', 1)
-            ->orderByDesc('updated_at')
-            ->limit($limit)
+            ->where('status', 1);
+
+        if (Schema::hasColumn('knowledge_base_detail', 'updated_at')) {
+            $query->orderByDesc('updated_at');
+        } elseif (Schema::hasColumn('knowledge_base_detail', 'created_on')) {
+            $query->orderByDesc('created_on');
+        } else {
+            $query->orderByDesc('id');
+        }
+
+        return $query->limit($limit)
             ->get()
             ->map(static fn ($row) => [
                 'id' => (int) $row->id,
