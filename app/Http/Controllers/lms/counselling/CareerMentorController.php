@@ -19,17 +19,29 @@ use Illuminate\Support\Facades\Log;
 class CareerMentorController extends Controller
 {
     /** Same role set as ResolvesCompetencyContext::COMPETENCY_ELEVATED. */
-    private const READ_ROLES = ['administrator', 'hr_manager', 'hr_executive', 'executive', 'auditor'];
+    private const READ_ROLES = [
+        'administrator', 'hr_manager', 'hr_executive', 'executive', 'auditor',
+        'super_admin', 'superadmin', 'admin',
+    ];
 
-    private const WRITE_ROLES = ['administrator', 'hr_manager', 'hr_executive'];
+    private const WRITE_ROLES = [
+        'administrator', 'hr_manager', 'hr_executive',
+        'super_admin', 'superadmin', 'admin',
+    ];
 
     /**
      * This estate leaves tbluserprofilemaster.role_key NULL on every profile, so a role_key
      * check alone would lock everyone out. Profile names (lower-cased) are accepted as well.
      */
-    private const READ_PROFILE_NAMES = ['admin', 'school admin', 'assistant admin', 'principal'];
+    private const READ_PROFILE_NAMES = [
+        'admin', 'school admin', 'assistant admin', 'principal',
+        'super admin', 'superadmin', 'super-admin', 'director', 'trustee', 'hr', 'human resources',
+    ];
 
-    private const WRITE_PROFILE_NAMES = ['admin', 'school admin', 'assistant admin'];
+    private const WRITE_PROFILE_NAMES = [
+        'admin', 'school admin', 'assistant admin',
+        'super admin', 'superadmin', 'super-admin', 'director', 'trustee', 'hr', 'human resources',
+    ];
 
     public function __construct(private StaffMentorMatchService $service)
     {
@@ -189,22 +201,56 @@ class CareerMentorController extends Controller
             return false;
         }
 
-        $profile = DB::table('tbluser as u')
-            ->join('tbluserprofilemaster as p', 'p.id', '=', 'u.user_profile_id')
-            ->where('u.id', $userId)
-            ->where('u.sub_institute_id', (int) $request->session()->get('sub_institute_id'))
-            ->first(['p.role_key', 'p.name']);
-
-        if ($profile === null) {
-            return false;
+        // 1. Check if user is Super Admin or Admin via session is_admin flag (1 = admin, 2 = super admin)
+        $isAdmin = (int) $request->session()->get('is_admin');
+        if ($isAdmin >= 1) {
+            return true;
         }
 
-        // Profile names are editable by anyone who can save profiles, so a name alone is not
-        // proof of an admin: the account must also carry the admin flag.
-        $nameMatches = in_array(strtolower(trim((string) $profile->name)), $profileNames, true)
-            && (int) $request->session()->get('is_admin') >= 1;
+        // 2. Check session user_profile_name
+        $sessionProfile = strtolower(trim((string) $request->session()->get('user_profile_name')));
+        if ($sessionProfile !== '') {
+            if (in_array($sessionProfile, array_map('strtolower', $profileNames), true)) {
+                return true;
+            }
+            if (preg_match('/\b(super\s*admin|administrator|admin|principal|director|trustee|hr|human resources?)\b/i', $sessionProfile)) {
+                return true;
+            }
+        }
 
-        return in_array((string) $profile->role_key, $roleKeys, true) || $nameMatches;
+        // 3. Fallback: inspect tbluser record directly
+        $user = DB::table('tbluser')->where('id', $userId)->first(['user_profile_id', 'is_admin']);
+        if ($user && (int) $user->is_admin >= 1) {
+            return true;
+        }
+
+        // 4. Check tbluserprofilemaster record
+        $profile = null;
+        if ($user && ! empty($user->user_profile_id)) {
+            $profile = DB::table('tbluserprofilemaster')
+                ->where('id', $user->user_profile_id)
+                ->first(['role_key', 'name']);
+        }
+
+        if ($profile !== null) {
+            $pName = strtolower(trim((string) $profile->name));
+            $rKey = strtolower(trim((string) $profile->role_key));
+
+            if (in_array($rKey, array_map('strtolower', $roleKeys), true)) {
+                return true;
+            }
+
+            if (in_array($pName, array_map('strtolower', $profileNames), true)) {
+                return true;
+            }
+
+            if (preg_match('/\b(super\s*admin|administrator|admin|principal|director|trustee|hr|human resources?)\b/i', $pName)
+                || preg_match('/\b(super\s*admin|administrator|admin|principal|director|trustee|hr|human resources?)\b/i', $rKey)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private function authorise(Request $request, array $roleKeys, array $profileNames): ?JsonResponse

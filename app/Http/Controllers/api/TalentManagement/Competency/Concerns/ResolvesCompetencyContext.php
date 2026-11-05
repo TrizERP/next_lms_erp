@@ -63,6 +63,23 @@ trait ResolvesCompetencyContext
     ];
 
     /**
+     * Profile names that count as an administrator or HR even when `role_key` is empty.
+     *
+     * `role_key` is NULL on every profile of many schools (Admin, Principal, HR...), so the role_key rule
+     * alone refused those people any profile but their own. This is the same name rule the HR routes
+     * already use (RequireHrRole), kept narrower: department heads and managers stay out, as the note on
+     * COMPETENCY_ELEVATED requires.
+     */
+    private function hasAdminProfileName(): bool
+    {
+        $profile = strtolower((string) session()->get('user_profile_name'));
+        if ($profile === '' || (bool) session()->get('is_student') || in_array($profile, ['student', 'parent'], true)) {
+            return false;
+        }
+        return (bool) preg_match('/\b(admin|administrator|hr|human resources?|principal|director|owner|chairman|trustee)\b/', $profile);
+    }
+
+    /**
      * Resolve the SUBJECT of a competency request - the employee whose profile
      * is being read or written - and refuse when the caller may not act on them.
      *
@@ -103,7 +120,7 @@ trait ResolvesCompetencyContext
             ->where('u.id', $callerId)
             ->value('p.role_key');
 
-        if (in_array((string) $roleKey, self::COMPETENCY_ELEVATED, true)) {
+        if (in_array((string) $roleKey, self::COMPETENCY_ELEVATED, true) || $this->hasAdminProfileName()) {
             return $subjectId;
         }
 

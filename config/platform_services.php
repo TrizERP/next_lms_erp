@@ -241,6 +241,9 @@ return [
         'alumni.donation'    => ['label' => 'Donation',         'description' => 'Gifts and pledges from alumni and their verification.'],
         'alumni.event'       => ['label' => 'Event',            'description' => 'Alumni events and their registrations.'],
         'alumni.campaign'    => ['label' => 'Campaign',         'description' => 'Messages and campaigns sent to alumni.'],
+        'organization_management.compliance'   => ['label' => 'Compliance',   'description' => 'Compliance items, their due dates and their completion.'],
+        'organization_management.disciplinary' => ['label' => 'Disciplinary', 'description' => 'Disciplinary incidents registered for staff.'],
+        'task-management.task'                 => ['label' => 'Task',         'description' => 'Assigned tasks, their due dates and their completion.'],
 
         // Document Templates
         'document_templates.template' => ['label' => 'Template', 'description' => 'A printable document template and its status.'],
@@ -286,6 +289,7 @@ return [
         'organization.posting'             => ['label' => 'Job posting',           'description' => 'Open postings and their review.'],
         'task-management.deadline_extension' => ['label' => 'Deadline extension',  'description' => 'A request to move a task\'s due date.'],
         'talent.offboarding'               => ['label' => 'Offboarding',           'description' => 'Exit clearance across notice, accounts and assets.'],
+        'talent.recruitment'               => ['label' => 'Recruitment',           'description' => 'Job postings, applications and interviews.'],
         'capability.certification'         => ['label' => 'Certification renewal','description' => 'Renewing or re-validating a staff certification.'],
         // Learning activity — distinct from lms.course/lms.content above, which
         // are catalogue and published-material components; this one is the
@@ -1142,6 +1146,40 @@ return [
             'label' => 'Disciplinary incidents this month',
             'description' => 'Counts the incidents registered this month and how many have no action recorded. It names nobody.',
             'schedule' => ['minute' => '0', 'hour' => '18', 'day' => '*', 'month' => '*', 'day_of_week' => '5'],
+        ],
+
+        // Talent Management
+        'talent.recruitment.interviews_soon' => [
+            'label' => 'Interviews in the next 2 days',
+            'description' => 'Counts interviews still marked Scheduled for today and the next 2 days. It sends no reminder and changes no interview.',
+            'schedule' => ['minute' => '0', 'hour' => '8', 'day' => '*', 'month' => '*', 'day_of_week' => '*'],
+        ],
+        'talent.recruitment.postings_closing' => [
+            'label' => 'Job postings closing within 7 days',
+            'description' => 'Counts active job postings whose deadline falls in the next 7 days. It does not close or extend any posting.',
+            'schedule' => ['minute' => '30', 'hour' => '8', 'day' => '*', 'month' => '*', 'day_of_week' => '1-6'],
+        ],
+        'talent.offboarding.exits_due' => [
+            'label' => 'Exits reaching their last working day',
+            'description' => 'Counts open exit cases whose last working day is in the next 7 days and how many are already past it. It names nobody and changes no case.',
+            'schedule' => ['minute' => '0', 'hour' => '9', 'day' => '*', 'month' => '*', 'day_of_week' => '1-5'],
+        ],
+
+        // Task Management
+        'task-management.task.due_soon' => [
+            'label' => 'Tasks due in the next 3 days',
+            'description' => 'Counts open tasks with a due date in the next 3 days. It does not remind anyone or change any task.',
+            'schedule' => ['minute' => '0', 'hour' => '8', 'day' => '*', 'month' => '*', 'day_of_week' => '*'],
+        ],
+        'task-management.task.overdue_scan' => [
+            'label' => 'Scan overdue tasks',
+            'description' => 'Reports open tasks already past their due date and the oldest one. It does not change any task.',
+            'schedule' => ['minute' => '30', 'hour' => '8', 'day' => '*', 'month' => '*', 'day_of_week' => '1-6'],
+        ],
+        'task-management.task.on_hold_scan' => [
+            'label' => 'Scan tasks on hold',
+            'description' => 'Counts tasks currently on hold and how many have no delay category recorded. It changes nothing.',
+            'schedule' => ['minute' => '0', 'hour' => '17', 'day' => '*', 'month' => '*', 'day_of_week' => '5'],
         ],
 
         // Document Templates

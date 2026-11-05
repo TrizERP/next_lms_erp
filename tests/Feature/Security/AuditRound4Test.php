@@ -68,4 +68,11 @@ class AuditRound4Test extends TestCase
         $this->assertFalse(TenantDeleteGuard::firstQueryUses('$s = DB::table("lookup")->where("id", $request->x)->first(); $y = A::find($id);', 'id'));
         $this->assertFalse(TenantDeleteGuard::firstQueryUses('return view("x");', 'id'));
     }
+
+    public function test_guard_ignores_a_later_lookup_table_when_the_first_query_is_aliased(): void
+    {
+        // Employee profile show(): the first query is DB::table('tbluser as u') on the URL id. The guard used to fall
+        // through to the later s_user_jobrole lookup and refuse the caller's own profile as "another school".
+        $this->assertNull(TenantDeleteGuard::tableFor(\App\Http\Controllers\api\TalentManagement\Competency\EmployeeCompetencyProfileController::class, 'show'));
+    }
 }
