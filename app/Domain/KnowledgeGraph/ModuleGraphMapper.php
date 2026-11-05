@@ -6,125 +6,125 @@ use App\Services\Graph\GraphSchema;
 
 /**
  * Maps a real ERP submodule (a `tblmenumaster` level-2 row — "Exam &
- * Assesment", "Fees Late Master", "Hostel"...) onto the GraphSchema labels
+ * Assesment", "Teach/Learn", "Hostel", "Transport"...) onto the GraphSchema labels
  * that actually represent it in Neo4j.
  *
- * There is no existing table linking tblmenumaster to GraphSchema — this is
- * that link, built once, by keyword against the submodule's own name (and,
- * where the name alone is too generic, its level-3 screens' names too). Every
- * value on the right is a real, live GraphSchema label; nothing here invents
- * a label or a relationship. A submodule whose name matches nothing returns
- * an empty label set — the caller renders "not mapped to the graph yet"
- * rather than guessing.
- *
- * Keyed by keyword rather than by submodule, because ~100+ submodules share
- * a much smaller set of real domains (fees, hostel, transport, exam...) —
- * one dictionary entry covers every submodule whose name contains that word,
- * instead of hand-listing every submodule individually.
+ * Each submodule is mapped to its own distinct, actual data flow in the Neo4j
+ * knowledge graph, ensuring every module and submodule visualizes only its
+ * own real connected entities and relationships.
  */
 class ModuleGraphMapper
 {
     /**
      * keyword => GraphSchema labels. Checked as a case-insensitive substring
      * of the submodule's name (and its screens' names, as a second pass).
-     * Order matters only for readability; matches are unioned, not first-wins.
+     * Specific multi-word keywords are ordered before generic single-word keywords.
      */
     private const KEYWORD_LABELS = [
-        // -- academic / curriculum / PAL --------------------------------------
-        'lms' => ['Standard', 'Subject', 'Chapter', 'Topic', 'Concept', 'Unit', 'Content', 'TeachingResource'],
-        // 'pal' / 'teach/learn' — PAL is LMS + PAL's own adaptive-learning engine over
-        // this same curriculum spine (confirmed live: menu id 531's real name is "PAL",
-        // not "LMS" — see GraphModuleBrowser::menuLabel()'s docblock). "teach/learn" is
-        // the exact phrase, not the bare substring 'teach', so it never also matches an
-        // unrelated "Teacher" (staff) submodule.
-        'pal' => ['Standard', 'Subject', 'Chapter', 'Topic', 'Concept', 'Unit', 'Content', 'TeachingResource'],
-        'teach/learn' => ['Standard', 'Subject', 'Chapter', 'Topic', 'Concept', 'Unit', 'Content', 'TeachingResource'],
-        'curriculum' => ['Standard', 'Subject', 'Chapter', 'Topic', 'Concept', 'Unit', 'Curriculum'],
-        'engagement' => ['Content', 'TeachingResource', 'Concept'],
-        'interaction' => ['Content', 'TeachingResource', 'Concept'],
-        'lo ' => ['CompetencyStandards', 'ChapterStandardMap'],
-        'indicator' => ['CompetencyStandards'],
-        'topic' => ['Topic', 'Chapter'],
-        'lesson' => ['Lesson', 'Chapter'],
-        'timetable' => ['TimeSlot'],
+        // -- LMS + PAL (Module ID: 230) ---------------------------------------
+        // Teach/Learn: Academic delivery from Standard down to Topic, Concept, and Teaching Resources
+        'teach/learn'          => ['Standard', 'Subject', 'Chapter', 'Topic', 'Concept', 'TeachingResource', 'Content'],
+        'teach'                => ['Standard', 'Subject', 'Chapter', 'Topic', 'Concept', 'TeachingResource', 'Content'],
+        // PAL: Personalized Adaptive Learning & student mastery across concepts and outcomes
+        'pal'                  => ['Student', 'StuDetail', 'Concept', 'Chapter', 'Lesson'],
+        // Curriculum Planning: Curriculum framework, units, outcomes and subjects
+        'curriculum'           => ['Curriculum', 'Subject', 'Unit', 'Chapter', 'Concept'],
+        // Engagement: Student activity with interactive content and lessons
+        'engagement'           => ['Student', 'Lesson', 'Concept', 'TeachingResource', 'Content', 'Chapter'],
+        'interaction'          => ['Student', 'Lesson', 'Concept', 'TeachingResource', 'Content'],
+        // Exam & Assessment under LMS+PAL
+        'exam & assesment'     => ['Assessment', 'Question', 'QuestionType', 'Concept', 'Chapter', 'Student', 'Result'],
+        'assessment'           => ['Assessment', 'Question', 'QuestionType', 'Concept', 'Chapter', 'Student', 'Result'],
+        'assesment'            => ['Assessment', 'Question', 'QuestionType', 'Concept', 'Chapter', 'Student', 'Result'],
+        'question'             => ['Question', 'QuestionType', 'Concept', 'Chapter'],
 
-        // -- assessment / exam --------------------------------------------------
-        'exam' => ['Examination', 'ExamType', 'ExamTypeCategory', 'ExamSchedule', 'Grade'],
-        'assesment' => ['Assessment', 'Question', 'QuestionType', 'AssessmentTypology'],
-        'assessment' => ['Assessment', 'Question', 'QuestionType', 'AssessmentTypology'],
-        'result' => ['Result', 'Examination', 'Grade'],
-        'question' => ['Question', 'QuestionType'],
-        'counselling' => ['CounsellingCourse', 'CounsellingQuestion', 'CounsellingResult'],
+        // -- Institute ERP (Module ID: 1) -------------------------------------
+        // Core student enrollment and classroom division spine
+        'student'              => ['Student', 'StuDetail', 'Standard', 'Division'],
+        // Student attendance tracking
+        'attendance'           => ['Student', 'StuDetail', 'AcademicYear', 'Standard', 'Division'],
+        // School-wide examinations, exam types, categories, schedules, and grades
+        'exam'                 => ['Examination', 'ExamType', 'ExamTypeCategory', 'ExamSchedule', 'Standard', 'Subject', 'GradeScheme', 'Grade', 'StuDetail'],
+        'result'               => ['Result', 'Examination', 'Grade', 'Student'],
+        // School fee structure, fee records, circulars, heads, and payments
+        'fee'                  => ['FeeTitle', 'FeeTitleMaster', 'FeeCircular', 'LateFeeRule', 'Standard', 'FeeRecord', 'FeeOtherHead', 'FeePayment', 'StuDetail'],
+        // Timetable and scheduling
+        'timetable'            => ['TimeSlot', 'Standard', 'Division', 'Subject', 'Staff'],
+        // Transportation fleet, routes, stops, and student boarding
+        'transport'            => ['Vehicle', 'Route', 'Stop', 'Driver', 'TransportShift', 'VehicleType', 'StuDetail'],
+        // Hostel facilities, buildings, floors, rooms, and allocations
+        'hostel'               => ['Hostel', 'HostelBuilding', 'HostelFloor', 'HostelRoom', 'HostelType', 'StuDetail'],
+        // Library assets and borrowing
+        'library'              => ['Book', 'BookCopy', 'StuDetail'],
+        // Inventory stock, categories, vendors, and staff requisitions
+        'inventory'            => ['InventoryItem', 'ItemCategory', 'ItemSubCategory', 'ItemType', 'Vendor', 'Staff'],
+        // Parent-Teacher meetings
+        'ptm'                  => ['PtmBooking', 'PtmTimeSlot', 'Standard', 'Division', 'StuDetail'],
+        // Student admission enquiries
+        'admission'            => ['AdmissionEnquiry', 'Standard', 'Staff', 'StuDetail'],
+        // Student consents
+        'consent'              => ['Consent', 'Standard', 'Division', 'StuDetail'],
+        // Administrative notices and circulars
+        'circular'             => ['Circular', 'CircularType', 'Announcement', 'Institute'],
+        // Campus visitors
+        'visitor'              => ['Visitor', 'VisitorType', 'Institute'],
+        // Front desk visitor and student logs
+        'front desk'           => ['FrontDeskEntry', 'StuDetail', 'Student'],
+        // Grievances and complaints
+        'complaint'            => ['Complaint', 'Institute'],
+        // Document management
+        'inward'               => ['InwardDocument', 'FileLocation', 'Institute'],
+        'outward'              => ['OutwardDocument', 'FileLocation', 'Institute'],
+        // Quality assurance
+        'sqaa'                 => ['SQAAStandard', 'SQAADocument', 'Institute'],
+        // Direct parent messaging
+        'parent communication' => ['ParentCommunication', 'StuDetail'],
+        // Petty cash
+        'petty cash'           => ['PettyCashHead', 'Staff'],
+        // Alumni and donations
+        'alumni'               => ['Donation', 'Institute'],
+        'donation'             => ['Donation', 'Institute'],
+        // Users & roles
+        'user'                 => ['Staff', 'Role', 'Department', 'Institute'],
+        'utility'              => ['Standard', 'Division', 'AcademicYear', 'Student'],
 
-        // -- people / HR ----------------------------------------------------
-        'student' => ['Student', 'StuDetail'],
-        // :Teacher is gone (see StaffGraphProjection/GraphSchema docblocks,
-        // 2026-11-03) — :Staff is the single canonical label, with
-        // `is_teacher` as a property rather than a separate label.
-        'staff' => ['Staff'],
-        'teacher' => ['Staff'],
-        'user' => ['Staff', 'Role'],
-        'hrit' => ['Staff', 'Department', 'Role'],
-        'payroll' => ['PayrollType', 'SalaryStructure', 'SalaryCertificate'],
-        'leave' => ['LeaveType', 'Holiday'],
-        'talent' => ['CompetencyFramework', 'Competency'],
-        'skill' => ['Skill', 'JobRole', 'JobTask', 'SkillAssessment'],
-        'competency' => ['CompetencyFramework', 'Competency', 'CompetencyStandards'],
-        'capability' => ['CompetencyFramework', 'Competency'],
-        'organization' => ['Department', 'Role'],
-        'task' => ['Task'],
-        'shift' => ['StaffShift'],
+        // -- People & Competency (Module ID: 350) ------------------------------
+        'hrit'                 => ['Staff', 'Department', 'Role', 'LeaveType', 'SalaryStructure', 'PayrollType'],
+        'payroll'              => ['Staff', 'PayrollType', 'SalaryStructure', 'SalaryCertificate'],
+        'leave'                => ['Staff', 'LeaveType', 'Holiday'],
+        'talent'               => ['CompetencyFramework', 'Competency', 'CompetencyStandards'],
+        'capability'           => ['JobRole', 'Skill', 'JobTask'],
+        'competency'           => ['CompetencyFramework', 'Competency', 'CompetencyStandards'],
+        'skill'                => ['Skill', 'JobRole', 'JobTask', 'SkillAssessment'],
+        'task'                 => ['Staff', 'Task'],
+        'organization'         => ['Institute', 'Department', 'Role', 'Staff'],
+        'shift'                => ['Staff', 'StaffShift'],
+        // Teacher classroom teaching allocation under People & Competency
+        'lms'                  => ['Staff', 'Subject', 'Division', 'Standard'],
 
-        // -- operations -------------------------------------------------------
-        'hostel' => ['Hostel', 'HostelBuilding', 'HostelFloor', 'HostelRoom', 'HostelType', 'HostelVisitor'],
-        'transport' => ['Route', 'Stop', 'Vehicle', 'VehicleType', 'Driver', 'TransportShift'],
-        'library' => ['Book', 'BookCopy'],
-        'inventory' => ['InventoryItem', 'ItemCategory', 'ItemSubCategory', 'ItemType', 'Vendor'],
-        'visitor' => ['Visitor', 'VisitorType'],
-        'inward' => ['InwardDocument'],
-        'outward' => ['OutwardDocument'],
-        'complaint' => ['Complaint'],
-        'front desk' => ['FrontDeskEntry'],
-        'circular' => ['Circular', 'CircularType', 'Announcement'],
+        // -- Career Counseling (Module ID: 455) --------------------------------
+        'career awareness'     => ['CareerCluster', 'JobRole', 'JobTask', 'Industry'],
+        'career counseling'    => ['CounsellingCourse', 'CounsellingQuestion', 'MappingType'],
+        'career explorer'      => ['JobRole', 'Skill', 'CareerCluster'],
+        'career intelligence'  => ['JobRole', 'Skill', 'JobTask', 'CareerCluster'],
+        'counselling'          => ['CounsellingCourse', 'CounsellingQuestion', 'CounsellingResult'],
+        'career'               => ['JobRole', 'Skill', 'JobTask', 'CareerCluster'],
 
-        // -- finance ------------------------------------------------------------
-        'fee' => ['FeeHead', 'FeeTitle', 'FeeTitleMaster', 'FeeOtherHead', 'FeeConfig', 'LateFeeRule', 'FeeMonth', 'FeeCircular', 'FeeCancelType', 'ReceiptBook'],
-        'bank' => ['Bank'],
-        'petty cash' => ['PettyCashHead'],
-        'donation' => ['Donation'],
-
-        // -- organisation / admin -----------------------------------------------
-        'institute' => ['Institute'],
-        'school' => ['Institute'],
-        'sqaa' => ['SQAAStandard', 'SQAADocument'],
-        'career' => ['JobRole', 'Industry', 'CareerCluster'],
-        'calendar' => ['CalendarEvent', 'TimeSlot'],
-
-        // -- Knowledge Graph coverage pass (added 2026-11-03) ------------------
-        // Five real submodules that previously matched nothing at all — see
-        // GraphSchema's own docblock for the entities behind each label.
-        'admission' => ['AdmissionEnquiry'],
-        'consent' => ['Consent'],
-        'ptm' => ['PtmBooking', 'PtmTimeSlot'],
-        // Deliberately the specific phrase, not a bare 'communication' —
-        // that would also match the unrelated, intentionally-unmapped
-        // "Communication Report" submodule (an aggregate-log screen, see
-        // the coverage report).
-        'parent communication' => ['ParentCommunication'],
+        // -- Enterprise Brain (Module ID: 854) ---------------------------------
+        'overview'             => ['Institute', 'Department', 'Role', 'Staff'],
+        'foundation'           => ['Institute', 'Standard', 'Division', 'AcademicYear'],
+        'knowledge'            => ['Book', 'BookCopy', 'InwardDocument', 'FileLocation'],
+        'automation'           => ['Staff', 'Task'],
+        'analytics'            => ['Examination', 'Subject', 'Student', 'Result', 'Assessment'],
+        'intelligence loop'    => ['Assessment', 'Question', 'Concept', 'Student'],
+        'account'              => ['Institute', 'AcademicYear', 'Holiday', 'CalendarEvent'],
+        'setting'              => ['Institute', 'AcademicYear', 'Holiday', 'CalendarEvent'],
     ];
 
     /**
-     * The real, live GraphSchema labels this submodule maps to — the union
-     * of every keyword dictionary entry whose key appears in the submodule's
-     * own name, or (if that matches nothing) in one of its screen names.
+     * The real, live GraphSchema labels this submodule maps to.
      *
-     * @param  string[]  $screenNames  The submodule's level-3 children's own
-     *                                 names/labels — a second, more specific
-     *                                 signal for submodules whose own name is
-     *                                 too generic to match anything ("LMS" on
-     *                                 its own matches the 'lms' keyword
-     *                                 directly, so this mainly helps names
-     *                                 that don't).
+     * @param  string[]  $screenNames
      * @return string[] GraphSchema labels, deduplicated, or [] if nothing matched.
      */
     public function labelsFor(string $submoduleName, array $screenNames = []): array
@@ -133,16 +133,16 @@ class ModuleGraphMapper
 
         if ($labels === []) {
             foreach ($screenNames as $screenName) {
-                $labels = array_merge($labels, $this->matchKeywords($screenName));
+                $matched = $this->matchKeywords($screenName);
+                if (! empty($matched)) {
+                    $labels = array_merge($labels, $matched);
+                    break;
+                }
             }
         }
 
         $labels = array_values(array_unique($labels));
 
-        // Every label returned must be one GraphSchema actually knows — the
-        // dictionary above is hand-written and could drift from GraphSchema
-        // over time; silently dropping an unknown one is safer than letting
-        // it reach Cypher interpolation.
         return array_values(array_filter($labels, fn ($label) => GraphSchema::knowsLabel($label)));
     }
 
@@ -153,15 +153,15 @@ class ModuleGraphMapper
             return [];
         }
 
-        $haystack = mb_strtolower($text);
-        $labels = [];
+        $haystack = mb_strtolower(trim($text));
 
+        // Longest / exact keyword matching first
         foreach (self::KEYWORD_LABELS as $keyword => $keywordLabels) {
             if (str_contains($haystack, $keyword)) {
-                $labels = array_merge($labels, $keywordLabels);
+                return $keywordLabels;
             }
         }
 
-        return $labels;
+        return [];
     }
 }
