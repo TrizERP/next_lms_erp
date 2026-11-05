@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\api\PAL;
 
 use App\Http\Controllers\Controller;
+use App\Services\PAL\Coherence\CoherenceMapRepository;
+use App\Services\PAL\Coherence\CoherenceRecommender;
 use App\Services\PAL\ContentModel\ContentEmbeddingService;
 use App\Services\PAL\Gamification\CareerQuestNarrator;
 use App\Services\PAL\Gamification\CareerQuestService;
@@ -10,54 +12,31 @@ use App\Services\PAL\Gamification\LearnerActivitySource;
 use App\Services\PAL\Intelligence\RecommendationEngine;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 /**
- * "What should this student do next" — one real, read-only aggregation of
- * the recommendation-shaped outputs that already exist today, scattered
- * across places that had never been read together before this
- * (2026-10-12):
+ * "What should this student do next" — graph-aware recommendation feed combining:
  *
- *   - Next Best Action: `RecommendationEngine::getNextBestAction()` — a
- *     deterministic (no LLM) weak-concept / spaced-review / advance
- *     decision over `pal_competencies`. Built, but wired to no route at
- *     all until now (confirmed: no controller anywhere referenced this
- *     class before this file).
+ *   - Graph-Aware Next Best Action: `CoherenceRecommender::nextBestAction()`
+ *     which executes multi-tier pedagogical rules (Consolidate -> Unblock Root Blockers -> Advance),
+ *     walking Neo4j prerequisite closures via `CoherenceMapRepository`.
+ *   - Deterministic Fallback: `RecommendationEngine::getNextBestAction()` when the
+ *     learner's subject scope has no projected coherence map in Neo4j.
  *   - Content Recommendation: `RecommendationEngine::getContentRecommendation()`
- *     — deterministic `content_master` lookup by `concept_id` + difficulty
- *     match, for every weak concept the action above names.
- *   - Content Authoring's embedding retrieval: `ContentEmbeddingService`'s
- *     cosine-similarity pattern, applied in the direction `suggestConcepts()`
- *     does not (concept -> content rather than content -> concept) via the
- *     new `suggestContentForConcept()`, as a supplementary signal when the
- *     embedding pipeline has something for that chapter. Skipped honestly
- *     (`content_suggestions_embedding: null`) when no AI key is configured
- *     — never guessed.
- *   - Career Quest's narrative: `CareerQuestService::quest()` +
- *     `CareerQuestNarrator::narrate()` — read-only here, unlike
- *     `generateReport()` (which this deliberately does NOT call: that
- *     method persists a report snapshot and queues a gamification
- *     notification, which a "what's next" read endpoint must not do as a
- *     side effect of being viewed). Grounded-only, relaying the
- *     narrator's own existing ok / insufficient_evidence /
- *     graph_unavailable / model_unavailable vocabulary unchanged.
+ *     and `CoherenceMapRepository::contentFor()` difficulty and engagement matching.
+ *   - Vector Embedding Retrieval: `ContentEmbeddingService::suggestContentForConcept()`.
+ *   - Career Quest Narrative: `CareerQuestNarrator::narrate()`.
+ *   - Recommendation Audit: Logged to `pal_recommendation_log` for tracking outcomes.
  *
- * Nothing here invents a new scoring or ranking rule — every figure comes
- * from one of those calls, made exactly as their own classes already
- * define them. This controller only orders and combines them.
- *
- * TENANT ISOLATION: mounted under `api/pal`'s existing `pal.auth`
- * middleware (`routes/pal_api.php`) — the same ownership scoping every
- * other per-learner PAL V4 route already uses. A student always resolves
- * to themselves; staff must name a `learner_id`, which `PalApiAuth` has
- * already rejected if it falls outside the caller's institute/class scope
- * before this method ever runs. No institute id is ever read from request
- * input here — it is resolved from the learner's own enrolment record, the
- * same way `CareerQuestService::generateReport()` already does it.
+ * TENANT ISOLATION: mounted under `api/pal`'s existing `pal.auth` middleware.
  */
 class RecommendationFeedController extends Controller
 {
     public function __construct(
         private readonly RecommendationEngine $recommendations,
+        private readonly CoherenceRecommender $coherenceRecommender,
+        private readonly CoherenceMapRepository $coherenceMap,
         private readonly CareerQuestService $careerQuest,
         private readonly CareerQuestNarrator $careerNarrator,
         private readonly LearnerActivitySource $activity,
@@ -79,18 +58,75 @@ class RecommendationFeedController extends Controller
         }
 
         $subInstituteId = (int) ($learner['sub_institute_id'] ?? 0);
-        $subjectId = $request->filled('subject_id') ? (int) $request->input('subject_id') : null;
+        $scope = $this->scopeForLearner($request, $learnerId);
 
-        $action = $this->recommendations->getNextBestAction($learnerId, $subjectId);
+        $action = null;
+        $graphAware = false;
+        $whyPayload = null;
+        $rootBlockers = [];
+        $stuckOn = null;
+        $conceptIds = [];
 
-        // Bounded: this is a "what next" feed, not a full catalogue —
-        // looking up content for every weak concept a learner has would
-        // make one request as expensive as a whole catalogue scan.
-        $conceptIds = array_slice(array_values(array_unique(array_map(
-            'intval',
-            array_filter((array) ($action['concepts'] ?? []), static fn ($c) => (int) $c > 0)
-        ))), 0, 3);
+        // 1. Try Graph-Aware Coherence Recommender first if scope is resolved
+        if (is_array($scope) && ! empty($scope['standard_id']) && ! empty($scope['subject_id'])) {
+            try {
+                $coherenceResult = $this->coherenceRecommender->nextBestAction(
+                    $learnerId,
+                    (int) $scope['standard_id'],
+                    (int) $scope['subject_id']
+                );
 
+                if (($coherenceResult['action'] ?? '') !== 'no_map' && ! empty($coherenceResult['concept'])) {
+                    $graphAware = true;
+                    $targetConcept = $coherenceResult['concept'];
+                    $targetConceptId = (int) ($targetConcept['id'] ?? 0);
+                    $whyPayload = $coherenceResult['why'] ?? [];
+                    $rootBlockers = $whyPayload['roots'] ?? [];
+                    $stuckOn = $whyPayload['stuck_on'] ?? null;
+
+                    $action = [
+                        'action' => $coherenceResult['action'],
+                        'concepts' => $targetConceptId > 0 ? [$targetConceptId] : [],
+                        'target_concept' => $targetConcept,
+                        'priority' => match ($coherenceResult['action']) {
+                            'consolidate' => 0.95,
+                            'unblock' => 0.90,
+                            'advance' => 0.80,
+                            default => 0.70,
+                        },
+                        'reason' => (string) ($whyPayload['because'] ?? 'Prerequisite graph analysis'),
+                        'why' => $whyPayload,
+                        'graph_aware' => true,
+                        'roots' => $rootBlockers,
+                        'stuck_on' => $stuckOn,
+                    ];
+
+                    $conceptIds = $targetConceptId > 0 ? [$targetConceptId] : [];
+                }
+            } catch (\Throwable $e) {
+                // If graph is temporarily unavailable, fall back cleanly to SQL recommendation engine
+            }
+        }
+
+        // 2. Fall back to deterministic SQL engine if graph recommendation wasn't possible
+        if ($action === null) {
+            $subjectId = is_array($scope) ? ($scope['subject_id'] ?? null) : ($request->filled('subject_id') ? (int) $request->input('subject_id') : null);
+            $action = $this->recommendations->getNextBestAction($learnerId, $subjectId);
+            $action['graph_aware'] = false;
+            $action['why'] = [
+                'rule' => $action['action'] ?? 'unknown',
+                'because' => $action['reason'] ?? 'Mastery score analysis',
+                'roots' => [],
+                'stuck_on' => null,
+            ];
+
+            $conceptIds = array_slice(array_values(array_unique(array_map(
+                'intval',
+                array_filter((array) ($action['concepts'] ?? []), static fn ($c) => (int) $c > 0)
+            ))), 0, 3);
+        }
+
+        // 3. Content recommendations
         $contentByConcept = [];
         $embeddingByConcept = [];
         $embeddingEnabled = $this->contentEmbedding->enabled($subInstituteId ?: null);
@@ -107,6 +143,10 @@ class RecommendationFeedController extends Controller
             }
         }
 
+        // 4. Audit Trail: Log recommendation to pal_recommendation_log if table exists
+        $this->logRecommendation($learnerId, $subInstituteId, $scope, $action);
+
+        // 5. Career Narrative
         $quest = $this->careerQuest->quest($learnerId);
         $careerNarrative = ($quest['available'] ?? false)
             ? $this->careerNarrator->narrate($learnerId, $subInstituteId, $quest)
@@ -119,9 +159,8 @@ class RecommendationFeedController extends Controller
         return $this->ok([
             'learner_id' => $learnerId,
             'next_best_action' => $action,
+            'scope' => is_array($scope) ? $scope : null,
             'content_recommendations' => $contentByConcept,
-            // null (not []) when embedding is unconfigured, so a caller can
-            // tell "nothing suggested" apart from "this signal wasn't run".
             'content_suggestions_embedding' => $embeddingEnabled ? $embeddingByConcept : null,
             'career_narrative' => $careerNarrative,
             'generated_at' => now()->toIso8601String(),
@@ -129,11 +168,81 @@ class RecommendationFeedController extends Controller
     }
 
     /**
-     * Resolve the learner this request is about — the same rule
-     * `NewPalGamificationController::learnerId()` already applies: a
-     * student is always themselves; staff must name one, and `PalApiAuth`
-     * has already rejected a `learner_id` outside the caller's scope
-     * before this runs.
+     * Resolve standard and subject for the learner from current enrollment.
+     */
+    private function scopeForLearner(Request $request, int $learnerId): array|string
+    {
+        $enrollment = DB::table('tblstudent_enrollment')
+            ->where('student_id', $learnerId)
+            ->orderByDesc('syear')
+            ->orderByDesc('id')
+            ->first(['standard_id', 'sub_institute_id', 'syear']);
+
+        if ($enrollment === null) {
+            return "Learner {$learnerId} has no enrollment.";
+        }
+
+        $tenant = (int) $enrollment->sub_institute_id;
+        $standard = (int) $enrollment->standard_id;
+
+        if ($request->filled('subject_id')) {
+            return [
+                'sub_institute_id' => $tenant,
+                'standard_id' => $standard,
+                'subject_id' => (int) $request->get('subject_id'),
+            ];
+        }
+
+        // Pick richest subject map for this class if no subject is specified
+        $subject = DB::table('lms_concept')
+            ->where('sub_institute_id', $tenant)
+            ->where('standard_id', $standard)
+            ->select('subject_id', DB::raw('count(*) as n'))
+            ->groupBy('subject_id')
+            ->orderByDesc('n')
+            ->first();
+
+        return [
+            'sub_institute_id' => $tenant,
+            'standard_id' => $standard,
+            'subject_id' => $subject ? (int) $subject->subject_id : null,
+        ];
+    }
+
+    /**
+     * Audit log for generated recommendation.
+     */
+    private function logRecommendation(int $learnerId, int $subInstituteId, mixed $scope, array $action): void
+    {
+        try {
+            if (! Schema::hasTable('pal_recommendation_log')) {
+                return;
+            }
+
+            $conceptId = (int) ($action['concepts'][0] ?? ($action['target_concept']['id'] ?? 0));
+            $subjectId = is_array($scope) ? (int) ($scope['subject_id'] ?? 0) : null;
+            $rule = (string) ($action['action'] ?? 'unknown');
+
+            DB::table('pal_recommendation_log')->insert([
+                'learner_id' => $learnerId,
+                'concept_id' => $conceptId > 0 ? $conceptId : null,
+                'subject_id' => $subjectId > 0 ? $subjectId : null,
+                'sub_institute_id' => $subInstituteId,
+                'pedagogy_type' => $rule,
+                'selection_reason' => mb_substr((string) ($action['reason'] ?? ''), 0, 510),
+                'tier_1_rule_key' => $action['graph_aware'] ? 'coherence_prerequisite_engine' : 'sql_competency_threshold',
+                'algorithm_version' => $action['graph_aware'] ? 'pal-v4-graph-coherence' : 'pal-v4-sql',
+                'shown_at' => now(),
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        } catch (\Throwable) {
+            // Logging is non-blocking
+        }
+    }
+
+    /**
+     * Resolve the learner this request is about.
      *
      * @return array{0:int,1:?JsonResponse}
      */
