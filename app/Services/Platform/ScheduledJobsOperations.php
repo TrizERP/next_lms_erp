@@ -54,6 +54,12 @@ class ScheduledJobsOperations
             'organization_management.compliance.due_soon' => [self::class, 'orgComplianceDueSoon'],
             'organization_management.compliance.overdue_scan' => [self::class, 'orgComplianceOverdue'],
             'organization_management.disciplinary.monthly_summary' => [self::class, 'orgDisciplinaryMonth'],
+            'talent.recruitment.interviews_soon' => [self::class, 'talentInterviewsSoon'],
+            'talent.recruitment.postings_closing' => [self::class, 'talentPostingsClosing'],
+            'talent.offboarding.exits_due' => [self::class, 'talentExitsDue'],
+            'task-management.task.due_soon' => [self::class, 'taskDueSoon'],
+            'task-management.task.overdue_scan' => [self::class, 'taskOverdue'],
+            'task-management.task.on_hold_scan' => [self::class, 'taskOnHold'],
             'document_templates.template.draft_scan' => [self::class, 'documentTemplateDrafts'],
             'document_templates.template.missing_category_scan' => [self::class, 'documentTemplateMissingCategories'],
             'document_templates.template.summary' => [self::class, 'documentTemplateSummary'],
@@ -587,6 +593,116 @@ class ScheduledJobsOperations
         $open = (clone $q)->whereNull('action_taken')->count();
 
         return "Report only: {$n} disciplinary incidents this month, {$open} with no action recorded. No one is named and nothing was changed.";
+    }
+
+    /** Report only: interviews still Scheduled for today and the next 2 days. */
+    public static function talentInterviewsSoon(PlatformScheduledTask $task): string
+    {
+        if (! Schema::hasTable('talent_interview_schedules')) {
+            return 'Report only: the interview table is not available, so interviews cannot be counted.';
+        }
+        $n = DB::table('talent_interview_schedules')->where('sub_institute_id', (int) $task->sub_institute_id)->whereNull('deleted_at')
+            ->where('status', 'Scheduled')
+            ->whereBetween('interview_date', [Carbon::today()->toDateString(), Carbon::today()->addDays(2)->toDateString()])
+            ->count();
+        if ($n === 0) {
+            return 'Report only: no interview is scheduled for the next 2 days.';
+        }
+
+        return "Report only: {$n} interviews are scheduled in the next 2 days. No reminder was sent and no interview was changed.";
+    }
+
+    /** Report only: active job postings whose deadline is within 7 days. */
+    public static function talentPostingsClosing(PlatformScheduledTask $task): string
+    {
+        if (! Schema::hasTable('talent_job_postings')) {
+            return 'Report only: the job posting table is not available, so deadlines cannot be checked.';
+        }
+        $n = DB::table('talent_job_postings')->where('sub_institute_id', (int) $task->sub_institute_id)->whereNull('deleted_at')
+            ->whereRaw("LOWER(COALESCE(status,'')) = 'active'")
+            ->whereBetween('deadline', [Carbon::today()->toDateString(), Carbon::today()->addDays(7)->toDateString()])
+            ->count();
+        if ($n === 0) {
+            return 'Report only: no active job posting closes in the next 7 days.';
+        }
+
+        return "Report only: {$n} active job postings close in the next 7 days. No posting was closed or extended.";
+    }
+
+    /** Report only: open exit cases reaching their last working day within 7 days, and those already past it. */
+    public static function talentExitsDue(PlatformScheduledTask $task): string
+    {
+        if (! Schema::hasTable('talent_offboarding_cases')) {
+            return 'Report only: the exit case table is not available, so exits cannot be checked.';
+        }
+        $open = DB::table('talent_offboarding_cases')->where('sub_institute_id', (int) $task->sub_institute_id)->whereNull('deleted_at')
+            ->where('status', '!=', 'Closed')->whereNotNull('last_working_day');
+        $soon = (clone $open)->whereBetween('last_working_day', [Carbon::today()->toDateString(), Carbon::today()->addDays(7)->toDateString()])->count();
+        $past = (clone $open)->where('last_working_day', '<', Carbon::today()->toDateString())->count();
+        if ($soon === 0 && $past === 0) {
+            return 'Report only: no open exit case is near or past its last working day.';
+        }
+
+        return "Report only: {$soon} open exit cases reach their last working day in the next 7 days, {$past} are already past it and not closed. No one is named and no case was changed.";
+    }
+
+    /**
+     * Open tasks: not deleted, and not finished. The STATUS column holds two spellings of
+     * the finished state (COMPLETE and COMPLETED), so both are excluded.
+     */
+    private static function taskOpen(int $tenant)
+    {
+        return DB::table('task')->where('sub_institute_id', $tenant)->whereNull('deleted_at')
+            ->whereRaw("UPPER(COALESCE(STATUS,'PENDING')) NOT IN ('COMPLETE','COMPLETED')");
+    }
+
+    /** Report only: open tasks due in the next 3 days. */
+    public static function taskDueSoon(PlatformScheduledTask $task): string
+    {
+        if (! Schema::hasTable('task')) {
+            return 'Report only: the task table is not available, so due dates cannot be checked.';
+        }
+        $n = self::taskOpen((int) $task->sub_institute_id)
+            ->whereBetween('TASK_DATE', [Carbon::today()->toDateString(), Carbon::today()->addDays(3)->toDateString()])
+            ->count();
+        if ($n === 0) {
+            return 'Report only: no open task is due in the next 3 days.';
+        }
+
+        return "Report only: {$n} open tasks are due in the next 3 days. No reminder was sent and no task was changed.";
+    }
+
+    /** Report only: open tasks already past their due date. */
+    public static function taskOverdue(PlatformScheduledTask $task): string
+    {
+        if (! Schema::hasTable('task')) {
+            return 'Report only: the task table is not available, so overdue tasks cannot be checked.';
+        }
+        $q = self::taskOpen((int) $task->sub_institute_id)->where('TASK_DATE', '<', Carbon::today()->toDateString());
+        $n = (clone $q)->count();
+        if ($n === 0) {
+            return 'Report only: no open task is past its due date.';
+        }
+        $oldest = (clone $q)->min('TASK_DATE');
+
+        return "Report only: {$n} open tasks are past their due date, the oldest due on {$oldest}. No task was changed.";
+    }
+
+    /** Report only: tasks currently ON HOLD, and how many carry no delay category. */
+    public static function taskOnHold(PlatformScheduledTask $task): string
+    {
+        if (! Schema::hasTable('task')) {
+            return 'Report only: the task table is not available, so held tasks cannot be counted.';
+        }
+        $q = DB::table('task')->where('sub_institute_id', (int) $task->sub_institute_id)->whereNull('deleted_at')
+            ->whereRaw("UPPER(COALESCE(STATUS,'')) = 'ON HOLD'");
+        $n = (clone $q)->count();
+        if ($n === 0) {
+            return 'Report only: no task is on hold.';
+        }
+        $uncat = (clone $q)->where(fn ($w) => $w->whereNull('delay_category')->orWhere('delay_category', ''))->count();
+
+        return "Report only: {$n} tasks are on hold, {$uncat} with no delay category recorded. No task was changed.";
     }
 
     /** Report only: templates left in draft and not edited for more than 30 days. */

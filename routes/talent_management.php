@@ -45,6 +45,8 @@ use App\Http\Controllers\api\TalentManagement\Mobility\MobilityTalentPoolControl
 use App\Http\Controllers\api\TalentManagement\Offboarding\OffboardingController;
 
 use App\Http\Controllers\api\TalentManagement\Administration\AdminWorkflowController;
+use App\Http\Controllers\api\TalentManagement\Administration\AdminGovernanceController;
+use App\Http\Controllers\api\TalentManagement\Administration\AdminIntegrationController;
 
 /*
 |--------------------------------------------------------------------------
@@ -315,4 +317,27 @@ Route::middleware(['api.session', 'staff.only'])->group(function () {
     // Administration
     // ---------------------------------------------------------------
     Route::get('talent/admin/workflows', [AdminWorkflowController::class, 'index'])->middleware('hr.manage');
+    Route::get('talent/admin/workflows/{id}', [AdminWorkflowController::class, 'show'])->middleware('hr.manage');
+    Route::prefix('talent/admin')->middleware('hr.manage')->group(function () {
+        Route::get('overview', [AdminGovernanceController::class, 'overview']);
+        Route::get('templates', [AdminGovernanceController::class, 'templates']);
+        Route::post('templates', [AdminGovernanceController::class, 'storeTemplate']);
+        Route::put('templates/{id}', [AdminGovernanceController::class, 'updateTemplate'])->whereNumber('id');
+        Route::delete('templates/{id}', [AdminGovernanceController::class, 'destroyTemplate'])->whereNumber('id');
+        Route::get('permissions', [AdminGovernanceController::class, 'permissions']);
+        Route::get('integrations', [AdminGovernanceController::class, 'integrations']);
+        Route::post('integrations/{id}/connect', [AdminIntegrationController::class, 'connect'])->whereNumber('id');
+        Route::post('integrations/{id}/disconnect', [AdminIntegrationController::class, 'disconnect'])->whereNumber('id');
+        Route::post('integrations/{id}/test', [AdminIntegrationController::class, 'test'])->whereNumber('id');
+        Route::get('integrations/oauth-apps', [AdminIntegrationController::class, 'oauthApps']);
+        Route::put('integrations/oauth-apps/{provider}', [AdminIntegrationController::class, 'saveOauthApp']);
+        Route::delete('integrations/oauth-apps/{provider}', [AdminIntegrationController::class, 'removeOauthApp']);
+        Route::get('settings', [AdminGovernanceController::class, 'settings']);
+        Route::put('settings', [AdminGovernanceController::class, 'updateSettings']);
+        Route::get('audit', [AdminGovernanceController::class, 'auditLog']);
+    });
 });
+
+// OAuth redirect target for Administration -> Integrations. The browser arrives from the provider without
+// a bearer token; the encrypted `state` created by the connect call carries the tenant and user.
+Route::get('talent/admin/integrations/callback', [AdminIntegrationController::class, 'callback']);

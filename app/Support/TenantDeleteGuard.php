@@ -68,7 +68,7 @@ class TenantDeleteGuard
     /** The table whose rows a destroy method works on, or null when it cannot be told. */
     public static function tableFor(string $class, string $method): ?string
     {
-        return Cache::remember('tenant_delete_table:v2:' . $class . '@' . $method, 3600, function () use ($class, $method) {
+        return Cache::remember('tenant_delete_table:v3:' . $class . '@' . $method, 3600, function () use ($class, $method) {
             try {
                 $ref = new ReflectionMethod($class, $method);
                 $file = $ref->getFileName();
@@ -83,6 +83,13 @@ class TenantDeleteGuard
                 if ($table !== null && $method !== 'destroy') {
                     $param = ($ref->getParameters()[count($ref->getParameters()) - 1] ?? null)?->getName();
                     if (!$param || !self::firstQueryUses($body, $param)) {
+                        return false;
+                    }
+                    // The table must come from that same first query. A query on an aliased table
+                    // (DB::table('tbluser as u')) names no plain table, and falling through to a LATER
+                    // query's table (a job-role lookup, say) made the guard compare the URL id with an
+                    // unrelated row and refuse valid requests as "another school".
+                    if (self::deriveTable(self::firstStatement($body), (string) file_get_contents($file), $ref->getDeclaringClass()->getNamespaceName()) !== $table) {
                         return false;
                     }
                 }
@@ -101,16 +108,23 @@ class TenantDeleteGuard
         }) ?: null;
     }
 
+    /** The first statement that starts a query (DB::table / Model::find|where), or an empty string. */
+    public static function firstStatement(string $body): string
+    {
+        if (!preg_match('/DB::table\(|\b[A-Za-z_][A-Za-z0-9_]*::(?:find|findOrFail|where|destroy)\(/', $body, $m, PREG_OFFSET_CAPTURE)) {
+            return '';
+        }
+        $rest = substr($body, $m[0][1]);
+
+        return strstr($rest, ';', true) ?: $rest;
+    }
+
     /** Whether the first statement that starts a query (DB::table / Model::find|where) mentions `$param`. */
     public static function firstQueryUses(string $body, string $param): bool
     {
-        if (!preg_match('/DB::table\(|\b[A-Za-z_][A-Za-z0-9_]*::(?:find|findOrFail|where|destroy)\(/', $body, $m, PREG_OFFSET_CAPTURE)) {
-            return false;
-        }
-        $rest = substr($body, $m[0][1]);
-        $statement = strstr($rest, ';', true) ?: $rest;
+        $statement = self::firstStatement($body);
 
-        return (bool) preg_match('/\$' . preg_quote($param, '/') . '\b/', $statement);
+        return $statement !== '' && (bool) preg_match('/\$' . preg_quote($param, '/') . '\b/', $statement);
     }
 
     public static function deriveTable(string $body, string $fileSource, string $namespace): ?string

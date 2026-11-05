@@ -155,6 +155,9 @@ class InterviewScheduleController extends Controller
             $objtalent->panel_id = $request->panel_id;
 
             if ($objtalent->save()) {
+                // Puts / updates the interview on the school's connected Google Calendar. Never throws.
+                \App\Services\TalentManagement\GoogleCalendarSync::syncInterview((int) $objtalent->id);
+
                 AuditLog::record([
                     'module' => 'talent_management',
                     'action' => 'interview_scheduled',
@@ -259,6 +262,9 @@ class InterviewScheduleController extends Controller
             $interviewSchedule->sub_institute_id = $subInstituteId;
 
             if ($interviewSchedule->save()) {
+                // Puts / updates the interview on the school's connected Google Calendar. Never throws.
+                \App\Services\TalentManagement\GoogleCalendarSync::syncInterview((int) $interviewSchedule->id);
+
                 AuditLog::record([
                     'module' => 'talent_management',
                     'action' => 'interview_schedule_updated',
@@ -354,6 +360,9 @@ class InterviewScheduleController extends Controller
             $interviewSchedule->sub_institute_id = $subInstituteId;
 
             if ($interviewSchedule->save()) {
+                // Puts / updates the interview on the school's connected Google Calendar. Never throws.
+                \App\Services\TalentManagement\GoogleCalendarSync::syncInterview((int) $interviewSchedule->id);
+
                 AuditLog::record([
                     'module' => 'talent_management',
                     'action' => 'interview_schedule_updated',
