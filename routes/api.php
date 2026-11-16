@@ -919,6 +919,8 @@ Route::controller(\App\Http\Controllers\api\RoleAccessApiController::class)->pre
     Route::get('roles', 'roles');
     Route::get('roles/{profileId}/modules', 'modules')->whereNumber('profileId');
     Route::post('roles/{profileId}/rights', 'save')->whereNumber('profileId');
+    Route::get('roles/{profileId}/categories', 'categories')->whereNumber('profileId');
+    Route::post('roles/{profileId}/categories', 'saveCategories')->whereNumber('profileId');
     Route::post('roles/{profileId}/copy/preview', 'copyPreview')->whereNumber('profileId');
     Route::post('roles/{profileId}/copy/apply', 'copyApply')->whereNumber('profileId');
     Route::get('users', 'users');

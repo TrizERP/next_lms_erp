@@ -51,7 +51,7 @@ class MenuRightsController extends Controller
                 })->leftJoin('tblgroupwise_rights as g', function ($join) {
                     $join->whereRaw("u.user_profile_id = g.profile_id AND u.sub_institute_id = g.sub_institute_id");
                 })->join('tblmenumaster as m', function ($join) use ($sub_institute_id) {
-                    $join->whereRaw("(i.menu_id = m.id OR g.menu_id = m.id) AND FIND_IN_SET(".$sub_institute_id.", m.sub_institute_id)");
+                    $join->whereRaw("((i.menu_id = m.id AND i.can_view = 1) OR (g.menu_id = m.id AND g.can_view = 1)) AND FIND_IN_SET(".$sub_institute_id.", m.sub_institute_id)");
                 })->selectRaw("GROUP_CONCAT(distinct m.id) AS MID")
                 ->whereIn('u.sub_institute_id', explode(',', $sub_institute_id))
                 ->where('u.id', $user_id)->get()->toArray();
@@ -64,7 +64,7 @@ class MenuRightsController extends Controller
                     })->leftJoin('tblgroupwise_rights as g', function ($join) {
                         $join->whereRaw("u.user_profile_id = g.profile_id AND u.sub_institute_id = g.sub_institute_id");
                     })->join('tblmenumaster as m', function ($join) use ($client_id) {
-                        $join->whereRaw("(i.menu_id = m.id OR g.menu_id = m.id) AND FIND_IN_SET(".$client_id.", m.client_id)");
+                        $join->whereRaw("((i.menu_id = m.id AND i.can_view = 1) OR (g.menu_id = m.id AND g.can_view = 1)) AND FIND_IN_SET(".$client_id.", m.client_id)");
                     })->selectRaw("GROUP_CONCAT(distinct m.id) AS MID")
                     ->whereIn('u.sub_institute_id', explode(',', $sub_institute_id))
                     ->where('u.status',1) // 23-04-24 by uma
@@ -77,7 +77,7 @@ class MenuRightsController extends Controller
                     })->leftJoin('tblgroupwise_rights as g', function ($join) {
                         $join->whereRaw("u.user_profile_id = g.profile_id AND u.sub_institute_id = g.sub_institute_id");
                     })->join('tblmenumaster as m', function ($join) use ($sub_institute_id) {
-                        $join->whereRaw("(i.menu_id = m.id OR g.menu_id = m.id) AND FIND_IN_SET(?, m.sub_institute_id)", [$sub_institute_id]);
+                        $join->whereRaw("((i.menu_id = m.id AND i.can_view = 1) OR (g.menu_id = m.id AND g.can_view = 1)) AND FIND_IN_SET(?, m.sub_institute_id)", [$sub_institute_id]);
                     })->selectRaw("GROUP_CONCAT(distinct m.id) AS MID")
                     ->whereIn('u.sub_institute_id', explode(',', $sub_institute_id))
                     ->where(function ($q) use ($user_id) {
@@ -259,6 +259,7 @@ class MenuRightsController extends Controller
                     $finalSubChildMenu[$value['parent_menu_id']][$i] = $subChildMenuData[$key];
                     $i++;
                 }
+                $this->pruneEmptyParents($data, $finalSubMenu, $finalSubChildMenu);
                 $res['level 1'] = $data;
                    $res['level 2'] = $finalSubMenu;
                    $res['level 3'] = $finalSubChildMenu;
@@ -268,6 +269,38 @@ class MenuRightsController extends Controller
 
 
         return response()->json(['status'=>1,'data'=>$res]);
+    }
+
+    /**
+     * Hides a level-1 / level-2 menu that has real child screens in the master menu but none of
+     * them granted. A parent row can outlive its children (the roles screen auto-grants parents
+     * and a later revoke only removes the child), which left an empty "Reports" in the sidebar.
+     * Menus with no children at all are leaf pages and stay.
+     */
+    private function pruneEmptyParents(array &$level1, array &$level2, array $level3): void
+    {
+        $live = function ($level) {
+            return DB::table('tblmenumaster')->where('level', $level)->where('status', 1)
+                ->where(function ($q) {
+                    $q->whereNull('menu_type')->orWhere('menu_type', '!=', 'MASTER');
+                })->distinct()->pluck('parent_menu_id')->flip()->all();
+        };
+        $hasLevel3 = $live(3);
+        $hasLevel2 = $live(2);
+
+        foreach ($level2 as $parentId => $items) {
+            foreach ($items as $k => $item) {
+                if (isset($hasLevel3[$item['id']]) && empty($level3[$item['id']])) {
+                    unset($level2[$parentId][$k]);
+                }
+            }
+            if (empty($level2[$parentId])) {
+                unset($level2[$parentId]);
+            }
+        }
+        $level1 = array_values(array_filter($level1, function ($item) use ($hasLevel2, $level2) {
+            return ! isset($hasLevel2[$item['id']]) || ! empty($level2[$item['id']]);
+        }));
     }
 
     public function getMasterMenuApi(Request $request)

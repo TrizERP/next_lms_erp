@@ -8,6 +8,8 @@ use GenTux\Jwt\GetsJwtToken;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Validator;
 
 /**
@@ -126,6 +128,115 @@ class RoleAccessApiController extends Controller
         );
 
         return $this->ok($this->summary($result), $this->saveMessage($result));
+    }
+
+    // ------------------------------------------------- module tabs (categories)
+
+    /**
+     * Every module's navigation tabs (Operations, Reports, Onboarding, Workflow, Audit Trail ...)
+     * with whether this role can see each. They are not menus, so they live in
+     * module_category_rights as "hidden" rows; no row means visible.
+     */
+    public function categories(Request $request, int $profileId)
+    {
+        if ($response = $this->context($request)) {
+            return $response;
+        }
+        $tenant = $this->tenant($request);
+        if (! $this->role($tenant, $profileId)) {
+            return $this->fail('That role was not found.', 404);
+        }
+
+        $hidden = Schema::hasTable('module_category_rights')
+            ? DB::table('module_category_rights')->where('sub_institute_id', $tenant)->where('profile_id', $profileId)
+                ->get(['module_name', 'category_key'])->groupBy('module_name')
+                ->map(fn ($rows) => $rows->pluck('category_key')->all())->all()
+            : [];
+
+        $rows = DB::table('fees_menu_categories as c')
+            ->leftJoin('tblmenumaster as m', 'm.id', '=', 'c.level2_menu_id')
+            ->where('c.status', 1)
+            ->orderBy('c.module_name')->orderBy('c.sort_order')->orderBy('c.id')
+            ->get(['c.module_name', 'c.category_key', 'c.label', 'm.name as menu_name']);
+
+        $modules = [];
+        foreach ($rows as $row) {
+            $key = (string) $row->module_name;
+            $modules[$key] ??= [
+                'module' => $key,
+                'label' => trim((string) ($row->menu_name ?: ucwords(str_replace(['_', '-'], ' ', $key)))),
+                'tabs' => [],
+            ];
+            $modules[$key]['tabs'][] = [
+                'key' => (string) $row->category_key,
+                'label' => trim((string) $row->label),
+                'visible' => ! in_array((string) $row->category_key, $hidden[$key] ?? [], true),
+            ];
+        }
+        $list = array_values($modules);
+        usort($list, fn ($a, $b) => strcasecmp($a['label'], $b['label']));
+
+        return $this->ok(['modules' => $list]);
+    }
+
+    public function saveCategories(Request $request, int $profileId)
+    {
+        if ($response = $this->context($request)) {
+            return $response;
+        }
+        $tenant = $this->tenant($request);
+        $role = $this->role($tenant, $profileId);
+        if (! $role) {
+            return $this->fail('That role was not found.', 404);
+        }
+        if ($response = $this->requireAdminConfirmation($request, (string) $role->name)) {
+            return $response;
+        }
+        if (! Schema::hasTable('module_category_rights')) {
+            return $this->fail('Module tab rights are not set up yet (migration pending).', 409);
+        }
+
+        $validator = Validator::make($request->all(), [
+            'changes' => 'required|array|min:1|max:'.self::MAX_CHANGES,
+            'changes.*.module' => 'required|string|max:100',
+            'changes.*.category_key' => 'required|string|max:100',
+            'changes.*.visible' => 'required|boolean',
+        ]);
+        if ($validator->fails()) {
+            return $this->fail($validator->messages()->first(), 422);
+        }
+
+        $valid = DB::table('fees_menu_categories')->where('status', 1)
+            ->get(['module_name', 'category_key'])
+            ->mapWithKeys(fn ($r) => [$r->module_name.'|'.$r->category_key => true])->all();
+
+        $actor = $this->actor($request);
+        $changed = 0;
+        $rejected = [];
+        DB::transaction(function () use ($request, $tenant, $profileId, $valid, $actor, &$changed, &$rejected) {
+            foreach ((array) $request->input('changes') as $change) {
+                $module = (string) $change['module'];
+                $key = (string) $change['category_key'];
+                if (! isset($valid[$module.'|'.$key])) {
+                    $rejected[] = $module.' / '.$key;
+
+                    continue;
+                }
+                $where = ['sub_institute_id' => $tenant, 'profile_id' => $profileId, 'module_name' => $module, 'category_key' => $key];
+                if (filter_var($change['visible'], FILTER_VALIDATE_BOOLEAN)) {
+                    $changed += DB::table('module_category_rights')->where($where)->delete();
+                } elseif (! DB::table('module_category_rights')->where($where)->exists()) {
+                    DB::table('module_category_rights')->insert($where + ['changed_by' => $actor['id'], 'created_at' => now(), 'updated_at' => now()]);
+                    $changed++;
+                }
+            }
+        });
+        Log::info('module tab rights changed', ['tenant' => $tenant, 'profile' => $profileId, 'actor' => $actor, 'changed' => $changed]);
+
+        return $this->ok(
+            ['changed' => $changed, 'rejected' => $rejected],
+            $changed === 0 ? 'Nothing needed changing.' : "Saved {$changed} tab change".($changed === 1 ? '' : 's').'. People see it after their next page load.'
+        );
     }
 
     // ------------------------------------------------------------------- copy

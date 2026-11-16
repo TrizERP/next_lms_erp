@@ -114,6 +114,12 @@ abstract class AbstractMenuCategoryApiController extends Controller
                 $hasAuditKeys ? ['audit_module_keys'] : []
             ));
 
+        // Tabs a role has been switched off for in Roles & Access (module_category_rights).
+        $denied = $this->deniedCategoryKeys($moduleName, $subInstituteId, $userId, (string) $request->input('user_profile_name', ''));
+        if ($denied !== []) {
+            $categoryRows = $categoryRows->reject(fn ($row) => in_array((string) $row->category_key, $denied, true))->values();
+        }
+
         if ($categoryRows->isEmpty()) {
             return response()->json([
                 'status' => 1,
@@ -168,6 +174,34 @@ abstract class AbstractMenuCategoryApiController extends Controller
             'status' => 1,
             'data' => ['modules' => $directory, 'module' => $module, 'categories' => $categories],
         ]);
+    }
+
+    /**
+     * Category keys this user's role may not see in this module. A row in module_category_rights
+     * hides a tab; no row leaves it visible, so a school that never used Roles & Access sees no
+     * change. Where the table is missing (migration not run) nothing is hidden.
+     *
+     * @return list<string>
+     */
+    protected function deniedCategoryKeys(string $moduleName, string $subInstituteId, string $userId, string $userProfileName): array
+    {
+        if (! Schema::hasTable('module_category_rights')) {
+            return [];
+        }
+
+        $userTable = strtolower(trim($userProfileName)) === 'student' ? 'tblstudent' : 'tbluser';
+        $profileId = DB::table($userTable)->where('id', $userId)->where('sub_institute_id', $subInstituteId)->value('user_profile_id');
+        if (! $profileId) {
+            return [];
+        }
+
+        return DB::table('module_category_rights')
+            ->where('sub_institute_id', $subInstituteId)
+            ->where('profile_id', $profileId)
+            ->where('module_name', $moduleName)
+            ->pluck('category_key')
+            ->map(fn ($key) => (string) $key)
+            ->all();
     }
 
     /**
