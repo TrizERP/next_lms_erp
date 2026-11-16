@@ -36,7 +36,8 @@
 > their exact route segments rather than assuming from imports. Only `PersonProfileController::narrative()`
 > and the executive-summary narrative are actually wired. §4 also never mentioned
 > `PersonProfileController`'s Phase 7.4/7.5 cross-product identity feature (K-12/G2G/EB person-profile
-> unification via a human-reviewed `cross_product_identity_links` table, currently zero confirmed links)
+> unification via a human-reviewed `cross_product_identity_links` table, 67 of 73 proposals confirmed
+> as of 2026-11-16, 6 rejected, 0 draft)
 > — directly relevant to rule #13/Gate 7, found already compliant, recorded in `EB_IMPLEMENTATION.md`.
 >
 > This correction also surfaced a live defect: `ai_audit_logs` on the actual remote dev database

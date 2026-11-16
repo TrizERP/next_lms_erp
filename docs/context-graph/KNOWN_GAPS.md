@@ -127,5 +127,6 @@ this initiative's scope.
 - EB's dormant Neo4j adapter (ADR-008) — confirmed still correctly dormant, no action taken or needed.
 - The K-12→G2G cross-product credential gap (`G2GCompetencyGraphClient`) — confirmed still blocked by
   design; resolving it is a credential decision for hp_erp's administrator, not this initiative.
-- EB's Person Profile cross-product identity links (currently zero confirmed) — reviewing/approving
-  pending identity-link proposals is a human governance decision outside this initiative's scope.
+
+**Resolved 2026-11-16**: EB's Person Profile cross-product identity links were reviewed — 67 of 73
+proposals confirmed, 6 rejected, 0 left in draft. No longer an open gap.
