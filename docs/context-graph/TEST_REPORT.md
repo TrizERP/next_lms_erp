@@ -47,7 +47,7 @@ left implicit. It does not recur; this was a one-time verification.
 | Check | Method | Result |
 |---|---|---|
 | No new cross-product reference in changed files | `grep` for `g2g\|hp_erp\|hpbrain\|vivek_erp\|cross_product\|k12\|next_lms_erp\|lms_k12` (case-insensitive) across every file created/modified in Gates 3/5/6 | Zero matches |
-| Pre-existing cross-product mechanisms still isolated | Read `G2GCompetencyGraphClient` (blocked, unchanged) and `PersonProfileController` (human-gated, zero confirmed links, unchanged) | Confirmed unchanged, confirmed still correctly gated |
+| Pre-existing cross-product mechanisms still isolated | Read `G2GCompetencyGraphClient` (blocked, unchanged) and `PersonProfileController` (human-gated, zero confirmed links at the time of this test, unchanged by this session's work) | Confirmed unchanged, confirmed still correctly gated. **Note (2026-11-16):** the identity links were later reviewed outside this session — now 67 confirmed, 6 rejected, 0 draft; this row describes the state only as of this test, not current state. |
 | No destructive/unauthorized DB operation | `git status` across all six repos before and after this session | Only the two intended files per touched repo show as modified; `lms_k12`'s pre-existing unrelated uncommitted change is untouched; nothing committed anywhere (confirmed — see `DEPLOYMENT_AND_ROLLBACK.md`) |
 
 ## Phase 8 — Testing and Verification (master prompt's own 4 categories)

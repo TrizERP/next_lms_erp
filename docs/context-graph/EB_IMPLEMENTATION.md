@@ -19,10 +19,11 @@ prompt asks for. It already has, independently of this initiative:
   picked up") and a "furthest stage reached" / "loop closed" summary. This is the master prompt's own
   "reconstruct the relevant context for a past decision" ask, already built.
 - A governed, human-gated cross-product identity feature (`PersonProfileController`, Phase 7.4/7.5):
-  unifies a person's K-12/G2G/EB record under a reviewed `cross_product_identity_links` table. Currently
-  **zero confirmed links exist** (73 unreviewed proposals) — the endpoint honestly reports "not yet
-  confirmed" rather than fabricating a match, and a K-12 row is only ever read after a human-reviewed,
-  confirmed link names it. This is directly relevant to master-prompt rule #13 (no unauthorized
+  unifies a person's K-12/G2G/EB record under a reviewed `cross_product_identity_links` table. As of
+  2026-11-16, **67 of 73 proposals are confirmed** (6 rejected, 0 still draft) — the endpoint honestly
+  reports "not yet confirmed" for any row not yet reviewed, rather than fabricating a match, and a K-12
+  row is only ever read after a human-reviewed, confirmed link names it. This is directly relevant to
+  master-prompt rule #13 (no unauthorized
   cross-tenant/cross-product sharing) and Gate 7 — it already meets that bar and needed no action here,
   but is recorded because it's exactly the kind of mechanism those rules exist to scrutinize.
 - Several more graph-grounded "explain"/"narrative" endpoints beyond the chain screen:
