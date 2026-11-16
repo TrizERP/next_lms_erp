@@ -497,7 +497,8 @@ class studentResultController extends Controller
             $html_content = str_replace(htmlspecialchars("<<conduct_remark>>"), $main_result['conducted'], $html_content);
             $html_content = str_replace(htmlspecialchars("<<teacher_remark>>"), $main_result['teacher_remark'], $html_content);
         }
-        if (strpos($html_content, htmlspecialchars('<<co_scholastic_prep_marks>>')) !== false) {
+        if (strpos($html_content, htmlspecialchars('<<co_scholastic_prep_marks>>')) !== false
+            || strpos($html_content, htmlspecialchars('<<co_scholastic_prep_grade_marks>>')) !== false) {
             $co_result = $this->get_mmisPrepCoScholastic($standard_id, $value['id'], $format, $result_type);
             $html_content = str_replace(htmlspecialchars("<<co_scholastic_prep_marks>>"), $co_result['co_scholastic_table'] ?? '', $html_content);
             $html_content = str_replace(htmlspecialchars("<<co_scholastic_prep_grade_marks>>"), $co_result['co_scholastic_gradeRange'] ?? '', $html_content);
@@ -8581,7 +8582,7 @@ if ($format === 'yearly') {
 
             $scholaticTableGrades .= '<table class="aca-year" style="width: 80%;border-collapse:collapse; border:1px solid #e68023;" cellspacing="0"  border="1">';
             $scholaticTableGrades .= '<tr>
-            <th align="center"><b>MARKS RANGE</th></b>';
+            <th align="center"><b>SCHOLASTIC MARKS RANGE</th></b>';
             if (isset($gradeRange['mark_range']['SCHOLASTIC_MARKS_RANGE']) && !empty($gradeRange['mark_range']['SCHOLASTIC_MARKS_RANGE'])) {
                 foreach ($gradeRange['mark_range']['SCHOLASTIC_MARKS_RANGE'] as $key => $value) {
                     $scholaticTableGrades .= '<td align="center">' . $value . '</td>';
@@ -8765,13 +8766,29 @@ if ($format === 'yearly') {
             }
             $coScholaticTable .= '</div>';
         }
-        if ($coScholaticTable != '') {
+        {
             $co_grade_range = DB::table('result_co_scholatic_range')->where(['sub_institute_id' => $sub_institute_id, 'syear' => $syear])->get()->toArray();
+            if (empty($co_grade_range)) {
+                $latest_co_syear = DB::table('result_co_scholatic_range')->where('sub_institute_id', $sub_institute_id)->max('syear');
+                if ($latest_co_syear) {
+                    $co_grade_range = DB::table('result_co_scholatic_range')->where(['sub_institute_id' => $sub_institute_id, 'syear' => $latest_co_syear])->get()->toArray();
+                }
+            }
+            // normalise swapped max/min values and sort highest grade first
+            foreach ($co_grade_range as $r) {
+                $hi = max((float) $r->grade_max, (float) $r->grade_min);
+                $lo = min((float) $r->grade_max, (float) $r->grade_min);
+                $r->grade_max = number_format($hi, 1);
+                $r->grade_min = number_format($lo, 1);
+            }
+            usort($co_grade_range, function ($a, $b) {
+                return ((float) $b->grade_max <=> (float) $a->grade_max);
+            });
             //co grade range
-            if (!empty($co_grade_range) && $result_type == "playground") {
+            if (!empty($co_grade_range)) {
                 $coScholaticTableGrades .= '<table class="aca-year hills_co" style="width: 80%;border-collapse:collapse; border:1px solid #e68023;" cellspacing="0" cellpadding="0" border="1">
                 <tr>
-                <th class="data_center"  style="width:312px"><b>MARKS RANGE</b></th>';
+                <th class="data_center"  style="width:312px"><b>CO-SCHOLASTIC MARKS RANGE</b></th>';
                 foreach ($co_grade_range as $key => $value) {
                     $coScholaticTableGrades .= '<td class="data_center">' . $value->grade_max . ' - ' . $value->grade_min . '</td>';
                 }
@@ -8781,9 +8798,9 @@ if ($format === 'yearly') {
                 foreach ($co_grade_range as $key => $value) {
                     $coScholaticTableGrades .= '<td class="data_center">' . $value->title . '</td>';
                 }
-                $coScholaticTableGrades .= '<tr>';
+                $coScholaticTableGrades .= '</tr>';
                 if ($sub_institute_id == 47) {
-                    $coScholaticTableGrades .= '<th class="data_center"  style="width:312px"><b>REMARKS</b></th>';
+                    $coScholaticTableGrades .= '<tr><th class="data_center"  style="width:312px"><b>REMARKS</b></th>';
                     foreach ($co_grade_range as $key => $value) {
                         $coScholaticTableGrades .= '<td class="data_center">' . $value->comment . '</td>';
                     }
