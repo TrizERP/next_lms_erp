@@ -64,7 +64,9 @@ class MobileRoleMenuApiController extends Controller
 
         $shape = fn ($m, bool $enabled) => [
             'id' => (int) $m->id,
-            'title' => trim((string) ($m->menu_title ?: $m->name)),
+            // `name` is the screen's own name; `menu_title` is only the group label shared by siblings.
+            'title' => trim((string) ($m->name ?: $m->menu_title)),
+            'group_title' => trim((string) $m->menu_title),
             'name' => trim((string) $m->name),
             'parent_menu_id' => (int) $m->parent_menu_id,
             'level' => (int) $m->level,
