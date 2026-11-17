@@ -90,6 +90,8 @@ class MobileBootstrapApiController extends Controller
                     'school_name' => (string) $session->get('school_name'),
                 ],
                 'menu' => array_values($sections),
+                // Menus ticked "Mobile" in web Roles & Access (the `menu` above is the older homescreen table).
+                'role_menu' => MobileRoleMenuApiController::forSession($userId, $instituteId, $profileId, $isStudent),
             ],
         ]);
     }
