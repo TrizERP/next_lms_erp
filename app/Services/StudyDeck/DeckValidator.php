@@ -63,6 +63,10 @@ class DeckValidator
      */
     public function validate(array $context, array $map, array $eligible, array $rendered, array $flagged = []): array
     {
+        // The pro Branching Scenario (explore / decide / outcome slides) is judged by its own rules; checked first because it also sets story_mode.
+        if (!empty($map['pro_mode'])) {
+            return $this->validatePro($context, $map, $rendered);
+        }
         if (!empty($map['story_mode'])) {
             return $this->validateStory($context, $map, $rendered);
         }
@@ -198,6 +202,85 @@ class DeckValidator
                 'learning_slides' => count(array_filter($deck['slides'], fn ($s) => $s['slide_type'] !== 'cover')),
                 'discussion_prompts' => 0,
                 'story' => $stats,
+            ],
+        ];
+    }
+
+    /**
+     * A pro Branching Scenario (see Branching\Pro\ProScenarioFormat), judged by what still makes sense for it: slide count, that every concept
+     * is taught and explained, the scenario rules (every answer opens its own outcome, every decision has a sound path, nothing is
+     * unreachable or a dead end, every explore slide has parts on a picture), a readable picture on every slide that is drawn over one,
+     * alt text, no emoji and the same grounding of numbers and names in the chapter text. What does not apply is left out on purpose: no
+     * practice questions are placed, and the Bloom range and word limits describe the printed presentation.
+     *
+     * @return array{ok:bool, errors:array<int,string>, warnings:array<int,string>, stats:array<string,mixed>}
+     */
+    private function validatePro(array $context, array $map, array $rendered): array
+    {
+        $errors = [];
+        $warnings = [];
+        $deck = $rendered['deck'];
+        [$min, $max] = [$map['target_slides']['min'], $map['target_slides']['max']];
+        if ($deck['slide_count'] < $min || $deck['slide_count'] > $max) {
+            $errors[] = sprintf('Deck has %d slides; the target is %d-%d.', $deck['slide_count'], $min, $max);
+        }
+
+        $explained = [];
+        foreach ($deck['slides'] as $s) {
+            foreach ($s['content']['explanations'] as $e) {
+                if (trim((string) $e['text']) !== '') {
+                    $explained[$e['concept_id']] = true;
+                }
+            }
+        }
+        $missing = [];
+        foreach ($map['concepts'] as $id => $c) {
+            if (empty($deck['taught_by'][$id]) || empty($explained[$id])) {
+                $missing[] = $c['name'];
+            }
+        }
+        if ($missing) {
+            $errors[] = 'Concepts with no scenario and explanation of their own: ' . implode('; ', $missing);
+        }
+
+        if (!Branching\Pro\ProScenarioFormat::isPro($deck)) {
+            $errors[] = 'The lesson has no decision to make.';
+        }
+        if (!empty($map['pro_max_slides']) && $deck['slide_count'] > (int) $map['pro_max_slides']) {
+            $errors[] = sprintf('The lesson has %d slides; a Branching Scenario may have at most %d.', $deck['slide_count'], (int) $map['pro_max_slides']);
+        }
+        array_push($errors, ...Branching\Pro\ProScenarioValidator::check($deck['slides']));
+
+        $doc = new DOMDocument();
+        $prev = libxml_use_internal_errors(true);
+        $doc->loadHTML('<?xml encoding="UTF-8"><div id="root">' . $rendered['html'] . '</div>', LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD);
+        libxml_clear_errors();
+        libxml_use_internal_errors($prev);
+        $x = new DOMXPath($doc);
+        foreach ($x->query('//img') as $img) {
+            if (trim($img->getAttribute('alt')) === '') {
+                $errors[] = 'An image has no alt text.';
+            }
+        }
+        if (preg_match('/[\x{1F300}-\x{1FAFF}\x{2600}-\x{27BF}]/u', $rendered['html'])) {
+            $errors[] = 'Contains emoji.';
+        }
+        $this->grounding($rendered['html'], $deck, $context, [], $errors, $warnings);
+
+        $kinds = array_count_values(array_filter(array_map(fn ($s) => $s['interaction']['kind'] ?? null, $deck['slides'])));
+
+        return [
+            'ok' => $errors === [],
+            'errors' => $errors,
+            'warnings' => $warnings,
+            'stats' => [
+                'slides' => $deck['slide_count'], 'concepts' => count($map['concepts']), 'questions_placed' => 0, 'activities' => 0,
+                'images' => count(array_filter($deck['slides'], fn ($s) => !empty($s['image']))), 'visuals_planned' => 0, 'wording_flagged' => 0,
+                'interactions' => $kinds,
+                'interactive_slides' => count(array_filter($deck['slides'], fn ($s) => ($s['interaction'] ?? null) !== null)),
+                'learning_slides' => count(array_filter($deck['slides'], fn ($s) => $s['slide_type'] !== 'cover')),
+                'discussion_prompts' => 0,
+                'branching' => ['decisions' => $kinds['decision'] ?? 0, 'outcomes' => $kinds['outcome'] ?? 0, 'explore' => $kinds['hotspots'] ?? 0],
             ],
         ];
     }

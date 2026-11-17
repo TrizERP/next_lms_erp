@@ -2,6 +2,8 @@
 
 namespace App\Services\CoursePresentation;
 
+use App\Services\StudyDeck\Branching\Pro\ProScenarioFormat;
+use App\Services\StudyDeck\Branching\Pro\ProScenarioValidator;
 use App\Services\StudyDeck\CardTitle;
 use App\Services\StudyDeck\Story\StoryGraph;
 use App\Services\StudyDeck\Story\StoryTemplate;
@@ -131,7 +133,7 @@ class PresentationQuality
 
             // ---- interactions the viewer could not play
             if ($hasInteraction) {
-                $why = self::interactionProblem($s['interaction'], $hasImage && ($s['image']['type'] ?? '') === 'diagram');
+                $why = self::interactionProblem($s['interaction'], $hasImage && (($s['image']['type'] ?? '') === 'diagram' || !empty($s['image']['annotated'])));
                 if ($why !== null) {
                     $add('broken_interaction', $n, "The interaction $why.");
                 }
@@ -146,6 +148,13 @@ class PresentationQuality
                 if (in_array($k, ['reveal', 'compare'], true) && count((array) ($s['interaction']['items'] ?? [])) > self::MAX_REVEAL_ITEMS) {
                     $add('too_dense', $n, 'The interaction has more than ' . self::MAX_REVEAL_ITEMS . ' cards.');
                 }
+            }
+        }
+
+        // ---- a pro Branching Scenario: every answer has its own outcome, every way on leads somewhere, nobody is stranded
+        if (ProScenarioFormat::isPro($deck)) {
+            foreach (ProScenarioValidator::check($slides) as $problem) {
+                $add('broken_story', null, $problem);
             }
         }
 
@@ -295,6 +304,44 @@ class PresentationQuality
                 return null;
             case 'scenario':
                 return empty($i['nodes']) ? 'has no decisions' : null;
+            case 'decision':
+                if (empty($i['question']) || !is_array($i['options'] ?? null) || count($i['options']) < 2) {
+                    return 'has no question or fewer than two answers';
+                }
+                $ids = [];
+                foreach ($i['options'] as $o) {
+                    if (empty($o['id']) || empty($o['text']) || !is_int($o['goto'] ?? null) || $o['goto'] < 1) {
+                        return 'has an answer that opens no slide';
+                    }
+                    $ids[] = $o['id'];
+                }
+
+                return count(array_unique($ids)) === count($ids) ? null : 'repeats an answer id';
+            case 'outcome':
+                if (empty($i['what']) || empty($i['choice']['text'] ?? null) || !is_array($i['actions'] ?? null) || $i['actions'] === []) {
+                    return 'has no consequence or no way on';
+                }
+                foreach ($i['actions'] as $a) {
+                    if (empty($a['label']) || !is_int($a['goto'] ?? null) || $a['goto'] < 1) {
+                        return 'has a button that opens no slide';
+                    }
+                }
+
+                return null;
+            case 'flow':
+                $steps = $i['steps'] ?? null;
+                if (!is_array($steps) || count($steps) < 3) {
+                    return 'has fewer than three steps';
+                }
+                $ids = [];
+                foreach ($steps as $st) {
+                    if (empty($st['id']) || empty($st['label'])) {
+                        return 'has a malformed step';
+                    }
+                    $ids[] = $st['id'];
+                }
+
+                return count(array_unique($ids)) === count($ids) ? null : 'repeats a step id';
         }
 
         return 'has an unknown kind';

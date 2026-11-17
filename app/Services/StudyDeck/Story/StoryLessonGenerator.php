@@ -17,10 +17,22 @@ class StoryLessonGenerator
 
     public StoryWriter $writer;
 
-    public function __construct(Completer $completer, private readonly ?ImagePlanner $images = null)
+    public function __construct(private readonly Completer $completer, private readonly ?ImagePlanner $images = null)
     {
         $this->planner = new StoryPlanner($completer);
         $this->writer = new StoryWriter($completer, $images);
+    }
+
+    /** The model client this generator writes with, so a sibling format (the pro Branching Scenario) writes with the same one. */
+    public function completer(): Completer
+    {
+        return $this->completer;
+    }
+
+    /** The picture planner, for drawing a diagram; null when this run has nowhere to store pictures. */
+    public function imagePlanner(): ?ImagePlanner
+    {
+        return $this->images;
     }
 
     /**
