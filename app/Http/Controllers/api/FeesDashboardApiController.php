@@ -216,6 +216,7 @@ class FeesDashboardApiController extends Controller
             }
 
             $rows[] = [
+                'student_id' => (int) $studentId,
                 'student_name' => (string) ($student['name'] ?? ''),
                 'standard_division' => (string) ($student['stddiv'] ?? ''),
                 'mobile' => (string) ($student['mobile'] ?? ''),

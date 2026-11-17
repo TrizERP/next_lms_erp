@@ -3442,7 +3442,10 @@ if (!empty($fees_data['previous_fees']['Previous Fees'])
 
 
             //END Get Fees paid array
-            if(isset($request->type) || isset($request->month_id)){
+            // `type` (or `month_id`) asks for the paid receipts only. A caller that must send `type=API`
+            // to authenticate with its token (the staff mobile app) adds `detail=full` to still get
+            // the {STU_DATA, PENDING, PAID} structure.
+            if((isset($request->type) && $request->input('detail') !== 'full') || isset($request->month_id)){
                 $res['status'] = 1;
                 $res['message'] = "Success";
                 $res['data'] = $paid_data;
