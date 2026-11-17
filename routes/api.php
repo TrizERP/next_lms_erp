@@ -114,6 +114,8 @@ Route::get('academic-terms', [ApiLoginController::class, 'academicTerms'])->name
 Route::middleware('api.session')->get('own-profile', [\App\Http\Controllers\api\OwnProfileApiController::class, 'show']);
 // Native mobile shell bootstrap: identity + role menu, all derived from the JWT.
 Route::middleware('api.session')->get('mobile/bootstrap', [\App\Http\Controllers\api\MobileBootstrapApiController::class, 'show']);
+// Menus ticked "Mobile" in web Roles & Access (tblgroupwise_rights / tblindividual_rights .is_mobile).
+Route::middleware('api.session')->get('mobile/role-menu', [\App\Http\Controllers\api\MobileRoleMenuApiController::class, 'show']);
 
 // Exchanges the app's JWT for a single-use ticket that opens an ERP web page
 // already logged in, for menu rows whose render_type is 'webview'.
