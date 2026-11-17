@@ -44,6 +44,9 @@ class feesMonthlyReportController extends Controller
         $fees_title_result = DB::table('fees_title')
             ->where('sub_institute_id', session()->get('sub_institute_id'))->where('syear',session()->get('syear'))->orderBy('sort_order')->get()->toArray();
         $fees_title_result = json_decode(json_encode($fees_title_result), true);
+        // Several fee titles can point at the same fees_title column (e.g. two heads both mapped to admission_fee).
+        // Each column may be selected only once, or the UNION query fails with "Duplicate column name".
+        $fees_title_result = array_values(collect($fees_title_result)->unique('fees_title')->all());
 
         $fees_columns = "";
         $other_columns = "";
@@ -247,6 +250,9 @@ class feesMonthlyReportController extends Controller
         $fees_title_result = DB::table('fees_title')
             ->where('sub_institute_id', session()->get('sub_institute_id'))->where('syear',session()->get('syear'))->orderBy('sort_order')->get()->toArray();
         $fees_title_result = json_decode(json_encode($fees_title_result), true);
+        // Several fee titles can point at the same fees_title column (e.g. two heads both mapped to admission_fee).
+        // Each column may be selected only once, or the UNION query fails with "Duplicate column name".
+        $fees_title_result = array_values(collect($fees_title_result)->unique('fees_title')->all());
 
         $fees_columns = "";
         $other_columns = "";
