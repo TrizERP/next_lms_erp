@@ -59,10 +59,8 @@ class MobileRoleMenuApiController extends Controller
     public static function forSession(int $userId, int $tenant, int $profileId, bool $isStudent): array
     {
         // Same union the web sidebar uses: the role's rows OR the user's own rows.
-        // Admin / Super Admin get every screen their role holds on the web; nobody has to tick
-        // hundreds of Mobile boxes for them. Every other role gets exactly what was ticked.
-        $profileName = strtolower(trim((string) DB::table('tbluserprofilemaster')->where('id', $profileId)->value('name')));
-        $isAdmin = in_array($profileName, ['admin', 'super admin'], true);
+        // Every role, Admin included, gets exactly the menus ticked Mobile in Roles & Access.
+        $isAdmin = false;
 
         $ids = DB::table('tblgroupwise_rights')
             ->where('sub_institute_id', $tenant)->where('profile_id', $profileId)
