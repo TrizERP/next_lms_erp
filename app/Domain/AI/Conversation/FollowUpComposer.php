@@ -55,6 +55,7 @@ class FollowUpComposer
     public function forTurn(StageContext $context): array
     {
         $suggestions = [
+            ...$this->forCurriculum($context),
             ...$this->forTaskInFlight($context),
             ...$this->forPendingDecision($context),
             ...$this->forOpenRecord($context),
@@ -445,5 +446,15 @@ class FollowUpComposer
         }
 
         return $out;
+    }
+
+    /**
+     * Curriculum follow-up suggestions derived by ToolAnswerComposer during curriculum turns.
+     *
+     * @return array<int, string>
+     */
+    private function forCurriculum(StageContext $context): array
+    {
+        return $context->followUps();
     }
 }

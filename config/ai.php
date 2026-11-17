@@ -717,6 +717,8 @@ return [
                     'new_pal.gamification_summary',
                     'new_pal.content_model_status',
                     'new_pal.coherence_gaps',
+                    'lms.courses',
+                    'lms.course_summary',
                     'academics.structure',
                     'academics.subjects',
                     'ai.templates.list',
@@ -1734,6 +1736,8 @@ return [
                     'fees.collection_report',
                     'attendance.overview',
                     'academics.structure',
+                    'lms.courses',
+                    'lms.course_summary',
                 ],
                 'depth_reason' => 'The dashboard summarises other modules; it owns no case type of its '
                     . 'own, so the deep stages belong to the module the figure came from.',

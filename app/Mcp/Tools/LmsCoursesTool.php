@@ -11,8 +11,8 @@ use App\Services\Mcp\McpRequestContext;
  *
  * `academics.subjects` turns a subject named in a question into an id. This is the other
  * half: which of those subjects carry published content, for which class, and what
- * chapters are in them. A subject can sit on the timetable with nothing behind it, and
- * answering "what courses do we run" from the subject list would report content the
+ * chapters and topics are in them. A subject can sit on the timetable with nothing behind it,
+ * and answering "what courses do we run" from the subject list would report content the
  * school does not have.
  */
 class LmsCoursesTool extends AbstractMcpTool
@@ -29,9 +29,9 @@ class LmsCoursesTool extends AbstractMcpTool
     public function description(): string
     {
         return 'The published LMS courses for this institute — the subjects that carry content, '
-            . 'the class each is published for, and the chapters inside them. Answers "which '
-            . 'courses are available", "what is in the Science course for Standard 9" and "how '
-            . 'many chapters does this subject have". Includes centrally published content the '
+            . 'the class each is published for, and the chapters and topics inside them. Answers "which '
+            . 'courses are available", "how many courses in Standard 6", "what chapters are in Science", '
+            . 'and "what topics are in this chapter". Includes centrally published content the '
             . 'institute inherits. For resolving a subject name to an id, use academics.subjects.';
     }
 
@@ -43,18 +43,48 @@ class LmsCoursesTool extends AbstractMcpTool
                 'standard_id' => ['type' => 'integer', 'minimum' => 1, 'description' => 'Restrict to one class.'],
                 'standard_name' => [
                     'type' => 'string',
-                    'description' => 'Exact standard name, e.g. "9". Use instead of standard_id.',
+                    'description' => 'Exact or partial standard name, e.g. "6" or "CBSE-6".',
                 ],
                 'subject_id' => ['type' => 'integer', 'minimum' => 1, 'description' => 'Restrict to one subject.'],
+                'subject_name' => [
+                    'type' => 'string',
+                    'description' => 'Subject name filter, e.g. "Science" or "Mathematics".',
+                ],
+                'chapter_id' => ['type' => 'integer', 'minimum' => 1, 'description' => 'Restrict to one chapter.'],
+                'chapter_name' => [
+                    'type' => 'string',
+                    'description' => 'Chapter title or partial name, e.g. "The Wonderful World of Science".',
+                ],
+                'chapter_number' => [
+                    'type' => 'integer',
+                    'minimum' => 1,
+                    'description' => '1-based chapter number within the subject/course.',
+                ],
+                'mode' => [
+                    'type' => 'string',
+                    'enum' => ['courses', 'topics'],
+                    'default' => 'courses',
+                    'description' => 'Whether to query courses/chapters or topics within a chapter.',
+                ],
+                'query_type' => [
+                    'type' => 'string',
+                    'enum' => ['count', 'list'],
+                    'description' => 'Whether the user asked for a count or a full list.',
+                ],
                 'category' => [
                     'type' => 'string',
                     'description' => 'Content category, e.g. "My Course" or "SEL". Omit for all.',
                 ],
-                'query' => ['type' => 'string', 'description' => 'Match part of a course display name.'],
+                'query' => ['type' => 'string', 'description' => 'Match part of a course or topic name.'],
                 'include_chapters' => [
                     'type' => 'boolean',
                     'default' => true,
                     'description' => 'Set false for a shorter answer when only the course list is needed.',
+                ],
+                'include_topics' => [
+                    'type' => 'boolean',
+                    'default' => false,
+                    'description' => 'Set true to retrieve topics for the resolved chapter.',
                 ],
                 'limit' => ['type' => 'integer', 'minimum' => 1, 'maximum' => 200, 'default' => 50],
                 'validate_hierarchy' => [
@@ -80,6 +110,15 @@ class LmsCoursesTool extends AbstractMcpTool
     public function execute(array $arguments, McpRequestContext $context): array
     {
         $this->authorize($context);
+
+        $mode = $arguments['mode'] ?? 'courses';
+        $wantsTopics = $mode === 'topics'
+            || ! empty($arguments['include_topics'])
+            || ! empty($arguments['chapter_id']);
+
+        if ($wantsTopics) {
+            return $this->service->topics($context, $arguments);
+        }
 
         return $this->service->catalogue($context, $arguments);
     }
