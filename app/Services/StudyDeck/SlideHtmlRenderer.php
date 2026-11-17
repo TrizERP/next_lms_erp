@@ -94,7 +94,10 @@ class SlideHtmlRenderer
                     'question_bank' => $slide['question_ids'] !== [],
                     'h5p_pattern_reference' => $slide['h5p_pattern'] !== null,
                 ],
-            ] + $this->workflowFields(empty($map['story_mode']) ? ($plan['workflow'] ?? null) : null, $slide);
+            ]
+            // Where Continue goes, for a slide that names it (the slides of a pro Branching Scenario); every other slide has no `next` key.
+            + (array_key_exists('next', $slide) ? ['next' => (int) $slide['next']] : [])
+            + $this->workflowFields(empty($map['story_mode']) ? ($plan['workflow'] ?? null) : null, $slide);
         }
 
         $credits = [];
@@ -146,6 +149,7 @@ class SlideHtmlRenderer
             'html' => implode("\n", $html),
             'deck' => [
                 'version' => self::DECK_VERSION,
+            ] + (!empty($map['pro_mode']) ? ['theme' => \App\Services\StudyDeck\Branching\Pro\ProScenarioFormat::THEME] : []) + [
                 'chapter' => [
                     'id' => (int) $context['chapter']['id'],
                     'name' => $context['chapter']['chapter_name'],

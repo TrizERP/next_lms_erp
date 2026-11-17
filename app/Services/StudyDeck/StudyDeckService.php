@@ -238,6 +238,11 @@ class StudyDeckService
             $say('pictures', 'Picture coverage on: exact, related, chapter-topic, textbook, reused, AI-generated when enabled, topic-matched fallback and an explicitly enabled placeholder');
         }
         $methodKey = is_string($method) ? $method : (isset($method['key']) ? (string) $method['key'] : null);
+        // The pro Branching Scenario format (explore, decide, see the consequence) for the chapters config/study_deck_pro_branching.php names.
+        // Every other chapter, and any run that hands in a finished story, takes the story path below exactly as before.
+        if (!isset($options['story_prebuilt']) && Branching\Pro\ProScenarioGate::applies((array) ($raw['chapter'] ?? []))) {
+            return $this->fromRawPro($context, $selection, $map, $config, $method, $methodKey, $options, $say, $pictureDeadline, $cover !== null);
+        }
         if (isset($options['story_prebuilt'])) {
             // A finished story handed in (a bundle from an earlier run): its text is not written again.
             $story = StoryLessonGenerator::prebuilt($map, $config, $options['story_prebuilt']);
@@ -289,6 +294,69 @@ class StudyDeckService
         }
         $result['story'] = ['template' => StoryTemplate::KEY, 'version' => (int) $config['version'], 'bible' => $story['bible'], 'notes' => $story['notes'],
             'acts' => array_map(fn ($a) => ['key' => $a['act']['key'], 'title' => $a['act']['title'], 'kind' => $a['act']['kind'], 'required_concept_ids' => $a['act']['required_ids'], 'skeleton' => $a['skeleton']], $story['acts'])];
+
+        return $result;
+    }
+
+    /**
+     * The pro Branching Scenario: the same pipeline stages as a story lesson (context, words, pictures, render, validate), with the
+     * explore / decide / outcome / watch slides of Branching\Pro in place of the story acts. Nothing is stored.
+     *
+     * @param array<string,mixed> $context ConceptContextBuilder::assemble()
+     * @param array<string,mixed> $selection
+     * @param array<string,mixed> $map LearningPlanBuilder::build() (without the teaching method)
+     * @param array<string,mixed> $config StoryTemplate::resolve()['config']
+     * @param array<string,mixed> $options
+     * @return array<string,mixed> as fromRaw(), plus `story` (the format, its acts and notes)
+     */
+    private function fromRawPro(array $context, array $selection, array $map, array $config, mixed $method, ?string $methodKey, array $options, callable $say, ?float $pictureDeadline, bool $pictures): array
+    {
+        $say('story', 'Branching Scenario in the explore / decide / outcome format (Std 8 Science Chapter 1 rollout)');
+        $this->story->writer->useMap($map);
+        $planner = $this->story->imagePlanner();
+        // Photographs first: Wikimedia Commons is searched directly too, so a scene about ploughing or irrigation finds its own photograph
+        // instead of falling back to a generic picture of the subject. Only this format asks for it.
+        $planner?->photosFirst(true);
+        // The picture check fails closed: when it cannot run (a spent AI quota) it approves nothing and every scene would get a generic picture.
+        // Then the text relevance review decides alone, and the run says so.
+        $status = $planner?->verificationStatus();
+        if ($status !== null && empty($status['available'])) {
+            $planner->withoutPixelJudge();
+            $say('pictures', 'The picture check is unavailable (' . $status['reason'] . '); photographs are chosen by the text relevance review only, not by looking at the picture.');
+        }
+        // One picture for every slide drawn over one (45 for a chapter of nine parts): the story's two-minute picture budget is far too short for
+        // that, and a scene that runs out of time gets a generic picture. This format gets time to search for each scene.
+        $pictureDeadline = $pictures ? microtime(true) + max(60.0, (float) ($options['pro_picture_seconds'] ?? 1800)) : null;
+        $this->story->writer->setDeadline($pictureDeadline);
+        // A picture for every slide that is drawn over one: the story picture ladder (search, textbook, reused, generated, topic diagram).
+        $fetch = !$pictures ? null : function (array $nodes, array $act, array &$notes) use ($context, $config, $pictureDeadline): array {
+            $given = $this->story->writer->coverInteraction(['nodes' => $nodes], $context, $act, $config, $notes, $pictureDeadline);
+
+            return $given['nodes'];
+        };
+        // The lesson's length limit (config study_deck_pro_branching.max_slides): topics are grouped into as many parts as fit under it.
+        $maxSlides = (int) config('study_deck_pro_branching.max_slides', 0) ?: null;
+        $builder = new Branching\Pro\ProScenarioBuilder(
+            new Branching\Pro\ProScenarioWriter($this->story->completer()),
+            $fetch,
+            $planner === null ? null : fn (array $spec): array => $planner->diagram($spec),
+            $maxSlides
+        );
+        $built = $builder->build($context, $map, $config, $methodKey, $say, $options['story_checkpoint_dir'] ?? null);
+        $this->story->writer->setDeadline(null);
+        $say('plan', count($built['plan']['slides']) . ' slides assembled (' . count($built['acts']) . ' parts)');
+
+        $map['story_mode'] = true;
+        $map['pro_mode'] = true;
+        $map['pro_max_slides'] = $maxSlides;
+        $map['story_config'] = $config;
+        $map['target_slides'] = ['min' => 3, 'max' => count($built['plan']['slides']) + 4];
+        $result = $this->finish($context, $selection, [], $map, $built['plan'], $built['content'], $built['images'], $built['interactions'], $say);
+        if ($method !== null) {
+            $key = is_string($method) ? $method : (string) ($method['key'] ?? '');
+            $result['report']['teaching_method'] = ['key' => $key, 'followed' => true, 'errors' => [], 'applied_to' => 'the scenario'];
+        }
+        $result['story'] = ['template' => 'branching_scenario_pro', 'version' => 1, 'acts' => $built['acts'], 'notes' => $built['notes']];
 
         return $result;
     }

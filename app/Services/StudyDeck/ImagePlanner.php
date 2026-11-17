@@ -204,6 +204,17 @@ class ImagePlanner
         return is_object($this->pixelJudge) && method_exists($this->pixelJudge, 'probe') ? $this->pixelJudge->probe() : null;
     }
 
+    /**
+     * Stop asking the picture check to look at candidates (it cannot run: a spent quota, say). The text relevance review, which reads each picture's
+     * title, tags and description against the scene, then decides alone, and the picture says so (its alt text is its title, not what it was seen to show).
+     */
+    public function withoutPixelJudge(): static
+    {
+        $this->pixelJudge = null;
+
+        return $this;
+    }
+
     private function timeUp(): bool
     {
         return $this->deadline !== null && microtime(true) >= $this->deadline;

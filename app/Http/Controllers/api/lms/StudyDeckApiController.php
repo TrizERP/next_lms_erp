@@ -4,6 +4,7 @@ namespace App\Http\Controllers\api\lms;
 
 use App\Http\Controllers\Controller;
 use App\Services\ContentGenerationService;
+use App\Services\StudyDeck\Branching\Pro\ProScenarioConverter;
 use App\Services\StudyDeck\Documents\DocumentKind;
 use App\Services\StudyDeck\StudyDeckImageUrls;
 use Illuminate\Http\JsonResponse;
@@ -48,6 +49,13 @@ class StudyDeckApiController extends Controller
         }
         if (!is_array($deck) || ($deck['version'] ?? 0) < 3) {
             return response()->json(['status_code' => 0, 'message' => 'The stored study deck could not be read.'], 502);
+        }
+
+        // A Branching Scenario stored in the older story format is shown in the pro format for the chapters config/study_deck_pro_branching.php
+        // names. This is read-only: the stored deck is not touched, and one that cannot be converted cleanly is served exactly as stored.
+        $deck = ProScenarioConverter::forRead($deck);
+        if (ProScenarioConverter::$lastRefusal !== null) {
+            \Illuminate\Support\Facades\Log::warning('study-deck.pro-conversion-refused', ['content_id' => (int) $row->id, 'reason' => ProScenarioConverter::$lastRefusal]);
         }
 
         // The stored deck names its pictures by reference; the browser gets addresses it can load, issued to the

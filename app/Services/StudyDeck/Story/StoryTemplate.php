@@ -40,7 +40,10 @@ final class StoryTemplate
 
     public const CATEGORY = 'Interactive';
 
-    /** True for a deck whose lesson is made of story acts (any slide's interaction names this template). */
+    /**
+     * True for a deck whose lesson is a Branching Scenario: made of story acts (any slide's interaction names this template), or of the
+     * explore / decide / outcome slides of the pro format (Branching\Pro\ProScenarioFormat). Both are filed, named and checked as one kind of item.
+     */
     public static function isStory(array $deck): bool
     {
         foreach ((array) ($deck['slides'] ?? []) as $s) {
@@ -49,7 +52,7 @@ final class StoryTemplate
             }
         }
 
-        return false;
+        return \App\Services\StudyDeck\Branching\Pro\ProScenarioFormat::isPro($deck);
     }
 
     /**

@@ -49,6 +49,7 @@ class StudyDeckPdfRenderer
     protected const HEADING = [
         'hotspots' => 'Explore the diagram', 'scenario' => 'What would you do?', 'reveal' => 'Discover', 'steps' => 'Step by step',
         'timeline' => 'Timeline', 'compare' => 'Compare', 'match' => 'Match', 'order' => 'Put in order',
+        'decision' => 'What would you do?', 'outcome' => 'What happens next', 'flow' => 'Watch it work',
     ];
 
     /** What the learner does with each kind of activity in the Study Deck. */
@@ -61,6 +62,9 @@ class StudyDeckPdfRenderer
         'match' => 'Match every term with its meaning.',
         'order' => 'Put the steps into their correct order.',
         'scenario' => 'Make each decision and see what happens next.',
+        'decision' => 'Choose an answer and see what it leads to.',
+        'outcome' => 'This is what one answer leads to; you can choose again.',
+        'flow' => 'Watch the steps play, or step through them.',
     ];
 
     /** Rows a legend may have and still be kept on one page; longer ones are left to run on. */
@@ -397,6 +401,17 @@ class StudyDeckPdfRenderer
                 break;
             case 'scenario':
                 $chunks = $this->scenario($i, $revision);
+                break;
+            case 'decision':
+                // The question is the text before the answers; each answer says which letter the learner meets it by.
+                $intro .= '<div class="dec"><strong>' . $this->e((string) ($i['question'] ?? '')) . '</strong></div>';
+                $chunks = $this->legend(array_map(fn ($o) => ['Answer ' . strtoupper((string) ($o['id'] ?? '')), (string) ($o['text'] ?? '')], $i['options'] ?? []));
+                break;
+            case 'outcome':
+                $chunks = $this->legend([['You chose ' . strtoupper((string) ($i['choice']['id'] ?? '')) . ': ' . (string) ($i['choice']['text'] ?? ''), (string) ($i['what'] ?? '')], ['Why', (string) ($i['why'] ?? '')]]);
+                break;
+            case 'flow':
+                $chunks = $this->legend(array_map(fn ($st) => [(string) ($st['label'] ?? ''), ''], $i['steps'] ?? []), 'Step ');
                 break;
             default:
                 $chunks = [];
