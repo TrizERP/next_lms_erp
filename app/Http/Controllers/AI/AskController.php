@@ -89,8 +89,9 @@ class AskController extends AiController
                 'input_mode' => 'nullable|string|in:voice,text',
             ]);
 
+            $rawPayload = (array) $request->input('payload', []);
             $options = [
-                'payload' => $validated['payload'] ?? [],
+                'payload' => array_merge($rawPayload, $validated['payload'] ?? []),
                 'limit' => $validated['limit'] ?? null,
                 'module' => $validated['module'] ?? null,
                 'route' => $validated['route'] ?? null,
@@ -177,8 +178,9 @@ class AskController extends AiController
             return $this->handle($exception);
         }
 
+        $rawPayload = (array) $request->input('payload', []);
         $options = [
-            'payload' => $validated['payload'] ?? [],
+            'payload' => array_merge($rawPayload, $validated['payload'] ?? []),
             'limit' => $validated['limit'] ?? null,
             'module' => $validated['module'] ?? null,
             'route' => $validated['route'] ?? null,

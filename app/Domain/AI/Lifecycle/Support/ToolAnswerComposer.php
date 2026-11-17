@@ -43,6 +43,15 @@ class ToolAnswerComposer
         );
     }
 
+    public static function asksForCount(string $question): bool
+    {
+        return (bool) (
+            preg_match('/\b(?:how many|count|number of|total number|how much)\b/i', $question)
+            || preg_match('/(?:કેટલા|કેટલી|કેટલો|સંખ્યા|કુલ સંખ્યા)/u', $question)
+            || preg_match('/(?:कितने|कितनी|संख्या|कुल संख्या)/u', $question)
+        );
+    }
+
     /** Keys that make a good heading for a record, most identifying first. */
     private const TITLE_KEYS = [
         'student_name', 'teacher_name', 'full_name', 'name', 'title', 'label', 'chapter_name',
@@ -112,6 +121,12 @@ class ToolAnswerComposer
         $answer = $this->answerList($lists);
 
         if ($answer === null) {
+            return;
+        }
+
+        if ($answer['tool'] === 'lms.courses') {
+            $this->composeCurriculumAnswer($context, $answer, $lists);
+
             return;
         }
 
@@ -668,5 +683,400 @@ class ToolAnswerComposer
         }
 
         return ($negative ? '-' : '') . '₹' . $whole;
+    }
+
+    /**
+     * Compose exact database-grounded answers for LMS / PAL curriculum queries.
+     *
+     * @param array<string, mixed> $answer
+     * @param array<int, array<string, mixed>> $lists
+     */
+    private function composeCurriculumAnswer(StageContext $context, array $answer, array $lists): void
+    {
+        $payload = (array) ($answer['payload'] ?? []);
+        $question = $context->question;
+
+        // Detect language: Gujarati, Hindi, or English
+        $lang = 'en';
+        if (preg_match('/[\x{0A80}-\x{0AFF}]/u', $question)) {
+            $lang = 'gu';
+        } elseif (preg_match('/[\x{0900}-\x{097F}]/u', $question)) {
+            $lang = 'hi';
+        }
+
+        $queryType = $payload['query_type']
+            ?? $context->intent?->slot('query_type')
+            ?? ($this->asksForCount($question) ? 'count' : 'list');
+
+        $intentKey = $context->intent?->key ?? '';
+
+        $isTopics = ($intentKey === 'lms_topic_query')
+            || ($answer['key'] === 'topics')
+            || isset($payload['topics'])
+            || stripos($question, 'topic') !== false
+            || preg_match('/(ટોપિક|મુદ્દા|ટોપીક|टॉपिक|मुद्दे)/u', $question);
+
+        $isChapters = ($intentKey === 'lms_chapter_query')
+            || (! $isTopics && (
+                stripos($question, 'chapter') !== false
+                || preg_match('/(પ્રકરણ|અધ્યાય|पाठ)/u', $question)
+                || ! empty($payload['chapters'])
+                || ! empty($context->intent?->slot('subject_name'))
+            ));
+
+        if ($isTopics) {
+            $this->composeTopicsCurriculumAnswer($context, $payload, $answer, $lists, $queryType, $lang);
+        } elseif ($isChapters) {
+            $this->composeChaptersCurriculumAnswer($context, $payload, $answer, $lists, $queryType, $lang);
+        } else {
+            $this->composeCoursesCurriculumAnswer($context, $payload, $answer, $lists, $queryType, $lang);
+        }
+    }
+
+    private function composeCoursesCurriculumAnswer(
+        StageContext $context,
+        array $payload,
+        array $answer,
+        array $lists,
+        string $queryType,
+        string $lang
+    ): void {
+        $courses = $payload['courses'] ?? $answer['items'] ?? [];
+        $count = count($courses);
+
+        $rawStd = $courses[0]['standard_name'] ?? $context->intent?->slot('standard_name') ?? 'this standard';
+        $displayStd = preg_replace('/^(CBSE|ICSE|GSEB)-/i', 'Standard ', $rawStd);
+        if (ctype_digit($displayStd)) {
+            $displayStd = 'Standard ' . $displayStd;
+        }
+
+        if ($count === 0) {
+            $msg = match ($lang) {
+                'gu' => sprintf('ડેટાબેઝમાં %s માટે કોઈ કોર્સ ઉપલબ્ધ નથી.', $displayStd),
+                'hi' => sprintf('डेटाबेस में %s के लिए कोई कोर्स उपलब्ध नहीं है.', $displayStd),
+                default => sprintf('No courses are available in %s.', $displayStd),
+            };
+            $context->setHeadline($msg);
+            $this->provenance($context, $lists);
+            return;
+        }
+
+        // Link memory for multi-turn follow-ups
+        $context->link([
+            'standard_name' => $rawStd,
+            'standard_id' => $courses[0]['standard_id'] ?? null,
+            'curriculum_context' => [
+                'standard_name' => $rawStd,
+                'standard_id' => $courses[0]['standard_id'] ?? null,
+                'course_count' => $count,
+            ],
+        ]);
+
+        if ($queryType === 'count') {
+            $headline = match ($lang) {
+                'gu' => sprintf('%s માં %d કોર્સ ઉપલબ્ધ છે.', $displayStd, $count),
+                'hi' => sprintf('%s में %d कोर्स उपलब्ध हैं.', $displayStd, $count),
+                default => sprintf('There are %d courses available in %s.', $count, $displayStd),
+            };
+            $context->setHeadline($headline);
+
+            match ($lang) {
+                'gu' => [
+                    $context->suggestFollowUp('કયા વિષયો શામેલ છે?'),
+                    $context->suggestFollowUp('વિજ્ઞાનમાં કેટલા પ્રકરણો છે?'),
+                ],
+                'hi' => [
+                    $context->suggestFollowUp('कौन से विषय शामिल हैं?'),
+                    $context->suggestFollowUp('विज्ञान में कितने अध्याय हैं?'),
+                ],
+                default => [
+                    $context->suggestFollowUp('Which subjects are included?'),
+                    $context->suggestFollowUp('How many chapters are there in Science?'),
+                ],
+            };
+        } else {
+            $subjectNames = array_map(fn ($c) => $c['subject_name'], $courses);
+            $subjectListStr = implode(', ', $subjectNames);
+
+            $headline = match ($lang) {
+                'gu' => sprintf('%s માં સમાવિષ્ટ વિષયો: %s.', $displayStd, $subjectListStr),
+                'hi' => sprintf('%s में शामिल विषय: %s.', $displayStd, $subjectListStr),
+                default => sprintf('The subjects included in %s are: %s.', $displayStd, $subjectListStr),
+            };
+            $context->setHeadline($headline);
+
+            $this->rememberList($context, $answer, $courses);
+
+            $context->addSection($this->compose->records(
+                $this->sectionTitle($answer),
+                array_map(fn ($c) => [
+                    'title' => $c['subject_name'],
+                    'meta' => array_filter([
+                        'Chapters' => ! empty($c['chapter_count']) ? sprintf('%d chapters', $c['chapter_count']) : null,
+                        'Category' => $c['category'] ?? 'My Course',
+                    ]),
+                ], $courses)
+            ));
+
+            match ($lang) {
+                'gu' => [
+                    $context->suggestFollowUp('વિજ્ઞાનમાં કેટલા પ્રકરણો છે?'),
+                    $context->suggestFollowUp('ગણિતમાં કેટલા પ્રકરણો છે?'),
+                ],
+                'hi' => [
+                    $context->suggestFollowUp('विज्ञान में कितने अध्याय हैं?'),
+                    $context->suggestFollowUp('गणित में कितने अध्याय हैं?'),
+                ],
+                default => [
+                    $context->suggestFollowUp('How many chapters are there in Science?'),
+                    $context->suggestFollowUp('How many chapters are there in Mathematics?'),
+                ],
+            };
+        }
+
+        $this->provenance($context, $lists);
+    }
+
+    private function composeChaptersCurriculumAnswer(
+        StageContext $context,
+        array $payload,
+        array $answer,
+        array $lists,
+        string $queryType,
+        string $lang
+    ): void {
+        $courses = $payload['courses'] ?? [];
+        $targetCourse = null;
+
+        $askedSubject = trim((string) ($context->intent?->slot('subject_name') ?? $context->thread['memory']['subject_name'] ?? ''));
+
+        if ($askedSubject !== '' && ! empty($courses)) {
+            // Exact match first
+            foreach ($courses as $c) {
+                if (strcasecmp($c['subject_name'], $askedSubject) === 0) {
+                    $targetCourse = $c;
+                    break;
+                }
+            }
+            if ($targetCourse === null) {
+                foreach ($courses as $c) {
+                    if (stripos($c['subject_name'], $askedSubject) !== false) {
+                        $targetCourse = $c;
+                        break;
+                    }
+                }
+            }
+        }
+
+        if ($targetCourse === null && ! empty($courses)) {
+            $targetCourse = $courses[0];
+        }
+
+        $chapters = $targetCourse['chapters'] ?? $payload['chapters'] ?? [];
+        $chapterCount = count($chapters);
+
+        $subjectName = $targetCourse['subject_name'] ?? $askedSubject;
+        if ($subjectName === '') {
+            $subjectName = 'this course';
+        }
+
+        $stdName = $targetCourse['standard_name'] ?? $context->intent?->slot('standard_name') ?? $context->thread['memory']['standard_name'] ?? '';
+
+        if ($chapterCount === 0) {
+            $msg = match ($lang) {
+                'gu' => sprintf('ડેટાબેઝમાં %s માટે કોઈ પ્રકરણો મળ્યા નથી.', $subjectName),
+                'hi' => sprintf('डेटाबेस में %s के लिए कोई अध्याय नहीं मिले.', $subjectName),
+                default => sprintf('No chapters were found for %s in the database.', $subjectName),
+            };
+            $context->setHeadline($msg);
+            $this->provenance($context, $lists);
+            return;
+        }
+
+        // Link memory for follow-ups
+        $context->link([
+            'subject_name' => $subjectName,
+            'subject_id' => $targetCourse['subject_id'] ?? null,
+            'standard_name' => $stdName,
+            'standard_id' => $targetCourse['standard_id'] ?? null,
+            'chapter_name' => $chapters[0]['chapter_name'] ?? null,
+            'chapter_id' => $chapters[0]['chapter_id'] ?? null,
+            'curriculum_context' => [
+                'subject_name' => $subjectName,
+                'standard_name' => $stdName,
+                'chapter_count' => $chapterCount,
+                'first_chapter' => $chapters[0]['chapter_name'] ?? null,
+            ],
+        ]);
+
+        if ($queryType === 'count') {
+            $headline = match ($lang) {
+                'gu' => sprintf('%s માં %d પ્રકરણો ઉપલબ્ધ છે.', $subjectName, $chapterCount),
+                'hi' => sprintf('%s में %d अध्याय उपलब्ध हैं.', $subjectName, $chapterCount),
+                default => sprintf('There are %d chapters available in %s.', $chapterCount, $subjectName),
+            };
+            $context->setHeadline($headline);
+
+            match ($lang) {
+                'gu' => [
+                    $context->suggestFollowUp('બધા પ્રકરણો બતાવો'),
+                    $context->suggestFollowUp('પહેલા પ્રકરણમાં કયા વિષયો છે?'),
+                ],
+                'hi' => [
+                    $context->suggestFollowUp('सभी अध्याय दिखाएं'),
+                    $context->suggestFollowUp('पहले अध्याय में कौन से टॉपिक हैं?'),
+                ],
+                default => [
+                    $context->suggestFollowUp('Show me all the chapters'),
+                    $context->suggestFollowUp('Which topics are in the first chapter?'),
+                ],
+            };
+        } else {
+            $headline = match ($lang) {
+                'gu' => sprintf('%s ના ઉપલબ્ધ પ્રકરણો (%d):', $subjectName, $chapterCount),
+                'hi' => sprintf('%s के उपलब्ध अध्याय (%d):', $subjectName, $chapterCount),
+                default => sprintf('There are %d chapters available in %s:', $chapterCount, $subjectName),
+            };
+            $context->setHeadline($headline);
+
+            $this->rememberList($context, [
+                'tool' => 'lms.courses',
+                'key' => 'chapters',
+                'items' => $chapters,
+                'payload' => $payload,
+            ], $chapters);
+
+            $context->addSection($this->compose->records(
+                sprintf('%s Chapters', $subjectName),
+                array_map(fn ($ch, $idx) => [
+                    'title' => sprintf('%d. %s', $idx + 1, $ch['chapter_name']),
+                    'meta' => array_filter([
+                        'Description' => ! empty($ch['description']) ? substr($ch['description'], 0, 150) . '...' : null,
+                    ]),
+                ], $chapters, array_keys($chapters))
+            ));
+
+            $firstChName = $chapters[0]['chapter_name'] ?? 'the first chapter';
+            match ($lang) {
+                'gu' => [
+                    $context->suggestFollowUp('આ પ્રકરણમાં કયા વિષયો છે?'),
+                    $context->suggestFollowUp(sprintf('"%s" માં કયા ટોપિક્સ છે?', $firstChName)),
+                ],
+                'hi' => [
+                    $context->suggestFollowUp('इस अध्याय में कौन से टॉपिक हैं?'),
+                    $context->suggestFollowUp(sprintf('"%s" में कौन से टॉपिक हैं?', $firstChName)),
+                ],
+                default => [
+                    $context->suggestFollowUp('Which topics are available in this chapter?'),
+                    $context->suggestFollowUp(sprintf('Show topics in %s', $firstChName)),
+                ],
+            };
+        }
+
+        $this->provenance($context, $lists);
+    }
+
+    private function composeTopicsCurriculumAnswer(
+        StageContext $context,
+        array $payload,
+        array $answer,
+        array $lists,
+        string $queryType,
+        string $lang
+    ): void {
+        $topics = $payload['topics'] ?? $answer['items'] ?? [];
+        $topicCount = count($topics);
+
+        $chapterName = $payload['chapter_name']
+            ?? $context->intent?->slot('chapter_name')
+            ?? $context->thread['memory']['chapter_name']
+            ?? 'this chapter';
+
+        if ($topicCount === 0) {
+            $msg = match ($lang) {
+                'gu' => sprintf('ડેટાબેઝમાં "%s" માટે કોઈ વિષયો મળ્યા નથી.', $chapterName),
+                'hi' => sprintf('डेटाबेस में "%s" के लिए कोई टॉपिक नहीं मिले.', $chapterName),
+                default => sprintf('No topics were found for "%s" in the database.', $chapterName),
+            };
+            $context->setHeadline($msg);
+            $this->provenance($context, $lists);
+            return;
+        }
+
+        $context->link([
+            'chapter_name' => $chapterName,
+            'chapter_id' => $payload['chapter_id'] ?? null,
+            'curriculum_context' => [
+                'chapter_name' => $chapterName,
+                'chapter_id' => $payload['chapter_id'] ?? null,
+                'topic_count' => $topicCount,
+            ],
+        ]);
+
+        if ($queryType === 'count') {
+            $headline = match ($lang) {
+                'gu' => sprintf('"%s" માં %d વિષયો ઉપલબ્ધ છે.', $chapterName, $topicCount),
+                'hi' => sprintf('"%s" में %d टॉपिक उपलब्ध हैं.', $chapterName, $topicCount),
+                default => sprintf('There are %d topics available in "%s".', $topicCount, $chapterName),
+            };
+            $context->setHeadline($headline);
+
+            match ($lang) {
+                'gu' => [
+                    $context->suggestFollowUp('આ પ્રકરણના બધા વિષયો બતાવો'),
+                    $context->suggestFollowUp('બીજા પ્રકરણમાં કેટલા ટોપિક્સ છે?'),
+                ],
+                'hi' => [
+                    $context->suggestFollowUp('इस अध्याय के सभी टॉपिक दिखाएं'),
+                    $context->suggestFollowUp('दूसरे अध्याय में कितने टॉपिक हैं?'),
+                ],
+                default => [
+                    $context->suggestFollowUp('Show all topics in this chapter'),
+                    $context->suggestFollowUp('How many topics are in Chapter 2?'),
+                ],
+            };
+        } else {
+            $headline = match ($lang) {
+                'gu' => sprintf('"%s" ના ઉપલબ્ધ વિષયો (%d):', $chapterName, $topicCount),
+                'hi' => sprintf('"%s" के उपलब्ध टॉपिक (%d):', $chapterName, $topicCount),
+                default => sprintf('There are %d topics available in "%s":', $topicCount, $chapterName),
+            };
+            $context->setHeadline($headline);
+
+            $this->rememberList($context, [
+                'tool' => 'lms.courses',
+                'key' => 'topics',
+                'items' => $topics,
+                'payload' => $payload,
+            ], $topics);
+
+            $context->addSection($this->compose->records(
+                sprintf('Topics in %s', $chapterName),
+                array_map(fn ($tp, $idx) => [
+                    'title' => sprintf('%d. %s', $idx + 1, $tp['topic_name'] ?? $tp['name'] ?? 'Topic'),
+                    'meta' => array_filter([
+                        'Duration' => ! empty($tp['estimated_minutes']) ? sprintf('%d mins', $tp['estimated_minutes']) : null,
+                        'Description' => ! empty($tp['description']) ? substr($tp['description'], 0, 150) . '...' : null,
+                    ]),
+                ], $topics, array_keys($topics))
+            ));
+
+            match ($lang) {
+                'gu' => [
+                    $context->suggestFollowUp('બીજા પ્રકરણના વિષયો બતાવો'),
+                    $context->suggestFollowUp('વિજ્ઞાનમાં કેટલા પ્રકરણો છે?'),
+                ],
+                'hi' => [
+                    $context->suggestFollowUp('दूसरे अध्याय के टॉपिक दिखाएं'),
+                    $context->suggestFollowUp('विज्ञान में कितने अध्याय हैं?'),
+                ],
+                default => [
+                    $context->suggestFollowUp('Show topics in Chapter 2'),
+                    $context->suggestFollowUp('How many chapters are there in Science?'),
+                ],
+            };
+        }
+
+        $this->provenance($context, $lists);
     }
 }

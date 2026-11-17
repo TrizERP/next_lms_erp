@@ -675,6 +675,145 @@ class IntentClassifier
             ],
             'slots' => [],
         ],
+
+        'lms_course_query' => [
+            'label' => 'Course count or catalogue query',
+            'description' => 'Find how many or which courses/subjects are available for a standard or grade.',
+            'anchors' => ['course', 'courses', 'subject', 'subjects', 'standard', 'grade', 'class', 'std', 'corse', 'ધોરણ', 'વિષય', 'કોર્સ', 'કક્ષા', 'पाठ्यक्रम'],
+            'signals' => [
+                'how many courses' => 5.0, 'course count' => 4.5, 'number of courses' => 4.5,
+                'courses available' => 4.0, 'which courses' => 4.0, 'what courses' => 4.0,
+                'list courses' => 4.0, 'show courses' => 4.0, 'all courses' => 3.5,
+                'courses in standard' => 5.0, 'courses in grade' => 5.0, 'courses in class' => 5.0,
+                'available courses' => 4.0, 'available in this standard' => 5.5,
+                'courses are available' => 4.5, 'how many courses are available' => 6.0,
+                'available in standard' => 5.0, 'available in grade' => 5.0,
+                'in this standard' => 4.0, 'in this class' => 4.0, 'in this grade' => 4.0,
+                'how many course' => 5.0, 'courses in this' => 4.5,
+                'કેટલા કોર્સ' => 5.0, 'કોર્સ ઉપલબ્ધ' => 4.5, 'કેટલા વિષયો' => 4.0, 'કયા કોર્સ' => 4.5,
+                'આ ધોરણમાં' => 4.5, 'ધોરણમાં કેટલા' => 4.5, 'કેટલા કોર્સ ઉપલબ્ધ' => 5.5, 'કુલ કોર્સ' => 4.0,
+                'કેટલા કોર્સ છે' => 5.5, 'આ ધોરણમાં કેટલા કોર્સ' => 6.0,
+                'कितने कोर्स' => 5.0, 'कोर्स उपलब्ध' => 4.5, 'कितने विषय' => 4.0, 'कौन से कोर्स' => 4.5,
+                'इस कक्षा में' => 4.5, 'कक्षा में कितने' => 4.5, 'कितने कोर्स उपलब्ध' => 5.5, 'कुल कोर्स' => 4.0,
+                'कितने कोर्स हैं' => 5.5, 'इस कक्षा में कितने कोर्स' => 6.0,
+            ],
+            'patterns' => [
+                '/\bhow\s+many\s+courses?\b/i',
+                '/\b(?:number|count)\s+of\s+courses?\b/i',
+                '/\b(?:which|what|list|show)\s+(?:all\s+)?courses?\b/i',
+                '/\bcourses?\s+(?:are\s+)?available\b/i',
+                '/\bcourses?\s+(?:in|for)\s+(?:standard|grade|class|std|this)\b/i',
+                '/\bavailable\s+in\s+this\s+(?:standard|grade|class)\b/i',
+                '/કેટલા\s+કોર્સ/u',
+                '/કોર્સ\s+ઉપલબ્ધ/u',
+                '/આ\s+ધોરણમાં\s+કેટલા/u',
+                '/ધોરણ\s*\d+.*કેટલા\s+કોર્સ/u',
+                '/कितने\s+कोर्स/u',
+                '/कोर्स\s+उपलब्ध/u',
+                '/इस\s+कक्षा\s+में\s+कितने/u',
+                '/कक्षा\s*\d+.*कितने\s+कोर्स/u',
+            ],
+            'slots' => ['standard', 'query_type'],
+        ],
+
+        'lms_subject_query' => [
+            'label' => 'Subject list query',
+            'description' => 'Find which subjects are included or available in a standard or course catalogue.',
+            'anchors' => ['subject', 'subjects', 'included', 'include', 'taught', 'sub', 'વિષય', 'વિષયો', 'સમાવિષ્ટ', 'विषय', 'शामिल'],
+            'signals' => [
+                'which subjects' => 5.0, 'what subjects' => 4.5, 'subjects are included' => 5.5,
+                'subjects included' => 5.0, 'which subjects are included' => 6.0,
+                'list subjects' => 4.0, 'show subjects' => 4.0, 'all subjects' => 4.0,
+                'what are the subjects' => 5.0, 'subjects in this' => 4.5, 'subjects in standard' => 4.5,
+                'included in' => 4.0, 'are included' => 4.5,
+                'કયા વિષયો' => 5.0, 'વિષયો સમાવિષ્ટ' => 5.0, 'કયા વિષયો સમાવિષ્ટ છે' => 6.0, 'બધા વિષયો' => 4.5,
+                'કયા વિષયો છે' => 5.0, 'કયા કયા વિષયો' => 5.0,
+                'कौन से विषय' => 5.0, 'विषय शामिल' => 5.0, 'कौन से विषय शामिल हैं' => 6.0, 'सभी विषय' => 4.5,
+                'कौन कौन से विषय' => 5.0,
+            ],
+            'patterns' => [
+                '/\bwhich\s+subjects?(?:\s+are)?\s+included\b/i',
+                '/\b(?:which|what|list|show)\s+(?:all\s+)?subjects?\b/i',
+                '/\bsubjects?\s+(?:in|for)\s+(?:standard|grade|class|std|this)\b/i',
+                '/\bwhat\s+are\s+the\s+subjects?\b/i',
+                '/કયા\s+વિષયો/u',
+                '/વિષયો\s+સમાવિષ્ટ/u',
+                '/कौन\s+से\s+विषय/u',
+                '/विषय\s+शामिल/u',
+            ],
+            'slots' => ['standard', 'query_type'],
+        ],
+
+        'lms_chapter_query' => [
+            'label' => 'Chapter query',
+            'description' => 'Find chapter count or list chapters for a specific course or subject.',
+            'anchors' => ['chapter', 'chapters', 'lesson', 'lessons', 'unit', 'units', 'chp', 'ch', 'પ્રકરણ', 'પ્રકરણો', 'અધ્યાય', 'पाठ'],
+            'signals' => [
+                'how many chapters' => 5.0, 'chapter count' => 4.5, 'number of chapters' => 4.5,
+                'which chapters' => 4.5, 'what chapters' => 4.0, 'show all the chapters' => 5.5,
+                'show me all the chapters' => 6.0, 'list chapters' => 4.5, 'all the chapters' => 4.5,
+                'all chapters' => 4.5, 'chapters in' => 4.0, 'chapters of' => 4.0,
+                'chapters available' => 4.0, 'chapters are available' => 4.5,
+                'how many chapters are available' => 6.0, 'available in this course' => 5.0,
+                'in this course' => 4.0, 'in science' => 4.0, 'in mathematics' => 4.0,
+                'show all chapters' => 5.0, 'list all chapters' => 5.0,
+                'કેટલા પ્રકરણ' => 5.0, 'કેટલા પ્રકરણો' => 5.0, 'કયા પ્રકરણો' => 4.5, 'બધા પ્રકરણો' => 5.0,
+                'બધા પ્રકરણો બતાવો' => 5.5, 'આ કોર્સમાં કયા પ્રકરણો' => 5.5, 'પ્રકરણો બતાવો' => 4.5,
+                'કેટલા પ્રકરણ છે' => 5.0, 'કેટલા પ્રકરણો ઉપલબ્ધ છે' => 6.0,
+                'कितने अध्याय' => 5.0, 'कितने पाठ' => 5.0, 'कौन से अध्याय' => 4.5, 'सभी अध्याय' => 5.0,
+                'सभी अध्याय दिखाएं' => 5.5, 'इस कोर्स में कौन से अध्याय' => 5.5, 'अध्याय दिखाएं' => 4.5,
+                'कितने अध्याय हैं' => 5.0, 'कितने अध्याय उपलब्ध हैं' => 6.0,
+            ],
+            'patterns' => [
+                '/\bhow\s+many\s+chapters?\b/i',
+                '/\b(?:number|count)\s+of\s+chapters?\b/i',
+                '/\b(?:which|what|list|show|display)\s+(?:me\s+)?(?:all\s+(?:the\s+)?)?chapters?\b/i',
+                '/\bchapters?\s+(?:are\s+)?available\b/i',
+                '/\bchapters?\s+(?:in|of|for)\b/i',
+                '/કેટલા\s+પ્રકરણ/u',
+                '/કયા\s+પ્રકરણ/u',
+                '/બધા\s+પ્રકરણ/u',
+                '/કેટલા\s+અધ્યાય/u',
+                '/कितने\s+अध्याय/u',
+                '/कौन\s+से\s+अध्याय/u',
+                '/सभी\s+अध्याय/u',
+            ],
+            'slots' => ['standard', 'subject', 'course', 'query_type'],
+        ],
+
+        'lms_topic_query' => [
+            'label' => 'Topic query',
+            'description' => 'Find topic count or list topics within a particular chapter.',
+            'anchors' => ['topic', 'topics', 'concept', 'concepts', 'subtopic', 'subtopics', 'ટોપિક', 'ટોપિક્સ', 'વિષયાંગ', 'મુદ્દા', 'મુદ્દે', 'टॉपिक', 'टॉपिक्स'],
+            'signals' => [
+                'how many topics' => 5.0, 'topic count' => 4.5, 'number of topics' => 4.5,
+                'which topics' => 4.5, 'what topics' => 4.0, 'show all topics' => 5.0,
+                'list topics' => 4.5, 'topics in' => 4.0, 'topics of' => 4.0,
+                'topics within' => 4.5, 'topics available' => 4.0, 'topics in this chapter' => 5.5,
+                'topics within a particular chapter' => 6.0, 'available in this chapter' => 5.0,
+                'in this chapter' => 4.5, 'topics for chapter' => 5.0, 'topics of chapter' => 5.0,
+                'show topics' => 4.5, 'list all topics' => 5.0,
+                'કેટલા ટોપિક' => 5.0, 'કયા ટોપિક' => 4.5, 'આ પ્રકરણમાં કયા ટોપિક' => 5.5,
+                'ટોપિક્સ બતાવો' => 4.5, 'ટોપિક બતાવો' => 4.5, 'આ પ્રકરણમાં કેટલા ટોપિક' => 5.5,
+                'કેટલા ટોપિક્સ' => 5.0,
+                'कितने टॉपिक' => 5.0, 'कौन से टॉपिक' => 4.5, 'इस अध्याय में कौन से टॉपिक' => 5.5,
+                'टॉपिक दिखाएं' => 4.5, 'इस अध्याय में कितने टॉपिक' => 5.5, 'कितने टॉपिक्स' => 5.0,
+            ],
+            'patterns' => [
+                '/\bhow\s+many\s+topics?\b/i',
+                '/\b(?:number|count)\s+of\s+topics?\b/i',
+                '/\b(?:which|what|list|show|display)\s+(?:me\s+)?(?:all\s+(?:the\s+)?)?topics?\b/i',
+                '/\btopics?\s+(?:are\s+)?available\b/i',
+                '/\btopics?\s+(?:in|within|of|for)\b/i',
+                '/કેટલા\s+ટોપિક/u',
+                '/કયા\s+ટોપિક/u',
+                '/આ\s+પ્રકરણમાં/u',
+                '/कितने\s+टॉपिक/u',
+                '/कौन\s+से\s+टॉपिक/u',
+                '/इस\s+अध्याय\s+में/u',
+            ],
+            'slots' => ['chapter', 'subject', 'standard', 'query_type'],
+        ],
     ];
 
     /**
@@ -810,6 +949,16 @@ class IntentClassifier
      */
     private function contains(string $haystack, string $needle): bool
     {
+        $needle = trim($needle);
+        if ($needle === '') {
+            return false;
+        }
+
+        // For non-ASCII words (e.g. Gujarati, Hindi), use multibyte substring match
+        if (preg_match('/[^\x00-\x7F]/', $needle)) {
+            return mb_stripos($haystack, $needle) !== false;
+        }
+
         return (bool) preg_match('/(?<![a-z])' . preg_quote($needle, '/') . '(?![a-z])/i', $haystack);
     }
 
@@ -817,7 +966,7 @@ class IntentClassifier
     {
         $value = mb_strtolower(trim($utterance));
         $value = str_replace(['’', '‘'], "'", $value);
-        $value = preg_replace('/[^\p{L}\p{N}\'\-\s]+/u', ' ', $value) ?? '';
+        $value = preg_replace('/[^\p{L}\p{M}\p{N}\'\-\s]+/u', ' ', $value) ?? '';
 
         return trim(preg_replace('/\s+/', ' ', $value) ?? '');
     }
@@ -898,7 +1047,161 @@ class IntentClassifier
             $slots['severity_filter'] = 'high';
         }
 
+        // --- LMS & PAL Curriculum Slots Extraction ---
+
+        // 1. Standard / Grade extraction
+        if (preg_match('/(?:standard|std\.?|grade|class|cbse)\s*[-:]?\s*(\d{1,2}|[ivx]+)/i', $raw, $m)) {
+            $slots['standard_name'] = $this->canonicalStandardNumber($m[1]);
+        } elseif (preg_match('/(?:ધોરણ|કક્ષા)\s*[-:]?\s*(\d{1,2}|[ivx]+)/u', $raw, $m)) {
+            $slots['standard_name'] = $this->canonicalStandardNumber($m[1]);
+        } elseif (preg_match('/(?:कक्षा)\s*[-:]?\s*(\d{1,2}|[ivx]+)/u', $raw, $m)) {
+            $slots['standard_name'] = $this->canonicalStandardNumber($m[1]);
+        } elseif (preg_match('/\b(?:standard|grade|class)\s+(first|second|third|fourth|fifth|sixth|seventh|eighth|ninth|tenth|eleventh|twelfth|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve)\b/i', $raw, $m)) {
+            $slots['standard_name'] = $this->wordToStandardNumber($m[1]);
+        }
+
+        if (preg_match('/\b(?:this|the)\s+(?:standard|grade|class)\b/i', $raw)
+            || preg_match('/(?:આ|આપેલ)\s+ધોરણ/u', $raw)
+            || preg_match('/(?:इस|इस\s+वाली)\s+कक्षा/u', $raw)) {
+            $slots['standard_context'] = 'current_page';
+        }
+
+        // 2. Subject / Course extraction
+        $subjectMap = [
+            'science' => 'Science',
+            'સાયન્સ' => 'Science',
+            'વિજ્ઞાન' => 'Science',
+            'विज्ञान' => 'Science',
+            'mathematics' => 'Mathematics',
+            'maths' => 'Mathematics',
+            'math' => 'Mathematics',
+            'મેથ્સ' => 'Mathematics',
+            'ગણિત' => 'Mathematics',
+            'गणित' => 'Mathematics',
+            'english' => 'English',
+            'અંગ્રેજી' => 'English',
+            'ઇંગ્લિશ' => 'English',
+            'अंग्रेजी' => 'English',
+            'hindi' => 'Hindi',
+            'હિન્દી' => 'Hindi',
+            'हिन्दी' => 'Hindi',
+            'social science' => 'Social Science',
+            'social' => 'Social Science',
+            'sst' => 'Social Science',
+            'સામાજિક વિજ્ઞાન' => 'Social Science',
+            'सामाजिक विज्ञान' => 'Social Science',
+            'computer' => 'Computer',
+            'કમ્પ્યુટર' => 'Computer',
+            'कंप्यूटर' => 'Computer',
+            'evs' => 'EVS',
+            'પર્યાવરણ' => 'EVS',
+            'पर्यावरण' => 'EVS',
+            'physics' => 'Physics',
+            'chemistry' => 'Chemistry',
+            'biology' => 'Biology',
+            'history' => 'History',
+            'civics' => 'Civics',
+            'geography' => 'Geography',
+        ];
+
+        foreach ($subjectMap as $trigger => $canonical) {
+            if (mb_stripos($raw, $trigger) !== false) {
+                $slots['subject_name'] = $canonical;
+                break;
+            }
+        }
+
+        if (preg_match('/\b(?:this|the)\s+(?:course|subject)\b/i', $raw)
+            || preg_match('/(?:આ|આપેલ)\s+(?:કોર્સ|વિષય)/u', $raw)
+            || preg_match('/(?:इस|इस\s+वाले)\s+(?:कोर्स|विषय)/u', $raw)) {
+            $slots['subject_context'] = 'current_page';
+        }
+
+        // 3. Chapter extraction
+        if (preg_match('/\b(?:chapter|chp\.?|ch\.?|unit|lesson)\s*[-:#]?\s*(\d{1,3})\b/i', $raw, $m)) {
+            $slots['chapter_number'] = (int) $m[1];
+        } elseif (preg_match('/(?:પ્રકરણ|અધ્યાય|પાઠ)\s*[-:#]?\s*(\d{1,3})/u', $raw, $m)) {
+            $slots['chapter_number'] = (int) $m[1];
+        }
+
+        // Chapter title check
+        $knownChapters = [
+            'the wonderful world of science',
+            'diversity in the living world',
+            'mindful eating',
+            'exploring magnets',
+            'measurement of length and motion',
+            'materials around us',
+            'temperature and its measurement',
+            'a journey through states of water',
+            'methods of separation in everyday life',
+            'living creatures',
+            'nature\'s treasures',
+            'beyond earth',
+        ];
+
+        foreach ($knownChapters as $chTitle) {
+            if (mb_stripos($raw, $chTitle) !== false) {
+                $slots['chapter_name'] = ucwords($chTitle);
+                break;
+            }
+        }
+
+        if (preg_match('/\b(?:this|the)\s+(?:chapter|unit|lesson)\b/i', $raw)
+            || preg_match('/(?:આ|આપેલ)\s+પ્રકરણ/u', $raw)
+            || preg_match('/(?:इस|इस\s+वाले)\s+अध्याय/u', $raw)) {
+            $slots['chapter_context'] = 'current_page';
+        }
+
+        // 4. Topic extraction
+        if (preg_match('/\b(?:topic|concept)\s*[-:#]?\s*(\d{1,3})\b/i', $raw, $m)) {
+            $slots['topic_number'] = (int) $m[1];
+        }
+
+        if (preg_match('/\b(?:this|the)\s+(?:topic|concept)\b/i', $raw)
+            || preg_match('/(?:આ|આપેલ)\s+ટોપિક/u', $raw)
+            || preg_match('/(?:इस|इस\s+वाले)\s+टॉपिक/u', $raw)) {
+            $slots['topic_context'] = 'current_page';
+        }
+
+        // 5. Query type: count vs list
+        if (preg_match('/\b(?:how\s+many|how\s+much|count|number\s+of|total\s+count)\b/i', $raw)
+            || preg_match('/(?:કેટલા|કેટલી|કેટલું|કેટલો|કુલ|કુલ\s+કેટલા)/u', $raw)
+            || preg_match('/(?:कितने|कितनी|कितना|कुल|कुल\s+कितने)/u', $raw)) {
+            $slots['query_type'] = 'count';
+        } elseif (preg_match('/\b(?:which|what|list|show|display|all|every)\b/i', $raw)
+            || preg_match('/(?:કયા|કઈ|કયો|બતાવો|દર્શાવો|બધા|દરેક)/u', $raw)
+            || preg_match('/(?:कौन|दिखाइए|दिखाएं|सूची|सभी)/u', $raw)) {
+            $slots['query_type'] = 'list';
+        }
+
         return $slots;
+    }
+
+    private function canonicalStandardNumber(string $input): string
+    {
+        $input = trim(mb_strtolower($input));
+        $roman = [
+            'i' => '1', 'ii' => '2', 'iii' => '3', 'iv' => '4', 'v' => '5',
+            'vi' => '6', 'vii' => '7', 'viii' => '8', 'ix' => '9', 'x' => '10',
+            'xi' => '11', 'xii' => '12',
+        ];
+
+        return $roman[$input] ?? $input;
+    }
+
+    private function wordToStandardNumber(string $word): string
+    {
+        $map = [
+            'first' => '1', 'one' => '1', 'second' => '2', 'two' => '2',
+            'third' => '3', 'three' => '3', 'fourth' => '4', 'four' => '4',
+            'fifth' => '5', 'five' => '5', 'sixth' => '6', 'six' => '6',
+            'seventh' => '7', 'seven' => '7', 'eighth' => '8', 'eight' => '8',
+            'ninth' => '9', 'nine' => '9', 'tenth' => '10', 'ten' => '10',
+            'eleventh' => '11', 'eleven' => '11', 'twelfth' => '12', 'twelve' => '12',
+        ];
+
+        return $map[mb_strtolower(trim($word))] ?? $word;
     }
 
     /**

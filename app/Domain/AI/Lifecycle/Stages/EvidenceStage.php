@@ -242,10 +242,12 @@ class EvidenceStage implements LifecycleStage
 
             if ($evidenceItems !== []) {
                 $context->evidence = $evidenceItems;
-                $context->addSection($this->compose->evidence(
-                    'Evidence from live queries',
-                    array_slice($evidenceItems, 0, 6)
-                ));
+                if ($context->intent?->slot('query_type') !== 'count') {
+                    $context->addSection($this->compose->evidence(
+                        'Evidence from live queries',
+                        array_slice($evidenceItems, 0, 6)
+                    ));
+                }
 
                 return StageOutcome::ran(
                     sprintf(

@@ -72,6 +72,18 @@ class ConversationStore
         'outcome_id',
         'agent_run_id',
         'last_intent',
+        // Curriculum / LMS / PAL entities that survive between turns:
+        'standard_id',
+        'standard_name',
+        'subject_id',
+        'subject_name',
+        'course_id',
+        'course_name',
+        'chapter_id',
+        'chapter_name',
+        'topic_id',
+        'topic_name',
+        'curriculum_context',
         /*
          * The module this thread most recently ran in.
          *
@@ -764,6 +776,10 @@ class ConversationStore
         'fees_reminder_status',
         // The same: "send an SMS to the parents of class 10" is an instruction, not a lookup.
         'parent_message_send',
+        'lms_course_query',
+        'lms_subject_query',
+        'lms_chapter_query',
+        'lms_topic_query',
     ];
 
     /**
@@ -860,6 +876,10 @@ class ConversationStore
             'admission_confirm',
             'record_detail',
             'record_filter',
+            'lms_course_query',
+            'lms_subject_query',
+            'lms_chapter_query',
+            'lms_topic_query',
         ], true);
     }
 

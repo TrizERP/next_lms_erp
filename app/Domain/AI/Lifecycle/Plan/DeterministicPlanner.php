@@ -145,6 +145,12 @@ class DeterministicPlanner implements Planner
             return $studentPlan;
         }
 
+        $curriculumPlan = $this->curriculumPlan($context, $intent);
+
+        if ($curriculumPlan !== null) {
+            return $curriculumPlan;
+        }
+
         $steps = $this->stepsFor($intent->key);
 
         if ($steps === null) {
@@ -760,6 +766,156 @@ class DeterministicPlanner implements Planner
                 tool: $step[2] ?? null,
             ),
             $steps
+        );
+    }
+
+    private const CURRICULUM_INTENTS = [
+        'lms_course_query',
+        'lms_subject_query',
+        'lms_chapter_query',
+        'lms_topic_query',
+    ];
+
+    /**
+     * Build deterministic plan for LMS / PAL curriculum queries (courses, subjects, chapters, topics).
+     */
+    private function curriculumPlan(StageContext $context, Intent $intent): ?Plan
+    {
+        if (! in_array($intent->key, self::CURRICULUM_INTENTS, true)) {
+            return null;
+        }
+
+        $tool = 'lms.courses';
+
+        $allowedTools = $context->module->mcpTools;
+        foreach ($context->federatedModules as $fed) {
+            $allowedTools = array_merge($allowedTools, $fed->mcpTools);
+        }
+        $allowedTools = array_values(array_unique($allowedTools));
+
+        if (! in_array($tool, $allowedTools, true)) {
+            return null;
+        }
+
+        $memory = (array) ($context->thread['memory'] ?? []);
+        $rawPayload = (array) ($context->options['payload'] ?? $context->get('payload') ?? []);
+        $pageAi = (array) ($rawPayload['pageAi'] ?? $rawPayload);
+
+        // 1. Standard resolution
+        $standardName = $intent->slot('standard_name');
+        $standardId = $intent->slot('standard_id');
+
+        if (empty($standardName) && empty($standardId)) {
+            if (($pageAi['entity_type'] ?? '') === 'standard' && ! empty($pageAi['entity_id'])) {
+                $standardId = (int) $pageAi['entity_id'];
+            } elseif (! empty($pageAi['standard_id'])) {
+                $standardId = (int) $pageAi['standard_id'];
+            } elseif (! empty($pageAi['standard_name'])) {
+                $standardName = (string) $pageAi['standard_name'];
+            } elseif (! empty($memory['standard_name'])) {
+                $standardName = (string) $memory['standard_name'];
+            } elseif (! empty($memory['standard_id'])) {
+                $standardId = (int) $memory['standard_id'];
+            }
+        }
+
+        // 2. Subject resolution
+        $subjectName = $intent->slot('subject_name');
+        $subjectId = $intent->slot('subject_id');
+
+        if (empty($subjectName) && empty($subjectId)) {
+            if (in_array($pageAi['entity_type'] ?? '', ['subject', 'course'], true) && ! empty($pageAi['entity_id'])) {
+                $subjectId = (int) $pageAi['entity_id'];
+            } elseif (! empty($memory['subject_name'])) {
+                $subjectName = (string) $memory['subject_name'];
+            } elseif (! empty($memory['subject_id'])) {
+                $subjectId = (int) $memory['subject_id'];
+            }
+        }
+
+        // 3. Chapter resolution
+        $chapterName = $intent->slot('chapter_name');
+        $chapterNumber = $intent->slot('chapter_number');
+        $chapterId = $intent->slot('chapter_id');
+
+        if (empty($chapterName) && empty($chapterNumber) && empty($chapterId)) {
+            if (($pageAi['entity_type'] ?? '') === 'chapter' && ! empty($pageAi['entity_id'])) {
+                $chapterId = (int) $pageAi['entity_id'];
+            } elseif (! empty($memory['chapter_name'])) {
+                $chapterName = (string) $memory['chapter_name'];
+            } elseif (! empty($memory['chapter_id'])) {
+                $chapterId = (int) $memory['chapter_id'];
+            }
+        }
+
+        // 4. Query type ('count' vs 'list')
+        $queryType = $intent->slot('query_type');
+        if (empty($queryType)) {
+            $isCount = preg_match('/\b(how many|count|number of)\b/i', $context->question)
+                || preg_match('/(કેટલા|કેટલી|સંખ્યા|કેટલો)/u', $context->question)
+                || preg_match('/(कितने|कितनी|संख्या)/u', $context->question);
+            $queryType = $isCount ? 'count' : 'list';
+        }
+
+        $mode = $intent->key === 'lms_topic_query' ? 'topics' : 'courses';
+
+        $arguments = [
+            'mode' => $mode,
+            'query_type' => $queryType,
+        ];
+
+        if (! empty($standardName)) {
+            $arguments['standard_name'] = $standardName;
+        }
+        if (! empty($standardId)) {
+            $arguments['standard_id'] = (int) $standardId;
+        }
+        if (! empty($subjectName)) {
+            $arguments['subject_name'] = $subjectName;
+        }
+        if (! empty($subjectId)) {
+            $arguments['subject_id'] = (int) $subjectId;
+        }
+        if (! empty($chapterName)) {
+            $arguments['chapter_name'] = $chapterName;
+        }
+        if (! empty($chapterNumber)) {
+            $arguments['chapter_number'] = (int) $chapterNumber;
+        }
+        if (! empty($chapterId)) {
+            $arguments['chapter_id'] = (int) $chapterId;
+        }
+
+        if ($intent->key === 'lms_course_query' && $queryType === 'count') {
+            $arguments['include_chapters'] = false;
+        }
+
+        $steps = [
+            new PlanStep(
+                'query_curriculum',
+                'Retrieve real verified curriculum records from the LMS database.',
+                $tool,
+                $arguments
+            ),
+            new PlanStep('compose_answer', 'Compose exact database-grounded response answering user inquiry.'),
+        ];
+
+        return new Plan(
+            goal: sprintf('Answer curriculum inquiry for %s grounded directly in the LMS database.', $intent->label),
+            steps: $steps,
+            source: Plan::SOURCE_DETERMINISTIC,
+            route: 'mcp_tools',
+            intentKey: $intent->key,
+            candidateTools: [$tool],
+            toolSelectionStrategy: 'lms_curriculum_catalog',
+            context: [
+                'module' => $context->module->key,
+                'confidence' => round($intent->confidence, 3),
+                'matched_by' => 'deterministic curriculum intent classifier',
+                'standard_name' => $standardName,
+                'subject_name' => $subjectName,
+                'query_type' => $queryType,
+            ],
         );
     }
 }

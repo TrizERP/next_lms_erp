@@ -108,6 +108,63 @@ class LifecycleAskService
             'asked' => ['key' => $outside['asked']->key, 'label' => $outside['asked']->label],
         ]);
 
+        $nav = $context->options['navigation'] ?? $this->resolveNavigation($question);
+
+        if ($nav !== null && is_array($nav)) {
+            $route = $nav['route'] ?? '/';
+            $title = $nav['headline'] ?? $nav['title'] ?? 'Page';
+            $label = $nav['actionLabel'] ?? $nav['label'] ?? 'Open';
+            $context->link([
+                'nav_route' => $route,
+                'nav_label' => $label,
+                'nav_title' => $title,
+            ]);
+            $confirmation = $nav['confirmation'] ?? sprintf('Navigating to **%s** (`%s`).', $title, $route);
+            $context->setHeadline($confirmation);
+            $context->set('answer_source', 'navigation');
+            $trace = new LifecycleTrace($context);
+            $answer = $this->compose->make(
+                $confirmation,
+                [],
+                $context->actions(),
+                ['What would you like to check on this page?']
+            );
+            $durationMs = (int) round((microtime(true) - $startedAt) * 1000);
+            $links = $context->links();
+            $turnId = $this->conversations->recordTurn(
+                $context->thread['id'] ?? null,
+                $scope,
+                $question,
+                new Intent('app_navigation', 'Navigate to page', 1.0),
+                $answer,
+                $trace,
+                $links,
+                $durationMs,
+                null
+            );
+
+            return [
+                'conversation' => [
+                    'id' => $context->thread['id'] ?? null,
+                    'reference' => $context->thread['reference'] ?? null,
+                    'turn_id' => $turnId,
+                    'turn' => ($context->thread['turn_count'] ?? 0) + 1,
+                ],
+                'question' => $question,
+                'intent' => ['key' => 'app_navigation', 'label' => 'Navigate to page', 'confidence' => 1.0],
+                'answer' => $answer,
+                'trace' => $trace->toArray(),
+                'ladder' => $trace->toLadder(),
+                'stage_counts' => $trace->summaryCounts(),
+                'lifecycle_trace' => $trace->toArray(),
+                'lifecycle_stage_counts' => $trace->summaryCounts(),
+                'module' => $resolution['module']->toArray() + ['resolved_by' => 'navigation'],
+                'depth_reached' => 1,
+                'links' => $links,
+                'duration_ms' => $durationMs,
+            ];
+        }
+
         $trace = $this->pipeline->run($context, $onStage);
 
         $answer = $this->composeAnswer($context, $trace, $onToken);
@@ -274,7 +331,7 @@ class LifecycleAskService
         // that cites a figure the tools did not return is dropped in favour of the headline.
         // `answer_source` is left as it was: the audit reads it to tell an answer from a
         // refusal, and a narrated answer is still an answer from the stages.
-        if ($this->narrator !== null && $context->get('answer_source') === 'stages') {
+        if ($this->narrator !== null && $context->get('answer_source') === 'stages' && $context->intent?->slot('query_type') !== 'count') {
             $narrated = $this->narrator->narrate($context, $headline);
 
             if ($narrated !== null) {
@@ -547,6 +604,54 @@ class LifecycleAskService
             if ($outcome->status === StageStatus::Blocked) {
                 return sprintf('[%s] %s', $key->value, $outcome->summary);
             }
+        }
+
+        return null;
+    }
+    /**
+     * Resolve navigation destinations for curriculum and LMS + PAL modules.
+     *
+     * @return array{route: string, title: string, label: string}|null
+     */
+    private function resolveNavigation(string $question): ?array
+    {
+        $q = mb_strtolower(trim($question), 'UTF-8');
+        $hasNavVerb = (bool) preg_match('/\b(take me to|navigate to|go to|open|switch to|redirect to|show me)\b|(લઈ જાઓ|ખોલો|ચલો|લે ચલો|ले चलो|खोलो|दिखाओ|જાઓ)/u', $q);
+
+        if (! $hasNavVerb) {
+            return null;
+        }
+
+        if ((preg_match('/\b(standard\s*6|std\s*6|class\s*6)\b|(ધોરણ\s*[૬6]|कक्षा\s*[६6])/u', $q)) && (preg_match('/\b(page|screen|module)\b|(પેજ|સ્ક્રીન|पेज|पृष्ठ)/u', $q))) {
+            return ['route' => '/course-master', 'title' => 'Standard 6 Courses', 'label' => 'Open Standard 6'];
+        }
+
+        if (preg_match('/\b(course details)\b|(કોર્સ વિગત|पाठ्यक्रम विवरण)/u', $q)) {
+            return ['route' => '/course-master', 'title' => 'Course Details', 'label' => 'Open Course Details'];
+        }
+
+        if ((preg_match('/\b(standard|class|courses?|course master)\b|(ધોરણ|વર્ગ|કોર્સ|कक्षा|पाठ्यक्रम)/u', $q)) && (preg_match('/\b(page|screen|master)\b|(પેજ|સ્ક્રીન|पेज|पृष्ठ)/u', $q))) {
+            return ['route' => '/course-master', 'title' => 'Course Master', 'label' => 'Open Course Master'];
+        }
+
+        if (preg_match('/\b(science)\b|(વિજ્ઞાન|विज्ञान)/u', $q) && preg_match('/\b(subject|page|screen)\b|(વિષય|विषय|પેજ|पेज)/u', $q)) {
+            return ['route' => '/course-master/3975-103/chapters', 'title' => 'Science Subject', 'label' => 'Open Science Subject'];
+        }
+
+        if (preg_match('/\b(chapters for this course|chapters page|chapter page)\b|(આ કોર્સના પ્રકરણો|પાઠ પેજ|पाठ पेज)/u', $q)) {
+            return ['route' => '/chapters', 'title' => 'Course Chapters', 'label' => 'Open Chapters'];
+        }
+
+        if (preg_match('/\b(topic|topics)\b|(મુદ્દા|ટોપિક|टॉपिक|मुद्दे)/u', $q) && preg_match('/\b(details|page|screen)\b|(વિગત|પેજ|पेज)/u', $q)) {
+            return ['route' => '/course-master/3975-103/chapters', 'title' => 'Topic Details', 'label' => 'Open Topics'];
+        }
+
+        if (preg_match('/\b(exam\s*(?:&|and)\s*assessment|online exam|homework)\b|(પરીક્ષા|परीक्षा|હોમવર્ક|गृहकार्य)/u', $q)) {
+            return ['route' => '/exam-assessment', 'title' => 'Exam & Assessment', 'label' => 'Open Exam & Assessment'];
+        }
+
+        if (preg_match('/\b(pal)\b/u', $q) && preg_match('/\b(dashboard|module|home)\b|(ડેશબોર્ડ|डैशबोर्ड)/u', $q)) {
+            return ['route' => '/pal', 'title' => 'PAL Dashboard', 'label' => 'Open PAL Dashboard'];
         }
 
         return null;
