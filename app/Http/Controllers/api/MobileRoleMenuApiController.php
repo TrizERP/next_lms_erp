@@ -39,15 +39,22 @@ class MobileRoleMenuApiController extends Controller
     public static function forSession(int $userId, int $tenant, int $profileId, bool $isStudent): array
     {
         // Same union the web sidebar uses: the role's rows OR the user's own rows.
+        // Admin / Super Admin get every screen their role holds on the web; nobody has to tick
+        // hundreds of Mobile boxes for them. Every other role gets exactly what was ticked.
+        $profileName = strtolower(trim((string) DB::table('tbluserprofilemaster')->where('id', $profileId)->value('name')));
+        $isAdmin = in_array($profileName, ['admin', 'super admin'], true);
+
         $ids = DB::table('tblgroupwise_rights')
-            ->where('sub_institute_id', $tenant)->where('profile_id', $profileId)->where('is_mobile', 1)
+            ->where('sub_institute_id', $tenant)->where('profile_id', $profileId)
+            ->when(! $isAdmin, fn ($q) => $q->where('is_mobile', 1))
             ->pluck('menu_id')->all();
 
         // tbluser and tblstudent ids overlap, so a student never matches individual rows.
         if (! $isStudent) {
             $ids = array_merge($ids, DB::table('tblindividual_rights')
                 ->where('sub_institute_id', $tenant)->where('user_id', $userId)
-                ->where('profile_id', $profileId)->where('is_mobile', 1)
+                ->where('profile_id', $profileId)
+                ->when(! $isAdmin, fn ($q) => $q->where('is_mobile', 1))
                 ->pluck('menu_id')->all());
         }
 
