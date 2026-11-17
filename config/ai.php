@@ -623,11 +623,15 @@ return [
             | `exam` above does.
             */
             'teach_learn' => [
+                'agent_key' => 'k12_course_catalogue',
+                'workflow_key' => 'teach_learn_content_generation',
+                'case_type' => 'teach_learn_content_gap',
                 'read_hints' => ['lms.course_summary' => ['chapter', 'lesson plan', 'syllabus', 'summarise', 'summarize']],
                 // Widens the ai_modules row's patterns for screens it predates (see ModuleResolver::fromRoute).
                 'route_patterns' => ['/lms/global-mapping', '/lms/global-mapping/**', '/modules/skill-assessment', '/modules/skill-assessment/**', '/modules/skill-management', '/modules/skill-management/**'],
                 'detail_tools' => ['standard_id' => 'lms.course_summary', 'subject_id' => 'lms.course_summary'],
                 'mcp_tools' => [
+                    'teach_learn.courses',
                     'lms.courses',
                     'lms.course_summary',
                     'lms.activities',
@@ -638,8 +642,6 @@ return [
                     'ai.templates.render',
                     'ai.templates.generate',
                 ],
-                'depth_reason' => 'Course and activity configuration could feed a learning-support agent, '
-                    . 'but Teach/Learn itself has no agent of its own yet.',
             ],
 
             'curriculum_planning' => [
