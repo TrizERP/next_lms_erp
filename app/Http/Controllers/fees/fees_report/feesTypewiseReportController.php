@@ -135,6 +135,9 @@ class feesTypewiseReportController extends Controller
         $fees_heads = array_map(function ($value) {
             return (array)$value;
         }, $fees_heads);
+        // Several fee heads can point at the same fees_title column; each column may be selected only once,
+        // or the report's UNION query fails with "Duplicate column name".
+        $fees_heads = array_values(collect($fees_heads)->unique('fees_title')->all());
 
         $fees_head_sum = "";
         
