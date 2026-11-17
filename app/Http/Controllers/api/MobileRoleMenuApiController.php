@@ -33,6 +33,26 @@ class MobileRoleMenuApiController extends Controller
         ]);
     }
 
+    private static function resolvePath(string $link): ?string
+    {
+        $link = trim($link);
+        if ($link === '' || str_starts_with($link, 'javascript') || str_starts_with($link, '#')) {
+            return null;
+        }
+        if (str_contains($link, '/')) {
+            return '/' . ltrim($link, '/');
+        }
+        if (\Illuminate\Support\Facades\Route::has($link)) {
+            try {
+                return route($link, [], false);
+            } catch (\Throwable $e) {
+                return null; // needs parameters
+            }
+        }
+
+        return null;
+    }
+
     /**
      * @return array{menus: array<int,array<string,mixed>>, tree: array<int,array<string,mixed>>}
      */
@@ -79,6 +99,10 @@ class MobileRoleMenuApiController extends Controller
             'level' => (int) $m->level,
             'sort_order' => (int) $m->sort_order,
             'link' => $m->link,
+            // The Laravel URL that serves this screen's data (type=API gives JSON). Menu links are
+            // either a path ("/fees/collect") or a route name ("circular.index"); names are resolved
+            // here so the app never needs the route table. Null when nothing resolves (Next.js-only pages).
+            'path' => self::resolvePath((string) $m->link),
             'icon' => $m->icon,
             'menu_type' => $m->menu_type,
             'mobile_enabled' => $enabled,
