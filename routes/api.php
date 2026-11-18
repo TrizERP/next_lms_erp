@@ -169,6 +169,7 @@ Route::post('students-dashboard/summary', [StudentsDashboardApiController::class
 Route::post('library-dashboard/summary', [LibraryDashboardApiController::class, 'summary'])->middleware('api.cache:60');
 Route::post('hostel-dashboard/summary', [HostelDashboardApiController::class, 'summary'])->middleware('api.cache:60');
 Route::post('transportation-dashboard/summary', [TransportationDashboardApiController::class, 'summary'])->middleware('api.cache:60');
+Route::middleware(['api.session', 'staff.only'])->get('transportation/van-summary/students/{t_id}/{t_s_id}', [\App\Http\Controllers\transportation\van_wise_students_detail\van_wise_students_detail_report_controller::class, 'studentsJson']);
 // Role-based dashboards (Admin/Teacher/Student) — identity comes only from the
 // JWT via ApiSessionHydrator, never from the request body, so a token cannot
 // be used to fetch another role's or another user's data.

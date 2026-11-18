@@ -127,6 +127,11 @@ class van_wise_report_controller extends Controller
             $where .= " and tm.to_stop ='".$_REQUEST['to_stop']."'  ";
         }
 
+        // start_date / end_date exist only after the 2026_08_17 migration; skip them on a database that lacks it.
+        $mappingDates = \Illuminate\Support\Facades\Schema::hasColumn('transport_map_student', 'start_date')
+            ? ", DATE_FORMAT(tm.start_date, '%d-%m-%Y') AS start_date, DATE_FORMAT(tm.end_date, '%d-%m-%Y') AS end_date"
+            : '';
+
         $student_data = DB::table("tblstudent as ts")
             ->join('tblstudent_enrollment as se', function ($join) {
                 $join->whereRaw("se.student_id = ts.id AND se.syear = '".session()->get('syear')."' AND se.end_date IS NULL");
@@ -168,7 +173,7 @@ class van_wise_report_controller extends Controller
                 $join->whereRaw("cd.id = tv.conductor")->where('cd.status', 'Active');
             })
             ->selectRaw("ts.id AS student_id,CONCAT_WS(' ',ts.first_name,ts.middle_name,ts.last_name) name,
-    concat(s.name,'/',d.name) as stddiv,ts.mobile,ts.enrollment_no,ts.address, tr.route_name, ss.shift_title,tv.title as bus_name, from_stop.stop_name as from_stop_name, to_stop.stop_name as to_stop_name,dd.first_name driver, cd.first_name conductor, tm.amount as van_vise_amount,DATE_FORMAT(tm.start_date, '%d-%m-%Y') AS start_date,DATE_FORMAT(tm.end_date, '%d-%m-%Y') AS end_date")
+    concat(s.name,'/',d.name) as stddiv,ts.mobile,ts.enrollment_no,ts.address, tr.route_name, ss.shift_title,tv.title as bus_name, from_stop.stop_name as from_stop_name, to_stop.stop_name as to_stop_name,dd.first_name driver, cd.first_name conductor, tm.amount as van_vise_amount".$mappingDates)
             ->whereRaw($where)
             ->groupBy('student_id')
             ->get()->toarray();

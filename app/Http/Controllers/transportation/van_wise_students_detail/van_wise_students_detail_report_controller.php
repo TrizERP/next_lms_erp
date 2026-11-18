@@ -47,6 +47,16 @@ class van_wise_students_detail_report_controller extends Controller
         return is_mobile($type, "transportation/van_wise_students_detail/show", $res, "view");
     }
 
+    /** JSON list of the students on one van + shift, for the mobile app (the web page loads them with retrieveDataByUserId). */
+    public function studentsJson(Request $request, $transport_vehicle_id, $transport_school_shift_id)
+    {
+        return response()->json([
+            'status'  => '1',
+            'message' => 'Success',
+            'data'    => $this->retrieveDataByUserId($request, $transport_vehicle_id, $transport_school_shift_id),
+        ]);
+    }
+
     public function retrieveDataByUserId(Request $request, $transport_vehicle_id, $transport_school_shift_id)
     {
         $transport_vehicle_id = $transport_vehicle_id;

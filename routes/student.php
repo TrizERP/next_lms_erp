@@ -118,7 +118,8 @@ Route::group(['prefix' => 'student', 'middleware' => ['session', 'menu', 'logRou
     Route::post('show_search_student', [studentSearchController::class, 'searchStudent'])->name("show_search_student");
     Route::post('show_search_student_optional_subject', [studentOptionalSubjectController::class, 'searchStudentOptionalSubject'])->name("show_search_student_optional_subject");
     //Route::post('add_student_optional_subject', [studentOptionalSubjectController::class, 'addStudentOptionalSubject'])->name('add_student_optional_subject');
-    Route::post('show_student_report', [studentReportController::class, 'searchStudent'])->name("show_student_report");
+    // GET too: the mobile app reads this report with a plain bearer request (no CSRF token to present).
+    Route::match(['get', 'post'], 'show_student_report', [studentReportController::class, 'searchStudent'])->name("show_student_report");
     // NOTE: keep this BEFORE the resource route, otherwise "download-bulk" is
     // swallowed by missing_document_report/{id} (show) and returns a blank page.
     Route::get('missing_document_report/download-bulk', [FileController::class, 'downloadBulkDocuments'])->name('missing_document_report.download_bulk');

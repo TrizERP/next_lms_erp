@@ -367,7 +367,7 @@ class studentHomeworkSubmissionController extends Controller
             ->where('ah.syear', $syear)
             // for student 01-01-2025
             ->when($user_profile == "Student", function ($q) use ($user_id) {
-                $q->where('h.student_id', $user_id);
+                $q->where('ah.student_id', $user_id);
             });
 
         if ($standard != '') {
