@@ -178,7 +178,9 @@ class PedagogySuggestedContentService
             $dueConceptIds,
             $preferredContentTypes,
             $deviceType,
-            $learnerId
+            $learnerId,
+            $enrichedWeakConcepts,
+            $subInstituteId
         );
 
         $studentLevel = $this->getStudentLevel($masteryData);
@@ -644,7 +646,9 @@ class PedagogySuggestedContentService
         array $dueConceptIds,
         array $preferredContentTypes,
         string $deviceType,
-        int $learnerId
+        int $learnerId,
+        array $enrichedWeakConcepts = [],
+        int $subInstituteId = 0
     ): array {
         $categories = $this->emptyContentData();
         $masteryAverage = collect($masteryData)->avg('mastery_level') ?? 0;
@@ -682,6 +686,22 @@ class PedagogySuggestedContentService
                 $preferredTypes
             );
         }
+
+        // Graph-sourced, weak-concept-targeted content (TEACHES edges off the
+        // Coherence Map, already computed per weak concept as `graph_content`
+        // further up in getSuggestions()) folds into the SAME bucket as
+        // $storedRemediationContents, by the same enrichContentWithPedagogy()
+        // path — never through $contents/inferPedagogyType() above, which
+        // `continue`s past anything it infers as 'remediation' on the
+        // assumption that bucket is exclusively stored-suggestion-sourced.
+        $categories['remediation_content'] = $this->mergeGraphRemediationContent(
+            $categories['remediation_content'],
+            $enrichedWeakConcepts,
+            (float) $masteryAverage,
+            $profile,
+            $preferredTypes,
+            $subInstituteId
+        );
 
         if (!empty($weakConceptNames)) {
             $categories['misconception_content'] = array_values(array_merge(
@@ -728,6 +748,101 @@ class PedagogySuggestedContentService
         );
 
         return $content;
+    }
+
+    /**
+     * contentFor()'s rows only carry graph metadata (no file/display URL —
+     * :Content nodes don't hold one). `id` IS a content_master id though
+     * (contentFor()'s :Content nodes key on it as a string), so rather than
+     * hand-building a row from graph fields, this re-fetches the REAL
+     * content_master row by that id — identical shape to what
+     * getCandidateContent() already produces, so it renders exactly like any
+     * other remediation item (same URL field, same visibility rules) instead
+     * of silently missing a link. Draft (unapproved) graph content is never
+     * considered, matching the approved-only gate used elsewhere on
+     * student-facing content.
+     */
+    private function mergeGraphRemediationContent(
+        array $remediationContent,
+        array $enrichedWeakConcepts,
+        float $masteryAverage,
+        $profile,
+        array $preferredContentTypes,
+        int $subInstituteId
+    ): array {
+        if (!Schema::hasTable('content_master')) {
+            return $remediationContent;
+        }
+
+        $existingIds = array_flip(array_map(
+            fn (array $item) => (string) ($item['id'] ?? ''),
+            $remediationContent
+        ));
+
+        $conceptByContentId = [];
+        foreach ($enrichedWeakConcepts as $weakConcept) {
+            foreach ((array) ($weakConcept['graph_content'] ?? []) as $row) {
+                $id = (string) ($row['id'] ?? '');
+
+                if ($id === '' || isset($existingIds[$id]) || isset($conceptByContentId[$id])) {
+                    continue;
+                }
+
+                if (($row['status'] ?? 'draft') !== 'approved') {
+                    continue;
+                }
+
+                $conceptByContentId[$id] = [
+                    'concept_id' => $weakConcept['concept_id'] ?? null,
+                    'concept_name' => $weakConcept['concept_name'] ?? null,
+                ];
+            }
+        }
+
+        if (empty($conceptByContentId)) {
+            return $remediationContent;
+        }
+
+        $query = DB::table('content_master')->whereIn('id', array_map('intval', array_keys($conceptByContentId)));
+
+        if (Schema::hasColumn('content_master', 'sub_institute_id') && $subInstituteId > 0) {
+            $query->where(function ($subQuery) use ($subInstituteId) {
+                $subQuery->whereNull('sub_institute_id')
+                    ->orWhere('sub_institute_id', $subInstituteId)
+                    ->orWhere('sub_institute_id', 1);
+            });
+        }
+
+        if (Schema::hasColumn('content_master', 'show_hide')) {
+            $query->where(function ($visibilityQuery) {
+                $visibilityQuery->whereNull('show_hide')
+                    ->orWhere('show_hide', 1);
+            });
+        }
+
+        $rows = $query->get();
+
+        foreach ($rows as $row) {
+            $content = (array) $row;
+            $id = (string) ($content['id'] ?? '');
+            $content['id'] = (int) ($content['id'] ?? 0);
+            $content['mapping'] = [];
+            $content['content_type'] = 'pedagogy_content';
+            $content['teacher_content_category'] = $content['content_category'] ?? 'Content';
+            $content['source'] = 'graph';
+            $content['concept_id'] = $conceptByContentId[$id]['concept_id'] ?? null;
+            $content['concept_name'] = $conceptByContentId[$id]['concept_name'] ?? null;
+
+            $remediationContent[] = $this->enrichContentWithPedagogy(
+                $content,
+                'remediation',
+                $masteryAverage,
+                $profile,
+                $preferredContentTypes
+            );
+        }
+
+        return $remediationContent;
     }
 
     private function inferPedagogyType(array $content, float $masteryAverage, array $weakConceptIds, array $dueConceptIds): string

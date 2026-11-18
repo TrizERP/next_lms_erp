@@ -5,6 +5,7 @@ namespace App\Domain\PAL\CoherenceRisk;
 use App\Domain\AI\Agents\Agent;
 use App\Domain\AI\Agents\AgentContext;
 use App\Domain\AI\Signals\DetectedSignal;
+use App\Domain\K12\AcademicRisk\AcademicRiskMetrics;
 use App\Domain\K12\AcademicRisk\StudentScope;
 
 /**
@@ -252,6 +253,28 @@ class CoherenceRiskAgent implements Agent
             'risk_level' => $signal->severity === 'critical' ? 'high' : ($signal->severity === 'high' ? 'medium' : 'low'),
             'is_consequential' => false,
             'evidence_ids' => $evidenceIds,
+            // EsoBindingRule requires every recommendation to declare a
+            // measurable outcome before it can clear governance, regardless
+            // of whether it also binds a workflow. PAL_MASTERY_TREND is the
+            // same registered, resolvable metric AcademicRiskAgent uses for
+            // its own PAL-sourced cases — there is no compounding-gap-
+            // specific metric registered, and inventing an unresolvable one
+            // would fail RULE_OUTCOME_MEASURABLE just as emptily as omitting
+            // the binding does now.
+            'eso_binding' => [
+                'objective' => sprintf(
+                    "Close %s's compounding root-blocker gap across %d chapters.",
+                    $studentName,
+                    $chapterCount
+                ),
+                'strategy' => 'Teacher reviews the flagged root-blocker concepts and plans targeted remediation before the gap compounds further.',
+                'outcome' => [
+                    'metric_key' => AcademicRiskMetrics::PAL_MASTERY_TREND,
+                    'metric_label' => 'PAL concept mastery (%)',
+                    'direction' => 'increase',
+                    'horizon_days' => $signal->severity === 'critical' ? 21 : 30,
+                ],
+            ],
             // No workflow_key: this recommendation's approval is the outcome,
             // not a trigger for a further automated action.
         ];
