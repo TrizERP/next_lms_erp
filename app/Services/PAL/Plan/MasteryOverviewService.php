@@ -3,9 +3,12 @@
 namespace App\Services\PAL\Plan;
 
 use App\Models\Eso\LearnerNodeState;
+use App\Services\PAL\Coherence\CoherenceMapRepository;
 use App\Services\PAL\Questions\MasteryLadder;
 use App\Services\PAL\Questions\McqPool;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Throwable;
 
 /**
  * The last two stages: where mastery actually stands, and what is due back.
@@ -33,6 +36,7 @@ use Illuminate\Support\Facades\DB;
 class MasteryOverviewService
 {
     public function __construct(
+        private CoherenceMapRepository $coherenceMap,
         private MasteryLadder $ladder = new MasteryLadder(),
     ) {
     }
@@ -172,6 +176,15 @@ class MasteryOverviewService
             }
         }
 
+        // Concepts due right now are re-ranked by how many other concepts
+        // their mastery would unblock — a high-fan-out concept is worth
+        // surfacing before a dead-end one, even if both are equally overdue.
+        // `upcoming` is never touched: it is not due yet, and reordering it
+        // would contradict the spaced-repetition schedule itself.
+        if ($due !== []) {
+            $due = $this->rankByFanOut($due);
+        }
+
         return [
             'due' => $due,
             // A short horizon only. A review 180 days out is true but useless
@@ -184,6 +197,36 @@ class MasteryOverviewService
             ],
             'generated_at' => now()->toIso8601String(),
         ];
+    }
+
+    /**
+     * Sort due items by downstream fan-out (desc), `next_review_at` (asc) as
+     * tiebreak. A fan-out lookup failure (Neo4j down, or no projected scope
+     * for that concept) scores that item 0 rather than aborting the whole
+     * queue — the queue degrades to exactly today's `next_review_at` order,
+     * never an error on a screen whose whole job is "what's due right now".
+     *
+     * @param  array<int,array<string,mixed>>  $due
+     * @return array<int,array<string,mixed>>
+     */
+    private function rankByFanOut(array $due): array
+    {
+        foreach ($due as &$item) {
+            try {
+                $item['fan_out'] = $this->coherenceMap->downstreamFanOut($item['concept_id']);
+            } catch (Throwable $e) {
+                Log::warning('Coherence fan-out lookup failed, recall queue falls back to date order for this item: ' . $e->getMessage());
+                $item['fan_out'] = 0;
+            }
+        }
+        unset($item);
+
+        usort($due, function (array $a, array $b) {
+            return $b['fan_out'] <=> $a['fan_out']
+                ?: strtotime((string) $a['next_review_at']) <=> strtotime((string) $b['next_review_at']);
+        });
+
+        return $due;
     }
 
     /**

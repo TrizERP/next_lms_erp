@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Domain\K12\TeacherClassScopeService;
 use Closure;
 use GenTux\Jwt\GetsJwtToken;
 use GenTux\Jwt\Exceptions\NoTokenException;
@@ -27,6 +28,10 @@ use Illuminate\Support\Facades\DB;
 class PalApiAuth
 {
     use GetsJwtToken;
+
+    public function __construct(private readonly TeacherClassScopeService $classScope)
+    {
+    }
 
     public function handle(Request $request, Closure $next)
     {
@@ -180,42 +185,13 @@ class PalApiAuth
      * Whether $studentId falls in $teacherId's assigned classes, as either the
      * homeroom class_teacher or a subject teacher per the timetable -- the
      * same two sources Helper::SearchStudent()/lmsActivityStreamController
-     * already treat as a teacher's scope elsewhere in the LMS. Matches on the
-     * SAME syear on both sides (assignment and enrollment) rather than
-     * resolving "the current year" independently, since there is no
-     * authoritative current-year flag on academic_year; this both avoids
-     * guessing and fails closed (a student with no matching-year enrollment
-     * simply won't match).
+     * already treat as a teacher's scope elsewhere in the LMS. Delegates to
+     * the shared TeacherClassScopeService, which StudentActivityReportController
+     * and the centralized Knowledge Graph browser also use.
      */
     private function isStudentInTeacherScope(int $teacherId, int $subInstituteId, int $studentId): bool
     {
-        $classTeacherMatch = DB::table('class_teacher as ct')
-            ->join('tblstudent_enrollment as se', function ($join) {
-                $join->on('se.standard_id', '=', 'ct.standard_id')
-                    ->on('se.section_id', '=', 'ct.division_id')
-                    ->on('se.sub_institute_id', '=', 'ct.sub_institute_id')
-                    ->on('se.syear', '=', 'ct.syear');
-            })
-            ->where('ct.teacher_id', $teacherId)
-            ->where('ct.sub_institute_id', $subInstituteId)
-            ->where('se.student_id', $studentId)
-            ->exists();
-
-        if ($classTeacherMatch) {
-            return true;
-        }
-
-        return DB::table('timetable as t')
-            ->join('tblstudent_enrollment as se', function ($join) {
-                $join->on('se.standard_id', '=', 't.standard_id')
-                    ->on('se.section_id', '=', 't.division_id')
-                    ->on('se.sub_institute_id', '=', 't.sub_institute_id')
-                    ->on('se.syear', '=', 't.syear');
-            })
-            ->where('t.teacher_id', $teacherId)
-            ->where('t.sub_institute_id', $subInstituteId)
-            ->where('se.student_id', $studentId)
-            ->exists();
+        return $this->classScope->isStudentInTeacherScope($teacherId, $subInstituteId, $studentId);
     }
 
     /**

@@ -9,6 +9,7 @@ use App\Models\PAL\Gamification\Badge;
 use App\Models\PAL\Gamification\LearnerBadge;
 use App\Models\PAL\Gamification\LearnerStreak;
 use App\Models\PAL\MisconceptionLibrary;
+use App\Services\PAL\Coherence\CoherenceMapRepository;
 use App\Services\PAL\Intelligence\LearningVelocityEngine;
 use App\Services\PAL\Intelligence\MisconceptionIntelligenceEngine;
 use App\Services\PAL\Intelligence\PredictiveInterventionEngine;
@@ -16,6 +17,7 @@ use App\Services\PAL\Questions\DifficultyBands;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Throwable;
 
 /**
  * PAL Student Activity & Performance Report.
@@ -78,7 +80,8 @@ class StudentActivityReportService
     public function __construct(
         private LearningVelocityEngine $velocityEngine,
         private PredictiveInterventionEngine $interventionEngine,
-        private MisconceptionIntelligenceEngine $misconceptionEngine
+        private MisconceptionIntelligenceEngine $misconceptionEngine,
+        private CoherenceMapRepository $coherenceMap
     ) {
     }
 
@@ -588,9 +591,15 @@ class StudentActivityReportService
         $active = $query->get(['active_misconception_id']);
         $counts = $active->countBy(fn ($row) => (int) $row->active_misconception_id);
 
+        // A weak-prerequisite trace only means one thing for a single named
+        // learner — for a class/cohort aggregate (buildClassReport's call,
+        // several studentIds) there is no one learner to walk, so it stays
+        // null rather than guessing at one of them.
+        $soleLearnerId = count($studentIds) === 1 ? (int) $studentIds[array_key_first($studentIds)] : null;
+
         $top = MisconceptionLibrary::query()
             ->whereIn('id', $counts->keys()->all())
-            ->get(['id', 'tag', 'description', 'corrective_action'])
+            ->get(['id', 'tag', 'description', 'corrective_action', 'concept_ref_id'])
             ->map(fn ($lib) => [
                 // Carried through so buildIntelligence() can call
                 // MisconceptionIntelligenceEngine::getRemediation() for the
@@ -608,6 +617,7 @@ class StudentActivityReportService
                 // lifetime, platform-wide detection_count, which would not
                 // describe this learner/class at all.
                 'detection_count' => (int) ($counts[(int) $lib->id] ?? 0),
+                'weak_prerequisite' => $this->weakPrerequisiteFor($lib->concept_ref_id, $soleLearnerId),
             ])
             ->sortByDesc('detection_count')
             ->take(10)
@@ -618,6 +628,35 @@ class StudentActivityReportService
             'active_count' => $active->count(),
             'top_misconceptions' => $top,
         ];
+    }
+
+    /**
+     * The top unmastered ancestor of the misconception's own concept, same
+     * call `CompoundingRootBlockerDetector` already makes for K4's
+     * intervention signal — a candidate correlate for the UI to show as
+     * "possibly related to", never as a confirmed cause. A graph path is
+     * evidence a teacher can check, not a diagnosis; the frontend
+     * (`MisconceptionBoard.tsx`) phrases it that way deliberately. Null
+     * whenever there is nothing to say: no single learner in scope, no
+     * concept_ref_id recorded on this library row, no unmastered ancestor
+     * found, or a Neo4j failure — never an exception, since this is one
+     * explanatory field on a report that must still render without it.
+     */
+    private function weakPrerequisiteFor(?int $conceptRefId, ?int $learnerId): ?string
+    {
+        if ($conceptRefId === null || $learnerId === null) {
+            return null;
+        }
+
+        try {
+            $blockers = $this->coherenceMap->rootBlockers($conceptRefId, $learnerId);
+        } catch (Throwable $e) {
+            Log::warning('Weak-prerequisite lookup failed for concept ' . $conceptRefId . ': ' . $e->getMessage());
+
+            return null;
+        }
+
+        return $blockers[0]['name'] ?? null;
     }
 
     private function gamificationForStudent(int $learnerId): array
