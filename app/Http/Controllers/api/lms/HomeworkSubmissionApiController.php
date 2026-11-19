@@ -78,6 +78,29 @@ class HomeworkSubmissionApiController extends Controller
         return $request->input('user_id') ?? $request->input('student_id');
     }
 
+    /**
+     * May the verified caller read this submission row (its files, AI score, teacher remarks)?
+     *
+     * The row id alone used to be enough, so any signed-in user could read any submission in any school by trying ids.
+     * It must belong to the caller's own school (a platform admin, is_admin 2, spans schools), and a student may read
+     * only their own. Reads the session the `api.session` middleware filled in from the verified token.
+     */
+    private function mayReadSubmission($homework): bool
+    {
+        $school = (int) session()->get('sub_institute_id');
+        $platformAdmin = (int) session()->get('is_admin') === 2;
+
+        if (!$platformAdmin && ($school <= 0 || (int) $homework->sub_institute_id !== $school)) {
+            return false;
+        }
+
+        if ($this->isStudentSession()) {
+            return (int) $homework->student_id === (int) session()->get('user_id');
+        }
+
+        return true;
+    }
+
     /** True when the verified token belongs to a student. */
     private function isStudentSession(): bool
     {
@@ -244,7 +267,7 @@ class HomeworkSubmissionApiController extends Controller
     {
         $homework = studentHomeworkModel::find($id);
 
-        if (!$homework) {
+        if (!$homework || !$this->mayReadSubmission($homework)) {
             return $this->fail('Submission not found', 404);
         }
 
@@ -747,7 +770,8 @@ class HomeworkSubmissionApiController extends Controller
         $homeworkId = implode('_', $parts);
 
         $homework = studentHomeworkModel::find($homeworkId);
-        if (!$homework) {
+        // Another school's, or (for a student) another student's file is reported as missing, not forbidden.
+        if (!$homework || !$this->mayReadSubmission($homework)) {
             return $this->fail('File not found', 404);
         }
 
