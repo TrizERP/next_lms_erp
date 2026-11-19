@@ -150,7 +150,7 @@ class GraphModuleBrowser
     /**
      * The real connected subgraph for an entire ERP module (all its submodules combined).
      */
-    public function graphForModule(McpRequestContext $scope, int $moduleId, int $sampleSizePerLabel = 8, int $limit = 300): array
+    public function graphForModule(McpRequestContext $scope, int $moduleId, int $sampleSizePerLabel = 8, int $limit = 300, ?array $restrictedToStudentIds = null): array
     {
         $allowed = $this->rights->allowedMenuIds($scope);
 
@@ -177,7 +177,7 @@ class GraphModuleBrowser
             return ['module_id' => $moduleId, 'label' => $moduleLabel, 'labels' => [], 'nodes' => [], 'edges' => []];
         }
 
-        $result = $this->graphForLabels($labels, $scope->selectedInstituteId, $sampleSizePerLabel, $limit);
+        $result = $this->graphForLabels($labels, $scope->selectedInstituteId, $sampleSizePerLabel, $limit, 15, $restrictedToStudentIds);
 
         return array_merge([
             'module_id' => $moduleId,
@@ -198,7 +198,7 @@ class GraphModuleBrowser
      * scope was never granted must be refused here too, not only hidden from
      * the nav that happened to generate the id.
      */
-    public function graphForSubmodule(McpRequestContext $scope, int $submoduleId, int $sampleSizePerLabel = 12, int $limit = 300): array
+    public function graphForSubmodule(McpRequestContext $scope, int $submoduleId, int $sampleSizePerLabel = 12, int $limit = 300, ?array $restrictedToStudentIds = null): array
     {
         $allowed = $this->rights->allowedMenuIds($scope);
 
@@ -221,7 +221,7 @@ class GraphModuleBrowser
             return ['submodule' => $label, 'label' => $label, 'labels' => [], 'nodes' => [], 'edges' => []];
         }
 
-        $result = $this->graphForLabels($labels, $scope->selectedInstituteId, $sampleSizePerLabel, $limit);
+        $result = $this->graphForLabels($labels, $scope->selectedInstituteId, $sampleSizePerLabel, $limit, 15, $restrictedToStudentIds);
 
         return array_merge([
             'submodule' => $label,
@@ -286,23 +286,52 @@ class GraphModuleBrowser
      * family browser) deliberately does NOT apply this — there a node's
      * connections to a DIFFERENT label are the point.
      */
-    public function graphForLabels(array $labels, ?int $tenantId, int $sampleSizePerLabel = 12, int $limit = 300, int $perNodeLimit = 15): array
+    public function graphForLabels(array $labels, ?int $tenantId, int $sampleSizePerLabel = 12, int $limit = 300, int $perNodeLimit = 15, ?array $restrictedToStudentIds = null): array
     {
+        $studentKey = GraphSchema::key('Student');
         $parts = [];
 
         foreach ($labels as $label) {
             GraphSchema::assertLabel($label);
+
+            if ($label === 'Student' && $restrictedToStudentIds === []) {
+                continue;
+            }
+
+            // The tenant disjunction is parenthesised so the student guard
+            // ANDs onto the whole thing, not just its last term.
+            $studentFilter = ($label === 'Student' && $restrictedToStudentIds !== null)
+                ? sprintf('AND n.%s IN $allowedStudentIds ', $studentKey)
+                : '';
             $parts[] = sprintf(
                 'MATCH (n:%s) '
-                . 'WHERE $tenantId IS NULL OR n.sub_institute_id IS NULL OR n.sub_institute_id = $tenantId '
+                . 'WHERE ($tenantId IS NULL OR n.sub_institute_id IS NULL OR n.sub_institute_id = $tenantId) %s'
                 . 'WITH n LIMIT $sampleSizePerLabel RETURN n',
-                $label
+                $label,
+                $studentFilter
             );
+        }
+
+        if ($parts === []) {
+            return ['labels' => $labels, 'nodes' => [], 'edges' => []];
         }
 
         $targetFilter = count($labels) > 1
             ? 'WHERE any(l IN labels(m) WHERE l IN $labels) '
             : '';
+
+        // Neighbor expansion (`m`) is not restricted to `$labels` at all when
+        // only one label was requested (deliberate, see this method's own
+        // docblock) -- so a Student neighbor can surface here regardless of
+        // whether 'Student' was one of the requested labels. This guard is
+        // therefore unconditional on `$restrictedToStudentIds`, not gated on
+        // label membership.
+        if ($restrictedToStudentIds !== null) {
+            $studentNeighborGuard = sprintf("(NOT 'Student' IN labels(m) OR m.%s IN \$allowedStudentIds) ", $studentKey);
+            $targetFilter = $targetFilter === ''
+                ? 'WHERE ' . $studentNeighborGuard
+                : $targetFilter . 'AND ' . $studentNeighborGuard;
+        }
 
         $cypher = 'CALL { ' . implode(' UNION ', $parts) . ' } '
             . 'WITH n '
@@ -317,14 +346,19 @@ class GraphModuleBrowser
             . '       id(m) AS mId, labels(m) AS mLabels, m AS mProps '
             . 'LIMIT $limit';
 
+        $params = [
+            'tenantId' => $tenantId,
+            'sampleSizePerLabel' => $sampleSizePerLabel,
+            'perNodeLimit' => $perNodeLimit,
+            'limit' => $limit,
+            'labels' => $labels,
+        ];
+        if ($restrictedToStudentIds !== null) {
+            $params['allowedStudentIds'] = $restrictedToStudentIds;
+        }
+
         try {
-            $result = $this->neo4j->run($cypher, [
-                'tenantId' => $tenantId,
-                'sampleSizePerLabel' => $sampleSizePerLabel,
-                'perNodeLimit' => $perNodeLimit,
-                'limit' => $limit,
-                'labels' => $labels,
-            ]);
+            $result = $this->neo4j->run($cypher, $params);
         } catch (Throwable $exception) {
             return ['labels' => $labels, 'nodes' => [], 'edges' => [], 'error' => $exception->getMessage()];
         }
@@ -487,17 +521,34 @@ class GraphModuleBrowser
      * for why: a single hub node (e.g. a popular :Standard) can otherwise
      * fill the whole sample with one relationship type.
      */
-    public function graph(string $label, ?int $tenantId, int $sampleSize = 20, int $limit = 250, int $perNodeLimit = 15): array
+    public function graph(string $label, ?int $tenantId, int $sampleSize = 20, int $limit = 250, int $perNodeLimit = 15, ?array $restrictedToStudentIds = null): array
     {
         GraphSchema::assertLabel($label);
 
+        if ($label === 'Student' && $restrictedToStudentIds === []) {
+            return ['label' => $label, 'nodes' => [], 'edges' => []];
+        }
+
+        $studentKey = GraphSchema::key('Student');
+        $seedStudentFilter = ($label === 'Student' && $restrictedToStudentIds !== null)
+            ? sprintf('AND n.%s IN $allowedStudentIds ', $studentKey)
+            : '';
+        // Neighbor expansion here is unconstrained by label (see this method's
+        // own docblock: a different-label connection is the point), so a
+        // Student neighbor can surface regardless of the requested `$label` —
+        // guarded unconditionally on `$restrictedToStudentIds`, same as
+        // graphForLabels().
+        $neighborStudentFilter = $restrictedToStudentIds !== null
+            ? sprintf("WHERE (NOT 'Student' IN labels(m) OR m.%s IN \$allowedStudentIds) ", $studentKey)
+            : '';
+
         $cypher = sprintf(
             'MATCH (n:%s) '
-            . 'WHERE $tenantId IS NULL OR n.sub_institute_id IS NULL OR n.sub_institute_id = $tenantId '
+            . 'WHERE ($tenantId IS NULL OR n.sub_institute_id IS NULL OR n.sub_institute_id = $tenantId) %s'
             . 'WITH n LIMIT $sampleSize '
             . 'CALL { '
             . '  WITH n '
-            . '  OPTIONAL MATCH (n)-[r]-(m) '
+            . '  OPTIONAL MATCH (n)-[r]-(m) %s'
             . '  RETURN r, m '
             . '  LIMIT $perNodeLimit '
             . '} '
@@ -505,16 +556,23 @@ class GraphModuleBrowser
             . '       id(r) AS rId, type(r) AS rType, startNode(r) = n AS rOutgoing, '
             . '       id(m) AS mId, labels(m) AS mLabels, m AS mProps '
             . 'LIMIT $limit',
-            $label
+            $label,
+            $seedStudentFilter,
+            $neighborStudentFilter
         );
 
+        $params = [
+            'tenantId' => $tenantId,
+            'sampleSize' => $sampleSize,
+            'perNodeLimit' => $perNodeLimit,
+            'limit' => $limit,
+        ];
+        if ($restrictedToStudentIds !== null) {
+            $params['allowedStudentIds'] = $restrictedToStudentIds;
+        }
+
         try {
-            $result = $this->neo4j->run($cypher, [
-                'tenantId' => $tenantId,
-                'sampleSize' => $sampleSize,
-                'perNodeLimit' => $perNodeLimit,
-                'limit' => $limit,
-            ]);
+            $result = $this->neo4j->run($cypher, $params);
         } catch (Throwable $exception) {
             return ['label' => $label, 'nodes' => [], 'edges' => [], 'error' => $exception->getMessage()];
         }
@@ -703,8 +761,11 @@ class GraphModuleBrowser
      * return first.
      *
      * @param  string[]  $labels  Restrict to these GraphSchema labels; empty means every label.
+     * @param  ?int[]  $restrictedToStudentIds  When not null, Student results are further
+     *   filtered to this id set (a teacher's allocated students) — `[]` means "none", not
+     *   "unrestricted". Admin callers pass null, exactly today's behaviour.
      */
-    public function search(string $term, ?int $tenantId, int $limit = 30, array $labels = []): array
+    public function search(string $term, ?int $tenantId, int $limit = 30, array $labels = [], ?array $restrictedToStudentIds = null): array
     {
         $limit = max(1, min($limit, self::MAX_SEARCH_LIMIT));
         $needle = mb_strtolower(trim($term));
@@ -712,21 +773,42 @@ class GraphModuleBrowser
 
         $searchLabels = $labels !== [] ? $labels : GraphSchema::labels();
         $perLabelLimit = $labels !== [] ? max(1, intdiv($limit, count($searchLabels))) : $limit;
+        $studentKey = GraphSchema::key('Student');
 
         $parts = [];
+        $params = ['tenantId' => $tenantId, 'term' => $needle, 'limit' => $limit];
+
+        if ($restrictedToStudentIds !== null) {
+            $params['allowedStudentIds'] = $restrictedToStudentIds;
+        }
+
         foreach ($searchLabels as $label) {
             GraphSchema::assertLabel($label);
+
+            if ($label === 'Student' && $restrictedToStudentIds === []) {
+                // Caller has no assigned classes -- this label contributes nothing.
+                continue;
+            }
+
+            $studentFilter = ($label === 'Student' && $restrictedToStudentIds !== null)
+                ? sprintf('AND n.%s IN $allowedStudentIds ', $studentKey)
+                : '';
             $filter = $hasTerm
                 ? 'AND (toLower(toString(coalesce(n.displayLabel, ""))) CONTAINS $term '
                 . 'OR toLower(toString(coalesce(n.name, ""))) CONTAINS $term) '
                 : '';
             $parts[] = sprintf(
-                'MATCH (n:%s) WHERE n.sub_institute_id = $tenantId %s'
+                'MATCH (n:%s) WHERE n.sub_institute_id = $tenantId %s%s'
                 . 'WITH n LIMIT %d RETURN n',
                 $label,
+                $studentFilter,
                 $filter,
                 $perLabelLimit
             );
+        }
+
+        if ($parts === []) {
+            return ['term' => $term, 'nodes' => []];
         }
 
         $cypher = 'CALL { ' . implode(' UNION ', $parts) . ' } '
@@ -734,7 +816,7 @@ class GraphModuleBrowser
             . 'LIMIT $limit';
 
         try {
-            $result = $this->neo4j->run($cypher, ['tenantId' => $tenantId, 'term' => $needle, 'limit' => $limit]);
+            $result = $this->neo4j->run($cypher, $params);
         } catch (Throwable $exception) {
             return ['term' => $term, 'nodes' => [], 'error' => $exception->getMessage()];
         }
@@ -765,6 +847,11 @@ class GraphModuleBrowser
      * reports not-found, even if a longer same-tenant path might exist.
      * That's the deliberate, approved trade-off: never silently expose a
      * cross-tenant route by finding a "better" alternative for it.
+     *
+     * `$restrictedToStudentIds`, when not null, extends that same closed-fail
+     * rule to Student nodes: a path crossing a Student outside this set fails
+     * the `ALL(...)` filter exactly like a cross-tenant node would, rather
+     * than being redacted out of an otherwise-returned path.
      */
     public function findPath(
         string $fromLabel,
@@ -773,7 +860,8 @@ class GraphModuleBrowser
         string $toId,
         ?int $tenantId,
         int $maxDepth = 6,
-        array $relationshipTypes = []
+        array $relationshipTypes = [],
+        ?array $restrictedToStudentIds = null
     ): array {
         GraphSchema::assertLabel($fromLabel);
         GraphSchema::assertLabel($toLabel);
@@ -784,18 +872,26 @@ class GraphModuleBrowser
 
         $params = ['fromId' => (int) $fromId, 'toId' => (int) $toId, 'tenantId' => $tenantId];
 
+        if ($restrictedToStudentIds !== null) {
+            $params['allowedStudentIds'] = $restrictedToStudentIds;
+        }
+
         if ($fromLabel === $toLabel && (string) $fromId === (string) $toId) {
-            return $this->findPathSameNode($fromLabel, $params);
+            return $this->findPathSameNode($fromLabel, $params, $restrictedToStudentIds);
         }
 
         $depth = max(1, min($maxDepth, self::MAX_PATH_DEPTH));
         $typeFilter = $relationshipTypes !== [] ? ':' . implode('|', $relationshipTypes) : '';
+        $studentKey = GraphSchema::key('Student');
+        $studentPathGuard = $restrictedToStudentIds !== null
+            ? sprintf("AND (NOT 'Student' IN labels(x) OR x.%s IN \$allowedStudentIds) ", $studentKey)
+            : '';
 
         $cypher = sprintf(
             'MATCH (a:%s) WHERE id(a) = $fromId AND a.sub_institute_id = $tenantId '
             . 'MATCH (b:%s) WHERE id(b) = $toId AND b.sub_institute_id = $tenantId '
             . 'MATCH p = shortestPath((a)-[%s*..%d]-(b)) '
-            . 'WHERE ALL(x IN nodes(p) WHERE x.sub_institute_id = $tenantId) '
+            . 'WHERE ALL(x IN nodes(p) WHERE x.sub_institute_id = $tenantId) %s'
             . 'WITH p LIMIT 1 '
             . 'UNWIND range(0, size(relationships(p)) - 1) AS i '
             . 'WITH relationships(p)[i] AS r, nodes(p)[i] AS fromNode, nodes(p)[i + 1] AS toNode '
@@ -807,6 +903,7 @@ class GraphModuleBrowser
             $toLabel,
             $typeFilter,
             $depth,
+            $studentPathGuard,
             self::MAX_PATH_NODES
         );
 
@@ -845,14 +942,19 @@ class GraphModuleBrowser
     }
 
     /** @param array{fromId:int,toId:int,tenantId:?int} $params */
-    private function findPathSameNode(string $label, array $params): array
+    private function findPathSameNode(string $label, array $params, ?array $restrictedToStudentIds = null): array
     {
+        $studentGuard = ($label === 'Student' && $restrictedToStudentIds !== null)
+            ? sprintf('AND n.%s IN $allowedStudentIds ', GraphSchema::key('Student'))
+            : '';
+
         try {
             $result = $this->neo4j->run(
                 sprintf(
-                    'MATCH (n:%s) WHERE id(n) = $fromId AND n.sub_institute_id = $tenantId '
+                    'MATCH (n:%s) WHERE id(n) = $fromId AND n.sub_institute_id = $tenantId %s'
                     . 'RETURN id(n) AS nId, labels(n) AS nLabels, n AS nProps',
-                    $label
+                    $label,
+                    $studentGuard
                 ),
                 $params
             );
@@ -894,7 +996,8 @@ class GraphModuleBrowser
         int $relationshipLimit = 50,
         int $skip = 0,
         ?string $relation = null,
-        ?string $direction = null
+        ?string $direction = null,
+        ?array $restrictedToStudentIds = null
     ): array {
         GraphSchema::assertLabel($label);
         if ($relation !== null) {
@@ -905,6 +1008,7 @@ class GraphModuleBrowser
         $skip = max(0, $skip);
 
         $keyProp = GraphSchema::key($label);
+        $studentKey = GraphSchema::key('Student');
         $intId = is_numeric($recordId) ? (int) $recordId : null;
         $nodeParams = [
             'recordId' => $intId ?? -1,
@@ -913,14 +1017,25 @@ class GraphModuleBrowser
         ];
         $empty = ['node' => null, 'nodes' => [], 'edges' => [], 'total_incoming' => 0, 'total_outgoing' => 0, 'has_more' => false];
 
+        // When restricted, a Student center node outside the allowed set must
+        // never resolve at all -- it falls through to the same "not found"
+        // shape below as an unknown id, never a partial/redacted response.
+        $centerStudentGuard = ($label === 'Student' && $restrictedToStudentIds !== null)
+            ? sprintf('AND n.%s IN $allowedStudentIds ', $studentKey)
+            : '';
+        if ($restrictedToStudentIds !== null) {
+            $nodeParams['allowedStudentIds'] = $restrictedToStudentIds;
+        }
+
         try {
             $matchClause = sprintf(
                 'MATCH (n:%s) WHERE (id(n) = $recordId OR n.%s = $recordId OR toString(n.%s) = $rawId) '
-                . 'AND (n.sub_institute_id = $tenantId OR n.sub_institute_id IS NULL) '
+                . 'AND (n.sub_institute_id = $tenantId OR n.sub_institute_id IS NULL) %s'
                 . 'RETURN id(n) AS nId, labels(n) AS nLabels, n AS nProps LIMIT 1',
                 $label,
                 $keyProp,
-                $keyProp
+                $keyProp,
+                $centerStudentGuard
             );
             $nodeResult = $this->neo4j->run($matchClause, $nodeParams);
         } catch (Throwable $exception) {
@@ -949,14 +1064,23 @@ class GraphModuleBrowser
 
         $typeFilterOut = $relation !== null ? 'AND type(ro) = $relation ' : '';
         $typeFilterIn = $relation !== null ? 'AND type(ri) = $relation ' : '';
+        // Applies regardless of the center's own label -- a non-Student
+        // center (e.g. Standard) can still have Student neighbors, and those
+        // are exactly what must stay hidden from an out-of-scope caller.
+        $neighborStudentGuardOut = $restrictedToStudentIds !== null
+            ? sprintf("AND (NOT 'Student' IN labels(mo) OR mo.%s IN \$allowedStudentIds) ", $studentKey)
+            : '';
+        $neighborStudentGuardIn = $restrictedToStudentIds !== null
+            ? sprintf("AND (NOT 'Student' IN labels(mi) OR mi.%s IN \$allowedStudentIds) ", $studentKey)
+            : '';
 
         $inCount = 0;
         $outCount = 0;
         try {
             foreach ($this->neo4j->run(
                 'MATCH (n) WHERE id(n) = $recordId '
-                . 'OPTIONAL MATCH (n)-[ro]->(mo) WHERE mo.sub_institute_id = $tenantId ' . $typeFilterOut
-                . 'OPTIONAL MATCH (n)<-[ri]-(mi) WHERE mi.sub_institute_id = $tenantId ' . $typeFilterIn
+                . 'OPTIONAL MATCH (n)-[ro]->(mo) WHERE mo.sub_institute_id = $tenantId ' . $typeFilterOut . $neighborStudentGuardOut
+                . 'OPTIONAL MATCH (n)<-[ri]-(mi) WHERE mi.sub_institute_id = $tenantId ' . $typeFilterIn . $neighborStudentGuardIn
                 . 'RETURN count(DISTINCT ro) AS outCount, count(DISTINCT ri) AS inCount',
                 $nodeParams + ['relation' => $relation]
             ) ?? [] as $row) {
@@ -977,17 +1101,25 @@ class GraphModuleBrowser
         $directionFilter = $direction === 'outgoing'
             ? 'AND startNode(r) = n '
             : ($direction === 'incoming' ? 'AND endNode(r) = n ' : '');
+        $neighborStudentGuard = $restrictedToStudentIds !== null
+            ? sprintf("AND (NOT 'Student' IN labels(m) OR m.%s IN \$allowedStudentIds) ", $studentKey)
+            : '';
+
+        $relParams = ['recordId' => $realInternalId, 'tenantId' => $tenantId, 'skip' => $skip, 'limit' => $relationshipLimit, 'relation' => $relation];
+        if ($restrictedToStudentIds !== null) {
+            $relParams['allowedStudentIds'] = $restrictedToStudentIds;
+        }
 
         try {
             $relResult = $this->neo4j->run(
                 'MATCH (n) WHERE id(n) = $recordId '
-                . 'MATCH (n)-[r]-(m) WHERE m.sub_institute_id = $tenantId ' . $typeFilter . $directionFilter
+                . 'MATCH (n)-[r]-(m) WHERE m.sub_institute_id = $tenantId ' . $typeFilter . $directionFilter . $neighborStudentGuard
                 . 'WITH r, m, startNode(r) = n AS outgoing '
                 . 'ORDER BY id(r) '
                 . 'SKIP $skip LIMIT $limit '
                 . 'RETURN id(r) AS rId, type(r) AS rType, properties(r) AS rProps, outgoing, '
                 . '       id(m) AS mId, labels(m) AS mLabels, m AS mProps',
-                ['recordId' => $realInternalId, 'tenantId' => $tenantId, 'skip' => $skip, 'limit' => $relationshipLimit, 'relation' => $relation]
+                $relParams
             );
         } catch (Throwable $exception) {
             return [

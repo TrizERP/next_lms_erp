@@ -2,8 +2,11 @@
 
 namespace App\Http\Controllers\AI;
 
+use App\Domain\K12\TeacherClassScopeService;
 use App\Domain\KnowledgeGraph\GraphModuleBrowser;
 use App\Services\Graph\GraphSchema;
+use App\Services\Mcp\AdministratorCheck;
+use App\Services\Mcp\McpRequestContext;
 use Illuminate\Http\Request;
 use Throwable;
 
@@ -19,8 +22,30 @@ use Throwable;
  */
 class GraphBrowserController extends AiController
 {
-    public function __construct(private readonly GraphModuleBrowser $browser)
+    public function __construct(
+        private readonly GraphModuleBrowser $browser,
+        private readonly TeacherClassScopeService $classScope,
+        private readonly AdministratorCheck $administrators,
+    ) {
+    }
+
+    /**
+     * Student-reachability restriction for this caller: `null` (today's
+     * unrestricted behaviour) for a real administrator, otherwise exactly
+     * the students this teacher's `class_teacher`/`timetable` rows reach —
+     * `[]`, not unrestricted, when they have none. Uses AdministratorCheck
+     * rather than the raw `$scope->isAdmin` flag because that flag mirrors
+     * `tbluser.is_admin`, which AdministratorCheck's own docblock documents
+     * as empty for every real admin in this estate — the naive flag would
+     * misclassify genuine admins as teachers and wrongly narrow their view.
+     */
+    private function restrictedStudentIds(McpRequestContext $scope): ?array
     {
+        if ($this->administrators->isAdministrator($scope)) {
+            return null;
+        }
+
+        return $this->classScope->allowedStudentIds($scope->userId, $scope->selectedInstituteId);
     }
 
     public function modules(Request $request)
@@ -76,6 +101,7 @@ class GraphBrowserController extends AiController
                     (int) $label,
                     $validated['sample_size'] ?? 12,
                     $validated['limit'] ?? 300,
+                    $this->restrictedStudentIds($scope),
                 ));
             }
 
@@ -84,6 +110,8 @@ class GraphBrowserController extends AiController
                 $scope->selectedInstituteId,
                 $validated['sample_size'] ?? 20,
                 $validated['limit'] ?? 250,
+                15,
+                $this->restrictedStudentIds($scope),
             ));
         } catch (Throwable $exception) {
             return $this->handle($exception);
@@ -136,6 +164,7 @@ class GraphBrowserController extends AiController
                 $moduleId,
                 $validated['sample_size'] ?? 8,
                 $validated['limit'] ?? 300,
+                $this->restrictedStudentIds($scope),
             ));
         } catch (Throwable $exception) {
             return $this->handle($exception);
@@ -158,6 +187,7 @@ class GraphBrowserController extends AiController
                 $submoduleId,
                 $validated['sample_size'] ?? 12,
                 $validated['limit'] ?? 300,
+                $this->restrictedStudentIds($scope),
             ));
         } catch (Throwable $exception) {
             return $this->handle($exception);
@@ -195,6 +225,7 @@ class GraphBrowserController extends AiController
                 $scope->selectedInstituteId,
                 $validated['limit'] ?? 30,
                 $labels,
+                $this->restrictedStudentIds($scope),
             ));
         } catch (Throwable $exception) {
             return $this->handle($exception);
@@ -229,6 +260,7 @@ class GraphBrowserController extends AiController
                 $scope->selectedInstituteId,
                 $validated['max_depth'] ?? 6,
                 $validated['relationship_types'] ?? [],
+                $this->restrictedStudentIds($scope),
             ));
         } catch (Throwable $exception) {
             return $this->handle($exception);
@@ -265,6 +297,7 @@ class GraphBrowserController extends AiController
                 $validated['skip'] ?? 0,
                 $validated['relation'] ?? null,
                 $validated['direction'] ?? null,
+                $this->restrictedStudentIds($scope),
             ));
         } catch (Throwable $exception) {
             return $this->handle($exception);

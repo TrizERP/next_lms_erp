@@ -354,6 +354,28 @@ class CoherenceMapRepository
         );
     }
 
+    /**
+     * How many concepts, transitively, this one's mastery unblocks — the
+     * same `unlocked_by` adjacency `scope()` already builds for `rootBlockers()`'s
+     * backward walk, here walked forward via the shared `walk()` helper. No
+     * new Cypher: `unlocked_by` is already read by every `scope()` call.
+     *
+     * Returns 0 for an unknown concept or one with no projected scope — the
+     * same "nothing to say yet" answer `rootBlockers()` gives, never an
+     * error, so a caller ranking by fan-out can treat a missing value as the
+     * lowest rank rather than special-casing it.
+     */
+    public function downstreamFanOut(int $conceptId): int
+    {
+        $scope = $this->scopeForConcept($conceptId);
+
+        if ($scope === null || ! isset($scope['nodes'][$conceptId])) {
+            return 0;
+        }
+
+        return count($this->walk($conceptId, $scope['unlocked_by']));
+    }
+
     public function rootBlockers(int $conceptId, int $learnerId): array
     {
         $home = DB::table('lms_concept')

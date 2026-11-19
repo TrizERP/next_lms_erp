@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\api\PAL;
 
+use App\Domain\K12\TeacherClassScopeService;
 use App\Http\Controllers\Controller;
 use App\Services\PAL\Reporting\StudentActivityReportDocxService;
 use App\Services\PAL\Reporting\StudentActivityReportService;
@@ -39,7 +40,8 @@ class StudentActivityReportController extends Controller
 {
     public function __construct(
         protected StudentActivityReportService $report,
-        protected StudentActivityReportDocxService $docx
+        protected StudentActivityReportDocxService $docx,
+        protected TeacherClassScopeService $classScope
     ) {
     }
 
@@ -267,25 +269,7 @@ class StudentActivityReportController extends Controller
      */
     private function isClassInTeacherScope(int $teacherId, int $subInstituteId, int $standardId, ?int $sectionId, string $syear): bool
     {
-        $classTeacherMatch = DB::table('class_teacher')
-            ->where('teacher_id', $teacherId)
-            ->where('sub_institute_id', $subInstituteId)
-            ->where('standard_id', $standardId)
-            ->where('syear', $syear)
-            ->when($sectionId !== null, fn ($q) => $q->where('division_id', $sectionId))
-            ->exists();
-
-        if ($classTeacherMatch) {
-            return true;
-        }
-
-        return DB::table('timetable')
-            ->where('teacher_id', $teacherId)
-            ->where('sub_institute_id', $subInstituteId)
-            ->where('standard_id', $standardId)
-            ->where('syear', $syear)
-            ->when($sectionId !== null, fn ($q) => $q->where('division_id', $sectionId))
-            ->exists();
+        return $this->classScope->isClassInTeacherScope($teacherId, $subInstituteId, $standardId, $sectionId, $syear);
     }
 
     private function streamDocx(string $binary, string $filename)
