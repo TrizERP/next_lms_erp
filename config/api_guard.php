@@ -121,7 +121,12 @@ return [
         'lms-courses', 'lms-courses/*',
         'lms-homework/*',
         'lms-question-bank', 'lms-question-bank/*', 'lms-questions',
-        'lms-study-deck/image-urls',
+        // The study deck, its documents/PDF, the vocabulary deck and the classroom activity were reachable with no
+        // token at all: anyone could read a school's content by chapter_id. The frontend already sends the bearer
+        // token on every ERP call (installErpAuthFetch in lib/erp-client.ts).
+        'lms-study-deck', 'lms-study-deck/*',
+        'lms-vocabulary-class',
+        'lms-classroom-activity',
         'lms/concept-intelligence/*',
         'lms/gamma-content-master',
         'master-menu-rights', 'menu-rights',

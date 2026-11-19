@@ -4,6 +4,7 @@ namespace App\Http\Controllers\api\lms;
 
 use App\Http\Controllers\Controller;
 use App\Services\lms\Content\ClassroomActivityDocument;
+use App\Support\LearnerContentScope;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -32,7 +33,8 @@ class ClassroomActivityApiController extends Controller
         $chapter = DB::table('chapter_master')->where('id', $chapterId)
             ->when($tenant, fn ($q) => $q->where(fn ($w) => $w->where('sub_institute_id', $tenant)->orWhere('sub_institute_id', 1)))
             ->first(['id', 'sub_institute_id', 'standard_id', 'subject_id']);
-        if (!$chapter) {
+        // A student reaches only the chapters of their own standard; 404 so a probe cannot tell the two cases apart.
+        if (!$chapter || !LearnerContentScope::mayOpenChapter(LearnerContentScope::identity($request), $chapter)) {
             return response()->json(['status_code' => 0, 'message' => 'Chapter not found.'], 404);
         }
         $tenant = $tenant ?: $chapter->sub_institute_id;

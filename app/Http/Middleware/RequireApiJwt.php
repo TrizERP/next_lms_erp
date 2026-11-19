@@ -79,6 +79,14 @@ class RequireApiJwt
         // Additive: nothing else reads it, and a route outside the guard never has it.
         if ($caller['user_id'] > 0) {
             $request->attributes->set('verified_user_id', $caller['user_id']);
+            // Also additive. Whether the caller is a student, and which school the token belongs to, so a content
+            // endpoint can scope a student to their own standard without trusting a field the client typed
+            // (see App\Support\LearnerContentScope).
+            $request->attributes->set('verified_school', $caller['school']);
+            $request->attributes->set(
+                'verified_is_student',
+                $caller['is_student'] || strtolower((string) $caller['profile_name']) === 'student'
+            );
         }
 
         return $next($request);

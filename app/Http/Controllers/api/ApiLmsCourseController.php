@@ -17,6 +17,7 @@ use App\Services\lms\Content\VideoGroup;
 use App\Services\lms\Content\VocabularyClassDeck;
 use App\Services\QuestionGeneration\QuestionEnvelope;
 use App\Services\QuestionGeneration\QuestionFormResolver;
+use App\Support\LearnerContentScope;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
@@ -2267,6 +2268,15 @@ HTML;
         $user_profile_name = $request->input('user_profile_name') ?? $this->sessionValue($request, 'user_profile_name');
         $user_id = $request->input('user_id') ?? $this->sessionValue($request, 'user_id');
 
+        // A student is whoever the verified token says. The role and user id typed in the body used to decide this, so a
+        // student could send "Admin" (every subject in the school) or another student's id.
+        $identity = LearnerContentScope::identity($request);
+        if (LearnerContentScope::isLearner($identity)) {
+            $user_profile_name = 'Student';
+            $user_id = $identity['user_id'];
+            $sub_institute_id = $identity['school'] > 0 ? $identity['school'] : $sub_institute_id;
+        }
+
         // Without this the value reached the query as an empty string and MariaDB
         // rejected the SQL, which surfaced as a 500 with a syntax error in the body.
         // A missing parameter is the caller's mistake, so say so.
@@ -2298,14 +2308,37 @@ HTML;
         $grade = preg_replace('/[^0-9]/', '', (string) $request->input('grade'));
         $standard = preg_replace('/[^0-9]/', '', (string) $request->input('standard'));
         $user_profile_name = $request->input('user_profile_name') ?? $this->sessionValue($request, 'user_profile_name');
+        $student_id = (int) ($request->input('user_id') ?? $this->sessionValue($request, 'user_id'));
+
+        // Same rule as index(): a student is decided by the verified token, not by what the body claims.
+        $identity = LearnerContentScope::identity($request);
+        if (LearnerContentScope::isLearner($identity)) {
+            $user_profile_name = 'Student';
+            $student_id = $identity['user_id'];
+            if ($identity['school'] > 0) {
+                $sub_institute_id = (string) $identity['school'];
+            }
+        }
 
         $mycourse_arr = [];
         $extra = "";
 
         if ($user_profile_name && strtoupper($user_profile_name) == "STUDENT") {
-            $student_id = (int) ($request->input('user_id') ?? $this->sessionValue($request, 'user_id'));
-            $stu_data = tblstudentEnrollmentModel::select('standard_id')->where(['student_id' => $student_id])->get()->toArray();
-            $extra = " AND 
+            $allowedStandards = LearnerContentScope::allowedStandardIds($student_id, (int) explode(',', $sub_institute_id)[0]);
+            // No enrollment means no subjects; indexing the first enrollment row used to be a fatal error.
+            if ($allowedStandards === []) {
+                return response()->json([
+                    'status_code' => 1,
+                    'message' => 'SUCCESS',
+                    'lms_subject' => [],
+                    'content_category' => lmsContentCategoryModel::where('status', '1')->get()->toArray(),
+                    'grade' => $grade,
+                    'standard' => $standard,
+                    'sub_institute_id' => $sub_institute_id,
+                ], 200);
+            }
+            $stu_data = [['standard_id' => implode(',', array_map('intval', $allowedStandards))]];
+            $extra = " AND
                 find_in_set(
                     s.standard_id,
                     (SELECT concat_ws(',','" . $stu_data[0]['standard_id'] . "',group_concat(id))
@@ -2392,10 +2425,14 @@ HTML;
                 ->where(['student_id' => $student_id, 'syear' => $syear, 'sub_institute_id' => $sub_institute_id])
                 ->get()
                 ->toArray();
-            $extra = " AND 
+            // A student with no enrollment row for the year has no subjects. Reading $stu_data[0] below used to throw.
+            if ($stu_data === []) {
+                return ['content_category' => [], 'mycourse_arr' => []];
+            }
+            $extra = " AND
                 find_in_set(
                     s.standard_id,
-                    (SELECT concat_ws(',','" . $stu_data[0]['standard_id'] . "',group_concat(id))
+                    (SELECT concat_ws(',','" . (int) $stu_data[0]['standard_id'] . "',group_concat(id))
                     FROM standard
                     WHERE sub_institute_id = '" . $sub_institute_id . "' AND grade_id IN (
                     SELECT id
@@ -2785,6 +2822,18 @@ HTML;
      * content, so `where('show_hide', 1)` would empty most of the Teacher
      * Workspace. Only an explicit 0 means hidden.
      */
+    /**
+     * Is this content_master row a Teacher Resource? Mirrors the frontend's isTeacherTrainingContent: the category
+     * names teacher content, or the title says it is teacher training material.
+     */
+    private function isTeacherResourceRow(array $row): bool
+    {
+        $category = strtolower((string) ($row['content_category'] ?? ''));
+        $title = strtolower((string) ($row['title'] ?? ''));
+
+        return str_contains($category, 'teacher') || str_contains($title, 'teacher training');
+    }
+
     private function applyVisibilityFilter($query)
     {
         return $query->where(function ($q) {
@@ -2927,6 +2976,12 @@ HTML;
             $assets[] = $contentArray;
         }
 
+        // Teacher Resources are for staff only. The caller is judged by the verified token's is_student claim, never by
+        // a request field, so a student cannot ask for them. Staff and admins are untouched.
+        if (($callerIdentity['is_student'] ?? false) === true) {
+            $assets = array_values(array_filter($assets, fn (array $row) => ! $this->isTeacherResourceRow($row)));
+        }
+
         // Tracker "Content & LMS Architecture" row 4 / Decision #37. Stamps
         // ownership + layer onto each row so a teacher can tell platform content
         // from their school's own additions. ADDS FIELDS ONLY - it never filters,
@@ -2949,9 +3004,12 @@ HTML;
                 ->get()
                 ->toArray();
 
-        $content_by_category['Flash Cards'] = array_map(function ($f) {
-            return (array)$f;
-        }, $flash);
+        // Single-word flash cards are not part of the Classroom Resource list (admin hides them too), so a student gets none.
+        $content_by_category['Flash Cards'] = ($callerIdentity['is_student'] ?? false) === true
+            ? []
+            : array_map(function ($f) {
+                return (array)$f;
+            }, $flash);
         $content_by_category['Mindmap'] = [];
         $content_by_category['Virtual Lab'] = [];
 
@@ -3024,6 +3082,17 @@ HTML;
         $chapter = $chapterQuery->first();
 
         if (!$chapter) {
+            return response()->json([
+                'status_code' => 0,
+                'message' => 'Chapter not found.',
+                'chapter_id' => $chapter_id,
+            ], 404);
+        }
+
+        // A student may open only the chapters of their own standard (and subjects they take). The id used to be enough.
+        // 404 rather than 403 so a probe cannot tell "exists in another standard" from "does not exist".
+        $learner = LearnerContentScope::identity($request);
+        if (! LearnerContentScope::mayOpenChapter($learner, $chapter)) {
             return response()->json([
                 'status_code' => 0,
                 'message' => 'Chapter not found.',
