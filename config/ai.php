@@ -48,6 +48,14 @@ return [
     */
     'route_prefix' => env('AI_ROUTE_PREFIX', 'api/ai'),
 
+    // Retired Gemini ids -> replacement. Also applied to a model saved in AI Providers
+    // (see AiConfigurationResolver::modelFor), not only to .env values.
+    'retired_gemini_models' => $retiredGeminiModels,
+
+    // Base URL of the server that holds uploaded homework files (e.g. https://dev.triz.co.in).
+    // Only for a machine that shares the database but not the files; empty on a real server.
+    'homework_remote_files_url' => env('HOMEWORK_REMOTE_FILES_URL', ''),
+
     /*
     | Student exam-question help ("Ask AI" on an exam question).
     |

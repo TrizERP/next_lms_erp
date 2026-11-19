@@ -703,10 +703,19 @@ class LmsAssignmentApiController extends Controller
 
         $server = $request->getSchemeAndHttpHost();
 
+        // A deployment that has not run the work_type migration stores worksheets and projects as
+        // plain assignment rows, so the student's Worksheet / Project tabs found nothing to show.
+        // The paper each row was sent from still knows what it is (question_paper.exam_type), so
+        // work_type is read from there when the column does not exist.
+        $workTypeSelect = $this->hasWorkTypeColumn()
+            ? ''
+            : ", CASE WHEN qp.exam_type IN ('worksheet','project') THEN qp.exam_type ELSE 'assignment' END AS work_type";
+
         $data = DB::table('lms_assignment as a')
             ->leftJoin('subject as s', function ($join) {
                 $join->whereRaw('s.id = a.subject_id');
             })
+            ->leftJoin('question_paper as qp', 'qp.id', '=', 'a.exam_id')
             ->selectRaw("a.*, s.subject_name,
                 IF(a.exam_pdf IS NULL OR a.exam_pdf = '', '', CONCAT('$server/storage/', a.exam_pdf)) AS exam_pdf_url,
                 IF(a.submission_image IS NULL OR a.submission_image = '', '',
@@ -714,7 +723,7 @@ class LmsAssignmentApiController extends Controller
                 IF(a.assignment_source_type = 'uploaded_homework' AND a.homework_file IS NOT NULL AND a.homework_file != '',
                     CONCAT('$server/storage/', a.homework_file), '') AS homework_file_url,
                 DATE_FORMAT(a.created_date, '%d-%m-%Y') AS created_date_fmt,
-                DATE_FORMAT(a.submission_date, '%d-%m-%Y') AS submission_date_fmt")
+                DATE_FORMAT(a.submission_date, '%d-%m-%Y') AS submission_date_fmt{$workTypeSelect}")
             ->where('a.sub_institute_id', $sub_institute_id)
             ->where('a.syear', $syear)
             ->where('a.student_id', $student_id)
