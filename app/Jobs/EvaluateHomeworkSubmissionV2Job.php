@@ -17,6 +17,7 @@ use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Throwable;
@@ -445,9 +446,55 @@ class EvaluateHomeworkSubmissionV2Job implements ShouldQueue
             return null;
         }
 
-        $path = storage_path('app/public/' . ltrim($relativePath, '/'));
+        $relativePath = ltrim($relativePath, '/');
+        $path = storage_path('app/public/' . $relativePath);
 
-        return is_file($path) ? $path : null;
+        if (is_file($path)) {
+            return $path;
+        }
+
+        return $this->fetchRemoteCopy($relativePath, $path);
+    }
+
+    /**
+     * The database only holds a file's path; the file itself lives on the server that took the
+     * upload. When this process runs somewhere else (a developer machine sharing the live
+     * database), pull the file from that server's public storage URL and keep a local copy.
+     *
+     * Off unless `ai.homework_remote_files_url` (HOMEWORK_REMOTE_FILES_URL) is set, so a
+     * server that has its own files behaves exactly as before.
+     */
+    private function fetchRemoteCopy(string $relativePath, string $target): ?string
+    {
+        $base = rtrim((string) config('ai.homework_remote_files_url', ''), '/');
+
+        if ($base === '' || str_contains($relativePath, '..')) {
+            return null;
+        }
+
+        try {
+            $response = Http::timeout(60)->get($base . '/storage/' . implode('/', array_map('rawurlencode', explode('/', $relativePath))));
+
+            if (! $response->successful() || $response->body() === '') {
+                return null;
+            }
+
+            if (! is_dir(dirname($target))) {
+                @mkdir(dirname($target), 0775, true);
+            }
+
+            file_put_contents($target, $response->body());
+
+            return is_file($target) ? $target : null;
+        } catch (Throwable $exception) {
+            Log::warning('Homework file could not be fetched from the remote storage', [
+                'homework_id' => $this->homeworkId,
+                'path' => $relativePath,
+                'message' => $exception->getMessage(),
+            ]);
+
+            return null;
+        }
     }
 
     /** @see EvaluateAssignmentSubmissionJob::detectMime() — same reasoning, different model. */

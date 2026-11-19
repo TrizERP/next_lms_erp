@@ -372,7 +372,9 @@ class HomeworkSubmissionApiController extends Controller
         // though the job's own handle() already catches its internal
         // OCR/Gemini/PDF failures.
         try {
-            EvaluateHomeworkSubmissionV2Job::dispatch($homework_id, (int) $sub_institute_id, (int) $syear);
+            $this->evaluateAfterResponse(
+                new EvaluateHomeworkSubmissionV2Job($homework_id, (int) $sub_institute_id, (int) $syear)
+            );
         } catch (\Throwable $exception) {
             Log::error('AI evaluation failed for homework submission (v2)', [
                 'homework_id' => $homework_id,
@@ -540,6 +542,40 @@ class HomeworkSubmissionApiController extends Controller
     }
 
     /**
+     * Starts the AI marking the moment the response has been sent, in this same
+     * request -- no queue worker involved.
+     *
+     * These jobs used to be queued, and with QUEUE_CONNECTION=database and no worker
+     * running a submission sat on "Checking" for ever (weeks-old jobs were found
+     * unprocessed). Running after the response keeps the student's/teacher's click
+     * instant and still produces the marks without any worker. A throw is routed to
+     * the job's own failed() so the row ends on a failure status rather than on
+     * "Checking".
+     */
+    private function evaluateAfterResponse(object $job): void
+    {
+        app()->terminating(function () use ($job): void {
+            @ignore_user_abort(true);
+            @set_time_limit(0);
+
+            try {
+                app()->call([$job, 'handle']);
+            } catch (Throwable $exception) {
+                Log::error('Homework evaluation (after response) failed', [
+                    'job' => $job::class,
+                    'message' => $exception->getMessage(),
+                ]);
+
+                try {
+                    $job->failed($exception);
+                } catch (Throwable $ignored) {
+                    // The row is left as the job last wrote it.
+                }
+            }
+        });
+    }
+
+    /**
      * Re-runs the evaluation on a submission that has already been marked.
      *
      * For a scan that came out unreadable, or a homework whose questions were
@@ -577,17 +613,19 @@ class HomeworkSubmissionApiController extends Controller
         $homework->update(['ai_status' => 'Checking', 'ai_failure_reason' => null]);
 
         try {
-            $isV2
-                ? EvaluateHomeworkSubmissionV2Job::dispatch(
-                    (int) $homework->id,
-                    (int) $homework->sub_institute_id,
-                    (int) $homework->syear
-                )
-                : EvaluateHomeworkSubmissionJob::dispatch(
-                    (int) $homework->id,
-                    (int) $homework->sub_institute_id,
-                    (int) $homework->syear
-                );
+            $this->evaluateAfterResponse(
+                $isV2
+                    ? new EvaluateHomeworkSubmissionV2Job(
+                        (int) $homework->id,
+                        (int) $homework->sub_institute_id,
+                        (int) $homework->syear
+                    )
+                    : new EvaluateHomeworkSubmissionJob(
+                        (int) $homework->id,
+                        (int) $homework->sub_institute_id,
+                        (int) $homework->syear
+                    )
+            );
         } catch (Throwable $exception) {
             // dispatch() re-throws a job's own exceptions synchronously while
             // QUEUE_CONNECTION=sync, and the job records its own failure on the
