@@ -565,35 +565,8 @@ class onlineExamController extends Controller
             return is_mobile($type, 'lms/online_exam_result', $noAttempt, "view");
         }
 
-        // A student sees the review (answers, correct options) only once every allowed attempt
-        // has been used; before that the exam can still be taken again and the answers would
-        // give the paper away. Staff reviewing a learner's result are not held back.
-        $isStudent = (bool) $request->session()->get('is_student')
-            || strtolower(trim((string) $request->session()->get('user_profile_name'))) === 'student';
-        $allowed = max(1, (int) ($data['questionpaper_data']['attempt_allowed'] ?? 1));
-        $used = lmsOnlineExamModel::where(['student_id' => $user_id, 'question_paper_id' => $questionpaper_id])->count();
-
-        if ($isStudent && $used < $allowed) {
-            $locked = [
-                'status_code' => 1,
-                'message' => 'ATTEMPTS_REMAINING',
-                'attempts_remaining' => $allowed - $used,
-                'attempts_allowed' => $allowed,
-                'attempts_used' => $used,
-                'user_id' => $online_exam_id,
-                'questionpaper_data' => [
-                    'id' => $data['questionpaper_data']['id'],
-                    'paper_name' => $data['questionpaper_data']['paper_name'] ?? '',
-                    'total_marks' => $data['questionpaper_data']['total_marks'] ?? 0,
-                ],
-                'question_arr' => [],
-                'answer_arr' => [],
-                'mapping_arr' => [],
-                'online_exam_data' => [],
-            ];
-
-            return is_mobile($type, 'lms/online_exam_result', $locked, "view");
-        }
+        // A student sees the result of an attempt as soon as it has been submitted, even when more attempts remain.
+        // (This used to hold the review back until every allowed attempt was used.)
 
         $online_exam_id = $attempt->id;
         $data['user_id'] = $online_exam_id;

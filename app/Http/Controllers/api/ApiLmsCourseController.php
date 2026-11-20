@@ -2277,6 +2277,11 @@ HTML;
             $sub_institute_id = $identity['school'] > 0 ? $identity['school'] : $sub_institute_id;
         }
 
+        // A teacher's own list is theirs by token too: the id in the body cannot be swapped for a colleague's.
+        if ($identity !== null && ! $identity['is_student'] && in_array($user_profile_name, ['Teacher', 'Lms Teacher'], true)) {
+            $user_id = $identity['user_id'];
+        }
+
         // Without this the value reached the query as an empty string and MariaDB
         // rejected the SQL, which surfaced as a 500 with a syntax error in the body.
         // A missing parameter is the caller's mistake, so say so.
@@ -2484,6 +2489,17 @@ HTML;
                 ->whereRaw($sub_institute_id_by_lms[0], $sub_institute_id_by_lms[1])
                 ->where('s.allow_content', '=', 'Yes')
                 ->where('s.subject_category', '=', 'SEL')
+                // A teacher sees only the standard + subject pairs they are timetabled for, SEL included. Without this
+                // every SEL subject of every standard was listed to every teacher.
+                ->whereExists(function ($teaches) use ($user_id, $syear) {
+                    $teaches->select(DB::raw(1))
+                        ->from('timetable as tt')
+                        ->whereColumn('tt.standard_id', 's.standard_id')
+                        ->whereColumn('tt.subject_id', 's.subject_id')
+                        ->whereColumn('tt.sub_institute_id', 's.sub_institute_id')
+                        ->where('tt.teacher_id', $user_id)
+                        ->where('tt.syear', $syear);
+                })
                 ->groupBy('s.subject_id', 's.standard_id', 's.subject_category')
                 ->orderBy('s.sort_order')
                 ->get()->toArray();
