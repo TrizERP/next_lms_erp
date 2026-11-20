@@ -34,6 +34,9 @@ use function App\Helpers\getStudents;
  */
 class LmsAssignmentApiController extends Controller
 {
+    use \App\Http\Controllers\api\lms\Concerns\EvaluatesAfterResponse;
+    use \App\Http\Controllers\api\lms\Concerns\ScopesToTeacherClasses;
+
     // ==================================================================
     // Shared helpers
     // ==================================================================
@@ -620,6 +623,8 @@ class LmsAssignmentApiController extends Controller
             ->where('a.sub_institute_id', $sub_institute_id)
             ->where('a.syear', $syear);
 
+        $this->restrictToTeacherClasses($query, $sub_institute_id, $syear, 'a.standard_id', 'a.division_id', 'a.subject_id', 'a.created_by');
+
         if ($grade) {
             $query->where('se.grade_id', $grade);
         }
@@ -806,7 +811,7 @@ class LmsAssignmentApiController extends Controller
                 // even though the job's own handle() already catches its
                 // internal OCR/Gemini/PDF failures.
                 try {
-                    EvaluateAssignmentSubmissionJob::dispatch((int) $assignment_id, (int) $sub_institute_id, (int) $syear);
+                    $this->evaluateAfterResponse(new EvaluateAssignmentSubmissionJob((int) $assignment_id, (int) $sub_institute_id, (int) $syear));
                 } catch (\Throwable $exception) {
                     Log::error('AI evaluation failed for assignment submission', [
                         'assignment_id' => $assignment_id,
@@ -867,6 +872,69 @@ class LmsAssignmentApiController extends Controller
         ], 200);
     }
 
+    /**
+     * Re-runs the AI evaluation on a submitted assignment (teacher action).
+     *
+     * For a submission that failed (key limit, unreadable scan) or one the teacher wants
+     * marked again. Refused once the teacher has completed the review, because re-running
+     * would replace marks they already stood behind.
+     */
+    public function reevaluate(Request $request, $id): JsonResponse
+    {
+        $sub_institute_id = $request->input('sub_institute_id');
+        $syear = $request->input('syear');
+
+        if (!$sub_institute_id || !$syear) {
+            return $this->fail('sub_institute_id and syear are required');
+        }
+
+        $assignment = lms_assignmentModel::where('id', $id)
+            ->where('sub_institute_id', $sub_institute_id)
+            ->where('syear', $syear)
+            ->first();
+
+        if (!$assignment) {
+            return $this->fail('Assignment not found', 404);
+        }
+
+        if (!$this->teacherMayAccess($assignment->sub_institute_id, $assignment->syear, $assignment->standard_id, $assignment->division_id, $assignment->subject_id, $assignment->created_by)) {
+            return $this->fail('This assignment is not for your subject and standard.', 403);
+        }
+
+        if (empty($assignment->submission_image) || $assignment->student_submission_status !== 'Y') {
+            return $this->fail('The student has not submitted a file for this assignment.', 422);
+        }
+
+        if ($assignment->teacher_submission_status === 'Y') {
+            return $this->fail('This assignment has already been reviewed by the teacher, so it cannot be re-evaluated.', 422);
+        }
+
+        if ($assignment->ai_status === 'Evaluated' || $assignment->ai_score !== null) {
+            return $this->fail('This assignment has already been evaluated, so it cannot be re-evaluated.', 422);
+        }
+
+        if ($assignment->ai_status === 'Checking') {
+            return $this->fail('An evaluation is already running for this assignment.', 422);
+        }
+
+        try {
+            $assignment->update(['ai_status' => 'Checking', 'ai_failure_reason' => null]);
+        } catch (\Throwable $exception) {
+            return $this->fail('Could not start the evaluation: ' . mb_substr($exception->getMessage(), 0, 150), 500);
+        }
+
+        // Runs after the response is sent; a throw ends the row on a failure status, not on "Checking".
+        $this->evaluateAfterResponse(
+            new EvaluateAssignmentSubmissionJob((int) $assignment->id, (int) $sub_institute_id, (int) $syear)
+        );
+
+        return response()->json([
+            'status_code' => 1,
+            'message' => 'Re-evaluation started.',
+            'data' => ['id' => $assignment->id, 'ai_status' => 'Checking'],
+        ], 200);
+    }
+
     // ==================================================================
     // MODULE 3 - Annotate Assignment (teacher review / grade screen)
     // ==================================================================
@@ -922,6 +990,8 @@ class LmsAssignmentApiController extends Controller
             ->where('a.sub_institute_id', $sub_institute_id)
             ->where('a.syear', $syear);
 
+        $this->restrictToTeacherClasses($query, $sub_institute_id, $syear, 'a.standard_id', 'a.division_id', 'a.subject_id', 'a.created_by');
+
         if ($grade) {
             $query->where('se.grade_id', $grade);
         }
@@ -971,6 +1041,9 @@ class LmsAssignmentApiController extends Controller
         $assignment = lms_assignmentModel::find($assignment_id);
         if (!$assignment) {
             return $this->fail('Assignment not found', 404);
+        }
+        if (!$this->teacherMayAccess($assignment->sub_institute_id, $assignment->syear, $assignment->standard_id, $assignment->division_id, $assignment->subject_id, $assignment->created_by)) {
+            return $this->fail('This assignment is not for your subject and standard.', 403);
         }
         $assignment = $assignment->toArray();
 
@@ -1032,6 +1105,9 @@ class LmsAssignmentApiController extends Controller
         $assignment = lms_assignmentModel::find($assignment_id);
         if (!$assignment) {
             return $this->fail('Assignment not found', 404);
+        }
+        if (!$this->teacherMayAccess($assignment->sub_institute_id, $assignment->syear, $assignment->standard_id, $assignment->division_id, $assignment->subject_id, $assignment->created_by)) {
+            return $this->fail('This assignment is not for your subject and standard.', 403);
         }
 
         $isHomework = $assignment->assignment_source_type === 'uploaded_homework';

@@ -39,11 +39,11 @@ class HomeworkMarkingService
     }
 
     /** A copy whose reader and scorer resolve the `evaluation_ai` configuration for one school. */
-    public function forInstitute(int|string|null $subInstituteId): static
+    public function forInstitute(int|string|null $subInstituteId, ?string $module = null): static
     {
         $copy = clone $this;
-        $copy->reader = $this->reader->forInstitute($subInstituteId);
-        $copy->scorer = $this->scorer->forInstitute($subInstituteId);
+        $copy->reader = $this->reader->forInstitute($subInstituteId, $module);
+        $copy->scorer = $this->scorer->forInstitute($subInstituteId, $module);
 
         return $copy;
     }

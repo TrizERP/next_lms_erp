@@ -46,6 +46,9 @@ class GeminiClient
     /** True when a configuration was handed in rather than resolved for a school. */
     private bool $pinned = false;
 
+    /** The AI module whose configuration (and `ai_api_keys` row) this client resolves. */
+    private string $module = 'evaluation_ai';
+
     private ?string $apiKey = null;
     private string $model = '';
 
@@ -58,10 +61,16 @@ class GeminiClient
      * Provider, model and key are never read from the environment: what the administrator
      * saved for `evaluation_ai` is what is called.
      */
-    public function forInstitute(int|string|null $subInstituteId): static
+    public function forInstitute(int|string|null $subInstituteId, ?string $module = null): static
     {
         $copy = clone $this;
         $copy->subInstituteId = $subInstituteId;
+
+        // A caller that names its own module (homework, assignment) gets that module's key; its
+        // rate limit is then separate. With no key of its own the module inherits evaluation_ai.
+        if ($module !== null && $module !== '') {
+            $copy->module = $module;
+        }
 
         // A configuration handed in with forConfiguration() was already decided; keep it.
         if (! $this->pinned) {
@@ -87,7 +96,7 @@ class GeminiClient
 
         try {
             $configuration = app(AiModelClientFactory::class)
-                ->configurationFor('evaluation_ai', $this->subInstituteId);
+                ->configurationFor($this->module, $this->subInstituteId);
         } catch (\Throwable $e) {
             // A diagnostic or an evaluation must say what is wrong, not fail on the way to saying it.
             $this->configurationProblem = $e instanceof AiConfigurationException
@@ -124,7 +133,7 @@ class GeminiClient
     {
         if (! $configuration->hasKey()) {
             $this->configurationProblem = AiConfigurationException::notConfigured(
-                'evaluation_ai',
+                $this->module,
                 'Homework & Assignment Evaluation'
             )->getMessage();
 
@@ -139,7 +148,7 @@ class GeminiClient
             return;
         }
 
-        $this->resolved = $configuration->forModule('evaluation_ai');
+        $this->resolved = $configuration->forModule($this->module);
         $this->apiKey = (string) $configuration->apiKey;
         $this->model = (string) ($configuration->model ?? '');
 
@@ -282,7 +291,7 @@ class GeminiClient
         try {
             $chain = $this->pinned
                 ? []
-                : app(AiModelClientFactory::class)->chainFor('evaluation_ai', $this->subInstituteId);
+                : app(AiModelClientFactory::class)->chainFor($this->module, $this->subInstituteId);
         } catch (AiConfigurationException) {
             $chain = [];
         }
@@ -290,7 +299,7 @@ class GeminiClient
         foreach ($chain as $candidate) {
             if ($candidate->provider === 'gemini' && $candidate->hasKey()
                 && trim((string) $candidate->model) !== '' && $candidate->model !== $this->model) {
-                return [(string) $candidate->model, (string) $candidate->apiKey, $candidate->forModule('evaluation_ai')];
+                return [(string) $candidate->model, (string) $candidate->apiKey, $candidate->forModule($this->module)];
             }
         }
 

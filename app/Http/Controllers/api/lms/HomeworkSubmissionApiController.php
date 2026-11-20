@@ -51,6 +51,8 @@ use Throwable;
  */
 class HomeworkSubmissionApiController extends Controller
 {
+    use \App\Http\Controllers\api\lms\Concerns\ScopesToTeacherClasses;
+
     // ==================================================================
     // Shared helpers
     // ==================================================================
@@ -467,6 +469,8 @@ class HomeworkSubmissionApiController extends Controller
             ->when($syear, fn ($q) => $q->where('h.syear', $syear))
             ->when($status, fn ($q) => $q->where('h.status', $status));
 
+        $this->restrictToTeacherClasses($query, $sub_institute_id, $syear, 'h.standard_id', 'h.division_id', 'h.subject_id', 'h.created_by');
+
         $data = $query->orderBy('h.id', 'DESC')->get()->toArray();
 
         return response()->json([
@@ -482,6 +486,9 @@ class HomeworkSubmissionApiController extends Controller
 
         if (!$homework) {
             return $this->fail('Submission not found', 404);
+        }
+        if (!$this->teacherMayAccess($homework->sub_institute_id, $homework->syear, $homework->standard_id, $homework->division_id, $homework->subject_id, $homework->created_by)) {
+            return $this->fail('This submission is not for your subject and standard.', 403);
         }
 
         $server = $request->getSchemeAndHttpHost();

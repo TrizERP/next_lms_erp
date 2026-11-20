@@ -407,6 +407,7 @@ Route::middleware(['api.session', 'staff.only'])->group(function () {
     Route::post('lms-assignment/annotate-list', [\App\Http\Controllers\api\lms\LmsAssignmentApiController::class, 'annotateList']);
     Route::post('lms-assignment/annotate-questions', [\App\Http\Controllers\api\lms\LmsAssignmentApiController::class, 'annotateQuestions']);
     Route::post('lms-assignment/annotate-store', [\App\Http\Controllers\api\lms\LmsAssignmentApiController::class, 'annotateStore']);
+    Route::post('lms-assignment/reevaluate/{id}', [\App\Http\Controllers\api\lms\LmsAssignmentApiController::class, 'reevaluate']);
 });
 
 // Module 2 - Assignment Submission (the student's own view + upload screen)

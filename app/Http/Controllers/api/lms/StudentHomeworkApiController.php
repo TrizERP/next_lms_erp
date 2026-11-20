@@ -18,6 +18,9 @@ use App\Models\school_setup\subjectModel;
 
 class StudentHomeworkApiController extends Controller
 {
+    use \App\Http\Controllers\api\lms\Concerns\EvaluatesAfterResponse;
+    use \App\Http\Controllers\api\lms\Concerns\ScopesToTeacherClasses;
+
     use GetsJwtToken;
 
     /**
@@ -812,6 +815,8 @@ class StudentHomeworkApiController extends Controller
         if ($grade) {
             $query->where('se.grade_id', $grade);
         }
+        $this->restrictToTeacherClasses($query, $sub_institute_id, $syear, 'ah.standard_id', 'ah.division_id', 'ah.subject_id', 'ah.created_by');
+
         if ($standard) {
             $query->where('ah.standard_id', $standard);
         }
@@ -929,7 +934,7 @@ class StudentHomeworkApiController extends Controller
                     // even though the job's own handle() already catches its
                     // internal OCR/Gemini/PDF failures.
                     try {
-                        EvaluateHomeworkSubmissionJob::dispatch((int) $hw_id, (int) $sub_institute_id, (int) $syear);
+                        $this->evaluateAfterResponse(new EvaluateHomeworkSubmissionJob((int) $hw_id, (int) $sub_institute_id, (int) $syear));
                     } catch (\Throwable $exception) {
                         Log::error('AI evaluation failed for homework submission', [
                             'homework_id' => $hw_id,
