@@ -110,6 +110,26 @@ class HomeworkSubmissionApiController extends Controller
             || strtolower(trim((string) session()->get('user_profile_name'))) === 'student';
     }
 
+    /**
+     * A teacher always reviews a homework, even when the AI has already evaluated it. Until the teacher publishes the
+     * feedback, a STUDENT gets no AI score, marks, evaluation PDF or teacher remarks, only that it is awaiting review.
+     * Staff are never masked. Works on any of the response arrays that carry these keys.
+     */
+    private function hideUnpublishedFromStudent(array $entry, $homework): array
+    {
+        if (!$this->isStudentSession() || (bool) $homework->feedback_published) {
+            return $entry;
+        }
+
+        foreach (['ai_score', 'ai_total_questions', 'ai_percentage', 'ai_marks', 'teacher_marks', 'reviewed_pdf_path', 'teacher_remarks'] as $key) {
+            if (array_key_exists($key, $entry)) {
+                $entry[$key] = null;
+            }
+        }
+
+        return $entry;
+    }
+
     /** Decode this row's submission_files JSON into a plain array, tolerant of null/garbled data. */
     private function decodeFiles($homework): array
     {
@@ -150,7 +170,7 @@ class HomeworkSubmissionApiController extends Controller
     /** Build the single submissions[] entry for a homework row that has been submitted at least once. */
     private function buildSubmissionEntry($homework, string $server): array
     {
-        return [
+        return $this->hideUnpublishedFromStudent([
             'id' => $homework->id,
             'status' => $homework->status,
             'submission_remarks' => $homework->submission_remarks,
@@ -175,7 +195,7 @@ class HomeworkSubmissionApiController extends Controller
                 : null,
             'feedback_published' => (bool) $homework->feedback_published,
             'files' => $this->buildFilesPayload($homework, $server),
-        ];
+        ], $homework);
     }
 
     // ==================================================================
@@ -276,7 +296,7 @@ class HomeworkSubmissionApiController extends Controller
         return response()->json([
             'status_code' => 1,
             'message' => 'SUCCESS',
-            'data' => [
+            'data' => $this->hideUnpublishedFromStudent([
                 'ai_status' => $homework->ai_status,
                 'ai_failure_reason' => $homework->ai_failure_reason,
                 'ai_score' => $homework->ai_score,
@@ -286,7 +306,7 @@ class HomeworkSubmissionApiController extends Controller
                 'teacher_remarks' => $homework->teacher_remarks,
                 'evaluated_at' => optional($homework->evaluated_at)->toDateTimeString(),
                 'status' => $homework->status,
-            ],
+            ], $homework),
         ], 200);
     }
 
@@ -840,7 +860,7 @@ class HomeworkSubmissionApiController extends Controller
 
             $hasSubmission = $homework->completion_status === 'Y' || !empty($homework->status);
 
-            return [
+            return $this->hideUnpublishedFromStudent([
                 'id' => $homework->id,
                 'title' => $homework->title,
                 'subject_id' => $homework->subject_id,
@@ -867,7 +887,7 @@ class HomeworkSubmissionApiController extends Controller
                 'reviewed_pdf_path' => $homework->reviewed_pdf_path,
                 'evaluated_at' => optional($homework->evaluated_at)->toDateTimeString(),
                 'feedback_published' => (bool) $homework->feedback_published,
-            ];
+            ], $homework);
         })->values();
 
         return response()->json([
