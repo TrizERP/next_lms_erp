@@ -778,6 +778,9 @@ class StudentHomeworkApiController extends Controller
         $division = $request->input('division');
         $subject = $request->input('subject');
         $submission_date = $request->input('submission_date');
+        // 'pending' (the default, as before) lists homework still to be marked submitted; 'submitted' lists what has
+        // been, with its AI evaluation, so the same screen shows each student's score and annotated PDF.
+        $view = $request->input('status') === 'submitted' ? 'submitted' : 'pending';
 
         if (!$sub_institute_id || !$syear) {
             return response()->json([
@@ -807,9 +810,12 @@ class StudentHomeworkApiController extends Controller
                 ah.title, ah.description,
                 if(ah.image IS NULL OR ah.image = '', '', concat('$server/storage/student/', ah.image)) AS image,
                 DATE_FORMAT(ah.submission_date, '%d-%m-%Y') AS submission_date,
-                DATE_FORMAT(ah.date, '%d-%m-%Y') AS homework_date, ah.submission_remarks")
+                DATE_FORMAT(ah.date, '%d-%m-%Y') AS homework_date, ah.submission_remarks,
+                if(ah.submission_image IS NULL OR ah.submission_image = '', '', concat('$server/storage/student/', ah.submission_image)) AS submission_file,
+                ah.ai_status, ah.ai_failure_reason, ah.ai_score, ah.ai_total_questions, ah.ai_percentage,
+                ah.reviewed_pdf_path, ah.ai_generated_file, ah.evaluated_at")
             ->where('se.syear', $syear)
-            ->where('ah.completion_status', '=', 'N')
+            ->where('ah.completion_status', '=', $view === 'submitted' ? 'Y' : 'N')
             ->where('s.sub_institute_id', $sub_institute_id);
 
         if ($grade) {
