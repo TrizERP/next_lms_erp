@@ -109,6 +109,66 @@ class GraphModuleBrowser
         return $this->submodulesFor($scope, $moduleId, $allowed);
     }
 
+    /**
+     * The parent ERP module's label for one submodule id — "Institute ERP" for
+     * the "PTM" submodule, for instance — or null when the submodule does not
+     * exist or this scope cannot see it. Used to find which module's switch
+     * governs a submodule before trusting the submodule's own.
+     */
+    public function parentModuleLabel(McpRequestContext $scope, int $submoduleId): ?string
+    {
+        $allowed = $this->rights->allowedMenuIds($scope);
+
+        if ($allowed === null || $allowed === [] || ! $this->rights->allows($allowed, $submoduleId)) {
+            return null;
+        }
+
+        $parentId = DB::table('tblmenumaster')->where('id', $submoduleId)->value('parent_menu_id');
+
+        if ($parentId === null) {
+            return null;
+        }
+
+        $row = $this->tenantScopedMenus($scope, 1, null, $allowed)
+            ->where('id', (int) $parentId)
+            ->first(['id', 'menu_title', 'name']);
+
+        return $row ? $this->menuLabel($row) : null;
+    }
+
+    /**
+     * A submodule's own label together with its parent module's — what a
+     * submodule-level Knowledge Graph tree gate needs before it can check
+     * either switch. Null when the submodule does not exist, this scope
+     * cannot see it, or its parent cannot be resolved.
+     *
+     * @return array{module: string, submodule: string}|null
+     */
+    public function moduleAndSubmoduleLabels(McpRequestContext $scope, int $submoduleId): ?array
+    {
+        $allowed = $this->rights->allowedMenuIds($scope);
+
+        if ($allowed === null || $allowed === [] || ! $this->rights->allows($allowed, $submoduleId)) {
+            return null;
+        }
+
+        $row = $this->tenantScopedMenus($scope, 2, null, $allowed)
+            ->where('id', $submoduleId)
+            ->first(['id', 'menu_title', 'name']);
+
+        if (! $row) {
+            return null;
+        }
+
+        $moduleLabel = $this->parentModuleLabel($scope, $submoduleId);
+
+        if ($moduleLabel === null) {
+            return null;
+        }
+
+        return ['module' => $moduleLabel, 'submodule' => $this->menuLabel($row)];
+    }
+
     /** @param int[] $allowed */
     private function submodulesFor(McpRequestContext $scope, int $moduleId, array $allowed): array
     {
@@ -654,6 +714,84 @@ class GraphModuleBrowser
         }
 
         return $counts;
+    }
+
+    /**
+     * Every distinct node label Neo4j actually holds right now, each with its
+     * live count — the estate's real inventory, not the curated subset
+     * ModuleGraphMapper maps to a submodule. A label GraphSchema does not
+     * recognise is still returned and flagged `known: false`: an orphaned or
+     * unexpected label is exactly what this exists to surface, not hide.
+     *
+     * Tenant-filtered the same permissive way liveCounts() is (a node with no
+     * `sub_institute_id` always counts; one tagged for another school does not).
+     *
+     * @return array<int, array{label: string, count: int, known: bool}>
+     */
+    public function liveLabelInventory(?int $tenantId = null): array
+    {
+        try {
+            $result = $this->neo4j->run('CALL db.labels() YIELD label RETURN label ORDER BY label');
+        } catch (Throwable) {
+            return [];
+        }
+
+        if ($result === null) {
+            return [];
+        }
+
+        // `db.labels()` is Neo4j's own catalogue, not caller input, but a label
+        // is about to be interpolated into Cypher below — the same discipline
+        // GraphSchema::assertLabel() applies to the whitelist, applied here to
+        // names this class did not choose.
+        $labels = [];
+        foreach ($result as $row) {
+            $label = (string) $row->get('label');
+            if (preg_match('/^[A-Za-z_][A-Za-z0-9_]*$/', $label) === 1) {
+                $labels[] = $label;
+            }
+        }
+
+        if ($labels === []) {
+            return [];
+        }
+
+        $parts = [];
+        foreach ($labels as $label) {
+            $parts[] = sprintf(
+                "MATCH (n:%s) WHERE \$tenantId IS NULL OR n.sub_institute_id IS NULL OR n.sub_institute_id = \$tenantId RETURN '%s' AS label, count(n) AS c",
+                $label,
+                addslashes($label)
+            );
+        }
+
+        $cypher = 'CALL { ' . implode(' UNION ALL ', $parts) . ' } RETURN label, c';
+
+        try {
+            $countResult = $this->neo4j->run($cypher, ['tenantId' => $tenantId]);
+        } catch (Throwable) {
+            $countResult = null;
+        }
+
+        $counts = [];
+        if ($countResult !== null) {
+            foreach ($countResult as $row) {
+                $counts[(string) $row->get('label')] = (int) $row->get('c');
+            }
+        }
+
+        $inventory = [];
+        foreach ($labels as $label) {
+            $inventory[] = [
+                'label' => $label,
+                'count' => $counts[$label] ?? 0,
+                'known' => GraphSchema::knowsLabel($label),
+            ];
+        }
+
+        usort($inventory, fn (array $a, array $b) => $b['count'] <=> $a['count'] ?: strcmp($a['label'], $b['label']));
+
+        return $inventory;
     }
 
     private function collectNode(array &$nodes, mixed $id, mixed $labels, mixed $properties): void

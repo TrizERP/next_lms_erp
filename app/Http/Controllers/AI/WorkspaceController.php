@@ -12,6 +12,7 @@ use App\Domain\AI\Templates\ReportTemplateResolver;
 use App\Domain\AI\Workspace\PageDataResolver;
 use App\Domain\GenerativeAI\GenerationRequest;
 use App\Domain\GenerativeAI\GenerationService;
+use App\Domain\KnowledgeGraph\KnowledgeGraphSettingsResolver;
 use App\Services\Mcp\AiReportGenerator;
 use App\Domain\Workflow\WorkflowEngine;
 use Illuminate\Http\Request;
@@ -46,6 +47,7 @@ class WorkspaceController extends AiController
         private readonly AgentRunner $agents,
         private readonly WorkflowEngine $workflows,
         private readonly GenerationService $generation,
+        private readonly KnowledgeGraphSettingsResolver $knowledgeGraphSettings,
         private readonly ConversationalSettingsService $conversationalSettings = new ConversationalSettingsService(),
     ) {
     }
@@ -77,10 +79,21 @@ class WorkspaceController extends AiController
             $projectId = $request->header('x-project-id') ?: 'lms_k12';
             $channelSettings = $this->conversationalSettings->getCentralizedSettings($projectId);
 
+            // Centralized management, decentralized execution: this module reads
+            // the central decision rather than keeping a Knowledge Graph switch of
+            // its own. A product's frontend uses this to decide whether its
+            // Knowledge Graph tab renders at all, the same way `channel_settings`
+            // already decides whether the voice button does.
+            $knowledgeGraphEnabled = $this->knowledgeGraphSettings->isEnabledFor(
+                $context->moduleKey,
+                $scope->selectedInstituteId
+            );
+
             return $this->success('AI workspace context resolved.', [
                 'context' => $context->toArray(),
                 'suggestions' => $suggestions,
                 'channel_settings' => $channelSettings,
+                'knowledge_graph_settings' => ['enabled' => $knowledgeGraphEnabled],
                 // Anything already running or waiting on this record, so the panel can
                 // show progress instead of offering to start something twice.
                 'active' => [
@@ -89,7 +102,7 @@ class WorkspaceController extends AiController
                         ? $this->entityPendingRecommendations($context)
                         : [],
                 ],
-                'ontology_views' => $context->supports('ontology')
+                'ontology_views' => ($context->supports('ontology') && $knowledgeGraphEnabled)
                     ? $this->ontologyViews->available($context)
                     : [],
                 // Where this record sits in Signal → … → Outcome, derived from the
@@ -630,11 +643,22 @@ class WorkspaceController extends AiController
             }
 
             $moduleKey = ModuleKeyAliases::canonicalize($moduleKey);
+            $moduleLabel = $context->moduleKey === $moduleKey ? $context->moduleLabel : null;
+
+            if (! $this->knowledgeGraphSettings->isEnabledFor($moduleKey, $scope->selectedInstituteId)) {
+                return $this->success('Knowledge Graph is turned off for this module.', [
+                    'module' => $moduleKey,
+                    'module_label' => $moduleLabel,
+                    'views' => [],
+                    'knowledge_graph_enabled' => false,
+                ]);
+            }
 
             return $this->success('Module views loaded.', [
                 'module' => $moduleKey,
-                'module_label' => $context->moduleKey === $moduleKey ? $context->moduleLabel : null,
+                'module_label' => $moduleLabel,
                 'views' => $this->ontologyViews->availableForModule($moduleKey, $scope),
+                'knowledge_graph_enabled' => true,
             ]);
         } catch (Throwable $exception) {
             return $this->handle($exception);
