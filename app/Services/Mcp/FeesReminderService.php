@@ -151,8 +151,13 @@ class FeesReminderService
                 'name' => $r['name'],
                 'class' => $r['class'],
                 'outstanding' => $r['outstanding'],
+                'actual_outstanding' => $r['actual_outstanding'] ?? $r['outstanding'],
+                'is_custom_amount' => ! empty($r['is_custom_amount']),
+                'is_test_contact' => ! empty($r['is_test_contact']),
                 'outstanding_label' => $this->rupees($r['outstanding']),
+                'actual_outstanding_label' => $this->rupees($r['actual_outstanding'] ?? $r['outstanding']),
                 'contact_masked' => $this->mask((string) $r['contact'], $channel),
+                'contact_destination' => $r['contact'],
             ], $reachable),
             'unreachable' => array_map(static fn (array $r) => [
                 'student_id' => $r['student_id'],
@@ -323,6 +328,8 @@ class FeesReminderService
                 'student_id' => $r['student_id'],
                 'name' => $r['name'],
                 'outstanding' => $r['outstanding'],
+                'actual_outstanding' => $r['actual_outstanding'] ?? $r['outstanding'],
+                'is_custom_amount' => ! empty($r['is_custom_amount']),
                 'status' => $r['status'],
                 'detail' => $r['detail'],
             ], $results),
@@ -581,6 +588,8 @@ class FeesReminderService
 
         $accounts = array_slice($accounts, 0, $top);
         $contacts = $this->contactsFor($context, array_map(static fn (array $a) => (int) $a['student_id'], $accounts));
+        $customAmounts = is_array($arguments['custom_amounts'] ?? null) ? $arguments['custom_amounts'] : [];
+        $contactOverrides = is_array($arguments['contact_overrides'] ?? null) ? $arguments['contact_overrides'] : [];
 
         $recipients = [];
 
@@ -588,11 +597,39 @@ class FeesReminderService
             $id = (int) $account['student_id'];
             $contact = $this->contactFor($channel, $contacts[$id] ?? []);
 
+            // Check for safe in-memory test contact override (never touches permanent tblstudent)
+            $isTestContact = false;
+            $overrideVal = $contactOverrides[$id] ?? ($contactOverrides[(string) $id] ?? null);
+            if ($overrideVal) {
+                if (is_array($overrideVal) && ! empty($overrideVal[$channel])) {
+                    $contact = ['value' => trim((string) $overrideVal[$channel]), 'problem' => null];
+                    $isTestContact = true;
+                } elseif (is_string($overrideVal) && trim($overrideVal) !== '') {
+                    $contact = ['value' => trim($overrideVal), 'problem' => null];
+                    $isTestContact = true;
+                }
+            }
+
+            $actualOutstanding = round((float) $account['outstanding'], 2);
+            $outstanding = $actualOutstanding;
+            $isCustom = false;
+
+            if (isset($customAmounts[$id]) || isset($customAmounts[(string) $id])) {
+                $customVal = (float) ($customAmounts[$id] ?? $customAmounts[(string) $id]);
+                if ($customVal > 0 && $customVal <= $actualOutstanding) {
+                    $outstanding = round($customVal, 2);
+                    $isCustom = true;
+                }
+            }
+
             $recipients[] = [
                 'student_id' => $id,
                 'name' => trim((string) ($account['student_name'] ?? '')) ?: ('Student #'.$id),
                 'class' => $account['standard_name'] ?? null,
-                'outstanding' => round((float) $account['outstanding'], 2),
+                'outstanding' => $outstanding,
+                'actual_outstanding' => $actualOutstanding,
+                'is_custom_amount' => $isCustom,
+                'is_test_contact' => $isTestContact,
                 'contact' => $contact['value'],
                 'contact_problem' => $contact['problem'],
             ];
