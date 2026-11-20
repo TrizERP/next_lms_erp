@@ -4,6 +4,7 @@ namespace App\Http\Controllers\AI;
 
 use App\Domain\K12\TeacherClassScopeService;
 use App\Domain\KnowledgeGraph\GraphModuleBrowser;
+use App\Domain\KnowledgeGraph\KnowledgeGraphSettingsResolver;
 use App\Services\Graph\GraphSchema;
 use App\Services\Mcp\AdministratorCheck;
 use App\Services\Mcp\McpRequestContext;
@@ -22,10 +23,14 @@ use Throwable;
  */
 class GraphBrowserController extends AiController
 {
+    /** The `ai_modules.module_key` the Organization Management staff graph is filed under — see the seeding migrations that use the same slug. */
+    private const ORGANIZATION_MANAGEMENT_MODULE = 'organization-management';
+
     public function __construct(
         private readonly GraphModuleBrowser $browser,
         private readonly TeacherClassScopeService $classScope,
         private readonly AdministratorCheck $administrators,
+        private readonly KnowledgeGraphSettingsResolver $knowledgeGraphSettings,
     ) {
     }
 
@@ -46,6 +51,110 @@ class GraphBrowserController extends AiController
         }
 
         return $this->classScope->allowedStudentIds($scope->userId, $scope->selectedInstituteId);
+    }
+
+    /** One of the Explorer's five ERP module labels for a tblmenumaster id, or null if this scope cannot see it. */
+    private function erpModuleLabel(McpRequestContext $scope, int $moduleId): ?string
+    {
+        foreach ($this->browser->erpModules($scope) as $module) {
+            if ($module['id'] === $moduleId) {
+                return $module['label'];
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Drop any node whose node type is switched off, and any edge left
+     * pointing at a node that is no longer there — the actual enforcement
+     * behind a node-type toggle, not just the settings screen's display.
+     *
+     * With `$submoduleLabel` given, a node type is kept only if that one
+     * submodule's own row for it resolves to enabled. Without one (a whole
+     * module's merged graph, which can combine several submodules' labels),
+     * a node type is kept if ANY submodule under the module still allows it —
+     * the same "most permissive union" `erpModuleGraph()` already uses for
+     * which labels to query at all.
+     */
+    private function withoutDisabledNodeTypes(array $result, McpRequestContext $scope, string $moduleLabel, ?string $submoduleLabel): array
+    {
+        $nodes = $result['nodes'] ?? [];
+
+        if ($nodes === []) {
+            return $result;
+        }
+
+        $allowed = $submoduleLabel !== null
+            ? $this->allowedNodeTypes($scope, $moduleLabel, $submoduleLabel)
+            : $this->allowedNodeTypesAcrossModule($scope, $moduleLabel);
+
+        $kept = [];
+        $filteredNodes = [];
+
+        foreach ($nodes as $node) {
+            $entityKey = $node['entityKey'] ?? null;
+
+            if ($entityKey !== null && ! in_array($entityKey, $allowed, true)) {
+                continue;
+            }
+
+            $kept[(string) $node['id']] = true;
+            $filteredNodes[] = $node;
+        }
+
+        $result['nodes'] = $filteredNodes;
+        $result['edges'] = array_values(array_filter(
+            $result['edges'] ?? [],
+            fn (array $edge) => isset($kept[(string) $edge['source']]) && isset($kept[(string) $edge['target']])
+        ));
+
+        return $result;
+    }
+
+    /** @return string[] node types still enabled for one specific submodule. */
+    private function allowedNodeTypes(McpRequestContext $scope, string $moduleLabel, string $submoduleLabel): array
+    {
+        foreach ($this->browser->erpModules($scope) as $module) {
+            if ($module['label'] !== $moduleLabel) {
+                continue;
+            }
+
+            foreach ($this->browser->erpSubmodules($scope, $module['id']) as $submodule) {
+                if ($submodule['label'] !== $submoduleLabel) {
+                    continue;
+                }
+
+                return array_values(array_filter(
+                    $submodule['labels'],
+                    fn (string $label) => $this->knowledgeGraphSettings->isNodeTypeTreeEnabledFor($moduleLabel, $submoduleLabel, $label, $scope->selectedInstituteId)
+                ));
+            }
+        }
+
+        return [];
+    }
+
+    /** @return string[] node types still enabled for at least one submodule under this module. */
+    private function allowedNodeTypesAcrossModule(McpRequestContext $scope, string $moduleLabel): array
+    {
+        $allowed = [];
+
+        foreach ($this->browser->erpModules($scope) as $module) {
+            if ($module['label'] !== $moduleLabel) {
+                continue;
+            }
+
+            foreach ($this->browser->erpSubmodules($scope, $module['id']) as $submodule) {
+                foreach ($submodule['labels'] as $label) {
+                    if ($this->knowledgeGraphSettings->isNodeTypeTreeEnabledFor($moduleLabel, $submodule['label'], $label, $scope->selectedInstituteId)) {
+                        $allowed[$label] = true;
+                    }
+                }
+            }
+        }
+
+        return array_keys($allowed);
     }
 
     public function modules(Request $request)
@@ -127,7 +236,12 @@ class GraphBrowserController extends AiController
         try {
             $scope = $this->scope($request);
 
-            return $this->success('Modules loaded.', ['modules' => $this->browser->erpModules($scope)]);
+            $modules = array_values(array_filter(
+                $this->browser->erpModules($scope),
+                fn (array $module) => $this->knowledgeGraphSettings->isModuleTreeEnabledFor($module['label'], $scope->selectedInstituteId)
+            ));
+
+            return $this->success('Modules loaded.', ['modules' => $modules]);
         } catch (Throwable $exception) {
             return $this->handle($exception);
         }
@@ -139,9 +253,26 @@ class GraphBrowserController extends AiController
         try {
             $scope = $this->scope($request);
 
+            $moduleLabel = $this->erpModuleLabel($scope, $moduleId);
+
+            // A module this scope cannot see falls through unchanged (the
+            // browser itself already returns no children for it); a module
+            // this scope CAN see but has been switched off returns no
+            // children either, rather than leaking what is under it.
+            if ($moduleLabel !== null && ! $this->knowledgeGraphSettings->isModuleTreeEnabledFor($moduleLabel, $scope->selectedInstituteId)) {
+                return $this->success('Submodules loaded.', ['module_id' => $moduleId, 'submodules' => []]);
+            }
+
+            $submodules = $moduleLabel === null
+                ? $this->browser->erpSubmodules($scope, $moduleId)
+                : array_values(array_filter(
+                    $this->browser->erpSubmodules($scope, $moduleId),
+                    fn (array $submodule) => $this->knowledgeGraphSettings->isSubmoduleTreeEnabledFor($moduleLabel, $submodule['label'], $scope->selectedInstituteId)
+                ));
+
             return $this->success('Submodules loaded.', [
                 'module_id' => $moduleId,
-                'submodules' => $this->browser->erpSubmodules($scope, $moduleId),
+                'submodules' => $submodules,
             ]);
         } catch (Throwable $exception) {
             return $this->handle($exception);
@@ -154,18 +285,30 @@ class GraphBrowserController extends AiController
         try {
             $scope = $this->scope($request);
 
+            $moduleLabel = $this->erpModuleLabel($scope, $moduleId);
+
+            if ($moduleLabel !== null && ! $this->knowledgeGraphSettings->isModuleTreeEnabledFor($moduleLabel, $scope->selectedInstituteId)) {
+                return $this->failure('Knowledge Graph is turned off for this module.', 403);
+            }
+
             $validated = $request->validate([
                 'sample_size' => 'nullable|integer|min:1|max:100',
                 'limit' => 'nullable|integer|min:1|max:1000',
             ]);
 
-            return $this->success('Graph loaded.', $this->browser->graphForModule(
+            $result = $this->browser->graphForModule(
                 $scope,
                 $moduleId,
                 $validated['sample_size'] ?? 8,
                 $validated['limit'] ?? 300,
                 $this->restrictedStudentIds($scope),
-            ));
+            );
+
+            if ($moduleLabel !== null) {
+                $result = $this->withoutDisabledNodeTypes($result, $scope, $moduleLabel, null);
+            }
+
+            return $this->success('Graph loaded.', $result);
         } catch (Throwable $exception) {
             return $this->handle($exception);
         }
@@ -177,18 +320,30 @@ class GraphBrowserController extends AiController
         try {
             $scope = $this->scope($request);
 
+            $labels = $this->browser->moduleAndSubmoduleLabels($scope, $submoduleId);
+
+            if ($labels !== null && ! $this->knowledgeGraphSettings->isSubmoduleTreeEnabledFor($labels['module'], $labels['submodule'], $scope->selectedInstituteId)) {
+                return $this->failure('Knowledge Graph is turned off for this submodule.', 403);
+            }
+
             $validated = $request->validate([
                 'sample_size' => 'nullable|integer|min:1|max:100',
                 'limit' => 'nullable|integer|min:1|max:1000',
             ]);
 
-            return $this->success('Graph loaded.', $this->browser->graphForSubmodule(
+            $result = $this->browser->graphForSubmodule(
                 $scope,
                 $submoduleId,
                 $validated['sample_size'] ?? 12,
                 $validated['limit'] ?? 300,
                 $this->restrictedStudentIds($scope),
-            ));
+            );
+
+            if ($labels !== null) {
+                $result = $this->withoutDisabledNodeTypes($result, $scope, $labels['module'], $labels['submodule']);
+            }
+
+            return $this->success('Graph loaded.', $result);
         } catch (Throwable $exception) {
             return $this->handle($exception);
         }
@@ -309,6 +464,10 @@ class GraphBrowserController extends AiController
     {
         try {
             $scope = $this->scope($request);
+
+            if (! $this->knowledgeGraphSettings->isEnabledFor(self::ORGANIZATION_MANAGEMENT_MODULE, $scope->selectedInstituteId)) {
+                return $this->failure('Knowledge Graph is turned off for Organization Management.', 403);
+            }
 
             $validated = $request->validate([
                 'per_role' => 'nullable|integer|min:5|max:100',

@@ -8,8 +8,10 @@ use App\Http\Controllers\AI\AskController;
 use App\Http\Controllers\AI\CapabilityController;
 use App\Http\Controllers\AI\CaseController;
 use App\Http\Controllers\AI\ConversationalSettingsController;
+use App\Http\Controllers\AI\FeesGraphRecommendationController;
 use App\Http\Controllers\AI\GenerationController;
 use App\Http\Controllers\AI\GraphBrowserController;
+use App\Http\Controllers\AI\KnowledgeGraphSettingsController;
 use App\Http\Controllers\AI\KnowledgeRagController;
 use App\Http\Controllers\AI\OntologyController;
 use App\Http\Controllers\AI\OutcomeController;
@@ -460,6 +462,54 @@ Route::prefix(config('ai.route_prefix', 'api/ai'))
                 ->where('label', '[A-Za-z]+')
                 ->whereNumber('id');
             Route::get('/knowledge-graph/browser/organization/staff-graph', [GraphBrowserController::class, 'organizationStaff']);
+
+            /*
+            | Fees — graph-only recommendation cards. Every answer is read
+            | straight from Neo4j via FeesGraphRecommendationRepository; no
+            | SQL fallback. See FeesGraphRecommendationEngine for the
+            | honesty-ladder available/reason contract per card.
+            */
+            Route::get('/knowledge-graph/fees/recommendations', [FeesGraphRecommendationController::class, 'index']);
+
+            /*
+            | Centralized management for the Knowledge Graph — one switch per
+            | module, per school, or for the whole platform. `settings` is the
+            | admin screen (index/update/destroy); `settings/resolved` is the
+            | decentralized read every module calls instead of keeping a
+            | Knowledge Graph setting of its own. See
+            | KnowledgeGraphSettingsResolver/KnowledgeGraphSettingsController.
+            |
+            | Deliberately NOT `admin.only`: that middleware trusts
+            | McpRequestContext::$isAdmin, which mirrors tbluser.is_admin — empty
+            | for every real administrator in this estate (see
+            | AdministratorCheck's docblock). The controller checks
+            | AdministratorCheck itself instead, the same opt-in GraphBrowserController
+            | already uses, so this feature works for real admins without
+            | touching the shared gate every other admin.only route still relies on.
+            */
+            Route::get('/knowledge-graph/settings', [KnowledgeGraphSettingsController::class, 'index']);
+            Route::post('/knowledge-graph/settings', [KnowledgeGraphSettingsController::class, 'update']);
+            Route::delete('/knowledge-graph/settings', [KnowledgeGraphSettingsController::class, 'destroy']);
+            Route::get('/knowledge-graph/settings/resolved', [KnowledgeGraphSettingsController::class, 'resolved']);
+
+            /*
+            | The Explorer's own browse tree — module -> submodule -> node
+            | types, mirroring GraphModuleBrowser::erpModules()/erpSubmodules()
+            | exactly. A different table/concern from settings above (see
+            | KnowledgeGraphSettingsResolver's tree methods); feeds the same
+            | gate GraphBrowserController's erp* endpoints enforce.
+            */
+            Route::get('/knowledge-graph/settings/tree', [KnowledgeGraphSettingsController::class, 'tree']);
+            Route::post('/knowledge-graph/settings/tree', [KnowledgeGraphSettingsController::class, 'updateTree']);
+            Route::delete('/knowledge-graph/settings/tree', [KnowledgeGraphSettingsController::class, 'destroyTree']);
+
+            /*
+            | The live Neo4j inventory — every node label the graph actually
+            | holds right now, with its real count, whether GraphSchema
+            | recognises it. "What we actually know", unfiltered by
+            | ModuleGraphMapper's curated per-submodule subset above.
+            */
+            Route::get('/knowledge-graph/settings/live-inventory', [KnowledgeGraphSettingsController::class, 'liveInventory']);
 
             /*
             | Generative AI.
