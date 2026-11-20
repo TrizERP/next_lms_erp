@@ -58,6 +58,8 @@ class EvaluateHomeworkSubmissionJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
+    public const AI_MODULE = 'homework_evaluation_ai';
+
     public int $tries = 2;
     public int $timeout = 600;
 
@@ -76,10 +78,10 @@ class EvaluateHomeworkSubmissionJob implements ShouldQueue
         HomeworkMarkingService $marking
     ): void {
         // Provider, model and key come from the school's saved Homework & Assignment Evaluation configuration.
-        $extractor = $extractor->forInstitute($this->subInstituteId);
-        $locator = $locator->forInstitute($this->subInstituteId);
-        $evaluationService = $evaluationService->forInstitute($this->subInstituteId);
-        $marking = $marking->forInstitute($this->subInstituteId);
+        $extractor = $extractor->forInstitute($this->subInstituteId, self::AI_MODULE);
+        $locator = $locator->forInstitute($this->subInstituteId, self::AI_MODULE);
+        $evaluationService = $evaluationService->forInstitute($this->subInstituteId, self::AI_MODULE);
+        $marking = $marking->forInstitute($this->subInstituteId, self::AI_MODULE);
         $homework = studentHomeworkModel::where([
             'id' => $this->homeworkId,
             'sub_institute_id' => $this->subInstituteId,
