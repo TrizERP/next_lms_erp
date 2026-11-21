@@ -88,6 +88,9 @@ class TeachLearnAgentPipelineService
         $selectedResources = (array) ($options['selected_resources'] ?? []);
         $selectedTemplate = (string) ($options['selected_template'] ?? $options['template'] ?? 'modern_tech');
         $generateAssessment = array_key_exists('generate_assessment', $options) ? (bool) $options['generate_assessment'] : true;
+        $selectedImages = PedagogicalContentBuilder::sanitizeSelectedImages($options['selected_images'] ?? []);
+        $wantsBranching = in_array('branching_scenario', array_map('strval', $studentExperiences), true);
+        $branching = app(TeachLearnBranchingService::class);
         $checkOnly = (bool) ($options['check_only'] ?? false);
         $requestedStep = isset($options['step']) ? (is_numeric($options['step']) ? (int) $options['step'] : strtolower((string)$options['step'])) : 'all';
         $daysBack = (int) ($options['days_back'] ?? 15);
@@ -457,6 +460,34 @@ class TeachLearnAgentPipelineService
                     }
                 }
 
+                // Interactive branching scenario: lives in the H5P tables, not content_master.
+                if ($wantsBranching) {
+                    $scenario = $branching->findExisting($subInstituteId, (int) $chapRecord->id);
+                    if ($scenario) {
+                        $chapExisting[] = [
+                            'chapter_id' => (int) $chapRecord->id,
+                            'chapter_name' => $chapRecord->chapter_name,
+                            'standard_id' => $cStdId,
+                            'subject_id' => $cSubId,
+                            'resource_type' => TeachLearnBranchingService::RESOURCE_TYPE,
+                            'content_id' => (int) $scenario->id,
+                            'title' => $scenario->title,
+                            'file_type' => 'h5p_branching_scenario',
+                            'status' => 'verified_existing',
+                            'is_new' => false,
+                        ];
+                    } else {
+                        $chapMissing[] = [
+                            'chapter_id' => (int) $chapRecord->id,
+                            'chapter_name' => $chapRecord->chapter_name,
+                            'standard_id' => $cStdId,
+                            'subject_id' => $cSubId,
+                            'resource_type' => TeachLearnBranchingService::RESOURCE_TYPE,
+                            'status' => 'missing',
+                        ];
+                    }
+                }
+
                 // Check Assessment
                 if ($checkAssessment) {
                     $assessFound = null;
@@ -692,7 +723,7 @@ class TeachLearnAgentPipelineService
                     'content_id' => $cId,
                     'title' => $item['title'],
                     'file_type' => $item['file_type'] ?? 'html',
-                    'url' => url('/api/lms-content-view/' . $cId),
+                    'url' => ($item['file_type'] ?? '') === 'h5p_branching_scenario' ? null : url('/api/lms-content-view/' . $cId),
                     'is_new' => false,
                     'message' => "Content already exists with ID #{$cId}. Kept without duplicate.",
                 ];
@@ -700,87 +731,114 @@ class TeachLearnAgentPipelineService
 
             // 2. Generate only missing resources required by the user's selections
             $generatedResources = [];
+            $skippedResources = [];
+            $failedResources = [];
             $assessmentResult = null;
 
             if (!$checkOnly && !empty($missingContentAll)) {
+                // Sort one generator outcome into generated / skipped / failed. A row only counts as generated
+                // when it can be read back from the database for the right chapter and school.
+                $settle = function (array $gen, array $mItem, string $type, string $template) use (&$generatedResources, &$skippedResources, &$failedResources, $subInstituteId) {
+                    $chapterId = (int) $mItem['chapter_id'];
+                    if (empty($gen['success'])) {
+                        $failedResources[] = ['chapter_id' => $chapterId, 'resource_type' => $type, 'error' => $gen['message'] ?? $gen['error'] ?? 'Generator reported failure.'];
+                        return;
+                    }
+                    $cId = (int) ($gen['content_id'] ?? 0);
+                    $isScenario = $type === TeachLearnBranchingService::RESOURCE_TYPE;
+                    $problem = $isScenario ? null : $this->verifyContentRow($cId, $chapterId, $subInstituteId);
+                    if ($problem !== null) {
+                        $failedResources[] = ['chapter_id' => $chapterId, 'resource_type' => $type, 'error' => $problem];
+                        return;
+                    }
+                    $row = [
+                        'success' => true,
+                        'content_id' => $cId,
+                        'resource_type' => $type,
+                        'category' => $gen['category'] ?? $gen['content_category'] ?? $type,
+                        'title' => $gen['title'] ?? ($mItem['chapter_name'] . ' - ' . $type),
+                        'file_type' => $gen['file_type'] ?? ($isScenario ? 'h5p_branching_scenario' : 'html'),
+                        'url' => $isScenario ? null : url('/api/lms-content-view/' . $cId),
+                        'storage_table' => $isScenario ? 'h5p_branching_scenario' : 'content_master',
+                        'status' => $gen['status'] ?? 'generated',
+                        'template' => $template,
+                        'chapter_id' => $chapterId,
+                        'chapter_name' => $mItem['chapter_name'],
+                        'is_new' => $gen['is_new'] ?? true,
+                    ];
+                    // The generator's own duplicate guard found an existing visible row: reused, not generated.
+                    if (($gen['status'] ?? '') === 'verified_existing') {
+                        $row['reason'] = $gen['message'] ?? 'Existing resource reused; no duplicate created.';
+                        $skippedResources[] = $row;
+                        return;
+                    }
+                    $generatedResources[] = $row;
+                };
+
                 foreach ($missingContentAll as $mItem) {
                     $mChapterId = (int) $mItem['chapter_id'];
                     $mResourceType = $mItem['resource_type'];
 
-                    try {
-                        $gen = $this->contentAgentService->generateClassroomResource(
-                            $subInstituteId,
-                            $mChapterId,
-                            $mResourceType,
-                            $teachingApproach,
-                            $studentExperiences,
-                            $selectedTemplate
-                        );
+                    // The assessment has its own generator below; routing it through the generic one stored
+                    // revision-notes content under the Assessment category.
+                    if (strcasecmp($mResourceType, 'Assessment') === 0) {
+                        continue;
+                    }
 
-                        if (!empty($gen['success'])) {
-                            $cId = (int) ($gen['content_id'] ?? 0);
-                            $generatedResources[] = [
-                                'success' => true,
-                                'content_id' => $cId,
-                                'resource_type' => $mResourceType,
-                                'category' => $gen['content_category'] ?? $mResourceType,
-                                'title' => $gen['title'] ?? ($mItem['chapter_name'] . ' - ' . ucfirst(str_replace('_', ' ', $mResourceType))),
-                                'file_type' => $gen['file_type'] ?? 'html',
-                                'url' => url('/api/lms-content-view/' . $cId),
-                                'status' => $gen['status'] ?? 'generated',
-                                'template' => $selectedTemplate,
-                                'chapter_id' => $mChapterId,
-                                'chapter_name' => $mItem['chapter_name'],
-                                'is_new' => $gen['is_new'] ?? true,
-                            ];
+                    try {
+                        if ($mResourceType === TeachLearnBranchingService::RESOURCE_TYPE) {
+                            $gen = $branching->generateAndStore($subInstituteId, $mChapterId, null, $this->currentUserId());
+                        } else {
+                            $gen = $this->contentAgentService->generateClassroomResource(
+                                $subInstituteId,
+                                $mChapterId,
+                                $mResourceType,
+                                $teachingApproach,
+                                $studentExperiences,
+                                $selectedTemplate,
+                                $selectedImages
+                            );
                         }
+                        $settle($gen, $mItem, $mResourceType, $selectedTemplate);
                     } catch (Throwable $genEx) {
                         Log::error("Failed to generate {$mResourceType} for chapter {$mChapterId}: " . $genEx->getMessage());
+                        $failedResources[] = ['chapter_id' => $mChapterId, 'resource_type' => $mResourceType, 'error' => $genEx->getMessage()];
                     }
                 }
 
-                // If user selected assessment generation
-                if ($generateAssessment) {
-                    foreach ($targetChapterRecords as $tChap) {
-                        // Check if assessment already exists
-                        $hasAssessment = false;
-                        foreach ($existingContentAll as $ec) {
-                            if ((int) $ec['chapter_id'] === (int) $tChap->id && strtolower($ec['resource_type']) === 'assessment') {
-                                $hasAssessment = true;
-                                break;
-                            }
+                // Assessment: only for chapters where the audit found none.
+                if ($checkAssessment) {
+                    foreach ($missingContentAll as $mItem) {
+                        if (strcasecmp($mItem['resource_type'], 'Assessment') !== 0) {
+                            continue;
                         }
-                        if (!$hasAssessment) {
-                            try {
-                                $assessmentResult = $this->contentAgentService->generateChapterAssessment(
-                                    $subInstituteId,
-                                    (int) $tChap->id,
-                                    $teachingApproach,
-                                    $selectedTemplate
-                                );
-                                if (!empty($assessmentResult['success'])) {
-                                    $aId = (int) ($assessmentResult['content_id'] ?? 0);
-                                    $generatedResources[] = [
-                                        'success' => true,
-                                        'content_id' => $aId,
-                                        'resource_type' => 'Assessment',
-                                        'category' => 'Assessment',
-                                        'title' => $assessmentResult['title'] ?? ($tChap->chapter_name . ' - Chapter Mastery Assessment'),
-                                        'file_type' => 'html',
-                                        'url' => url('/api/lms-content-view/' . $aId),
-                                        'status' => $assessmentResult['status'] ?? 'generated',
-                                        'template' => $selectedTemplate,
-                                        'chapter_id' => (int) $tChap->id,
-                                        'chapter_name' => $tChap->chapter_name,
-                                        'is_new' => $assessmentResult['is_new'] ?? true,
-                                    ];
-                                }
-                            } catch (Throwable $assEx) {
-                                Log::error("Failed to generate assessment for chapter {$tChap->id}: " . $assEx->getMessage());
-                            }
+                        try {
+                            $assessmentResult = $this->contentAgentService->generateChapterAssessment(
+                                $subInstituteId,
+                                (int) $mItem['chapter_id'],
+                                $teachingApproach,
+                                $selectedTemplate,
+                                $selectedImages
+                            );
+                            $settle($assessmentResult, $mItem, 'Assessment', $selectedTemplate);
+                        } catch (Throwable $assEx) {
+                            Log::error("Failed to generate assessment for chapter {$mItem['chapter_id']}: " . $assEx->getMessage());
+                            $failedResources[] = ['chapter_id' => (int) $mItem['chapter_id'], 'resource_type' => 'Assessment', 'error' => $assEx->getMessage()];
                         }
                     }
                 }
+            }
+
+            // Never report a passed gate when generation was needed but nothing was stored.
+            if (!empty($failedResources) && empty($generatedResources) && empty($skippedResources)) {
+                $first = $failedResources[0];
+                throw new \RuntimeException(sprintf(
+                    'Generation failed for %d resource(s); nothing was saved. First error (%s, chapter %d): %s',
+                    count($failedResources),
+                    $first['resource_type'],
+                    $first['chapter_id'],
+                    $first['error']
+                ));
             }
 
             // Update readiness for newly generated resources
@@ -835,6 +893,17 @@ class TeachLearnAgentPipelineService
                 );
             }
 
+            $skippedCount = count($verifiedResources) + count($skippedResources);
+            $failedCount = count($failedResources);
+            $gate3Status = $failedCount > 0 ? 'partial' : 'passed';
+            if ($failedCount > 0) {
+                $step3Summary .= sprintf(
+                    ' PARTIAL: %d resource(s) failed (%s).',
+                    $failedCount,
+                    implode('; ', array_map(fn ($f) => "{$f['resource_type']} ch.{$f['chapter_id']}: {$f['error']}", array_slice($failedResources, 0, 3)))
+                );
+            }
+
             $steps['step_3'] = [
                 'step' => 3,
                 'agent_name' => 'Content model coverage agent',
@@ -864,15 +933,19 @@ class TeachLearnAgentPipelineService
             $gates['gate_3'] = [
                 'gate' => 3,
                 'name' => 'Content Model Coverage & Generation Gate',
-                'status' => 'passed',
+                'status' => $gate3Status,
                 'chapters_analyzed' => $totalAnalyzed,
                 'fully_covered' => $fullyCovered,
                 'partially_covered' => $partiallyCovered,
                 'missing_components' => $missingCounts,
                 'curriculum_insights' => $insights,
                 'generated_resources' => $generatedResources,
+                'skipped_resources' => $skippedResources,
+                'failed_resources' => $failedResources,
                 'verified_resources' => $verifiedResources,
                 'generated_count' => count($generatedResources),
+                'skipped_count' => $skippedCount,
+                'failed_count' => $failedCount,
                 'verified_count' => count($verifiedResources),
                 'assessment_created' => !empty($assessmentResult),
             ];
@@ -987,9 +1060,14 @@ class TeachLearnAgentPipelineService
                 'existing_found' => $existingContentAll,
                 'missing_identified' => $missingContentAll,
                 'generated_resources' => $generatedResources,
+                'skipped_resources' => $skippedResources,
+                'failed_resources' => $failedResources,
                 'verified_resources' => $verifiedResources,
                 'generated_count' => count($generatedResources),
+                'skipped_count' => $skippedCount,
+                'failed_count' => $failedCount,
                 'verified_count' => count($verifiedResources),
+                'images_applied' => !empty($selectedImages),
                 'duplicates_prevented' => count($verifiedResources),
                 'assessment_created' => !empty($assessmentResult),
                 'summary_message' => $step3Summary,
@@ -1111,6 +1189,39 @@ class TeachLearnAgentPipelineService
     /**
      * Persist an individual agent run executed during the pipeline to ai_agent_runs table.
      */
+    /**
+     * Read a content_master row back after generation. Returns a reason string if it is not really there, in the
+     * right chapter and school, visible, and carrying content; null if it checks out.
+     */
+    private function verifyContentRow(int $contentId, int $chapterId, int $subInstituteId): ?string
+    {
+        if ($contentId <= 0) {
+            return 'Generator reported success but returned no content id; nothing was stored.';
+        }
+        $row = DB::table('content_master')->where('id', $contentId)->first(['id', 'chapter_id', 'sub_institute_id', 'show_hide', 'description']);
+        if ($row === null) {
+            return "content_master row #{$contentId} does not exist after generation.";
+        }
+        if ((int) $row->chapter_id !== $chapterId || (int) $row->sub_institute_id !== $subInstituteId) {
+            return "content_master row #{$contentId} belongs to a different chapter or school than requested.";
+        }
+        if ((int) ($row->show_hide ?? 1) === 0) {
+            return "content_master row #{$contentId} is hidden (show_hide = 0), so it would not appear under the chapter.";
+        }
+        if (trim((string) $row->description) === '') {
+            return "content_master row #{$contentId} has an empty body.";
+        }
+
+        return null;
+    }
+
+    private function currentUserId(): ?int
+    {
+        $id = session()->get('user_id') ?? (auth()->check() ? auth()->id() : null);
+
+        return $id ? (int) $id : null;
+    }
+
     private function logPipelineRunStep(
         int $subInstituteId,
         McpRequestContext $context,

@@ -490,6 +490,33 @@ HTML;
      *
      * Grounded on live database records in content_master.
      */
+    /**
+     * The academic year to stamp on generated content: the signed-in user's selected year (session), else the
+     * school's latest year. The previous lookup took whichever academic_year row the database returned first,
+     * which for this school was 2021 even when the user was working in 2022.
+     */
+    /** True only when a user-selected image really ended up in the generated body (not every layout has an image slot). */
+    private function imagesUsed(string $html, array $selectedImages): bool
+    {
+        foreach (PedagogicalContentBuilder::sanitizeSelectedImages($selectedImages) as $url) {
+            if (str_contains($html, $url)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    public function currentSyear(int $subInstituteId): int
+    {
+        $fromSession = (int) (session()->get('syear') ?? 0);
+        if ($fromSession > 0) {
+            return $fromSession;
+        }
+
+        return (int) (DB::table('academic_year')->where('sub_institute_id', $subInstituteId)->max('syear') ?: date('Y'));
+    }
+
     public function checkChapterContentCoverage(int $subInstituteId, int $standardId, ?int $subjectId = null, ?int $chapterId = null): array
     {
         $standardName = DB::table('standard')->where('id', $standardId)->value('name') ?? (string) $standardId;
@@ -513,6 +540,7 @@ HTML;
             $contentRows = DB::table('content_master')
                 ->where('chapter_id', $chapterId)
                 ->where('sub_institute_id', $subInstituteId)
+                ->where('show_hide', 1)
                 ->select(['id', 'title', 'content_category', 'file_type', 'created_at'])
                 ->get();
         }
@@ -560,7 +588,9 @@ HTML;
             foreach ($contentRows as $row) {
                 $cat = trim((string) ($row->content_category ?? ''));
                 $ft = trim((string) ($row->file_type ?? ''));
-                if (in_array($cat, $def['categories'], true) || in_array($ft, $def['file_types'], true)) {
+                // Match on category only: file_type (pdf/html/document) is shared by every resource
+                // type and used to make any unrelated row count as "existing".
+                if (in_array($cat, $def['categories'], true)) {
                     $matchingRow = $row;
                     break;
                 }
@@ -679,7 +709,8 @@ HTML;
         $typeOrData,
         string $teachingApproach = 'Explicit instruction / direct teaching',
         array $studentExperiences = [],
-        string $template = 'modern_tech'
+        string $template = 'modern_tech',
+        array $selectedImages = []
     ): array {
         // Normalize potentially swapped arguments: ($subInstituteId, $chapterId, $resourceType, ...) vs ($subInstituteId, $resourceType, $chapterData, ...)
         if (is_string($chapterOrType) && (is_array($typeOrData) || is_numeric($typeOrData))) {
@@ -690,7 +721,7 @@ HTML;
             $resourceType = (string) $typeOrData;
         }
 
-        $builder = new PedagogicalContentBuilder();
+        $builder = (new PedagogicalContentBuilder())->useSelectedImages($selectedImages);
         $ctx = is_array($chapterIdOrData)
             ? $builder->resolveEnrichedContext((int) ($chapterIdOrData['id'] ?? $chapterIdOrData['chapter_id'] ?? 0), $chapterIdOrData)
             : $builder->resolveEnrichedContext((int) $chapterIdOrData);
@@ -703,9 +734,7 @@ HTML;
         $subjectName = $ctx['subject_name'];
         $gradeId = $ctx['grade_id'];
 
-        $academicYear = (int) (DB::table('academic_year')
-            ->where('sub_institute_id', $subInstituteId)
-            ->value('syear') ?: date('Y'));
+        $academicYear = $this->currentSyear($subInstituteId);
 
         $now = Carbon::now();
         $timestamp = $now->timestamp;
@@ -757,6 +786,7 @@ HTML;
         $existingRecord = DB::table('content_master')
             ->where('sub_institute_id', $subInstituteId)
             ->where('chapter_id', $chapterId)
+            ->where('show_hide', 1)
             ->where(function ($q) use ($title, $contentCategory) {
                 $q->where('title', $title)
                     ->orWhere('content_category', $contentCategory);
@@ -826,7 +856,7 @@ HTML;
             'url' => null,
             'sort_order' => 1,
             'show_hide' => 1,
-            'meta_tags' => "ai_generated,teach_learn,{$resourceType},{$subjectName}",
+            'meta_tags' => "ai_generated,teach_learn,{$resourceType},{$subjectName}" . ($this->imagesUsed($htmlBody, $selectedImages) ? ",user_images" : ""),
             'content_category' => $contentCategory,
             'source' => 'ai_content_agent_generation',
             'syear' => $academicYear,
@@ -881,9 +911,10 @@ HTML;
         int $subInstituteId,
         $chapterIdOrData,
         string $teachingApproach = 'Explicit instruction / direct teaching',
-        string $template = 'modern_tech'
+        string $template = 'modern_tech',
+        array $selectedImages = []
     ): array {
-        $builder = new PedagogicalContentBuilder();
+        $builder = (new PedagogicalContentBuilder())->useSelectedImages($selectedImages);
         $ctx = is_array($chapterIdOrData)
             ? $builder->resolveEnrichedContext((int) ($chapterIdOrData['id'] ?? $chapterIdOrData['chapter_id'] ?? 0), $chapterIdOrData)
             : $builder->resolveEnrichedContext((int) $chapterIdOrData);
@@ -896,9 +927,7 @@ HTML;
         $subjectName = $ctx['subject_name'];
         $gradeId = $ctx['grade_id'];
 
-        $academicYear = (int) (DB::table('academic_year')
-            ->where('sub_institute_id', $subInstituteId)
-            ->value('syear') ?: date('Y'));
+        $academicYear = $this->currentSyear($subInstituteId);
 
         $now = Carbon::now();
         $timestamp = $now->timestamp;
@@ -910,6 +939,7 @@ HTML;
         $existingAssessment = DB::table('content_master')
             ->where('sub_institute_id', $subInstituteId)
             ->where('chapter_id', $chapterId)
+            ->where('show_hide', 1)
             ->where(function ($q) use ($title) {
                 $q->where('title', $title)
                     ->orWhere('content_category', 'Assessment')
@@ -979,7 +1009,7 @@ HTML;
             'url' => null,
             'sort_order' => 1,
             'show_hide' => 1,
-            'meta_tags' => "ai_generated,teach_learn,Assessment,{$subjectName}",
+            'meta_tags' => "ai_generated,teach_learn,Assessment,{$subjectName}" . ($this->imagesUsed($htmlBody, $selectedImages) ? ",user_images" : ""),
             'content_category' => 'Assessment',
             'source' => 'ai_content_agent_generation',
             'syear' => $academicYear,
