@@ -378,6 +378,7 @@ class ApiQuestionBankController extends Controller
                     ? (int) $row->lms_question_type_id
                     : null,
                 'publisher' => $row->publisher,
+                'status' => 1,
                 'total' => (int) ($counts[$row->code] ?? 0),
             ];
         }
@@ -398,6 +399,10 @@ class ApiQuestionBankController extends Controller
                     ? (int) $qtypeIdByCode[$code]
                     : null,
                 'publisher' => null,
+                // Not an active catalogue form (status 0 or unknown): kept so
+                // existing questions can still be filtered, but never offered
+                // when adding a new question.
+                'status' => 0,
                 'total' => (int) $total,
             ];
         }
