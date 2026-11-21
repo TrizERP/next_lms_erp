@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\api;
 
+use App\Domain\KnowledgeGraph\KnowledgeGraphSettingsResolver;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -28,6 +29,18 @@ abstract class AbstractMenuCategoryApiController extends Controller
      * screen.
      */
     private const DEFAULT_CATEGORY_KEY = 'operations';
+
+    /**
+     * The category key every module's Knowledge Graph tab is seeded under
+     * (`module-category-page.tsx`'s own `KNOWLEDGE_GRAPH_CATEGORY_KEY`,
+     * same string). Switched off, the row is dropped here rather than left
+     * for the category page to render empty — see index()'s own filter.
+     */
+    private const KNOWLEDGE_GRAPH_CATEGORY_KEY = 'knowledge-graph';
+
+    public function __construct(private readonly KnowledgeGraphSettingsResolver $knowledgeGraph)
+    {
+    }
 
     /**
      * Which module's rows this request wants.
@@ -118,6 +131,18 @@ abstract class AbstractMenuCategoryApiController extends Controller
         $denied = $this->deniedCategoryKeys($moduleName, $subInstituteId, $userId, (string) $request->input('user_profile_name', ''));
         if ($denied !== []) {
             $categoryRows = $categoryRows->reject(fn ($row) => in_array((string) $row->category_key, $denied, true))->values();
+        }
+
+        // Centralized management, decentralized execution: a module switched
+        // off in /ai/knowledge-graph/settings loses the tab itself, not just
+        // what it would have shown — the same single decision
+        // KnowledgeGraphSettingsResolver already governs everywhere else
+        // (WorkspaceController::context(), ModuleKnowledgeGraph.tsx) now also
+        // decides whether the level-3 bar offers the button at all.
+        if (! $this->knowledgeGraph->isEnabledFor($moduleName, $subInstituteId)) {
+            $categoryRows = $categoryRows
+                ->reject(fn ($row) => (string) $row->category_key === self::KNOWLEDGE_GRAPH_CATEGORY_KEY)
+                ->values();
         }
 
         if ($categoryRows->isEmpty()) {

@@ -157,6 +157,102 @@ class GraphBrowserController extends AiController
         return array_keys($allowed);
     }
 
+    /** @var array<string, string[]> */
+    private array $disabledLabelsCache = [];
+
+    /**
+     * Every GraphSchema label with no enabled placement left ANYWHERE in the
+     * Explorer tree — the cross-module form of allowedNodeTypesAcrossModule(),
+     * for the three endpoints below (search/nodeDetail/path) that have no
+     * single module or submodule to anchor a check to, because they are not
+     * reached through the module tree at all. They are not purely a
+     * Centralized-explorer concern either: ModuleKnowledgeGraph.tsx (the
+     * Decentralized per-module tab) calls these same three endpoints for its
+     * own "find a starting point" / "expand this node" / fallback-sample
+     * actions, so a label this method hides stays hidden from both surfaces
+     * at once, exactly like a module/submodule toggle already does for the
+     * tree-walking endpoints above.
+     *
+     * A label is "disabled" only when EVERY submodule that maps to it has it
+     * switched off — a label several submodules legitimately share (Student,
+     * Concept, Chapter all appear under more than one ModuleGraphMapper
+     * keyword) stays visible as long as at least one of those placements is
+     * still on, the same union rule allowedNodeTypesAcrossModule() already
+     * applies within one module.
+     *
+     * Short-circuits to `[]` without walking anything when this estate has
+     * never saved a tree override — KnowledgeGraphSettingsResolver's own
+     * non-breaking-by-default rule, kept here so the common case (no
+     * overrides at all) costs these hot endpoints nothing extra.
+     *
+     * @return string[]
+     */
+    private function globallyDisabledLabels(McpRequestContext $scope): array
+    {
+        $cacheKey = (string) $scope->selectedInstituteId;
+
+        if (isset($this->disabledLabelsCache[$cacheKey])) {
+            return $this->disabledLabelsCache[$cacheKey];
+        }
+
+        if (! $this->knowledgeGraphSettings->hasTreeOverrides($scope->selectedInstituteId)) {
+            return $this->disabledLabelsCache[$cacheKey] = [];
+        }
+
+        $seen = [];
+        $enabledAnywhere = [];
+
+        foreach ($this->browser->erpModules($scope) as $module) {
+            $moduleLabel = $module['label'];
+
+            foreach ($this->browser->erpSubmodules($scope, $module['id']) as $submodule) {
+                foreach ($submodule['labels'] as $label) {
+                    $seen[$label] = true;
+
+                    if ($this->knowledgeGraphSettings->isNodeTypeTreeEnabledFor($moduleLabel, $submodule['label'], $label, $scope->selectedInstituteId)) {
+                        $enabledAnywhere[$label] = true;
+                    }
+                }
+            }
+        }
+
+        return $this->disabledLabelsCache[$cacheKey] = array_values(array_diff(array_keys($seen), array_keys($enabledAnywhere)));
+    }
+
+    /** Drop any node (other than the center, already checked by the caller) whose label is globally disabled, and any edge left pointing at one that is no longer there. */
+    private function withoutGloballyDisabledNeighbors(array $result, array $disabledLabels): array
+    {
+        if ($disabledLabels === [] || empty($result['nodes'])) {
+            return $result;
+        }
+
+        $centerId = $result['node']['id'] ?? null;
+        $kept = [];
+        $filteredNodes = [];
+
+        foreach ($result['nodes'] as $node) {
+            $entityKey = $node['entityKey'] ?? null;
+
+            if ((string) ($node['id'] ?? null) !== (string) $centerId
+                && $entityKey !== null
+                && in_array($entityKey, $disabledLabels, true)
+            ) {
+                continue;
+            }
+
+            $kept[(string) $node['id']] = true;
+            $filteredNodes[] = $node;
+        }
+
+        $result['nodes'] = $filteredNodes;
+        $result['edges'] = array_values(array_filter(
+            $result['edges'] ?? [],
+            fn (array $edge) => isset($kept[(string) $edge['source']]) && isset($kept[(string) $edge['target']])
+        ));
+
+        return $result;
+    }
+
     public function modules(Request $request)
     {
         try {
@@ -370,10 +466,31 @@ class GraphBrowserController extends AiController
                 'labels.*' => 'string',
             ]);
 
-            $labels = array_values(array_filter(
+            $requestedLabels = array_values(array_filter(
                 $validated['labels'] ?? [],
                 fn ($label) => GraphSchema::knowsLabel($label)
             ));
+
+            $disabled = $this->globallyDisabledLabels($scope);
+
+            if ($requestedLabels !== []) {
+                // Caller named specific labels: narrow to the ones still
+                // enabled. If that empties the set, every label they asked
+                // for is switched off — report no results rather than
+                // passing an empty array through, which search() itself
+                // reads as "every label" (the wrong meaning here).
+                $labels = array_values(array_diff($requestedLabels, $disabled));
+
+                if ($labels === []) {
+                    return $this->success('Search complete.', ['term' => $validated['q'] ?? '', 'nodes' => []]);
+                }
+            } else {
+                // No labels named: search() defaults to every GraphSchema
+                // label. Only when something is actually disabled does this
+                // need to become an explicit allow-list instead — the common
+                // case (nothing disabled) keeps passing [] unchanged.
+                $labels = $disabled !== [] ? array_values(array_diff(GraphSchema::labels(), $disabled)) : [];
+            }
 
             return $this->success('Search complete.', $this->browser->search(
                 $validated['q'] ?? '',
@@ -407,7 +524,14 @@ class GraphBrowserController extends AiController
                 'relationship_types.*' => 'string',
             ]);
 
-            return $this->success('Path search complete.', $this->browser->findPath(
+            $disabled = $this->globallyDisabledLabels($scope);
+            $notFound = ['found' => false, 'nodes' => [], 'edges' => []];
+
+            if ($disabled !== [] && (in_array($validated['from_label'], $disabled, true) || in_array($validated['to_label'], $disabled, true))) {
+                return $this->success('Path search complete.', $notFound);
+            }
+
+            $result = $this->browser->findPath(
                 $validated['from_label'],
                 (string) $validated['from_id'],
                 $validated['to_label'],
@@ -416,7 +540,22 @@ class GraphBrowserController extends AiController
                 $validated['max_depth'] ?? 6,
                 $validated['relationship_types'] ?? [],
                 $this->restrictedStudentIds($scope),
-            ));
+            );
+
+            // Closed-fail, same rule findPath() itself already applies to a
+            // cross-tenant or out-of-scope-student node on the path: a route
+            // that happens to cross a switched-off label is reported as no
+            // path found, never redacted down to a shorter "safe" one.
+            if ($disabled !== [] && ($result['found'] ?? false)) {
+                foreach ($result['nodes'] ?? [] as $node) {
+                    if (in_array($node['entityKey'] ?? null, $disabled, true)) {
+                        $result = $notFound;
+                        break;
+                    }
+                }
+            }
+
+            return $this->success('Path search complete.', $result);
         } catch (Throwable $exception) {
             return $this->handle($exception);
         }
@@ -433,6 +572,12 @@ class GraphBrowserController extends AiController
         try {
             $scope = $this->scope($request);
 
+            $disabled = $this->globallyDisabledLabels($scope);
+
+            if (in_array($label, $disabled, true)) {
+                return $this->failure('That node is not available here.', 404);
+            }
+
             $validated = $request->validate([
                 'relationship_limit' => 'nullable|integer|min:1|max:100',
                 'skip' => 'nullable|integer|min:0',
@@ -444,7 +589,7 @@ class GraphBrowserController extends AiController
                 'direction' => 'nullable|in:incoming,outgoing',
             ]);
 
-            return $this->success('Node detail loaded.', $this->browser->nodeDetail(
+            $result = $this->browser->nodeDetail(
                 $label,
                 $id,
                 $scope->selectedInstituteId,
@@ -453,7 +598,9 @@ class GraphBrowserController extends AiController
                 $validated['relation'] ?? null,
                 $validated['direction'] ?? null,
                 $this->restrictedStudentIds($scope),
-            ));
+            );
+
+            return $this->success('Node detail loaded.', $this->withoutGloballyDisabledNeighbors($result, $disabled));
         } catch (Throwable $exception) {
             return $this->handle($exception);
         }

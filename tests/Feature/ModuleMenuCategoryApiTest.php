@@ -31,7 +31,7 @@ class ModuleMenuCategoryApiTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->controller = new ModuleMenuCategoryApiController();
+        $this->controller = app(ModuleMenuCategoryApiController::class);
     }
 
     /** @return array<string,mixed> the `data` block of a JSON response */
@@ -240,7 +240,7 @@ class ModuleMenuCategoryApiTest extends TestCase
         // widened. Its own response must be unchanged.
         $caller = $this->caller();
         $request = Request::create('/api/fees/menu-categories', 'GET', $caller);
-        $payload = json_decode((new FeesMenuCategoryApiController())->index($request)->getContent(), true);
+        $payload = json_decode(app(FeesMenuCategoryApiController::class)->index($request)->getContent(), true);
 
         $this->assertSame(1, $payload['status']);
         $this->assertArrayHasKey('categories', $payload['data']);

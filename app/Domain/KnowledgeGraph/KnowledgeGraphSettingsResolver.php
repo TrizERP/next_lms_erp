@@ -307,6 +307,22 @@ class KnowledgeGraphSettingsResolver
         return $this->schema->hasTable(self::TREE_TABLE);
     }
 
+    /**
+     * Whether this estate (its own rows, or the platform's) has ever saved an
+     * Explorer-tree override at all — the cheap check a caller that would
+     * otherwise have to walk the whole module/submodule/node-type tree (to
+     * find every label with no enabled placement left anywhere) can run
+     * first to skip that walk entirely. Matches this class's own
+     * non-breaking-by-default rule: no rows anywhere means nothing is hidden,
+     * so there is nothing to compute.
+     */
+    public function hasTreeOverrides(int|string|null $subInstituteId): bool
+    {
+        $rows = $this->treeRows($subInstituteId);
+
+        return $rows !== null && $rows !== [];
+    }
+
     /** Whether one of the Explorer's five ERP modules is browsable at all, in one school. */
     public function isModuleTreeEnabledFor(string $moduleLabel, int|string|null $subInstituteId): bool
     {

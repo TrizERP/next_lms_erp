@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\api\OrganizationManagement\KnowledgeGraph;
 
 use App\Domain\KnowledgeGraph\GraphModuleBrowser;
+use App\Domain\KnowledgeGraph\KnowledgeGraphSettingsResolver;
 use App\Exceptions\GraphUnavailableException;
 use App\Http\Controllers\Controller;
 use App\Services\Neo4jService;
@@ -35,9 +36,13 @@ use Throwable;
  */
 class KnowledgeGraphController extends Controller
 {
+    /** Same `ai_modules.module_key` GraphBrowserController::organizationStaff() already gates this same data behind — kept in sync by hand since this controller predates KnowledgeGraphSettingsResolver and isn't an AiController. */
+    private const ORGANIZATION_MANAGEMENT_MODULE = 'organization-management';
+
     public function __construct(
         private readonly Neo4jService $neo4j,
         private readonly GraphModuleBrowser $browser,
+        private readonly KnowledgeGraphSettingsResolver $knowledgeGraphSettings,
     ) {
     }
 
@@ -46,6 +51,15 @@ class KnowledgeGraphController extends Controller
         $tenant = (int) session()->get('sub_institute_id');
         if ($tenant <= 0) {
             return response()->json(['status' => 0, 'message' => 'No school selected for this session.'], 422);
+        }
+
+        // Centralized management, decentralized execution: this legacy route
+        // serves the exact same data GraphBrowserController::organizationStaff()
+        // already gates — it must defer to the same settings rather than
+        // keeping a switch of its own, or turning the module off in Settings
+        // would do nothing for the page that actually calls this route.
+        if (! $this->knowledgeGraphSettings->isEnabledFor(self::ORGANIZATION_MANAGEMENT_MODULE, $tenant)) {
+            return response()->json(['status' => 0, 'message' => 'Knowledge Graph is turned off for Organization Management.'], 403);
         }
 
         $perRole = max(5, min(100, (int) $request->input('staff_per_role', 25)));
@@ -114,6 +128,10 @@ class KnowledgeGraphController extends Controller
         $tenant = (int) session()->get('sub_institute_id');
         if ($tenant <= 0) {
             return response()->json(['status' => 0, 'message' => 'No school selected for this session.'], 422);
+        }
+
+        if (! $this->knowledgeGraphSettings->isEnabledFor(self::ORGANIZATION_MANAGEMENT_MODULE, $tenant)) {
+            return response()->json(['status' => 0, 'message' => 'Knowledge Graph is turned off for Organization Management.'], 403);
         }
 
         $user = DB::table('tbluser')->where('sub_institute_id', $tenant)->where('id', $id)->first([
