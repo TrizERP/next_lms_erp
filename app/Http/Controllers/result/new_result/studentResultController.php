@@ -3041,7 +3041,7 @@ if (isset($explodeTermAtten) && in_array($sub_institute_id, $subInstituteArray))
         $responce_arr = array();
 
         $sql_mark_grade = "select * from result_co_scholastic where sub_institute_id = " . $sub_institute_id . " and " . $extra_term . " ";
-        $ret_mark_grade = DB::select(DB::raw($sql_mark_grade));
+        $ret_mark_grade = DB::select($sql_mark_grade);
         $extra_where = "1=1";
         // if($sub_institute_id==47){
         //     $extra_where.=" AND id IN (5,6,7)";
@@ -6453,7 +6453,7 @@ $table .= '</div>';
             ->get()
             ->toArray();
 
-        $ret_mark_grade = DB::select(DB::raw("SELECT * FROM result_co_scholastic WHERE sub_institute_id = $sub_institute_id AND $extra_term"));
+        $ret_mark_grade = DB::select("SELECT * FROM result_co_scholastic WHERE sub_institute_id = $sub_institute_id AND $extra_term");
 
         if (count($ret_mark_grade) > 0) {
             // If format is yearly and academic type is not primary, merge both terms
@@ -6825,7 +6825,7 @@ $table .= '</div>';
 
         // get grade if mark 
         $sql_mark_grade = "select * from result_co_scholastic where sub_institute_id = " . $sub_institute_id . " and " . $extra_term . " ";
-        $ret_mark_grade = DB::select(DB::raw($sql_mark_grade));
+        $ret_mark_grade = DB::select($sql_mark_grade);
 
         if (count($ret_mark_grade) > 0) {
             $type = $ret_mark_grade[0]->mark_type;
@@ -7128,7 +7128,7 @@ $table .= '</div>';
                            where sub_institute_id = ".$sub_institute_id." 
                            and ".$extra_term;
 
-        $ret_mark_grade = DB::select(DB::raw($sql_mark_grade));
+        $ret_mark_grade = DB::select($sql_mark_grade);
 
         if (count($ret_mark_grade) > 0) {
 
@@ -8323,7 +8323,7 @@ if ($format === 'yearly') {
         $responce_arr = array();
 
         $sql_mark_grade = "select * from result_co_scholastic where sub_institute_id = " . $sub_institute_id . " and " . $extra_term . " ";
-        $ret_mark_grade = DB::select(DB::raw($sql_mark_grade));
+        $ret_mark_grade = DB::select($sql_mark_grade);
         $extra_where = "1=1";
 
         $ret_data = $this->co_scholaticQuery($sub_institute_id, $syear, $student_id, $standard_id, $extra_exam, 'skill_competence');
@@ -8400,7 +8400,7 @@ if ($format === 'yearly') {
         $responce_arr = array();
 
         $sql_mark_grade = "select * from result_co_scholastic where sub_institute_id = " . $sub_institute_id . " and " . $extra_term . " ";
-        $ret_mark_grade = DB::select(DB::raw($sql_mark_grade));
+        $ret_mark_grade = DB::select($sql_mark_grade);
         $extra_where = "1=1";
 
         $co_grade_range = DB::table('result_co_scholatic_range')->where(['sub_institute_id' => $sub_institute_id, 'syear' => $syear])->whereRaw($extra_where)->get()->toArray();
@@ -8676,8 +8676,8 @@ if ($format === 'yearly') {
                     $coScholaticTable .= '<div style="display:flex;width:100%">';
                     foreach ($term_name as $key => $terms) {
                         $coScholaticTable .= '<table class="aca-year" cellspacing="0" cellpadding="0" border="1" width="50%">';
-                        $coScholaticTable .= '<tr><th class="data_center" align="center" style="width:70%"><b>' . strtoupper($part1Head[$terms->term_id]) . '</b></th><th class="data_center"><b>' . $terms->title . '</b></th></tr>';
-                        foreach ($coData1[$terms->term_id] as $sub => $term_data) {
+                        $coScholaticTable .= '<tr><th class="data_center" align="center" style="width:70%"><b>' . strtoupper($part1Head[$terms->term_id] ?? '') . '</b></th><th class="data_center"><b>' . $terms->title . '</b></th></tr>';
+                        foreach (($coData1[$terms->term_id] ?? []) as $sub => $term_data) {
                             $coScholaticTable .= '<tr><td align="center"  style="width:70%">' . $sub . '</td>';
                             $coScholaticTable .= '<td align="center">' . $term_data . '</td>';
                             $coScholaticTable .= '</tr>';
@@ -8691,8 +8691,8 @@ if ($format === 'yearly') {
                     $coScholaticTable .= '<div style="display:flex;width:100%;margin-top:10px;">';
                     foreach ($term_name as $key => $terms) {
                         $coScholaticTable .= '<table class="aca-year" cellspacing="0" cellpadding="0" border="1" width="50%">';
-                        $coScholaticTable .= '<tr><th class="data_center"  style="width:70%"><b>' . $part2Head[$terms->term_id] . '</b></th><th class="data_center"><b>' . $terms->title . '</b></th></tr>';
-                        foreach ($coData2[$terms->term_id] as $sub => $term_data) {
+                        $coScholaticTable .= '<tr><th class="data_center"  style="width:70%"><b>' . ($part2Head[$terms->term_id] ?? '') . '</b></th><th class="data_center"><b>' . $terms->title . '</b></th></tr>';
+                        foreach (($coData2[$terms->term_id] ?? []) as $sub => $term_data) {
                             $coScholaticTable .= '<tr><td align="center"  style="width:70%">' . $sub . '</td>';
                             $coScholaticTable .= '<td  align="center">' . $term_data . '</td>';
                             $coScholaticTable .= '</tr>';
@@ -8717,8 +8717,8 @@ if ($format === 'yearly') {
                     $coScholaticTable .= '<div style="display:flex;width:100%">';
                     foreach ($term_name as $key => $terms) {
                         $coScholaticTable .= '<table class="aca-year" cellspacing="0" cellpadding="0" border="1" width="50%">';
-                        $coScholaticTable .= '<tr><th class="data_center" style="width:70%"><b>' . strtoupper($part3Head[$terms->term_id]) . '</b></th><th class="data_center"><b>' . $terms->title . '</b></th></tr>';
-                        foreach ($coData3[$terms->term_id] as $sub => $term_data) {
+                        $coScholaticTable .= '<tr><th class="data_center" style="width:70%"><b>' . strtoupper($part3Head[$terms->term_id] ?? '') . '</b></th><th class="data_center"><b>' . $terms->title . '</b></th></tr>';
+                        foreach (($coData3[$terms->term_id] ?? []) as $sub => $term_data) {
                             $coScholaticTable .= '<tr><td align="center" style="width:70%">' . $sub . '</td>';
                             $coScholaticTable .= '<td align="center">' . $term_data . '</td>';
                             $coScholaticTable .= '</tr>';
