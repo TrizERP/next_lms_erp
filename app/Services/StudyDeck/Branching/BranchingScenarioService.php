@@ -150,7 +150,10 @@ class BranchingScenarioService
         // One targeted rewrite. A validator finding is about a particular
         // node (an invented number, a thin screen, a repeated one), so only
         // those nodes go back to the model, with the exact findings.
-        if (! $report['ok'] && $report['by_node'] !== []) {
+        // `fix_rounds` (default 1, the original behaviour) lets a caller whose model is less careful with the
+        // grounding rule ask again a few times; each round still sends only the failing nodes.
+        $rounds = max(1, min(4, (int) ($options['fix_rounds'] ?? 1)));
+        for ($round = 0; $round < $rounds && ! $report['ok'] && $report['by_node'] !== []; $round++) {
             $say('fix', 'Rewriting ' . count($report['by_node']) . ' step(s) that failed checks');
             $written = $writer->fix($pack, $blueprint, $written, $report['by_node']);
             $assembled = $this->assembler->assemble($pack, $blueprint, $written, $meta);
