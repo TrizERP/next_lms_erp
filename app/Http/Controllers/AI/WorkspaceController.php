@@ -593,6 +593,15 @@ class WorkspaceController extends AiController
             ]);
 
             $context = $this->contextService->resolve($validated['route'], $scope, $validated);
+
+            // Same gate context()/moduleViews() already apply before showing
+            // the tab or listing its views — enforced here too so the walk
+            // itself cannot be reached by calling this route directly once a
+            // module's Knowledge Graph has been switched off.
+            if (! $this->knowledgeGraphSettings->isEnabledFor($context->moduleKey, $scope->selectedInstituteId)) {
+                return $this->failure('That relationship view is not available here.', 404);
+            }
+
             $result = $this->ontologyViews->resolve($view, $context);
 
             if (! $result['found']) {
