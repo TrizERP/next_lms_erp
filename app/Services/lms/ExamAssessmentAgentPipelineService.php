@@ -414,6 +414,162 @@ class ExamAssessmentAgentPipelineService
 
         $totalDurationMs = round((microtime(true) - $startTime) * 1000);
 
+        // Fetch previous state counts before updating, to calculate delta changes
+        $prevState = Schema::hasTable('lms_exam_assessment_agent_state')
+            ? DB::table('lms_exam_assessment_agent_state')->where('sub_institute_id', $subInstituteId)->first()
+            : null;
+        $prevCounts = [];
+        if ($prevState && !empty($prevState->summary_counts)) {
+            $prevCounts = is_string($prevState->summary_counts)
+                ? (json_decode($prevState->summary_counts, true) ?: [])
+                : (array) $prevState->summary_counts;
+        }
+
+        $prevExams = (int) ($prevCounts['exams_published'] ?? 0);
+        $prevAttempts = (int) ($prevCounts['attempts_recorded'] ?? 0);
+        $prevAtRisk = (int) ($prevCounts['needs_attention'] ?? 0);
+        $prevAssignments = (int) ($prevCounts['total_assignments'] ?? 0);
+        $prevUnsubmitted = (int) ($prevCounts['not_submitted'] ?? 0);
+
+        $dataChanges = [
+            'previous_run_at' => $prevState?->last_run_at,
+            'previous_exams' => $prevExams,
+            'current_exams' => $examsPublished,
+            'delta_exams' => $examsPublished - $prevExams,
+
+            'previous_attempts' => $prevAttempts,
+            'current_attempts' => $attemptsRecorded,
+            'delta_attempts' => $attemptsRecorded - $prevAttempts,
+
+            'previous_at_risk' => $prevAtRisk,
+            'current_at_risk' => $needsAttentionCount,
+            'delta_at_risk' => $needsAttentionCount - $prevAtRisk,
+
+            'previous_assignments' => $prevAssignments,
+            'current_assignments' => $assignTotal,
+            'delta_assignments' => $assignTotal - $prevAssignments,
+
+            'previous_unsubmitted' => $prevUnsubmitted,
+            'current_unsubmitted' => $totalNotSubmitted,
+            'delta_unsubmitted' => $totalNotSubmitted - $prevUnsubmitted,
+
+            'status_has_changed' => ($examsPublished !== $prevExams) ||
+                                    ($attemptsRecorded !== $prevAttempts) ||
+                                    ($needsAttentionCount !== $prevAtRisk) ||
+                                    ($assignTotal !== $prevAssignments) ||
+                                    ($totalNotSubmitted !== $prevUnsubmitted),
+        ];
+
+        // Correlate students across exam deficit and coursework delinquency
+        $atRiskStudentIds = array_filter(array_column($atRiskAttempts, 'student_id'));
+        $notSubmittedStudentIds = array_filter(array_column($notSubmittedList, 'student_id'));
+        $commonStudentIds = array_intersect($atRiskStudentIds, $notSubmittedStudentIds);
+
+        $doubleRiskStudents = [];
+        $examOnlyStudents = [];
+        $courseworkOnlyStudents = [];
+
+        foreach ($atRiskAttempts as $att) {
+            $sid = (int) ($att['student_id'] ?? 0);
+            if ($sid <= 0) continue;
+            $sname = $att['student_name'] ?? ('Student #' . $sid);
+            if (in_array($sid, $commonStudentIds, true)) {
+                if (!isset($doubleRiskStudents[$sid])) {
+                    $doubleRiskStudents[$sid] = [
+                        'student_id' => $sid,
+                        'student_name' => $sname,
+                        'exam_name' => $att['paper_name'] ?? 'Online Exam',
+                        'exam_percent' => $att['percent'] ?? 0,
+                        'unsubmitted_count' => 0,
+                    ];
+                }
+            } else {
+                if (!isset($examOnlyStudents[$sid])) {
+                    $examOnlyStudents[$sid] = [
+                        'student_id' => $sid,
+                        'student_name' => $sname,
+                        'exam_name' => $att['paper_name'] ?? 'Online Exam',
+                        'exam_percent' => $att['percent'] ?? 0,
+                    ];
+                }
+            }
+        }
+
+        foreach ($notSubmittedList as $ns) {
+            $sid = (int) ($ns['student_id'] ?? 0);
+            if ($sid <= 0) continue;
+            $sname = $ns['student_name'] ?? ('Student #' . $sid);
+            if (isset($doubleRiskStudents[$sid])) {
+                $doubleRiskStudents[$sid]['unsubmitted_count']++;
+            } else {
+                if (!isset($courseworkOnlyStudents[$sid])) {
+                    $courseworkOnlyStudents[$sid] = [
+                        'student_id' => $sid,
+                        'student_name' => $sname,
+                        'unsubmitted_count' => 1,
+                        'work_type' => $ns['work_type'] ?? 'assignment',
+                    ];
+                } else {
+                    $courseworkOnlyStudents[$sid]['unsubmitted_count']++;
+                }
+            }
+        }
+
+        $handoffChain = [
+            [
+                'stage' => 1,
+                'from_agent' => 'Pipeline Orchestrator',
+                'to_agent' => 'Agent 1: Online exam summary reader',
+                'handoff_title' => 'Standard Scope & Benchmark Handoff',
+                'input_records' => 1,
+                'processed_records' => $attemptsRecorded,
+                'passed_records' => count($atRiskAttempts),
+                'validation_gate' => 'Gate 1 (Online Exam Performance)',
+                'validation_status' => 'passed',
+                'duration_ms' => $step1Duration,
+                'summary' => "Scanned {$examsPublished} teacher-published exams and {$attemptsRecorded} attempts. Isolated " . count($atRiskAttempts) . " student attempts below {$atRiskPercent}% benchmark.",
+            ],
+            [
+                'stage' => 2,
+                'from_agent' => 'Agent 1: Online exam summary reader',
+                'to_agent' => 'Agent 2: Assignment status reader',
+                'handoff_title' => 'Cohort Standard Scope Handoff',
+                'input_records' => $standardIdInput ? 1 : $examsPublished,
+                'processed_records' => $assignTotal,
+                'passed_records' => count($notSubmittedList),
+                'validation_gate' => 'Gate 2 (Assignment & Work Status)',
+                'validation_status' => 'passed',
+                'duration_ms' => $step2Duration,
+                'summary' => "Audited {$assignTotal} total assignments, worksheets, and projects. Verified {$totalSubmitted} submitted, {$totalReviewed} reviewed, and flagged " . count($notSubmittedList) . " delinquent items.",
+            ],
+            [
+                'stage' => 3,
+                'from_agent' => 'Agent 1 & Agent 2 (Gate 1 + Gate 2)',
+                'to_agent' => 'Agent 3: Assessment review drafter',
+                'handoff_title' => 'Multi-Source Deficit Evidence Fusion',
+                'input_records' => count($atRiskAttempts) + count($notSubmittedList),
+                'processed_records' => count($atRiskAttempts) + count($notSubmittedList),
+                'passed_records' => count($draftNotes),
+                'validation_gate' => 'Gate 3 (Review Drafting & Safety)',
+                'validation_status' => 'passed',
+                'duration_ms' => $step3Duration,
+                'summary' => "Correlated " . count($atRiskAttempts) . " exam score gaps with " . count($notSubmittedList) . " missing coursework items. Generated " . count($draftNotes) . " review notes under draft_pending_human_approval status.",
+            ],
+            [
+                'stage' => 4,
+                'from_agent' => 'Agent 3: Assessment review drafter',
+                'to_agent' => 'Unified Executive Assessment Dashboard & Approval Queue',
+                'handoff_title' => 'Final Output & Storage Verification',
+                'input_records' => count($draftNotes),
+                'processed_records' => count($draftNotes),
+                'passed_records' => count($draftNotes),
+                'validation_gate' => 'Storage & Safety Verification',
+                'validation_status' => 'completed',
+                'duration_ms' => $totalDurationMs,
+                'summary' => "All " . count($draftNotes) . " review notes recorded for human educator sign-off. Logged step runs in ai_agent_runs and state in lms_exam_assessment_agent_state.",
+            ],
+        ];
+
         // Update database state record
         $this->updateAgentStateRecord($subInstituteId, 'completed', [
             'exams_published' => $examsPublished,
@@ -441,7 +597,14 @@ class ExamAssessmentAgentPipelineService
                 'average_score' => $avgScore,
                 'needs_attention_count' => $needsAttentionCount,
                 'benchmark_percent' => $atRiskPercent,
-                'at_risk_sample' => array_slice($atRiskAttempts, 0, 10),
+                'records_fetched' => $examsPublished + $attemptsRecorded,
+                'records_processed' => $attemptsRecorded,
+                'records_identified' => $needsAttentionCount,
+                'records_passed' => count($atRiskAttempts),
+                'tables_accessed' => ['question_paper', 'lms_online_exam', 'tblstudent', 'standard', 'subject'],
+                'published_exams_sample' => $examSummary['published_exams'] ?? [],
+                'all_attempts_sample' => $examSummary['all_attempts'] ?? [],
+                'at_risk_sample' => array_slice($atRiskAttempts, 0, 15),
             ],
             'assignment_status' => [
                 'total_work' => $assignTotal,
@@ -449,17 +612,45 @@ class ExamAssessmentAgentPipelineService
                 'submitted' => $totalSubmitted,
                 'reviewed' => $totalReviewed,
                 'not_submitted' => $totalNotSubmitted,
-                'not_submitted_sample' => array_slice($notSubmittedList, 0, 10),
+                'records_fetched' => $assignTotal,
+                'records_processed' => $assignTotal,
+                'records_identified' => $totalNotSubmitted,
+                'records_passed' => count($notSubmittedList),
+                'tables_accessed' => ['lms_assignment', 'tblstudent', 'standard', 'subject'],
+                'all_work_sample' => $assignSummary['all_work_items'] ?? [],
+                'not_submitted_sample' => array_slice($notSubmittedList, 0, 15),
             ],
             'draft_reviews' => [
                 'cohort_summary' => $cohortSummary,
                 'student_drafts_count' => count($draftNotes),
                 'student_drafts' => $draftNotes,
+                'records_received' => count($atRiskAttempts) + count($notSubmittedList),
+                'records_processed' => count($atRiskAttempts) + count($notSubmittedList),
+                'tables_accessed' => ['ai_cases', 'ai_evidence', 'ai_recommendations', 'ai_agent_runs', 'lms_exam_assessment_agent_state'],
+                'storage_location' => [
+                    'state_table' => 'lms_exam_assessment_agent_state',
+                    'audit_table' => 'ai_agent_runs',
+                    'case_table' => 'ai_cases',
+                    'evidence_table' => 'ai_evidence',
+                    'recommendation_table' => 'ai_recommendations',
+                    'workflow_key' => 'exam_assessment_followup',
+                    'status' => 'draft_pending_human_approval',
+                ],
+                'correlations' => [
+                    'double_risk_students' => array_values($doubleRiskStudents),
+                    'double_risk_count' => count($doubleRiskStudents),
+                    'exam_only_students' => array_values($examOnlyStudents),
+                    'exam_only_count' => count($examOnlyStudents),
+                    'coursework_only_students' => array_values($courseworkOnlyStudents),
+                    'coursework_only_count' => count($courseworkOnlyStudents),
+                ],
             ],
             'pipeline_execution' => [
                 'steps' => array_values($steps),
                 'gates' => array_values($gates),
             ],
+            'handoff_chain' => $handoffChain,
+            'data_changes' => $dataChanges,
         ];
     }
 
@@ -825,6 +1016,70 @@ class ExamAssessmentAgentPipelineService
             ]);
 
         return true;
+    }
+
+    /**
+     * Retrieve recent execution runs from ai_agent_runs for this institute.
+     *
+     * @param int $subInstituteId
+     * @param int $limit
+     * @return array<int, array<string, mixed>>
+     */
+    public function getExecutionHistory(int $subInstituteId, int $limit = 20): array
+    {
+        if (!Schema::hasTable('ai_agent_runs')) {
+            return [];
+        }
+
+        try {
+            return DB::table('ai_agent_runs')
+                ->where('sub_institute_id', $subInstituteId)
+                ->where(function ($q) {
+                    $q->where('trigger_reference', 'like', 'exam_assessment_pipeline%')
+                      ->orWhere('agent_key', 'like', 'exam_assessment%')
+                      ->orWhere('agent_id', 8);
+                })
+                ->orderByDesc('id')
+                ->limit($limit)
+                ->get()
+                ->map(function ($row) {
+                    $agentName = match ($row->agent_key) {
+                        'exam_assessment.online_exam_summary' => 'Online exam summary reader',
+                        'exam_assessment.assignment_status' => 'Assignment status reader',
+                        'exam_assessment.draft_review_note' => 'Assessment review drafter',
+                        default => 'Exam & Assessment Pipeline Agent',
+                    };
+
+                    $stepNumber = null;
+                    if (str_contains($row->trigger_reference, '_step_1')) {
+                        $stepNumber = 1;
+                    } elseif (str_contains($row->trigger_reference, '_step_2')) {
+                        $stepNumber = 2;
+                    } elseif (str_contains($row->trigger_reference, '_step_3')) {
+                        $stepNumber = 3;
+                    }
+
+                    return [
+                        'id' => $row->id,
+                        'run_reference' => $row->run_reference,
+                        'agent_id' => $row->agent_id,
+                        'agent_key' => $row->agent_key,
+                        'agent_name' => $agentName,
+                        'step_number' => $stepNumber,
+                        'trigger_type' => $row->trigger_type,
+                        'status' => $row->status,
+                        'duration_ms' => $row->duration_ms,
+                        'started_at' => $row->started_at,
+                        'finished_at' => $row->finished_at,
+                        'input' => is_string($row->input) ? json_decode($row->input, true) : $row->input,
+                        'output' => is_string($row->output) ? json_decode($row->output, true) : $row->output,
+                    ];
+                })
+                ->all();
+        } catch (Throwable $e) {
+            Log::warning('Failed to retrieve execution history from ai_agent_runs: ' . $e->getMessage());
+            return [];
+        }
     }
 
     /**

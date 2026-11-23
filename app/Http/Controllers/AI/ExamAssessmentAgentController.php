@@ -205,5 +205,26 @@ class ExamAssessmentAgentController extends AiController
             return $this->handle($e);
         }
     }
+
+    /**
+     * GET /api/ai/exam-assessment/agent/history
+     * Returns recent execution runs and traceability logs.
+     */
+    public function history(Request $request): JsonResponse
+    {
+        try {
+            $instituteId = $this->resolveInstituteId($request);
+            $limit = min(50, max(1, (int) ($request->input('limit') ?: 20)));
+            $history = $this->pipelineService->getExecutionHistory($instituteId, $limit);
+
+            return $this->success('Exam & Assessment execution history loaded successfully.', [
+                'history' => $history,
+                'total_runs' => count($history),
+                'server_time' => Carbon::now()->toIso8601String(),
+            ]);
+        } catch (Throwable $e) {
+            return $this->handle($e);
+        }
+    }
 }
 

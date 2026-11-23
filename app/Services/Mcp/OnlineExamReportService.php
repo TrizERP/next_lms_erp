@@ -86,6 +86,62 @@ class OnlineExamReportService
             ])
             ->all();
 
+        // Sample of all attempts with calculated percentage and benchmark comparison
+        $allAttemptsRows = $this->joinAttempts($this->scopedPapers($context, $filters), $filters, forceInner: true)
+            ->leftJoin('tblstudent as s', 's.id', '=', 'oe.student_id')
+            ->leftJoin('subject as sub', 'sub.id', '=', 'qp.subject_id')
+            ->selectRaw("oe.id AS attempt_id, oe.student_id,
+                TRIM(CONCAT_WS(' ', s.first_name, s.middle_name, s.last_name)) AS student_name,
+                qp.id AS exam_id, qp.paper_name, sub.subject_name, qp.standard_id,
+                oe.obtain_marks, qp.total_marks,
+                ROUND(" . self::PERCENT_SQL . ', 1) AS percent,
+                CASE WHEN ' . self::PERCENT_SQL . ' < ? THEN 1 ELSE 0 END AS is_at_risk,
+                oe.created_at AS attempted_at', [$atRisk])
+            ->orderByDesc('oe.created_at')
+            ->limit($limit)
+            ->get()
+            ->map(fn ($row) => [
+                'attempt_id' => (int) $row->attempt_id,
+                'student_id' => (int) $row->student_id,
+                'student_name' => trim((string) $row->student_name) ?: ('Student #' . $row->student_id),
+                'exam_id' => (int) $row->exam_id,
+                'paper_name' => $row->paper_name,
+                'subject_name' => $row->subject_name,
+                'standard_id' => $row->standard_id ? (int) $row->standard_id : null,
+                'obtain_marks' => $row->obtain_marks === null ? null : (float) $row->obtain_marks,
+                'total_marks' => $row->total_marks === null ? null : (float) $row->total_marks,
+                'percent' => $row->percent === null ? null : (float) $row->percent,
+                'is_at_risk' => (bool) $row->is_at_risk,
+                'attempted_at' => $row->attempted_at,
+            ])
+            ->all();
+
+        // List of teacher published online exams
+        $publishedExams = $this->scopedPapers($context, $filters)
+            ->leftJoin('subject as sub', 'sub.id', '=', 'qp.subject_id')
+            ->leftJoin('standard as std', 'std.id', '=', 'qp.standard_id')
+            ->leftJoin('lms_online_exam as oe', 'oe.question_paper_id', '=', 'qp.id')
+            ->selectRaw("qp.id, qp.paper_name, qp.total_marks, qp.passing_marks, qp.exam_type,
+                sub.subject_name, std.name as standard_name,
+                COUNT(oe.id) as attempt_count,
+                ROUND(AVG(oe.obtain_marks / NULLIF(qp.total_marks, 0) * 100), 1) as avg_percent")
+            ->groupBy('qp.id', 'qp.paper_name', 'qp.total_marks', 'qp.passing_marks', 'qp.exam_type', 'sub.subject_name', 'std.name')
+            ->orderByDesc('qp.id')
+            ->limit(20)
+            ->get()
+            ->map(fn ($row) => [
+                'exam_id' => (int) $row->id,
+                'paper_name' => $row->paper_name,
+                'subject_name' => $row->subject_name,
+                'standard_name' => $row->standard_name,
+                'total_marks' => $row->total_marks === null ? null : (float) $row->total_marks,
+                'passing_marks' => $row->passing_marks === null ? null : (float) $row->passing_marks,
+                'exam_type' => $row->exam_type ?: 'Standard Online Exam',
+                'attempt_count' => (int) $row->attempt_count,
+                'avg_percent' => $row->avg_percent === null ? null : (float) $row->avg_percent,
+            ])
+            ->all();
+
         return [
             'exams_published' => (int) ($summary->exams_published ?? 0),
             'attempts_recorded' => (int) ($summary->attempts_recorded ?? 0),
@@ -94,6 +150,8 @@ class OnlineExamReportService
             'needs_attention' => (int) ($summary->needs_attention ?? 0),
             'at_risk_percent' => $atRisk,
             'at_risk_attempts' => $atRiskRows,
+            'all_attempts' => $allAttemptsRows,
+            'published_exams' => $publishedExams,
             'rule' => 'Papers with exam_type = PAL (generated per-learner by the PAL engine, not published by '
                 . 'a teacher) are excluded, and the percentage is obtain_marks over the paper\'s own total_marks — '
                 . 'the same figures the LMS Result Dashboard shows.',

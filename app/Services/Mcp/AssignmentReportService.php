@@ -104,10 +104,46 @@ class AssignmentReportService
             ])
             ->all();
 
+        // Sample of all coursework records with computed submission & evaluation status
+        $allWorkItems = (clone $base)
+            ->leftJoin('tblstudent as s', 's.id', '=', 'a.student_id')
+            ->leftJoin('subject as sub', 'sub.id', '=', 'a.subject_id')
+            ->selectRaw("a.id, a.student_id,
+                TRIM(CONCAT_WS(' ', s.first_name, s.middle_name, s.last_name)) AS student_name,
+                a.title, {$workTypeExpr} AS work_type, sub.subject_name,
+                a.standard_id, a.division_id, a.created_date, a.submission_date,
+                a.student_submission_status, a.teacher_submission_status,
+                CASE 
+                    WHEN a.student_submission_status = 'Y' AND a.teacher_submission_status = 'Y' THEN 'reviewed'
+                    WHEN a.student_submission_status = 'Y' THEN 'pending_review'
+                    WHEN a.submission_date IS NOT NULL AND a.submission_date < CURRENT_DATE() THEN 'overdue'
+                    ELSE 'not_submitted'
+                END AS computed_status")
+            ->orderByDesc('a.id')
+            ->limit($limit)
+            ->get()
+            ->map(fn ($row) => [
+                'assignment_id' => (int) $row->id,
+                'student_id' => $row->student_id ? (int) $row->student_id : null,
+                'student_name' => trim((string) $row->student_name) ?: ('Student #' . ($row->student_id ?? 'Unknown')),
+                'title' => $row->title ?: 'Coursework item #' . $row->id,
+                'work_type' => $row->work_type,
+                'subject_name' => $row->subject_name,
+                'standard_id' => $row->standard_id ? (int) $row->standard_id : null,
+                'division_id' => $row->division_id ? (int) $row->division_id : null,
+                'student_submission_status' => $row->student_submission_status,
+                'teacher_submission_status' => $row->teacher_submission_status,
+                'computed_status' => $row->computed_status,
+                'assigned_on' => $row->created_date,
+                'due_on' => $row->submission_date,
+            ])
+            ->all();
+
         return [
             'total' => array_sum(array_column($totals, 'total')),
             'by_work_type' => $totals,
             'not_submitted' => $notSubmitted,
+            'all_work_items' => $allWorkItems,
             'rule' => "Submitted means student_submission_status = 'Y'; reviewed means the teacher has additionally "
                 . "set teacher_submission_status = 'Y'. Worksheet and Project are the same table filtered by "
                 . 'work_type, not separate records.',

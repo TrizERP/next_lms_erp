@@ -340,6 +340,7 @@ Route::prefix(config('ai.route_prefix', 'api/ai'))
                 Route::post('interval', [\App\Http\Controllers\AI\ExamAssessmentAgentController::class, 'setInterval']);
                 Route::post('pipeline', [\App\Http\Controllers\AI\ExamAssessmentAgentController::class, 'pipeline']);
                 Route::get('eso', [\App\Http\Controllers\AI\ExamAssessmentAgentController::class, 'eso']);
+                Route::get('history', [\App\Http\Controllers\AI\ExamAssessmentAgentController::class, 'history']);
             });
 
             Route::prefix('engagement/agent')->group(function () {
