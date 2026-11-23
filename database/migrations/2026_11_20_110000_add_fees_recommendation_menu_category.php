@@ -15,6 +15,14 @@ use Illuminate\Support\Facades\Schema;
  * attaches to the same module bar, rather than hardcoding the id (fragile
  * across tenants — see 2026_09_17_100000's own reasoning for why this
  * column exists at all).
+ *
+ * Deliberately NOT given the same Knowledge-Graph-off kill switch as the
+ * 'knowledge-graph' row (AbstractMenuCategoryApiController::index() only
+ * ever strips KNOWLEDGE_GRAPH_CATEGORY_KEY). This tab's content is not only
+ * graph-sourced — the Predictive/Recommendation/Agentic Fees intelligence
+ * capabilities are SQL-based and must keep working through a Neo4j outage,
+ * so the tab itself must never disappear; only its individual graph-backed
+ * cards degrade (see FeesGraphRecommendationController::index()).
  */
 return new class extends Migration
 {

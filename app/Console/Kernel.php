@@ -37,6 +37,14 @@ class Kernel extends ConsoleKernel
             app(\App\Services\Lms\CourseCatalogueHierarchyValidator::class)->tickActiveAgents();
         })->everyMinute()->name('course-catalogue-agent-tick')->withoutOverlapping();
 
+        // Fees Agentic Intelligence: sweeps k12_fees + k12_fees_predictive for
+        // every tenant with continuous monitoring switched on
+        // (POST /api/ai/fees/agent/start) and due per its own interval. A
+        // no-op for every tenant that hasn't explicitly opted in.
+        $schedule->call(function () {
+            app(\App\Services\AI\Fees\FeesAgentPipelineService::class)->tickActiveAgents();
+        })->everyMinute()->name('fees-agent-tick')->withoutOverlapping();
+
 
         // MariaDB -> Neo4j outbox. Controllers flush inline so a change is
         // visible immediately; this is the safety net that catches anything the

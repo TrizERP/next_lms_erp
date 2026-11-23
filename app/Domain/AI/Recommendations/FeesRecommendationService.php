@@ -7,6 +7,21 @@ use App\Services\Mcp\McpRequestContext;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
+/**
+ * @deprecated Broken, not just unused: `draftForStudent()` and
+ * `draftCollectionReport()` both query `fees_breackoff.student_id` and
+ * `.balance` — confirmed against `fees_breackoff`'s own migration
+ * (2023_03_05_115658_create_fees_breackoff_table.php) that this table has
+ * neither column; it is a per-standard/grade/section/month fee SCHEDULE,
+ * not a per-student ledger, so both methods would SQL-error the instant
+ * they ran. It is never actually constructed or routed anywhere (confirmed
+ * by a repo-wide search), but `App\Domain\AI\Fees\FeesCapabilityMap` still
+ * lists it as if live. The Fees "Recommendation Intelligence" capability
+ * (`App\Domain\AI\Recommendations\FeesNextBestActionResolver`) is its
+ * intended replacement — do not extend this class or point new callers at
+ * it. Full deletion is a separate cleanup, tracked alongside retiring
+ * `App\Domain\K12\Fees\FeesArrearsDetector` (plural).
+ */
 class FeesRecommendationService
 {
     public function __construct(
