@@ -189,6 +189,13 @@ class FeesCapabilityMap
                 'requires_confirmation' => false,
                 'audit_logged' => false,
             ],
+            // Repointed 2026-11-21 at the Fees "Recommendation Intelligence"
+            // capability: the old target, FeesRecommendationService::draftForStudent,
+            // queried fees_breackoff.student_id/.balance, columns that table
+            // doesn't have (see that class's @deprecated docblock) — never
+            // actually dispatched (FeesCapabilityMap itself is pure
+            // documentation, called from nowhere in app/), but documenting
+            // a broken reference was worse than documenting a real one.
             [
                 'capability' => 'Recommendation Engine — Collection Reminder',
                 'intent' => 'fees_query',
@@ -197,7 +204,7 @@ class FeesCapabilityMap
                     'Who hasn\'t paid fees',
                     'Fee collection action needed',
                 ],
-                'service' => FeesRecommendationService::class . '::draftForStudent',
+                'service' => \App\Domain\AI\Recommendations\FeesNextBestActionResolver::class . '::topPickFor',
                 'input_data' => 'Student fee data + policy context',
                 'output' => 'Draft recommendation: action_type, risk_level, rationale, subject_entity_key',
                 'guardrails' => ['institute_scope', 'no_fake_data', 'fees.read_permission', 'governance'],
@@ -206,6 +213,12 @@ class FeesCapabilityMap
                 'requires_confirmation' => false,
                 'audit_logged' => true,
             ],
+            // Repointed 2026-11-21, same reason as above — but unlike the
+            // per-student row, this one is cohort-level, which
+            // FeesNextBestActionResolver::topPickFor() deliberately doesn't
+            // do (it's a per-subject ranking read). FeesAgentPipelineService::eso()
+            // is the closer fit: a live rollup of the agents' own recent
+            // recommendations, not a hardcoded description.
             [
                 'capability' => 'Recommendation Engine — Collection Report',
                 'intent' => 'fees_query',
@@ -214,7 +227,7 @@ class FeesCapabilityMap
                     'Collection analysis',
                     'How is fee collection going',
                 ],
-                'service' => FeesRecommendationService::class . '::draftCollectionReport',
+                'service' => \App\Services\AI\Fees\FeesAgentPipelineService::class . '::eso',
                 'input_data' => 'Aggregate fees data: demand, collected, outstanding',
                 'output' => 'Collection report recommendation with risk level',
                 'guardrails' => ['institute_scope', 'no_fake_data', 'fees.read_permission', 'governance'],

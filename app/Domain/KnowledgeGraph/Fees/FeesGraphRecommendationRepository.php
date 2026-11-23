@@ -257,6 +257,43 @@ class FeesGraphRecommendationRepository
      * `StuDetail` nodes for other reasons (PAL engagement/mastery sync);
      * nothing new is projected for this.
      */
+    /**
+     * The fee-gap cohort — enrolled students (by `StuDetail.sdId`, which
+     * equals `tblstudent.id`) with no recorded payment this year. Used by
+     * the Cross-Module Intelligence capability (FeesCrossModuleInsightRepository)
+     * to find the same cohort feeAcademicCorrelation() below correlates
+     * against PAL signal, against a different module's data. Deliberately
+     * its own small query pair rather than calling into
+     * feeAcademicCorrelation() or being called by it: that method already
+     * needs the un-diffed enrolled/paying counts too, and routing it
+     * through this method would mean computing the diff twice over the
+     * network for one logical pass.
+     *
+     * @return array<int, int>
+     */
+    public function gapStudentIds(int $tenant, string $syear, int $maxGapSample = 10000): array
+    {
+        $enrolledIds = $this->rows(
+            'MATCH (sd:StuDetail)-[:HAS_STUDENT]->(st:Student) '
+                .'WHERE st.sub_institute_id = $t AND toInteger(st.syear) = toInteger($y) '
+                .'RETURN DISTINCT sd.sdId AS sdId',
+            ['t' => $tenant, 'y' => $syear]
+        );
+        $enrolledIds = array_map(fn ($r) => (int) $r['sdId'], $enrolledIds);
+
+        $payingIds = $this->rows(
+            'MATCH (fp:FeePayment) WHERE fp.sub_institute_id = $t AND toInteger(fp.syear) = toInteger($y) '
+                .'  AND fp.student_id IS NOT NULL '
+                .'RETURN DISTINCT fp.student_id AS studentId',
+            ['t' => $tenant, 'y' => $syear]
+        );
+        $payingIds = array_flip(array_map(fn ($r) => (int) $r['studentId'], $payingIds));
+
+        $gapIds = array_values(array_diff($enrolledIds, array_keys($payingIds)));
+
+        return array_slice($gapIds, 0, $maxGapSample);
+    }
+
     public function feeAcademicCorrelation(int $tenant, string $syear, int $maxGapSample = 10000): array
     {
         $enrolledIds = $this->rows(
@@ -309,6 +346,33 @@ class FeesGraphRecommendationRepository
             'gap_with_engagement' => (int) ($signal['withEngagement'] ?? 0),
             'gap_with_mastery_signal' => (int) ($signal['withMastery'] ?? 0),
         ];
+    }
+
+    /**
+     * Which standards share a fee head (FeeRecord.fee_type_id) with which
+     * others, for the Graph Reasoning capability's transitive non-payment
+     * chain — a relationship that is never a direct edge in the graph, only
+     * discoverable by grouping FeeRecord's own copied properties (same
+     * property-scoped approach as standardNonPaymentConcentration(), never a
+     * multi-hop MATCH — see class docblock).
+     *
+     * @return array<int, array<int, int>> fee_type_id => [standard_id, ...]
+     */
+    public function standardsSharingFeeType(int $tenant, string $syear): array
+    {
+        $rows = $this->rows(
+            'MATCH (fr:FeeRecord) WHERE fr.sub_institute_id = $t AND toInteger(fr.syear) = toInteger($y) '
+                .'  AND fr.standard_id IS NOT NULL AND fr.fee_type_id IS NOT NULL '
+                .'RETURN DISTINCT fr.fee_type_id AS feeTypeId, fr.standard_id AS standardId',
+            ['t' => $tenant, 'y' => $syear]
+        );
+
+        $standardsByFeeType = [];
+        foreach ($rows as $row) {
+            $standardsByFeeType[(int) $row['feeTypeId']][] = (int) $row['standardId'];
+        }
+
+        return $standardsByFeeType;
     }
 
     /** @return array<string, mixed> */

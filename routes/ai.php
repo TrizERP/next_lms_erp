@@ -8,7 +8,12 @@ use App\Http\Controllers\AI\AskController;
 use App\Http\Controllers\AI\CapabilityController;
 use App\Http\Controllers\AI\CaseController;
 use App\Http\Controllers\AI\ConversationalSettingsController;
+use App\Http\Controllers\AI\FeesCrossModuleInsightController;
+use App\Http\Controllers\AI\FeesGraphReasoningController;
 use App\Http\Controllers\AI\FeesGraphRecommendationController;
+use App\Http\Controllers\AI\FeesNextBestActionController;
+use App\Http\Controllers\AI\FeesPredictiveInsightController;
+use App\Http\Controllers\AI\FeesRecommendationIntelligenceController;
 use App\Http\Controllers\AI\GenerationController;
 use App\Http\Controllers\AI\GraphBrowserController;
 use App\Http\Controllers\AI\KnowledgeGraphSettingsController;
@@ -398,6 +403,25 @@ Route::prefix(config('ai.route_prefix', 'api/ai'))
             });
 
             /*
+            | Fees — Agentic Intelligence capability: operational control over
+            | the two governed Fees agents (k12_fees, k12_fees_predictive) via
+            | FeesAgentPipelineService. No "execute" route exists or ever will
+            | — every recommendation these produce stays human-approved via
+            | RecommendationController::approve(). The scheduled tick this
+            | enables is added separately to app/Console/Kernel.php, pending
+            | confirmation.
+            */
+            Route::prefix('fees/agent')->group(function () {
+                Route::get('state', [\App\Http\Controllers\AI\FeesAgentController::class, 'state']);
+                Route::post('start', [\App\Http\Controllers\AI\FeesAgentController::class, 'start']);
+                Route::post('stop', [\App\Http\Controllers\AI\FeesAgentController::class, 'stop']);
+                Route::post('run-now', [\App\Http\Controllers\AI\FeesAgentController::class, 'runNow']);
+                Route::post('interval', [\App\Http\Controllers\AI\FeesAgentController::class, 'setInterval']);
+                Route::post('pipeline', [\App\Http\Controllers\AI\FeesAgentController::class, 'pipeline']);
+                Route::get('eso', [\App\Http\Controllers\AI\FeesAgentController::class, 'eso']);
+            });
+
+            /*
             | Workflows. Note there is no "run this step" route: a run advances only
             | through the engine or by resolving an approval.
             */
@@ -470,6 +494,45 @@ Route::prefix(config('ai.route_prefix', 'api/ai'))
             | honesty-ladder available/reason contract per card.
             */
             Route::get('/knowledge-graph/fees/recommendations', [FeesGraphRecommendationController::class, 'index']);
+
+            /*
+            | Fees — the five-capability aggregator. Ties Cross-Module,
+            | Graph Reasoning, Predictive, Recommendation and Agentic
+            | Intelligence into one payload for the Recommendation panel.
+            | See FeesRecommendationIntelligenceController.
+            */
+            Route::get('/fees/recommendation-intelligence', [FeesRecommendationIntelligenceController::class, 'index']);
+
+            /*
+            | Fees — Graph Reasoning capability (multi-hop/transitive
+            | inference, not direct-edge lookups). Re-tags three of
+            | FeesGraphRecommendationEngine's own cards plus one genuinely
+            | new cross-standard chain card. See FeesGraphReasoningEngine.
+            */
+            Route::get('/knowledge-graph/fees/reasoning', [FeesGraphReasoningController::class, 'index']);
+
+            /*
+            | Fees — Cross-Module Intelligence capability (fees <-> attendance,
+            | fees <-> admissions enquiries, fees <-> PAL engagement/mastery).
+            | See FeesCrossModuleInsightEngine for which KG layer backs each pair.
+            */
+            Route::get('/knowledge-graph/fees/cross-module', [FeesCrossModuleInsightController::class, 'index']);
+
+            /*
+            | Fees — Predictive Intelligence capability. Read-only reshaping of
+            | what FeesPredictiveAgent (k12_fees_predictive) has already
+            | persisted; never runs the agent itself. See
+            | FeesPredictiveInsightController.
+            */
+            Route::get('/fees/predictive', [FeesPredictiveInsightController::class, 'index']);
+
+            /*
+            | Fees — Recommendation Intelligence capability: the single most
+            | relevant next action for one subject, ranked over already-
+            | governed ai_recommendations/ai_cases output. See
+            | FeesNextBestActionResolver.
+            */
+            Route::get('/fees/recommendation-intelligence/next-action', [FeesNextBestActionController::class, 'index']);
 
             /*
             | Centralized management for the Knowledge Graph — one switch per

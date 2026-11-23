@@ -9,6 +9,20 @@ use App\Domain\AI\Signals\ThresholdRegistry;
 use App\Services\Mcp\FeesArrearsService;
 use Illuminate\Support\Facades\DB;
 
+/**
+ * @deprecated Not registered as any `ai_signal_definitions.detector_class`
+ * or called by any agent — confirmed by a repo-wide search for this FQCN.
+ * It is a third, parallel arrears detector alongside the two that are
+ * actually wired: `App\Domain\K12\Fees\FeeArrearsDetector` (singular —
+ * what `App\Agents\Fees\FeesAgent` calls directly, with request-scoped
+ * memoisation) and `App\Domain\Fees\Collection\FeeArrearsDetector` (the
+ * class registered as the `ai_signal_definitions.detector_class` for
+ * `fee_arrears`). Its own `cohort()`/`checkStudent()` queries are schema-
+ * valid (`fees_breakoff_other` does have `student_id`/`syear` columns), so
+ * it is not broken, just unreferenced. New Fees intelligence work should
+ * standardize on `App\Domain\K12\Fees\FeeArrearsDetector`; this class is a
+ * candidate for deletion in a later cleanup pass, not for new callers.
+ */
 final class FeesArrearsDetector
 {
     public function __construct(

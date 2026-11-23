@@ -48,6 +48,28 @@ class FeesGraphRecommendationEngine
         ];
     }
 
+    /**
+     * Every card this engine can produce, individually marked unavailable —
+     * for when the caller already knows Knowledge Graph is switched off for
+     * Fees in this school (`KnowledgeGraphSettingsResolver::isEnabledFor()`)
+     * and wants to say so without ever touching Neo4j. Deliberately not a
+     * blanket failure response: the panel keeps its usual five-card shape,
+     * each one honest about *why* it has nothing to show, exactly like a
+     * thin-sample unavailable card would read.
+     */
+    public function disabledCards(): array
+    {
+        $reason = 'Knowledge Graph is switched off for Fees in this school.';
+
+        return [
+            $this->unavailable('fees.platform_coverage', 'Fee-graph coverage health', 'fee_payment', $reason),
+            $this->unavailable('fees.schedule_integrity', 'Fee schedule integrity', 'fee_schedule', $reason),
+            $this->unavailable('fees.unlinked_payments', 'Reconciliation: unlinked payments', 'fee_payment', $reason),
+            $this->unavailable('fees.root_blocker', 'Fee collection root-blocker', 'fee_collection', $reason),
+            $this->unavailable('fees.academic_correlation', 'Fee + academic correlation', 'cross_module', $reason),
+        ];
+    }
+
     private function coverageCard(array $coverage): array
     {
         $payments = $coverage['payments'];
