@@ -55,6 +55,8 @@ class FeesSendRemindersTool extends AbstractMcpTool implements ConfirmableMcpToo
                 'channel' => ['type' => 'string', 'enum' => FeesReminderService::CHANNELS, 'default' => 'email'],
                 'message' => ['type' => 'string', 'maxLength' => 480, 'description' => 'Optional wording instead of the standard reminder. {name}, {amount} and {deadline} are replaced with each student\'s own values.'],
                 'approved_fingerprint' => ['type' => 'string', 'description' => 'The fingerprint of the previewed list, channel and wording that was approved. Required to send.'],
+                'custom_amounts' => ['type' => 'object', 'description' => 'Optional map of student_id => custom reminder amount'],
+                'contact_overrides' => ['type' => 'object', 'description' => 'Optional map of student_id => test contact details (in-memory test override)'],
             ],
             'required' => ['deadline'],
             'additionalProperties' => false,

@@ -884,3 +884,54 @@ Route::get('/download-folder', [FileController::class, 'downloadFolder'])->middl
 | in the terminal, which is the supported way to exercise the pipeline without a
 | browser.
 */
+
+/*
+| Local development only: this machine shares the live database but not the uploaded files, so a
+| `/storage/...` URL (homework papers, assignment papers, submissions) 404s here. When
+| HOMEWORK_REMOTE_FILES_URL names the server that holds the files, send the browser there.
+| The route is only reached when the file is not on this disk, and does nothing on a server
+| where the variable is unset.
+*/
+Route::get('storage/{path}', function (string $path) {
+    if (str_contains($path, '..')) {
+        abort(404);
+    }
+
+    // An assignment points at "QuestionPaper/{paper}_{school}_{year}.pdf" the moment it is created,
+    // but that PDF is only written when somebody generates it, so the download 404'd on every
+    // server. Build it on first request, from the stored paper, and serve it.
+    if (preg_match('#^QuestionPaper/(\d+)_(\d+)_(\d+)\.pdf$#', $path, $m)) {
+        $paper = \App\Models\lms\questionpaperModel::where('id', (int) $m[1])
+            ->where('sub_institute_id', (int) $m[2])
+            ->where('syear', (int) $m[3])
+            ->first(['id', 'sub_institute_id', 'syear']);
+
+        if ($paper) {
+            try {
+                (new \App\Http\Controllers\lms\questionpaperController())->generatePDF([
+                    'sub_institute_id' => $paper->sub_institute_id,
+                    'syear' => $paper->syear,
+                ], $paper->id);
+            } catch (\Throwable $e) {
+                \Illuminate\Support\Facades\Log::warning('Question paper PDF could not be generated on request', [
+                    'paper_id' => $paper->id,
+                    'message' => $e->getMessage(),
+                ]);
+            }
+
+            foreach ([public_path('storage/' . $path), storage_path('app/public/' . $path)] as $file) {
+                if (is_file($file)) {
+                    return response()->file($file, ['Content-Type' => 'application/pdf']);
+                }
+            }
+        }
+    }
+
+    $base = rtrim((string) config('ai.homework_remote_files_url', ''), '/');
+
+    if ($base === '') {
+        abort(404);
+    }
+
+    return redirect()->away($base . '/storage/' . implode('/', array_map('rawurlencode', explode('/', $path))));
+})->where('path', '.*');

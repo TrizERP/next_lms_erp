@@ -46,6 +46,8 @@ class EvaluateAssignmentSubmissionJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
+    public const AI_MODULE = 'assignment_evaluation_ai';
+
     public int $tries = 2;
     public int $timeout = 300;
 
@@ -63,9 +65,9 @@ class EvaluateAssignmentSubmissionJob implements ShouldQueue
         HomeworkAnnotatedPdfService $annotatedPdfService
     ): void {
         // Provider, model and key come from the school's saved Homework & Assignment Evaluation configuration.
-        $extractor = $extractor->forInstitute($this->subInstituteId);
-        $locator = $locator->forInstitute($this->subInstituteId);
-        $evaluationService = $evaluationService->forInstitute($this->subInstituteId);
+        $extractor = $extractor->forInstitute($this->subInstituteId, self::AI_MODULE);
+        $locator = $locator->forInstitute($this->subInstituteId, self::AI_MODULE);
+        $evaluationService = $evaluationService->forInstitute($this->subInstituteId, self::AI_MODULE);
         $assignment = lms_assignmentModel::where([
             'id' => $this->assignmentId,
             'sub_institute_id' => $this->subInstituteId,
@@ -96,7 +98,20 @@ class EvaluateAssignmentSubmissionJob implements ShouldQueue
         $submissionPath = $this->localPath('public/lms_assignment_submission/' . $assignment->submission_image);
 
         if (!$assignmentPath || !$submissionPath) {
-            $this->markFailed($assignment, 'OCR Failed', 'Assignment paper or submission file could not be located on disk.');
+            $missing = [];
+            if (!$assignmentPath) {
+                $missing[] = 'the teacher\'s assignment paper (' . basename((string) $referenceFile) . ')';
+            }
+            if (!$submissionPath) {
+                $missing[] = 'the student\'s submission (' . basename((string) $assignment->submission_image) . ')';
+            }
+            // Files live on the disk of the server that received the upload. A paper uploaded through
+            // one backend and a submission made through another never meet on one disk.
+            $this->markFailed(
+                $assignment,
+                'OCR Failed',
+                'File not found on this server: ' . implode(' and ', $missing) . '. It was probably uploaded through a different server; upload it again here.'
+            );
             return;
         }
 

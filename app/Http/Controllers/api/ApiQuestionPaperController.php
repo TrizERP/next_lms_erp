@@ -12,6 +12,7 @@ use App\Models\lms\questionpaperModel;
 use App\Models\school_setup\sub_std_mapModel;
 use App\Models\school_setup\subjectModel;
 use App\Models\student\tblstudentEnrollmentModel;
+use App\Support\LearnerContentScope;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -56,6 +57,16 @@ class ApiQuestionPaperController extends Controller
         $user_profile_name = $request->input('user_profile_name');
         $user_id = $request->input('user_id');
         $exam_type = strtolower((string) $request->input('exam_type', ''));
+
+        // Who is asking comes from the verified token, not from the profile name / user id in the request: a student
+        // could otherwise name another student's id, and a teacher a colleague's.
+        $identity = LearnerContentScope::identity($request);
+        if ($identity !== null) {
+            $user_id = $identity['user_id'];
+            if ($identity['is_student']) {
+                $user_profile_name = 'Student';
+            }
+        }
 
         if (!$sub_institute_id || !$syear) {
             return response()->json([
@@ -138,7 +149,7 @@ class ApiQuestionPaperController extends Controller
             })
             ->groupBy('question_paper.id')
             ->get();
-        } elseif ($user_profile_name == "Teacher") {
+        } elseif (in_array($user_profile_name, ['Teacher', 'Lms Teacher'], true)) {
             $questionpaper_data = questionpaperModel::select('question_paper.*',
                 'standard.name as standard_name',
                 'academic_section.title as grade_name',
@@ -153,7 +164,20 @@ class ApiQuestionPaperController extends Controller
             ->join('academic_section', 'academic_section.id', '=', 'question_paper.grade_id')
             ->leftJoin('subject', 'subject.id', '=', 'question_paper.subject_id')
             ->where('question_paper.syear', $syear)
-            ->where('question_paper.created_by', $user_id)
+            // Every paper of a standard + subject the teacher is timetabled for, whoever created it, plus the teacher's own
+            // papers. This used to be created_by alone, so a colleague's exam on the same subject never showed up.
+            ->where(function ($mine) use ($user_id, $syear, $sub_institute_id) {
+                $mine->where('question_paper.created_by', $user_id)
+                    ->orWhereExists(function ($teaches) use ($user_id, $syear, $sub_institute_id) {
+                        $teaches->select(DB::raw(1))
+                            ->from('timetable as tt')
+                            ->whereColumn('tt.standard_id', 'question_paper.standard_id')
+                            ->whereColumn('tt.subject_id', 'question_paper.subject_id')
+                            ->where('tt.teacher_id', $user_id)
+                            ->where('tt.syear', $syear)
+                            ->where('tt.sub_institute_id', $sub_institute_id);
+                    });
+            })
             ->tap(function ($query) use ($request) {
                 $this->applyIndexFilters($query, $request);
             })

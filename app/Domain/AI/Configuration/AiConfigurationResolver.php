@@ -738,7 +738,9 @@ final class AiConfigurationResolver
         $saved = trim((string) $saved);
 
         if ($saved !== '') {
-            return $saved;
+            // A model retired by Google would 404 on every call. Map it forward, exactly as
+            // config/ai.php does for GEMINI_MODEL, so a stale saved row keeps working.
+            return $this->withoutRetired($provider, $saved);
         }
 
         // An embedding or image module has no sensible text-model default: handing it the catalogue's
@@ -753,7 +755,21 @@ final class AiConfigurationResolver
             $this->defaultModelCache[$cacheKey] = $this->catalogueDefault($provider, $subInstituteId, $moduleKey);
         }
 
-        return $this->defaultModelCache[$cacheKey] ?? $this->providers->defaultModel($provider);
+        return $this->withoutRetired($provider, $this->defaultModelCache[$cacheKey] ?? $this->providers->defaultModel($provider));
+    }
+
+    /**
+     * A model Google has retired would 404 on every call, whether an administrator saved it or the
+     * catalogue offers it as the default. Map it to its replacement, as config/ai.php does for
+     * GEMINI_MODEL.
+     */
+    private function withoutRetired(string $provider, ?string $model): ?string
+    {
+        if ($model === null || $provider !== 'gemini') {
+            return $model;
+        }
+
+        return ((array) config('ai.retired_gemini_models', []))[$model] ?? $model;
     }
 
     private function catalogueDefault(string $provider, int|string|null $subInstituteId, ?string $moduleKey): ?string

@@ -51,6 +51,8 @@ use Throwable;
  */
 class HomeworkSubmissionApiController extends Controller
 {
+    use \App\Http\Controllers\api\lms\Concerns\ScopesToTeacherClasses;
+
     // ==================================================================
     // Shared helpers
     // ==================================================================
@@ -78,11 +80,54 @@ class HomeworkSubmissionApiController extends Controller
         return $request->input('user_id') ?? $request->input('student_id');
     }
 
+    /**
+     * May the verified caller read this submission row (its files, AI score, teacher remarks)?
+     *
+     * The row id alone used to be enough, so any signed-in user could read any submission in any school by trying ids.
+     * It must belong to the caller's own school (a platform admin, is_admin 2, spans schools), and a student may read
+     * only their own. Reads the session the `api.session` middleware filled in from the verified token.
+     */
+    private function mayReadSubmission($homework): bool
+    {
+        $school = (int) session()->get('sub_institute_id');
+        $platformAdmin = (int) session()->get('is_admin') === 2;
+
+        if (!$platformAdmin && ($school <= 0 || (int) $homework->sub_institute_id !== $school)) {
+            return false;
+        }
+
+        if ($this->isStudentSession()) {
+            return (int) $homework->student_id === (int) session()->get('user_id');
+        }
+
+        return true;
+    }
+
     /** True when the verified token belongs to a student. */
     private function isStudentSession(): bool
     {
         return (bool) session()->get('is_student')
             || strtolower(trim((string) session()->get('user_profile_name'))) === 'student';
+    }
+
+    /**
+     * A teacher always reviews a homework, even when the AI has already evaluated it. Until the teacher publishes the
+     * feedback, a STUDENT gets no AI score, marks, evaluation PDF or teacher remarks, only that it is awaiting review.
+     * Staff are never masked. Works on any of the response arrays that carry these keys.
+     */
+    private function hideUnpublishedFromStudent(array $entry, $homework): array
+    {
+        if (!$this->isStudentSession() || (bool) $homework->feedback_published) {
+            return $entry;
+        }
+
+        foreach (['ai_score', 'ai_total_questions', 'ai_percentage', 'ai_marks', 'teacher_marks', 'reviewed_pdf_path', 'teacher_remarks'] as $key) {
+            if (array_key_exists($key, $entry)) {
+                $entry[$key] = null;
+            }
+        }
+
+        return $entry;
     }
 
     /** Decode this row's submission_files JSON into a plain array, tolerant of null/garbled data. */
@@ -125,7 +170,7 @@ class HomeworkSubmissionApiController extends Controller
     /** Build the single submissions[] entry for a homework row that has been submitted at least once. */
     private function buildSubmissionEntry($homework, string $server): array
     {
-        return [
+        return $this->hideUnpublishedFromStudent([
             'id' => $homework->id,
             'status' => $homework->status,
             'submission_remarks' => $homework->submission_remarks,
@@ -150,7 +195,7 @@ class HomeworkSubmissionApiController extends Controller
                 : null,
             'feedback_published' => (bool) $homework->feedback_published,
             'files' => $this->buildFilesPayload($homework, $server),
-        ];
+        ], $homework);
     }
 
     // ==================================================================
@@ -244,14 +289,14 @@ class HomeworkSubmissionApiController extends Controller
     {
         $homework = studentHomeworkModel::find($id);
 
-        if (!$homework) {
+        if (!$homework || !$this->mayReadSubmission($homework)) {
             return $this->fail('Submission not found', 404);
         }
 
         return response()->json([
             'status_code' => 1,
             'message' => 'SUCCESS',
-            'data' => [
+            'data' => $this->hideUnpublishedFromStudent([
                 'ai_status' => $homework->ai_status,
                 'ai_failure_reason' => $homework->ai_failure_reason,
                 'ai_score' => $homework->ai_score,
@@ -261,7 +306,7 @@ class HomeworkSubmissionApiController extends Controller
                 'teacher_remarks' => $homework->teacher_remarks,
                 'evaluated_at' => optional($homework->evaluated_at)->toDateTimeString(),
                 'status' => $homework->status,
-            ],
+            ], $homework),
         ], 200);
     }
 
@@ -372,7 +417,9 @@ class HomeworkSubmissionApiController extends Controller
         // though the job's own handle() already catches its internal
         // OCR/Gemini/PDF failures.
         try {
-            EvaluateHomeworkSubmissionV2Job::dispatch($homework_id, (int) $sub_institute_id, (int) $syear);
+            $this->evaluateAfterResponse(
+                new EvaluateHomeworkSubmissionV2Job($homework_id, (int) $sub_institute_id, (int) $syear)
+            );
         } catch (\Throwable $exception) {
             Log::error('AI evaluation failed for homework submission (v2)', [
                 'homework_id' => $homework_id,
@@ -442,6 +489,8 @@ class HomeworkSubmissionApiController extends Controller
             ->when($syear, fn ($q) => $q->where('h.syear', $syear))
             ->when($status, fn ($q) => $q->where('h.status', $status));
 
+        $this->restrictToTeacherClasses($query, $sub_institute_id, $syear, 'h.standard_id', 'h.division_id', 'h.subject_id', 'h.created_by');
+
         $data = $query->orderBy('h.id', 'DESC')->get()->toArray();
 
         return response()->json([
@@ -457,6 +506,9 @@ class HomeworkSubmissionApiController extends Controller
 
         if (!$homework) {
             return $this->fail('Submission not found', 404);
+        }
+        if (!$this->teacherMayAccess($homework->sub_institute_id, $homework->syear, $homework->standard_id, $homework->division_id, $homework->subject_id, $homework->created_by)) {
+            return $this->fail('This submission is not for your subject and standard.', 403);
         }
 
         $server = $request->getSchemeAndHttpHost();
@@ -540,6 +592,40 @@ class HomeworkSubmissionApiController extends Controller
     }
 
     /**
+     * Starts the AI marking the moment the response has been sent, in this same
+     * request -- no queue worker involved.
+     *
+     * These jobs used to be queued, and with QUEUE_CONNECTION=database and no worker
+     * running a submission sat on "Checking" for ever (weeks-old jobs were found
+     * unprocessed). Running after the response keeps the student's/teacher's click
+     * instant and still produces the marks without any worker. A throw is routed to
+     * the job's own failed() so the row ends on a failure status rather than on
+     * "Checking".
+     */
+    private function evaluateAfterResponse(object $job): void
+    {
+        app()->terminating(function () use ($job): void {
+            @ignore_user_abort(true);
+            @set_time_limit(0);
+
+            try {
+                app()->call([$job, 'handle']);
+            } catch (Throwable $exception) {
+                Log::error('Homework evaluation (after response) failed', [
+                    'job' => $job::class,
+                    'message' => $exception->getMessage(),
+                ]);
+
+                try {
+                    $job->failed($exception);
+                } catch (Throwable $ignored) {
+                    // The row is left as the job last wrote it.
+                }
+            }
+        });
+    }
+
+    /**
      * Re-runs the evaluation on a submission that has already been marked.
      *
      * For a scan that came out unreadable, or a homework whose questions were
@@ -577,17 +663,19 @@ class HomeworkSubmissionApiController extends Controller
         $homework->update(['ai_status' => 'Checking', 'ai_failure_reason' => null]);
 
         try {
-            $isV2
-                ? EvaluateHomeworkSubmissionV2Job::dispatch(
-                    (int) $homework->id,
-                    (int) $homework->sub_institute_id,
-                    (int) $homework->syear
-                )
-                : EvaluateHomeworkSubmissionJob::dispatch(
-                    (int) $homework->id,
-                    (int) $homework->sub_institute_id,
-                    (int) $homework->syear
-                );
+            $this->evaluateAfterResponse(
+                $isV2
+                    ? new EvaluateHomeworkSubmissionV2Job(
+                        (int) $homework->id,
+                        (int) $homework->sub_institute_id,
+                        (int) $homework->syear
+                    )
+                    : new EvaluateHomeworkSubmissionJob(
+                        (int) $homework->id,
+                        (int) $homework->sub_institute_id,
+                        (int) $homework->syear
+                    )
+            );
         } catch (Throwable $exception) {
             // dispatch() re-throws a job's own exceptions synchronously while
             // QUEUE_CONNECTION=sync, and the job records its own failure on the
@@ -709,7 +797,8 @@ class HomeworkSubmissionApiController extends Controller
         $homeworkId = implode('_', $parts);
 
         $homework = studentHomeworkModel::find($homeworkId);
-        if (!$homework) {
+        // Another school's, or (for a student) another student's file is reported as missing, not forbidden.
+        if (!$homework || !$this->mayReadSubmission($homework)) {
             return $this->fail('File not found', 404);
         }
 
@@ -771,7 +860,7 @@ class HomeworkSubmissionApiController extends Controller
 
             $hasSubmission = $homework->completion_status === 'Y' || !empty($homework->status);
 
-            return [
+            return $this->hideUnpublishedFromStudent([
                 'id' => $homework->id,
                 'title' => $homework->title,
                 'subject_id' => $homework->subject_id,
@@ -798,7 +887,7 @@ class HomeworkSubmissionApiController extends Controller
                 'reviewed_pdf_path' => $homework->reviewed_pdf_path,
                 'evaluated_at' => optional($homework->evaluated_at)->toDateTimeString(),
                 'feedback_published' => (bool) $homework->feedback_published,
-            ];
+            ], $homework);
         })->values();
 
         return response()->json([

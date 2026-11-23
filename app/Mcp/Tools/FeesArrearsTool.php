@@ -49,6 +49,11 @@ class FeesArrearsTool extends AbstractMcpTool
                     'maximum' => 100,
                     'description' => 'How many students to check. Defaults to 25, ceiling 100.',
                 ],
+                'student_ids' => [
+                    'type' => 'array',
+                    'items' => ['type' => 'integer'],
+                    'description' => 'Optional student IDs to check.',
+                ],
             ],
             'additionalProperties' => false,
         ];

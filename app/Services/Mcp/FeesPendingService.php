@@ -43,7 +43,11 @@ class FeesPendingService
         //
         // Binding the container's own store keeps one session instance, so what the
         // controller puts is what the global `session()` helper inside `getBk` reads.
-        $request->setLaravelSession(app('session.store'));
+        $session = app('session.store');
+        $session->put('sub_institute_id', $context->selectedInstituteId);
+        $session->put('user_id', $context->userId ?: 1);
+        $session->put('syear', $context->academicYear);
+        $request->setLaravelSession($session);
 
         $payload = json_decode((string) $controller->studentFeesDetailAPI($request), true) ?: [];
         $data = $payload['data'] ?? [];

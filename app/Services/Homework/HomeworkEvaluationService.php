@@ -17,10 +17,10 @@ class HomeworkEvaluationService
     /**
      * A copy of this service whose model calls resolve the `evaluation_ai` configuration for one school.
      */
-    public function forInstitute(int|string|null $subInstituteId): static
+    public function forInstitute(int|string|null $subInstituteId, ?string $module = null): static
     {
         $copy = clone $this;
-        $copy->gemini = $this->gemini->forInstitute($subInstituteId);
+        $copy->gemini = $this->gemini->forInstitute($subInstituteId, $module);
 
         return $copy;
     }

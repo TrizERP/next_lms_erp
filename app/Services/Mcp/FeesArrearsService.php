@@ -180,6 +180,10 @@ class FeesArrearsService
             $query->where('e.section_id', (int) $arguments['section_id']);
         }
 
+        if (! empty($arguments['student_ids']) && is_array($arguments['student_ids'])) {
+            $query->whereIn('e.student_id', array_map('intval', $arguments['student_ids']));
+        }
+
         // The academic year narrows the cohort only when it actually selects anybody.
         //
         // Same disagreement between roll and current term that StudentScope::placement()

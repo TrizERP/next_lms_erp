@@ -17,6 +17,57 @@ use Illuminate\Support\Facades\Schema;
  */
 class PedagogicalContentBuilder
 {
+    /** @var array{hero?:string,hook?:string} Images the user picked; they win over the curated defaults. */
+    private array $selectedImages = [];
+
+    /**
+     * Reduce whatever the client sent to the only two image slots the layouts have (hero, hook).
+     * Only http(s) URLs and site-relative paths survive; anything else (data: URIs, javascript:, oversized values)
+     * is dropped, so a payload can neither smuggle markup into the generated HTML nor bloat the request.
+     *
+     * @param  mixed  $images
+     * @return array{hero?:string,hook?:string}
+     */
+    public static function sanitizeSelectedImages(mixed $images): array
+    {
+        if (! is_array($images)) {
+            return [];
+        }
+
+        // A bare list means "hero first, hook second".
+        if (array_is_list($images)) {
+            $images = ['hero' => $images[0] ?? null, 'hook' => $images[1] ?? ($images[0] ?? null)];
+        }
+
+        $clean = [];
+        foreach (['hero', 'hook'] as $slot) {
+            $url = $images[$slot] ?? null;
+            if (! is_string($url)) {
+                continue;
+            }
+            $url = trim($url);
+            if ($url === '' || strlen($url) > 2048 || preg_match('/[\s"\'<>]/', $url)) {
+                continue;
+            }
+            if (preg_match('#^https?://#i', $url) || (str_starts_with($url, '/') && ! str_starts_with($url, '//'))) {
+                $clean[$slot] = $url;
+            }
+        }
+        // One image given: use it for both slots rather than mixing it with a stock photo.
+        if (count($clean) === 1) {
+            $clean = ['hero' => reset($clean), 'hook' => reset($clean)];
+        }
+
+        return $clean;
+    }
+
+    public function useSelectedImages(mixed $images): self
+    {
+        $this->selectedImages = self::sanitizeSelectedImages($images);
+
+        return $this;
+    }
+
     /**
      * Resolves complete chapter context, including standard, subject, and all key concepts.
      */
@@ -150,7 +201,8 @@ class PedagogicalContentBuilder
             ],
         ];
 
-        return $photos[$domainLower] ?? $photos['general'];
+        // User-selected images take precedence over the curated stock photos.
+        return array_merge($photos[$domainLower] ?? $photos['general'], $this->selectedImages);
     }
 
     /**
