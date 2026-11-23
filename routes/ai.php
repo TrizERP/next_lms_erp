@@ -368,19 +368,6 @@ Route::prefix(config('ai.route_prefix', 'api/ai'))
                 Route::post('pipeline', [\App\Http\Controllers\AI\TeachLearnCatalogueAgentController::class, 'pipeline']);
                 Route::get('eso', [\App\Http\Controllers\AI\TeachLearnCatalogueAgentController::class, 'eso']);
             });
-            Route::prefix('fees/agent')->group(function () {
-                Route::get('state', [\App\Http\Controllers\AI\FeesAgentController::class, 'state']);
-                Route::post('start', [\App\Http\Controllers\AI\FeesAgentController::class, 'start']);
-                Route::post('stop', [\App\Http\Controllers\AI\FeesAgentController::class, 'stop']);
-                Route::post('run-now', [\App\Http\Controllers\AI\FeesAgentController::class, 'runNow']);
-                Route::post('interval', [\App\Http\Controllers\AI\FeesAgentController::class, 'setInterval']);
-                Route::post('pipeline', [\App\Http\Controllers\AI\FeesAgentController::class, 'pipeline']);
-                Route::get('eso', [\App\Http\Controllers\AI\FeesAgentController::class, 'eso']);
-                Route::get('standards', [\App\Http\Controllers\AI\FeesAgentController::class, 'standards']);
-                Route::get('students', [\App\Http\Controllers\AI\FeesAgentController::class, 'students']);
-                Route::post('send', [\App\Http\Controllers\AI\FeesAgentController::class, 'send']);
-            });
-
             Route::prefix('curriculum-planning/agent')->group(function () {
                 Route::get('state', [\App\Http\Controllers\AI\CurriculumPlanningAgentController::class, 'state']);
                 Route::post('start', [\App\Http\Controllers\AI\CurriculumPlanningAgentController::class, 'start']);
