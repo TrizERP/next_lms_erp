@@ -1,0 +1,374 @@
+{
+  "schema": 1,
+  "lab_key": "ice_melting",
+  "title": "The ice that would not wait",
+  "subject": "Science",
+  "chapter_ids": [
+    8592
+  ],
+  "concepts": [
+    "Science asks what and how",
+    "Careful observation in exploration",
+    "Purposeful direction in exploration",
+    "Scientific terms are precise"
+  ],
+  "scenario": "A school canteen keeps ice for the cold drinks, and on hot afternoons it melts before the break ends. The canteen manager asks your science club: “What makes ice melt faster or slower, and what could we change to keep it frozen longer?” Plan and carry out your own investigation and give the manager evidence.",
+  "outcomes": [
+    "Ask a question you can test, and say what you will change and measure.",
+    "Choose the equipment you need and set up a fair test.",
+    "Run trials, record what happens and check that your result can be trusted.",
+    "Explain what the evidence shows, using what you learned in the chapter."
+  ],
+  "visual": {
+    "kind": "shrink",
+    "emoji": "🧊",
+    "exponent": 3
+  },
+  "essential_groups": [
+    "material",
+    "container",
+    "location"
+  ],
+  "irrelevant": [
+    "magnet",
+    "torch",
+    "ruler"
+  ],
+  "items": [
+    {
+      "id": "ice",
+      "name": "Ice",
+      "icon": "ice",
+      "group": "material",
+      "about": "Frozen water.",
+      "props": [
+        {
+          "key": "form",
+          "label": "Shape of the ice",
+          "options": [
+            {
+              "value": "cube",
+              "label": "One solid cube",
+              "vis": {
+                "scale": 1
+              }
+            },
+            {
+              "value": "crushed",
+              "label": "Crushed pieces",
+              "vis": {
+                "scale": 0.8,
+                "grains": "fine"
+              }
+            }
+          ],
+          "default": "cube"
+        },
+        {
+          "key": "size",
+          "label": "Amount of ice",
+          "options": [
+            {
+              "value": "small",
+              "label": "10 g",
+              "num": 10,
+              "vis": {
+                "scale": 0.8
+              }
+            },
+            {
+              "value": "medium",
+              "label": "20 g",
+              "num": 20,
+              "vis": {
+                "scale": 1
+              }
+            },
+            {
+              "value": "large",
+              "label": "40 g",
+              "num": 40,
+              "vis": {
+                "scale": 1.25
+              }
+            }
+          ],
+          "default": "medium"
+        }
+      ]
+    },
+    {
+      "id": "container",
+      "name": "Container",
+      "icon": "container",
+      "group": "container",
+      "about": "Holds what you put in it.",
+      "props": [
+        {
+          "key": "material",
+          "label": "Container made of",
+          "options": [
+            {
+              "value": "glass",
+              "label": "Glass",
+              "vis": {
+                "tone": "clear"
+              }
+            },
+            {
+              "value": "foam",
+              "label": "Foam",
+              "vis": {
+                "tone": "cream"
+              }
+            },
+            {
+              "value": "metal",
+              "label": "Metal",
+              "vis": {
+                "tone": "grey"
+              }
+            }
+          ],
+          "default": "glass"
+        }
+      ]
+    },
+    {
+      "id": "location",
+      "name": "Test place",
+      "icon": "location",
+      "group": "location",
+      "about": "Where the test is done.",
+      "props": [
+        {
+          "key": "temp",
+          "label": "Place",
+          "options": [
+            {
+              "value": "10",
+              "label": "Cold shelf (10 °C)",
+              "num": 10,
+              "vis": {
+                "heat": 10
+              }
+            },
+            {
+              "value": "22",
+              "label": "Bench (22 °C)",
+              "num": 22,
+              "vis": {
+                "heat": 22
+              }
+            },
+            {
+              "value": "32",
+              "label": "Sunny window (32 °C)",
+              "num": 32,
+              "vis": {
+                "heat": 32
+              }
+            },
+            {
+              "value": "40",
+              "label": "Near a heater (40 °C)",
+              "num": 40,
+              "vis": {
+                "heat": 40
+              }
+            }
+          ],
+          "default": "22"
+        }
+      ]
+    },
+    {
+      "id": "lid",
+      "name": "Lid",
+      "icon": "lid",
+      "group": "tool",
+      "about": "Covers a container.",
+      "props": [
+        {
+          "key": "lid",
+          "label": "Lid",
+          "options": [
+            {
+              "value": "off",
+              "label": "Off"
+            },
+            {
+              "value": "on",
+              "label": "On",
+              "vis": {
+                "cover": true
+              }
+            }
+          ],
+          "default": "off",
+          "absent": "off"
+        }
+      ]
+    },
+    {
+      "id": "stopwatch",
+      "name": "Stopwatch",
+      "icon": "stopwatch",
+      "group": "instrument",
+      "about": "Measures time.",
+      "props": [],
+      "reads": {
+        "kind": "clock"
+      }
+    },
+    {
+      "id": "thermometer",
+      "name": "Thermometer",
+      "icon": "thermometer",
+      "group": "instrument",
+      "about": "Measures temperature.",
+      "props": [],
+      "reads": {
+        "kind": "setting",
+        "setting": "temp",
+        "unit": "°C"
+      }
+    },
+    {
+      "id": "balance",
+      "name": "Balance",
+      "icon": "balance",
+      "group": "instrument",
+      "about": "Measures mass.",
+      "props": [],
+      "reads": {
+        "kind": "setting",
+        "setting": "size"
+      }
+    },
+    {
+      "id": "magnet",
+      "name": "Magnet",
+      "icon": "magnet",
+      "group": "other",
+      "about": "Attracts iron.",
+      "props": []
+    },
+    {
+      "id": "torch",
+      "name": "Torch",
+      "icon": "torch",
+      "group": "other",
+      "about": "Gives light.",
+      "props": []
+    },
+    {
+      "id": "ruler",
+      "name": "Ruler",
+      "icon": "ruler",
+      "group": "instrument",
+      "about": "Measures length.",
+      "props": []
+    }
+  ],
+  "measures": [
+    {
+      "id": "time",
+      "label": "Time for the ice to melt",
+      "unit": "s",
+      "instrument": "stopwatch",
+      "decimals": 1
+    }
+  ],
+  "model": {
+    "base": 884.173297966,
+    "terms": [
+      {
+        "type": "lookup",
+        "setting": "size",
+        "table": {
+          "small": 2.15443469003,
+          "medium": 2.71441761659,
+          "large": 3.41995189335
+        },
+        "default": 1
+      },
+      {
+        "type": "power",
+        "setting": "temp",
+        "ref": 1,
+        "exp": -1
+      },
+      {
+        "type": "lookup",
+        "setting": "form",
+        "table": {
+          "cube": 1,
+          "crushed": 0.333333333333
+        },
+        "default": 1
+      },
+      {
+        "type": "lookup",
+        "setting": "material",
+        "table": {
+          "glass": 1,
+          "foam": 2.85714285714,
+          "metal": 0.714285714286
+        },
+        "default": 1
+      },
+      {
+        "type": "lookup",
+        "setting": "lid",
+        "table": {
+          "off": 1,
+          "on": 1.11111111111
+        },
+        "default": 1
+      }
+    ],
+    "min": 1,
+    "max": 7200
+  },
+  "marker": {
+    "expected": [
+      {
+        "setting": "temp",
+        "from": "10",
+        "to": "40",
+        "direction": "decrease",
+        "effect": "A warmer place melts the ice faster (shorter time): heat flows into the ice faster when the surroundings are warmer."
+      },
+      {
+        "setting": "form",
+        "from": "cube",
+        "to": "crushed",
+        "direction": "decrease",
+        "effect": "Crushed ice melts faster than one cube of the same mass: more surface is exposed to the warm surroundings."
+      },
+      {
+        "setting": "material",
+        "from": "glass",
+        "to": "foam",
+        "direction": "increase",
+        "effect": "A foam container slows melting (an insulator); a metal one speeds it (a conductor of heat)."
+      },
+      {
+        "setting": "size",
+        "from": "small",
+        "to": "large",
+        "direction": "increase",
+        "effect": "More ice takes longer to melt, though not in direct proportion."
+      },
+      {
+        "setting": "lid",
+        "from": "off",
+        "to": "on",
+        "direction": "increase",
+        "effect": "A lid slows melting only slightly."
+      }
+    ],
+    "concept_focus": "Asking a testable question, changing one thing at a time, observing and recording evidence carefully, and using precise scientific terms."
+  }
+}

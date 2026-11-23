@@ -1,0 +1,354 @@
+{
+  "schema": 1,
+  "lab_key": "dissolving",
+  "title": "The drink powder problem",
+  "subject": "Science",
+  "chapter_ids": [
+    8604
+  ],
+  "concepts": [
+    "Solute and solvent in a solution",
+    "Solubility definition",
+    "Saturated solution",
+    "Concentration of a solution"
+  ],
+  "scenario": "A beverage company is designing a ready-to-mix drink. Customers complain that the sugar sinks to the bottom and takes too long to disappear. The company asks you: “What affects how quickly sugar dissolves in water, and how could we make it quicker?” Plan and carry out your own investigation and give the company evidence.",
+  "outcomes": [
+    "Ask a question you can test, and say what you will change and measure.",
+    "Choose the equipment you need and set up a fair test.",
+    "Run trials, record what happens and check that your result can be trusted.",
+    "Explain what the evidence shows using the words solute, solvent, solution and dissolving."
+  ],
+  "visual": {
+    "kind": "dissolve",
+    "emoji": "🍚",
+    "exponent": 2
+  },
+  "essential_groups": [
+    "material",
+    "container",
+    "location"
+  ],
+  "irrelevant": [
+    "magnet",
+    "torch"
+  ],
+  "items": [
+    {
+      "id": "sugar",
+      "name": "Sugar",
+      "icon": "sugar",
+      "group": "material",
+      "about": "A solid that can dissolve.",
+      "props": [
+        {
+          "key": "form",
+          "label": "Kind of sugar",
+          "options": [
+            {
+              "value": "cube",
+              "label": "Sugar cube",
+              "vis": {
+                "grains": "lump"
+              }
+            },
+            {
+              "value": "granulated",
+              "label": "Granulated",
+              "vis": {
+                "grains": "coarse"
+              }
+            },
+            {
+              "value": "powder",
+              "label": "Fine powder",
+              "vis": {
+                "grains": "fine"
+              }
+            }
+          ],
+          "default": "granulated"
+        },
+        {
+          "key": "amount",
+          "label": "Amount of sugar",
+          "options": [
+            {
+              "value": "5",
+              "label": "5 g",
+              "num": 5
+            },
+            {
+              "value": "10",
+              "label": "10 g",
+              "num": 10
+            },
+            {
+              "value": "20",
+              "label": "20 g",
+              "num": 20
+            }
+          ],
+          "default": "10"
+        }
+      ]
+    },
+    {
+      "id": "water",
+      "name": "Water",
+      "icon": "water",
+      "group": "location",
+      "about": "A liquid.",
+      "props": [
+        {
+          "key": "temp",
+          "label": "Water temperature",
+          "options": [
+            {
+              "value": "12",
+              "label": "Cold (12 °C)",
+              "num": 12,
+              "vis": {
+                "heat": 12
+              }
+            },
+            {
+              "value": "25",
+              "label": "Room (25 °C)",
+              "num": 25,
+              "vis": {
+                "heat": 25
+              }
+            },
+            {
+              "value": "55",
+              "label": "Warm (55 °C)",
+              "num": 55,
+              "vis": {
+                "heat": 55
+              }
+            },
+            {
+              "value": "80",
+              "label": "Hot (80 °C)",
+              "num": 80,
+              "vis": {
+                "heat": 80
+              }
+            }
+          ],
+          "default": "25"
+        },
+        {
+          "key": "volume",
+          "label": "Amount of water",
+          "options": [
+            {
+              "value": "100",
+              "label": "100 mL",
+              "num": 100
+            },
+            {
+              "value": "200",
+              "label": "200 mL",
+              "num": 200
+            }
+          ],
+          "default": "100"
+        }
+      ]
+    },
+    {
+      "id": "beaker",
+      "name": "Beaker",
+      "icon": "beaker",
+      "group": "container",
+      "about": "Holds liquids.",
+      "props": []
+    },
+    {
+      "id": "spoon",
+      "name": "Spoon",
+      "icon": "spoon",
+      "group": "tool",
+      "about": "For stirring.",
+      "props": [
+        {
+          "key": "stir",
+          "label": "Stirring",
+          "options": [
+            {
+              "value": "none",
+              "label": "Not stirred"
+            },
+            {
+              "value": "gentle",
+              "label": "Gently",
+              "vis": {
+                "spin": 0.5
+              }
+            },
+            {
+              "value": "vigorous",
+              "label": "Hard",
+              "vis": {
+                "spin": 1
+              }
+            }
+          ],
+          "default": "none",
+          "absent": "none"
+        }
+      ]
+    },
+    {
+      "id": "stopwatch",
+      "name": "Stopwatch",
+      "icon": "stopwatch",
+      "group": "instrument",
+      "about": "Measures time.",
+      "props": [],
+      "reads": {
+        "kind": "clock"
+      }
+    },
+    {
+      "id": "thermometer",
+      "name": "Thermometer",
+      "icon": "thermometer",
+      "group": "instrument",
+      "about": "Measures temperature.",
+      "props": [],
+      "reads": {
+        "kind": "setting",
+        "setting": "temp",
+        "unit": "°C"
+      }
+    },
+    {
+      "id": "cylinder",
+      "name": "Measuring cylinder",
+      "icon": "cylinder",
+      "group": "instrument",
+      "about": "Measures volume.",
+      "props": [],
+      "reads": {
+        "kind": "setting",
+        "setting": "volume"
+      }
+    },
+    {
+      "id": "magnet",
+      "name": "Magnet",
+      "icon": "magnet",
+      "group": "other",
+      "about": "Attracts iron.",
+      "props": []
+    },
+    {
+      "id": "lens",
+      "name": "Magnifying glass",
+      "icon": "lens",
+      "group": "other",
+      "about": "Makes small things look bigger.",
+      "props": []
+    },
+    {
+      "id": "torch",
+      "name": "Torch",
+      "icon": "torch",
+      "group": "other",
+      "about": "Gives light.",
+      "props": []
+    }
+  ],
+  "measures": [
+    {
+      "id": "time",
+      "label": "Time for the sugar to dissolve",
+      "unit": "s",
+      "instrument": "stopwatch",
+      "decimals": 1
+    }
+  ],
+  "model": {
+    "base": 90,
+    "terms": [
+      {
+        "type": "power",
+        "setting": "amount",
+        "per": "volume",
+        "ref": 0.1,
+        "exp": 0.8
+      },
+      {
+        "type": "exp",
+        "setting": "temp",
+        "ref": 25,
+        "k": -0.035
+      },
+      {
+        "type": "lookup",
+        "setting": "form",
+        "table": {
+          "cube": 2.85714285714,
+          "granulated": 1,
+          "powder": 0.454545454545
+        },
+        "default": 1
+      },
+      {
+        "type": "lookup",
+        "setting": "stir",
+        "table": {
+          "none": 1,
+          "gentle": 0.454545454545,
+          "vigorous": 0.285714285714
+        },
+        "default": 1
+      }
+    ],
+    "min": 1,
+    "max": 7200
+  },
+  "marker": {
+    "expected": [
+      {
+        "setting": "temp",
+        "from": "12",
+        "to": "80",
+        "direction": "decrease",
+        "effect": "Warmer water dissolves sugar faster: the water particles move faster and pull sugar particles apart sooner."
+      },
+      {
+        "setting": "stir",
+        "from": "none",
+        "to": "vigorous",
+        "direction": "decrease",
+        "effect": "Stirring dissolves sugar faster: it brings fresh solvent to the solute and carries dissolved particles away."
+      },
+      {
+        "setting": "form",
+        "from": "cube",
+        "to": "powder",
+        "direction": "decrease",
+        "effect": "Finer sugar dissolves faster: more surface of the solute is in contact with the solvent."
+      },
+      {
+        "setting": "amount",
+        "from": "5",
+        "to": "20",
+        "direction": "increase",
+        "effect": "More sugar takes longer to dissolve in the same water."
+      },
+      {
+        "setting": "volume",
+        "from": "100",
+        "to": "200",
+        "direction": "decrease",
+        "effect": "More water (the same sugar) dissolves it a little faster."
+      }
+    ],
+    "concept_focus": "Solute, solvent and solution; what affects the rate of dissolving; changing one thing at a time; recording evidence."
+  }
+}

@@ -3572,6 +3572,348 @@ public function getData($request)
     }
 
     /**
+     * Application Lab - one personalised practical activity for a chapter.
+     *
+     * POST because each call asks the model for a NEW activity. It reads the
+     * learner's journey evidence and writes nothing back to it; see
+     * ApplicationLabService. Identity and view-as scoping are the same as every
+     * other PAL read: resolveAuthorizedContext().
+     */
+    public function applicationLabGenerate(Request $request, $chapterId)
+    {
+        $ctx = $this->resolveAuthorizedContext($request);
+
+        $result = app(\App\Services\PAL\ApplicationLab\ApplicationLabService::class)->generate(
+            $ctx['student_id'],
+            (int) $chapterId,
+            $ctx['sub_institute_id'],
+            [
+                'completed_steps' => $request->input('completed_steps', []),
+                'practice_analysis' => $request->input('practice_analysis', []),
+            ]
+        );
+
+        return response()->json(['status' => 1, 'message' => 'Success', 'student_id' => $ctx['student_id']] + $result);
+    }
+
+    /**
+     * Application Lab: what the student has studied, and whether the whole chapter is open to them (GET).
+     * The first step of the Application Lab: the student chooses the scope of their activity from this.
+     */
+    public function applicationLabScope(Request $request, $chapterId)
+    {
+        $ctx = $this->resolveAuthorizedContext($request);
+
+        return response()->json(['status' => 1, 'student_id' => $ctx['student_id']]
+            + app(\App\Services\PAL\ExplanationLab\ExplanationLabService::class)->scopeOptions($ctx['student_id'], (int) $chapterId, $ctx['sub_institute_id']));
+    }
+
+    /**
+     * The scope an Application Lab request is about, checked on the server: only concepts the student has
+     * studied, and the whole chapter only when every concept in it has been studied. The browser's choice is
+     * a request, not a fact. Returns the scope, or a JSON error response.
+     *
+     * @return array<string,mixed>|\Illuminate\Http\JsonResponse
+     */
+    private function applicationLabScopeFor(Request $request, array $ctx, int $chapterId)
+    {
+        $resolved = app(\App\Services\PAL\ExplanationLab\ExplanationLabService::class)->resolveScope(
+            $ctx['student_id'], $chapterId, $ctx['sub_institute_id'],
+            ['type' => $request->input('scope_type'), 'concepts' => (array) $request->input('scope_concepts', [])]
+        );
+
+        return $resolved['ok']
+            ? $resolved['scope']
+            : response()->json(['status' => 1, 'ready' => false, 'reason' => $resolved['reason'], 'message' => $resolved['message'], 'persisted' => false, 'record' => null, 'concepts' => []]);
+    }
+
+    /** Application Lab, student-created activity: real pictures for a word the student typed (GET ?q=). */
+    public function creationPictures(Request $request)
+    {
+        $ctx = $this->resolveAuthorizedContext($request);
+        $result = app(\App\Services\PAL\ApplicationLab\StudentPictureSearch::class)->search($ctx['student_id'], (string) $request->input('q', ''));
+
+        return response()->json(['status' => 1] + $result);
+    }
+
+    /** Application Lab, student-created activity: concepts in the scope and the saved creation (GET). */
+    public function creationCurrent(Request $request, $chapterId)
+    {
+        $ctx = $this->resolveAuthorizedContext($request);
+        $scope = $this->applicationLabScopeFor($request, $ctx, (int) $chapterId);
+        if ($scope instanceof \Illuminate\Http\JsonResponse) {
+            return $scope;
+        }
+
+        return response()->json(['status' => 1, 'student_id' => $ctx['student_id']]
+            + app(\App\Services\PAL\ApplicationLab\StudentCreationService::class)->current($ctx['student_id'], (int) $chapterId, $ctx['sub_institute_id'], $scope));
+    }
+
+    /** Application Lab, student-created activity: save (POST, body: creation_json, fresh=1 to start another). */
+    public function creationSave(Request $request, $chapterId)
+    {
+        $ctx = $this->resolveAuthorizedContext($request);
+        $scope = $this->applicationLabScopeFor($request, $ctx, (int) $chapterId);
+        if ($scope instanceof \Illuminate\Http\JsonResponse) {
+            return $scope;
+        }
+        $result = app(\App\Services\PAL\ApplicationLab\StudentCreationService::class)->save(
+            $ctx['student_id'], (int) $chapterId, $ctx['sub_institute_id'],
+            (array) json_decode((string) $request->input('creation_json', '{}'), true), $scope, $request->boolean('fresh')
+        );
+
+        return response()->json(['status' => 1] + $result);
+    }
+
+    /** Application Lab, student-created activity: submit once and mark (POST, body: creation_json). */
+    public function creationSubmit(Request $request, $chapterId)
+    {
+        $ctx = $this->resolveAuthorizedContext($request);
+        $scope = $this->applicationLabScopeFor($request, $ctx, (int) $chapterId);
+        if ($scope instanceof \Illuminate\Http\JsonResponse) {
+            return $scope;
+        }
+        $result = app(\App\Services\PAL\ApplicationLab\StudentCreationService::class)->submit(
+            $ctx['student_id'], (int) $chapterId, $ctx['sub_institute_id'],
+            (array) json_decode((string) $request->input('creation_json', '{}'), true), $scope
+        );
+
+        return response()->json(['status' => 1] + $result);
+    }
+
+    /**
+     * Application Lab, virtual lab: the APPROVED lab specification for the chapter, as a student may see it (GET).
+     * The marker's key (what the experiment should show, and why) is removed here and never leaves the server.
+     * A chapter with no approved lab answers with lab = null, and the guided design form is used instead.
+     */
+    public function labSpecCurrent(Request $request, $chapterId)
+    {
+        $ctx = $this->resolveAuthorizedContext($request);
+        $lab = \App\Services\PAL\LabSpec\LabSpecRepository::approvedForChapter((int) $chapterId, (int) $ctx['sub_institute_id']);
+        if ($lab === null) {
+            return response()->json(['status' => 1, 'lab' => null]);
+        }
+        return response()->json(['status' => 1, 'lab' => ['version' => $lab['version'], 'spec' => \App\Services\PAL\LabSpec\LabSpecRepository::studentView($lab['spec'])]]);
+    }
+
+    /** Application Lab, Design Your Own Experiment as a virtual lab: concepts in the scope and the saved design (GET). */
+    public function builderCurrent(Request $request, $chapterId)
+    {
+        $ctx = $this->resolveAuthorizedContext($request);
+        $scope = $this->applicationLabScopeFor($request, $ctx, (int) $chapterId);
+        if ($scope instanceof \Illuminate\Http\JsonResponse) {
+            return $scope;
+        }
+
+        return response()->json(['status' => 1, 'student_id' => $ctx['student_id']]
+            + app(\App\Services\PAL\ApplicationLab\ExperimentBuilderService::class)->current($ctx['student_id'], (int) $chapterId, $ctx['sub_institute_id'], $scope));
+    }
+
+    /** Application Lab, virtual experiment lab: save (POST, body: creation_json, fresh=1 to start another). */
+    public function builderSave(Request $request, $chapterId)
+    {
+        $ctx = $this->resolveAuthorizedContext($request);
+        $scope = $this->applicationLabScopeFor($request, $ctx, (int) $chapterId);
+        if ($scope instanceof \Illuminate\Http\JsonResponse) {
+            return $scope;
+        }
+        $result = app(\App\Services\PAL\ApplicationLab\ExperimentBuilderService::class)->save(
+            $ctx['student_id'], (int) $chapterId, $ctx['sub_institute_id'],
+            (array) json_decode((string) $request->input('creation_json', '{}'), true), $scope, $request->boolean('fresh')
+        );
+
+        return response()->json(['status' => 1] + $result);
+    }
+
+    /** Application Lab, virtual experiment lab: submit once and mark (POST, body: creation_json). */
+    public function builderSubmit(Request $request, $chapterId)
+    {
+        $ctx = $this->resolveAuthorizedContext($request);
+        $scope = $this->applicationLabScopeFor($request, $ctx, (int) $chapterId);
+        if ($scope instanceof \Illuminate\Http\JsonResponse) {
+            return $scope;
+        }
+        $result = app(\App\Services\PAL\ApplicationLab\ExperimentBuilderService::class)->submit(
+            $ctx['student_id'], (int) $chapterId, $ctx['sub_institute_id'],
+            (array) json_decode((string) $request->input('creation_json', '{}'), true), $scope
+        );
+
+        return response()->json(['status' => 1] + $result);
+    }
+
+    /** Application Lab, Design Your Own Experiment: concepts in the scope and the saved design (GET). */
+    public function designCurrent(Request $request, $chapterId)
+    {
+        $ctx = $this->resolveAuthorizedContext($request);
+        $scope = $this->applicationLabScopeFor($request, $ctx, (int) $chapterId);
+        if ($scope instanceof \Illuminate\Http\JsonResponse) {
+            return $scope;
+        }
+
+        return response()->json(['status' => 1, 'student_id' => $ctx['student_id']]
+            + app(\App\Services\PAL\ApplicationLab\ExperimentDesignService::class)->current($ctx['student_id'], (int) $chapterId, $ctx['sub_institute_id'], $scope));
+    }
+
+    /** Application Lab, Design Your Own Experiment: save (POST, body: creation_json, fresh=1 to start another). */
+    public function designSave(Request $request, $chapterId)
+    {
+        $ctx = $this->resolveAuthorizedContext($request);
+        $scope = $this->applicationLabScopeFor($request, $ctx, (int) $chapterId);
+        if ($scope instanceof \Illuminate\Http\JsonResponse) {
+            return $scope;
+        }
+        $result = app(\App\Services\PAL\ApplicationLab\ExperimentDesignService::class)->save(
+            $ctx['student_id'], (int) $chapterId, $ctx['sub_institute_id'],
+            (array) json_decode((string) $request->input('creation_json', '{}'), true), $scope, $request->boolean('fresh')
+        );
+
+        return response()->json(['status' => 1] + $result);
+    }
+
+    /** Application Lab, Design Your Own Experiment: submit once and mark (POST, body: creation_json). */
+    public function designSubmit(Request $request, $chapterId)
+    {
+        $ctx = $this->resolveAuthorizedContext($request);
+        $scope = $this->applicationLabScopeFor($request, $ctx, (int) $chapterId);
+        if ($scope instanceof \Illuminate\Http\JsonResponse) {
+            return $scope;
+        }
+        $result = app(\App\Services\PAL\ApplicationLab\ExperimentDesignService::class)->submit(
+            $ctx['student_id'], (int) $chapterId, $ctx['sub_institute_id'],
+            (array) json_decode((string) $request->input('creation_json', '{}'), true), $scope
+        );
+
+        return response()->json(['status' => 1] + $result);
+    }
+
+    /** Application Lab, AI-generated activity: the current challenge for the chosen scope (GET). */
+    public function explanationLabCurrent(Request $request, $chapterId)
+    {
+        $ctx = $this->resolveAuthorizedContext($request);
+        $scope = $this->applicationLabScopeFor($request, $ctx, (int) $chapterId);
+        if ($scope instanceof \Illuminate\Http\JsonResponse) {
+            return $scope;
+        }
+
+        return response()->json(['status' => 1, 'student_id' => $ctx['student_id']]
+            + app(\App\Services\PAL\ExplanationLab\ExplanationLabService::class)->current($ctx['student_id'], (int) $chapterId, $scope['key']));
+    }
+
+    /** Application Lab, AI-generated activity: generate for the chosen scope (POST; fresh=1 asks for a new one). */
+    public function explanationLabGenerate(Request $request, $chapterId)
+    {
+        $ctx = $this->resolveAuthorizedContext($request);
+        $scope = $this->applicationLabScopeFor($request, $ctx, (int) $chapterId);
+        if ($scope instanceof \Illuminate\Http\JsonResponse) {
+            return $scope;
+        }
+        $result = app(\App\Services\PAL\ExplanationLab\ExplanationLabService::class)->generate(
+            $ctx['student_id'], (int) $chapterId, $ctx['sub_institute_id'], $scope, $request->boolean('fresh')
+        );
+
+        return response()->json(['status' => 1] + $result);
+    }
+
+    /** Application Lab, AI-generated activity: save the workspace and reflection (POST, body: workspace_json). */
+    public function explanationLabSave(Request $request, $chapterId)
+    {
+        $ctx = $this->resolveAuthorizedContext($request);
+        $scope = $this->applicationLabScopeFor($request, $ctx, (int) $chapterId);
+        if ($scope instanceof \Illuminate\Http\JsonResponse) {
+            return $scope;
+        }
+        $result = app(\App\Services\PAL\ExplanationLab\ExplanationLabService::class)->save(
+            $ctx['student_id'], (int) $chapterId, $ctx['sub_institute_id'],
+            (array) json_decode((string) $request->input('workspace_json', '{}'), true), $scope['key']
+        );
+
+        return response()->json(['status' => 1] + $result);
+    }
+
+    /** Application Lab, AI-generated activity: submit once and mark (POST, body: workspace_json). */
+    public function explanationLabSubmit(Request $request, $chapterId)
+    {
+        $ctx = $this->resolveAuthorizedContext($request);
+        $scope = $this->applicationLabScopeFor($request, $ctx, (int) $chapterId);
+        if ($scope instanceof \Illuminate\Http\JsonResponse) {
+            return $scope;
+        }
+        $result = app(\App\Services\PAL\ExplanationLab\ExplanationLabService::class)->submit(
+            $ctx['student_id'], (int) $chapterId, $ctx['sub_institute_id'],
+            (array) json_decode((string) $request->input('workspace_json', '{}'), true), $scope['key']
+        );
+
+        return response()->json(['status' => 1] + $result);
+    }
+
+    /** 3D Virtual Lab (Application Lab): the learner's saved lab for the chapter (GET). */
+    public function virtualLabCurrent(Request $request, $chapterId, $labId)
+    {
+        $ctx = $this->resolveAuthorizedContext($request);
+
+        return response()->json(['status' => 1, 'student_id' => $ctx['student_id']]
+            + app(\App\Services\PAL\ApplicationLab\VirtualLabService::class)->current($ctx['student_id'], (int) $chapterId, (string) $labId));
+    }
+
+    /** 3D Virtual Lab: save progress (POST, body: progress_json). */
+    public function virtualLabSave(Request $request, $chapterId, $labId)
+    {
+        $ctx = $this->resolveAuthorizedContext($request);
+        $result = app(\App\Services\PAL\ApplicationLab\VirtualLabService::class)->save(
+            $ctx['student_id'], (int) $chapterId, (string) $labId, $ctx['sub_institute_id'],
+            (array) json_decode((string) $request->input('progress_json', '{}'), true)
+        );
+
+        return response()->json(['status' => 1] + $result);
+    }
+
+    /** 3D Virtual Lab: submit once and mark (POST, body: progress_json). */
+    public function virtualLabSubmit(Request $request, $chapterId, $labId)
+    {
+        $ctx = $this->resolveAuthorizedContext($request);
+        $result = app(\App\Services\PAL\ApplicationLab\VirtualLabService::class)->submit(
+            $ctx['student_id'], (int) $chapterId, (string) $labId, $ctx['sub_institute_id'],
+            (array) json_decode((string) $request->input('progress_json', '{}'), true)
+        );
+
+        return response()->json(['status' => 1] + $result);
+    }
+
+    /** Application Lab: the learner's latest activity for the chapter (GET). */
+    public function applicationLabCurrent(Request $request, $chapterId)
+    {
+        $ctx = $this->resolveAuthorizedContext($request);
+        $service = app(\App\Services\PAL\ApplicationLab\ApplicationLabService::class);
+
+        return response()->json(['status' => 1, 'student_id' => $ctx['student_id']] + $service->current($ctx['student_id'], (int) $chapterId));
+    }
+
+    /** Application Lab: save the working copy (POST, body: activity_id, response_json). */
+    public function applicationLabSave(Request $request, $chapterId)
+    {
+        $ctx = $this->resolveAuthorizedContext($request);
+        $result = app(\App\Services\PAL\ApplicationLab\ApplicationLabService::class)->saveProgress(
+            $ctx['student_id'], (int) $chapterId, (int) $request->input('activity_id'),
+            (array) json_decode((string) $request->input('response_json', '{}'), true)
+        );
+
+        return response()->json(['status' => 1] + $result);
+    }
+
+    /** Application Lab: submit once and evaluate (POST, body: activity_id, response_json). */
+    public function applicationLabSubmit(Request $request, $chapterId)
+    {
+        $ctx = $this->resolveAuthorizedContext($request);
+        $result = app(\App\Services\PAL\ApplicationLab\ApplicationLabService::class)->submit(
+            $ctx['student_id'], (int) $chapterId, (int) $request->input('activity_id'),
+            (array) json_decode((string) $request->input('response_json', '{}'), true),
+            $ctx['sub_institute_id']
+        );
+
+        return response()->json(['status' => 1] + $result);
+    }
+
+    /**
      * Stage 11 - what is due back for recall, and what is coming.
      *
      * Reports learner_node_state.next_review_at; it never schedules. The
