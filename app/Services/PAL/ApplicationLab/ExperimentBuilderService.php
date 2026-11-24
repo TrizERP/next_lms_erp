@@ -3,8 +3,11 @@
 namespace App\Services\PAL\ApplicationLab;
 
 use App\Domain\AI\Configuration\AiModelClientFactory;
+use App\Services\PAL\LabSpec\LabSelector;
 use App\Services\PAL\LabSpec\LabSpecEvaluator;
 use App\Services\PAL\LabSpec\LabSpecRepository;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -55,16 +58,141 @@ class ExperimentBuilderService extends StudentCreationService
         return $scope;
     }
 
-    /** @return array<string,mixed> */
-    public function current($studentId, int $chapterId, $subInstituteId, array $scope): array
+    /**
+     * The saved work for a scope and, when a lab is named, only if it is that lab's. Work on ANOTHER lab (finished: history, see
+     * history(); begun: the experiment the selection keeps open) is not returned as if it were this one.
+     *
+     * @return array<string,mixed>
+     */
+    public function current($studentId, int $chapterId, $subInstituteId, array $scope, ?string $labKey = null): array
     {
         $this->school = (int) $subInstituteId;
         $out = parent::current($studentId, $chapterId, $subInstituteId, $this->keyed($scope));
-        $model = ExperimentModelCatalogue::forChapter($chapterId, $this->school);
+        $rec = $out['record'] ?? null;
+        if ($labKey !== null && $labKey !== '' && $rec !== null && ($rec['creation']['modelId'] ?? '') !== $labKey) {
+            $out['record'] = null;
+        }
+        $key = $labKey !== null && $labKey !== '' ? $labKey : ($out['record']['creation']['modelId'] ?? null);
+        $model = $this->labFor($chapterId, $key, null, $scope, $out['record'] !== null && $out['record']['status'] === 'in_progress');
         $out['model_id'] = $model['id'] ?? null;
         $out['spec_version'] = $model['version'] ?? null;
 
         return $out;
+    }
+
+    /**
+     * The lab a design may run. The one asked for must be an approved lab of the chapter and open to this scope (a chapter-level
+     * lab only for a whole-chapter scope); with none asked for, the first that is open. A student who BEGAN a lab may always finish
+     * it, at the version they began on, even if it has been replaced or the scope has changed since.
+     *
+     * @param  array<string,mixed>  $scope  [type, concepts] as the scope resolver gives them
+     * @return array<string,mixed>|null a catalogue model
+     */
+    private function labFor(int $chapterId, ?string $key, ?int $version, array $scope, bool $began): ?array
+    {
+        $labs = ExperimentModelCatalogue::labsForChapter($chapterId, $this->school);
+        $named = $key !== null && $key !== '';
+        $pick = null;
+        foreach ($labs as $lab) {
+            if ($named ? $lab['id'] === $key : LabSelector::eligible($lab, $scope)) {
+                $pick = $lab;
+                break;
+            }
+        }
+        if ($named && ! $began && ($pick === null || ! LabSelector::eligible($pick, $scope))) {
+            return null;
+        }
+        if ($version !== null && $named) {
+            $pinned = ExperimentModelCatalogue::get($key, $version, $this->school);
+            if ($pinned !== null && $pinned['version'] === $version && ($began || $pick !== null)) {
+                return $pinned;
+            }
+        }
+
+        return $pick ?? ($named && $began ? ExperimentModelCatalogue::get($key, null, $this->school) : null);
+    }
+
+    // ------------------------------------------------------------------
+    // What the student has done: nothing finished is ever overwritten
+    // ------------------------------------------------------------------
+
+    private function indexKey($studentId, int $chapterId): string
+    {
+        return 'pal_lab_index:'.(int) $studentId.':'.$chapterId;
+    }
+
+    private function archiveKey($studentId, int $chapterId): string
+    {
+        return 'pal_lab_archive:'.(int) $studentId.':'.$chapterId;
+    }
+
+    /** Remembers which scopes a student has worked in, so their work can be listed when the table is not there. */
+    protected function store($studentId, int $chapterId, $subInstituteId, array $rec): array
+    {
+        $rec = parent::store($studentId, $chapterId, $subInstituteId, $rec);
+        if (! $this->useTable()) {
+            $index = (array) Cache::get($this->indexKey($studentId, $chapterId), []);
+            if (! in_array($rec['scope']['key'], $index, true)) {
+                $index[] = $rec['scope']['key'];
+                Cache::put($this->indexKey($studentId, $chapterId), $index, now()->addDays(30));
+            }
+        }
+
+        return $rec;
+    }
+
+    /** Without the table a scope holds one record; a finished one is moved aside before another experiment takes its place. @param array<string,mixed> $rec */
+    private function archive($studentId, int $chapterId, array $rec): void
+    {
+        if ($this->useTable()) {
+            return;   // with the table, a new experiment is a new row and the finished one stays where it is
+        }
+        $list = (array) Cache::get($this->archiveKey($studentId, $chapterId), []);
+        $list[] = $rec;
+        Cache::put($this->archiveKey($studentId, $chapterId), array_slice($list, -40), now()->addDays(30));
+    }
+
+    /**
+     * Every experiment a student has worked on in this chapter, in any scope, with where it stands and its score. Used to choose
+     * the next experiment (so a finished one is not repeated) and to show what they have done.
+     *
+     * @return array<int,array<string,mixed>> [format, key, status, scope_key, scope_label, score, finished_at]
+     */
+    public function history($studentId, int $chapterId, $subInstituteId): array
+    {
+        $entries = [];
+        $add = function (?array $creation, string $status, ?array $evaluation, string $scopeKey, ?string $label, $at) use (&$entries) {
+            $key = (string) ($creation['modelId'] ?? '');
+            if ($key === '') {
+                return;
+            }
+            $entries[] = [
+                'format' => 'design', 'key' => $key, 'status' => $status, 'scope_key' => $scopeKey, 'scope_label' => $label,
+                'score' => $evaluation['score_percent'] ?? null, 'finished_at' => $at,
+            ];
+        };
+
+        if ($this->useTable()) {
+            $rows = DB::table('pal_application_creation')->where('student_id', (int) $studentId)->where('chapter_id', $chapterId)
+                ->where('scope_key', 'like', 'x:%')->orderBy('id')->get(['status', 'scope_key', 'scope', 'creation', 'evaluation', 'submitted_at']);
+            foreach ($rows as $r) {
+                $add($r->creation ? json_decode($r->creation, true) : null, (string) $r->status, $r->evaluation ? json_decode($r->evaluation, true) : null,
+                    (string) $r->scope_key, (json_decode((string) $r->scope, true)['label'] ?? null), $r->submitted_at);
+            }
+
+            return $entries;
+        }
+
+        foreach ((array) Cache::get($this->indexKey($studentId, $chapterId), []) as $scopeKey) {
+            if (is_array($rec = $this->load($studentId, $chapterId, (string) $scopeKey))) {
+                $add($rec['creation'] ?? null, (string) $rec['status'], $rec['evaluation'] ?? null, (string) $scopeKey, $rec['scope']['label'] ?? null, $rec['submitted_at'] ?? null);
+            }
+        }
+        foreach ((array) Cache::get($this->archiveKey($studentId, $chapterId), []) as $rec) {
+            $add($rec['creation'] ?? null, (string) $rec['status'], $rec['evaluation'] ?? null, (string) ($rec['scope']['key'] ?? ''), $rec['scope']['label'] ?? null, $rec['submitted_at'] ?? null);
+        }
+
+        return $entries;
     }
 
     // ------------------------------------------------------------------
@@ -137,7 +265,7 @@ class ExperimentBuilderService extends StudentCreationService
             $t = (array) $t;
             $props = [];
             foreach ($model['items'] as $item) {
-                foreach ($item['props'] as $key => $p) {
+                foreach ($item['props'] ?? [] as $key => $p) {
                     $v = $text(((array) ($t['props'] ?? []))[$key] ?? '', 20);
                     if (isset($p['options'][$v])) {
                         $props[$key] = $v;
@@ -299,37 +427,45 @@ class ExperimentBuilderService extends StudentCreationService
     public function save($studentId, int $chapterId, $subInstituteId, array $creation, array $scope, bool $fresh = false): array
     {
         $this->school = (int) $subInstituteId;
-        $creation = $this->forChapter($chapterId, $creation);
+        $existing = $this->load($studentId, $chapterId, 'x:'.$scope['key']);
+        $key = (string) ($creation['modelId'] ?? '');
+        $began = $existing !== null && $existing['status'] === 'in_progress' && ($existing['creation']['modelId'] ?? '') === $key;
+        $asked = isset($creation['specVersion']) ? (int) $creation['specVersion'] : null;
+        $lab = $this->labFor($chapterId, $key !== '' ? $key : null, $asked, $scope, $began);
+        if ($lab === null) {
+            return $this->failure('no_model', 'That experiment is not open for these concepts.');
+        }
+        $creation['modelId'] = $lab['id'];
+        $creation['specVersion'] = $lab['version'];
+
+        // A scope holds one experiment in progress at a time: another is not started over it (that would overwrite the student's work).
+        if ($existing !== null && $existing['status'] === 'in_progress' && ($existing['creation']['modelId'] ?? '') !== $lab['id']) {
+            return $this->failure('other_in_progress', 'You already have another experiment in progress for these concepts. Finish it first.');
+        }
+
+        // Starting a different experiment over a finished one: the finished one is kept (history), and the new one begins.
+        if ($existing !== null && $existing['status'] !== 'in_progress' && ($existing['creation']['modelId'] ?? '') !== $lab['id']) {
+            $this->archive($studentId, $chapterId, $existing);
+            $fresh = true;
+        }
 
         return parent::save($studentId, $chapterId, $subInstituteId, $creation, $this->keyed($scope), $fresh);
-    }
-
-    /** A design can only be about the model written for this chapter. @param array<string,mixed> $creation @return array<string,mixed> */
-    private function forChapter(int $chapterId, array $creation): array
-    {
-        $current = ExperimentModelCatalogue::forChapter($chapterId, $this->school);
-        $creation['modelId'] = $current['id'] ?? '';
-        // A student keeps the version they began on, as long as it is still one students may use.
-        $asked = isset($creation['specVersion']) ? (int) $creation['specVersion'] : null;
-        $keep = $asked !== null && $current !== null ? ExperimentModelCatalogue::get($current['id'], $asked, $this->school) : null;
-        $creation['specVersion'] = $keep !== null && $keep['version'] === $asked ? $asked : ($current['version'] ?? null);
-
-        return $creation;
     }
 
     /** @return array<string,mixed> */
     public function submit($studentId, int $chapterId, $subInstituteId, array $creation, array $scope): array
     {
         $this->school = (int) $subInstituteId;
+        $plain = $scope;
         $scope = $this->keyed($scope);
-        $current = ExperimentModelCatalogue::forChapter($chapterId, $this->school);
-        if ($current === null) {
-            return $this->failure('no_model', 'There is no experiment lab for this chapter.');
-        }
         $rec = $this->load($studentId, $chapterId, $scope['key']);
-        // Marked against the version the student ran, even if a newer one has been approved since.
-        $began = (int) ($rec['creation']['specVersion'] ?? $creation['specVersion'] ?? 0);
-        $model = $began > 0 ? (ExperimentModelCatalogue::get($current['id'], $began, $this->school) ?? $current) : $current;
+        // The lab the student is running, marked at the version they ran, even if a newer one has been approved since.
+        $key = (string) ($rec['creation']['modelId'] ?? $creation['modelId'] ?? '');
+        $beganVersion = (int) ($rec['creation']['specVersion'] ?? $creation['specVersion'] ?? 0);
+        $model = $this->labFor($chapterId, $key !== '' ? $key : null, $beganVersion > 0 ? $beganVersion : null, $plain, $rec !== null && $rec['status'] === 'in_progress');
+        if ($model === null) {
+            return $this->failure('no_model', 'That experiment is not open for these concepts.');
+        }
 
         if ($rec === null || $rec['status'] === 'in_progress') {
             $clean = $this->cleanDesign($creation, $scope['concepts'], $model);
@@ -380,7 +516,7 @@ class ExperimentBuilderService extends StudentCreationService
                 if (! in_array($id, $benchIds, true)) {
                     continue;
                 }
-                foreach (array_keys($item['props']) as $k) {
+                foreach (array_keys($item['props'] ?? []) as $k) {
                     $settings[ExperimentModelCatalogue::propLabel($model, $k)] = ExperimentModelCatalogue::valueLabel($model, $k, $eff[$k]);
                 }
             }

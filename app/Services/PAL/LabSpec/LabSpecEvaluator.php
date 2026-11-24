@@ -31,7 +31,7 @@ class LabSpecEvaluator
     public static function num(array $spec, string $setting, string $value): ?float
     {
         foreach ($spec['items'] as $item) {
-            foreach ($item['props'] as $p) {
+            foreach (($item['props'] ?? []) as $p) {
                 if ($p['key'] !== $setting) {
                     continue;
                 }
@@ -163,7 +163,7 @@ class LabSpecEvaluator
     {
         $out = [];
         foreach ($spec['items'] as $item) {
-            foreach ($item['props'] as $p) {
+            foreach (($item['props'] ?? []) as $p) {
                 $out[$p['key']] = in_array($item['id'], $benchIds, true)
                     ? (string) ($chosen[$p['key']] ?? $p['default'])
                     : (string) ($p['absent'] ?? $p['default']);
@@ -183,7 +183,7 @@ class LabSpecEvaluator
     {
         $props = [];
         foreach ($spec['items'] as $item) {
-            foreach ($item['props'] as $p) {
+            foreach (($item['props'] ?? []) as $p) {
                 $props[$p['key']] = array_map(fn ($o) => (string) $o['value'], $p['options']);
             }
         }

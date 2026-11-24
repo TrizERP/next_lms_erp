@@ -61,6 +61,26 @@ class VirtualLabService
         ];
     }
 
+    /**
+     * Every mission a student has worked on in a chapter, with where it stands. Used to choose the next experiment (a finished
+     * mission is not offered again) and to show what they have done. Empty when the table is not there.
+     *
+     * @return array<int,array<string,mixed>> [format, key, status, scope_key, scope_label, score, finished_at]
+     */
+    public function history($studentId, int $chapterId): array
+    {
+        if (! $this->persistent()) {
+            return [];
+        }
+
+        return DB::table(self::TABLE)->where('student_id', (int) $studentId)->where('chapter_id', $chapterId)->orderBy('id')
+            ->get(['lab_id', 'status', 'evaluation', 'submitted_at'])
+            ->map(fn ($r) => [
+                'format' => 'mission', 'key' => (string) $r->lab_id, 'status' => (string) $r->status, 'scope_key' => null, 'scope_label' => null,
+                'score' => $r->evaluation ? (json_decode($r->evaluation, true)['score_percent'] ?? null) : null, 'finished_at' => $r->submitted_at,
+            ])->all();
+    }
+
     /** @return array{persisted:bool,record:?array<string,mixed>} */
     public function current($studentId, int $chapterId, string $labId): array
     {

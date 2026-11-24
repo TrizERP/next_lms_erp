@@ -46,6 +46,16 @@ class ExperimentModelCatalogue
     }
 
     /**
+     * Every approved lab of a chapter, as models (a chapter can have several, each mapped to concepts).
+     *
+     * @return array<int,array<string,mixed>>
+     */
+    public static function labsForChapter(int $chapterId, int $subInstituteId = 0): array
+    {
+        return array_map([self::class, 'fromSpec'], LabSpecRepository::approvedLabsForChapter($chapterId, $subInstituteId));
+    }
+
+    /**
      * @param  array<string,mixed>  $lab  a LabSpecRepository record
      * @return array<string,mixed>
      */
@@ -55,7 +65,7 @@ class ExperimentModelCatalogue
         $items = [];
         foreach ($spec['items'] as $item) {
             $props = [];
-            foreach ($item['props'] as $p) {
+            foreach (($item['props'] ?? []) as $p) {
                 $opts = [];
                 foreach ($p['options'] as $o) {
                     $opts[(string) $o['value']] = $o['label'];
@@ -70,6 +80,7 @@ class ExperimentModelCatalogue
         return [
             'id' => $spec['lab_key'], 'version' => $lab['version'], 'spec' => $spec,
             'chapter_ids' => $spec['chapter_ids'], 'title' => $spec['title'], 'concepts' => $spec['concepts'],
+            'scope_level' => $spec['scope_level'] ?? 'concepts',
             'items' => $items,
             'measure' => $measure,
             'measures' => [$measure['id'] => $measure],
@@ -103,7 +114,7 @@ class ExperimentModelCatalogue
     {
         $out = [];
         foreach ($model['items'] as $id => $item) {
-            foreach ($item['props'] as $key => $p) {
+            foreach (($item['props'] ?? []) as $key => $p) {
                 $out[$key] = in_array($id, $benchIds, true) ? ($chosen[$key] ?? $p['default']) : ($p['absent'] ?? $p['default']);
             }
         }
@@ -115,7 +126,7 @@ class ExperimentModelCatalogue
     public static function propLabel(array $model, string $key): string
     {
         foreach ($model['items'] as $item) {
-            if (isset($item['props'][$key])) {
+            if (isset(($item['props'] ?? [])[$key])) {
                 return $item['props'][$key]['label'];
             }
         }
@@ -127,7 +138,7 @@ class ExperimentModelCatalogue
     public static function valueLabel(array $model, string $key, string $value): string
     {
         foreach ($model['items'] as $item) {
-            if (isset($item['props'][$key])) {
+            if (isset(($item['props'] ?? [])[$key])) {
                 return $item['props'][$key]['options'][$value] ?? $value;
             }
         }
@@ -140,7 +151,7 @@ class ExperimentModelCatalogue
     {
         $keys = [];
         foreach ($model['items'] as $item) {
-            $keys = array_merge($keys, array_keys($item['props']));
+            $keys = array_merge($keys, array_keys($item['props'] ?? []));
         }
 
         return $keys;
