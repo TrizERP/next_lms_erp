@@ -28,23 +28,26 @@ class RoleWorkspaceApiController extends Controller
      * A per-student defaulter list is deliberately NOT here: the Fees defaulter report takes ~20 minutes on a school this size.
      */
     private const WIDGETS = [
-        'admin' => ['students_total', 'staff_total', 'attendance_today', 'attendance_trend', 'class_attendance', 'absent_today', 'staff_on_leave_today', 'staff_on_leave_list', 'leaves_pending', 'fees_today', 'fees_period', 'fees_month', 'fee_trend', 'recent_fee_receipts', 'admissions_year', 'admissions_period', 'admission_funnel', 'followups_due', 'recent_enquiries', 'visitors_today', 'visitors_period', 'complaints', 'tasks_pending_all', 'parent_msgs_pending', 'pending_approvals', 'recent_circulars', 'upcoming_events', 'birthdays', 'upcoming_exams', 'exam_results', 'students_by_class', 'gender_split'],
-        'assistant_admin' => ['students_total', 'staff_total', 'attendance_today', 'attendance_trend', 'class_attendance', 'absent_today', 'staff_on_leave_list', 'fees_today', 'fees_period', 'fees_month', 'admissions_year', 'admissions_period', 'admission_funnel', 'followups_due', 'recent_enquiries', 'visitors_today', 'visitors_period', 'complaints', 'tasks_pending_all', 'parent_msgs_pending', 'pending_approvals', 'recent_circulars', 'staff_on_leave_today', 'upcoming_events', 'birthdays', 'gender_split'],
-        'principal' => ['students_total', 'staff_total', 'attendance_today', 'attendance_trend', 'class_attendance', 'absent_today', 'staff_on_leave_today', 'staff_on_leave_list', 'leaves_pending', 'fees_today', 'fees_period', 'fees_month', 'fee_trend', 'admissions_year', 'admissions_period', 'admission_funnel', 'parent_msgs_pending', 'complaints', 'pending_approvals', 'recent_circulars', 'upcoming_events', 'birthdays', 'upcoming_exams', 'exam_results', 'students_by_class', 'gender_split'],
-        'vice_principal' => ['students_total', 'staff_total', 'attendance_today', 'attendance_trend', 'class_attendance', 'absent_today', 'staff_on_leave_today', 'staff_on_leave_list', 'leaves_pending', 'fees_today', 'fees_period', 'fees_month', 'fee_trend', 'admissions_year', 'admissions_period', 'admission_funnel', 'parent_msgs_pending', 'complaints', 'pending_approvals', 'recent_circulars', 'upcoming_events', 'birthdays', 'upcoming_exams', 'exam_results', 'students_by_class', 'gender_split'],
-        'counsellor' => ['students_total', 'attendance_today', 'absent_today', 'parent_msgs_pending', 'recent_parent_messages', 'recent_circulars', 'tasks_pending_me', 'upcoming_exams', 'exam_results', 'upcoming_events', 'birthdays'],
+        'admin' => ['chronic_absentees', 'substitutes_needed', 'parent_msg_age', 'task_aging', 'homework_rate', 'strength_changes', 'transport_summary', 'hostel_summary', 'students_total', 'staff_total', 'attendance_today', 'attendance_trend', 'class_attendance', 'absent_today', 'staff_on_leave_today', 'staff_on_leave_list', 'leaves_pending', 'fees_today', 'fees_period', 'fees_month', 'fee_trend', 'recent_fee_receipts', 'admissions_year', 'admissions_period', 'admission_funnel', 'followups_due', 'recent_enquiries', 'visitors_today', 'visitors_period', 'complaints', 'tasks_pending_all', 'parent_msgs_pending', 'pending_approvals', 'recent_circulars', 'upcoming_events', 'birthdays', 'upcoming_exams', 'exam_results', 'students_by_class', 'gender_split'],
+        'assistant_admin' => ['chronic_absentees', 'substitutes_needed', 'parent_msg_age', 'task_aging', 'strength_changes', 'students_total', 'staff_total', 'attendance_today', 'attendance_trend', 'class_attendance', 'absent_today', 'staff_on_leave_list', 'fees_today', 'fees_period', 'fees_month', 'admissions_year', 'admissions_period', 'admission_funnel', 'followups_due', 'recent_enquiries', 'visitors_today', 'visitors_period', 'complaints', 'tasks_pending_all', 'parent_msgs_pending', 'pending_approvals', 'recent_circulars', 'staff_on_leave_today', 'upcoming_events', 'birthdays', 'gender_split'],
+        'principal' => ['chronic_absentees', 'substitutes_needed', 'parent_msg_age', 'task_aging', 'homework_rate', 'strength_changes', 'transport_summary', 'hostel_summary', 'students_total', 'staff_total', 'attendance_today', 'attendance_trend', 'class_attendance', 'absent_today', 'staff_on_leave_today', 'staff_on_leave_list', 'leaves_pending', 'fees_today', 'fees_period', 'fees_month', 'fee_trend', 'admissions_year', 'admissions_period', 'admission_funnel', 'parent_msgs_pending', 'complaints', 'pending_approvals', 'recent_circulars', 'upcoming_events', 'birthdays', 'upcoming_exams', 'exam_results', 'students_by_class', 'gender_split'],
+        'vice_principal' => ['chronic_absentees', 'substitutes_needed', 'parent_msg_age', 'task_aging', 'homework_rate', 'strength_changes', 'transport_summary', 'hostel_summary', 'students_total', 'staff_total', 'attendance_today', 'attendance_trend', 'class_attendance', 'absent_today', 'staff_on_leave_today', 'staff_on_leave_list', 'leaves_pending', 'fees_today', 'fees_period', 'fees_month', 'fee_trend', 'admissions_year', 'admissions_period', 'admission_funnel', 'parent_msgs_pending', 'complaints', 'pending_approvals', 'recent_circulars', 'upcoming_events', 'birthdays', 'upcoming_exams', 'exam_results', 'students_by_class', 'gender_split'],
+        'counsellor' => ['chronic_absentees', 'parent_msg_age', 'students_total', 'attendance_today', 'absent_today', 'parent_msgs_pending', 'recent_parent_messages', 'recent_circulars', 'tasks_pending_me', 'upcoming_exams', 'exam_results', 'upcoming_events', 'birthdays'],
         'clerk' => ['students_total', 'fees_today', 'fees_period', 'fees_month', 'fee_trend', 'recent_fee_receipts', 'admissions_year', 'admissions_period', 'admission_funnel', 'followups_due', 'recent_enquiries', 'visitors_today', 'visitors_period', 'inward_month', 'outward_month', 'petty_cash_month', 'tasks_pending_me', 'recent_circulars', 'upcoming_events', 'birthdays'],
         'assistant_clerk' => ['fees_today', 'fees_period', 'fees_month', 'fee_trend', 'recent_fee_receipts', 'admissions_year', 'admissions_period', 'admission_funnel', 'followups_due', 'recent_enquiries', 'visitors_today', 'visitors_period', 'inward_month', 'tasks_pending_me', 'recent_circulars', 'upcoming_events', 'birthdays'],
         'librarian' => ['tasks_pending_me', 'my_leaves_pending', 'library_overdue', 'recent_circulars', 'upcoming_events', 'birthdays'],
         'store_keeper' => ['requisitions', 'po_status', 'items_total', 'vendors_total', 'purchases_month', 'stock_reorder', 'recent_requisitions', 'tasks_pending_me', 'recent_circulars', 'upcoming_events'],
         'exam_department' => ['upcoming_exams', 'exam_evaluation', 'exam_results', 'students_total', 'attendance_today', 'tasks_pending_me', 'recent_circulars', 'upcoming_events'],
-        'trustee' => ['students_total', 'staff_total', 'attendance_today', 'attendance_trend', 'class_attendance', 'fees_today', 'fees_period', 'fees_month', 'fee_trend', 'admissions_year', 'admissions_period', 'admission_funnel', 'students_by_class', 'gender_split', 'exam_results', 'complaints', 'recent_circulars', 'upcoming_events'],
+        'trustee' => ['strength_changes', 'transport_summary', 'hostel_summary', 'students_total', 'staff_total', 'attendance_today', 'attendance_trend', 'class_attendance', 'fees_today', 'fees_period', 'fees_month', 'fee_trend', 'admissions_year', 'admissions_period', 'admission_funnel', 'students_by_class', 'gender_split', 'exam_results', 'complaints', 'recent_circulars', 'upcoming_events'],
         'peon' => ['recent_circulars', 'tasks_pending_me', 'my_leaves_pending', 'visitors_today', 'visitors_period', 'upcoming_events', 'birthdays'],
         'workspace' => ['tasks_pending_me', 'my_leaves_pending', 'recent_circulars', 'upcoming_events'],
     ];
 
     /** Roles that may open the fees panel (school-wide money figures). */
     private const FEES_ROLES = ['admin', 'assistant_admin', 'principal', 'vice_principal', 'trustee', 'clerk', 'assistant_clerk'];
+
+    /** Roles that may look a student up by name (class and a parent's number come back). */
+    private const FIND_ROLES = ['admin', 'assistant_admin', 'principal', 'vice_principal', 'counsellor', 'clerk', 'assistant_clerk'];
 
     /** Period choices for the headline money / enquiry / visitor figures. */
     private const PERIODS = ['today', 'week', 'month', 'year'];
@@ -58,6 +61,9 @@ class RoleWorkspaceApiController extends Controller
     private string $today;
 
     private string $period = 'today';
+
+    /** 0 = every class. Narrows the student, attendance and homework figures to one class. */
+    private int $standardId = 0;
 
     /** Resolve a profile name to a dashboard key; unknown names get the plain workspace. */
     public static function roleKeyFor(string $profileName): string
@@ -100,6 +106,7 @@ class RoleWorkspaceApiController extends Controller
         $this->userId = session()->get('user_id');
         $this->today = Carbon::today()->toDateString();
         $this->period = in_array($request->input('period'), self::PERIODS, true) ? $request->input('period') : 'today';
+        $this->standardId = max((int) $request->input('standard_id', 0), 0);
 
         $profile = (string) session()->get('user_profile_name');
         $role = self::roleKeyFor($profile);
@@ -122,6 +129,9 @@ class RoleWorkspaceApiController extends Controller
             'profile_name' => $profile,
             'period' => $this->period,
             'can_see_fees' => in_array($role, self::FEES_ROLES, true),
+            'can_find_student' => in_array($role, self::FIND_ROLES, true),
+            'standard_id' => $this->standardId,
+            'standards' => $this->standardsList($role),
             'widgets' => $data,
         ]);
     }
@@ -170,7 +180,8 @@ class RoleWorkspaceApiController extends Controller
             ->join('tblstudent as ts', 'ts.id', '=', 'se.student_id')
             ->where('se.sub_institute_id', $this->tenant)
             ->where('se.syear', $this->syear)
-            ->whereNull('se.end_date');
+            ->whereNull('se.end_date')
+            ->when($this->standardId > 0, fn ($q) => $q->where('se.standard_id', $this->standardId));
     }
 
     private function w_students_total(): int
@@ -199,6 +210,7 @@ class RoleWorkspaceApiController extends Controller
         return DB::table('attendance_student')
             ->selectRaw("DATE(attendance_date) as day, SUM(attendance_code = 'P') as present, SUM(attendance_code = 'A') as absent")
             ->where('sub_institute_id', $this->tenant)->where('syear', $this->syear)
+            ->when($this->standardId > 0, fn ($q) => $q->where('standard_id', $this->standardId))
             ->whereDate('attendance_date', '>=', $from)
             ->groupBy('day')->get()->keyBy('day');
     }
@@ -389,6 +401,7 @@ class RoleWorkspaceApiController extends Controller
             ->leftJoin('standard as st', 'st.id', '=', 'a.standard_id')
             ->leftJoin('division as d', 'd.id', '=', 'a.section_id')
             ->where('a.sub_institute_id', $this->tenant)->where('a.syear', $this->syear)
+            ->when($this->standardId > 0, fn ($q) => $q->where('a.standard_id', $this->standardId))
             ->whereDate('a.attendance_date', $day)->where('a.attendance_code', 'A');
 
         return [
@@ -535,6 +548,216 @@ class RoleWorkspaceApiController extends Controller
             ->map(fn ($r) => ['standard_name' => (string) $r->standard_name, 'students' => (int) $r->students, 'average' => round((float) $r->avg_per, 1), 'best' => round((float) $r->best, 1)])->all();
 
         return ['exam' => (string) $exam, 'rows' => $rows];
+    }
+
+    /* ------------------------------------------------ patterns that need a person to act */
+
+    /** Classes for the filter. Only roles that look at students get the list. */
+    private function standardsList(string $role): array
+    {
+        if (! in_array($role, ['admin', 'assistant_admin', 'principal', 'vice_principal', 'counsellor', 'exam_department', 'trustee'], true)) {
+            return [];
+        }
+
+        return DB::table('standard')->where('sub_institute_id', $this->tenant)->orderBy('sort_order')->get(['id', 'name'])
+            ->map(fn ($r) => ['id' => (int) $r->id, 'name' => (string) $r->name])->all();
+    }
+
+    /**
+     * Students absent on at least 5 of the last 10 days attendance was marked. A single absence is noise;
+     * this is the pattern a counsellor or class teacher should ring about.
+     */
+    private function w_chronic_absentees(): array
+    {
+        $days = DB::table('attendance_student')->where('sub_institute_id', $this->tenant)->where('syear', $this->syear)
+            ->whereDate('attendance_date', '<=', $this->today)->whereDate('attendance_date', '>=', Carbon::today()->subDays(45)->toDateString())
+            ->selectRaw('DATE(attendance_date) as d')->distinct()->orderByDesc('d')->limit(10)->pluck('d')->all();
+        $threshold = 5;
+        if (count($days) < $threshold) {
+            return ['days' => count($days), 'threshold' => $threshold, 'total' => 0, 'items' => []];
+        }
+
+        $base = DB::table('attendance_student as a')
+            ->where('a.sub_institute_id', $this->tenant)->where('a.syear', $this->syear)
+            ->when($this->standardId > 0, fn ($q) => $q->where('a.standard_id', $this->standardId))
+            ->whereIn(DB::raw('DATE(a.attendance_date)'), $days)
+            ->selectRaw("a.student_id, SUM(a.attendance_code = 'A') as absences")
+            ->groupBy('a.student_id')->havingRaw("SUM(a.attendance_code = 'A') >= ?", [$threshold]);
+
+        $total = (int) DB::query()->fromSub($base, 't')->count();
+        $items = DB::query()->fromSub($base, 't')
+            ->join('tblstudent as s', 's.id', '=', 't.student_id')
+            ->leftJoin('tblstudent_enrollment as se', function ($j) {
+                $j->on('se.student_id', '=', 's.id')->where('se.syear', $this->syear)->whereNull('se.end_date');
+            })
+            ->leftJoin('standard as st', 'st.id', '=', 'se.standard_id')
+            ->leftJoin('division as d', 'd.id', '=', 'se.section_id')
+            ->selectRaw("s.id, CONCAT_WS(' ', s.first_name, s.last_name) as name, CONCAT_WS(' - ', st.name, d.name) as class_name, t.absences, NULLIF(TRIM(COALESCE(s.mobile, s.mother_mobile, s.student_mobile, '')), '') as phone")
+            ->orderByDesc('t.absences')->limit(8)->get()
+            ->map(fn ($r) => ['id' => (int) $r->id, 'name' => trim((string) $r->name), 'class_name' => (string) $r->class_name, 'absences' => (int) $r->absences, 'phone' => $r->phone])->all();
+
+        return ['days' => count($days), 'threshold' => $threshold, 'total' => $total, 'items' => $items];
+    }
+
+    /**
+     * Periods today whose teacher is on approved leave and for which no proxy has been arranged.
+     * Timetable week_day is a single letter: M T W H(Thu) F S.
+     */
+    private function w_substitutes_needed(): array
+    {
+        $letter = ['1' => 'M', '2' => 'T', '3' => 'W', '4' => 'H', '5' => 'F', '6' => 'S'][Carbon::today()->format('N')] ?? null;
+        if ($letter === null) {
+            return ['teachers' => 0, 'periods' => 0, 'uncovered' => 0, 'items' => []];
+        }
+
+        $onLeave = DB::table('hrms_emp_leaves')->where('sub_institute_id', $this->tenant)->whereNull('deleted_at')
+            ->whereIn('status', ['approved', 'approved_lwp'])
+            ->whereDate('from_date', '<=', $this->today)->whereDate('to_date', '>=', $this->today)->pluck('user_id')->unique()->all();
+        if (! $onLeave) {
+            return ['teachers' => 0, 'periods' => 0, 'uncovered' => 0, 'items' => []];
+        }
+
+        $rows = DB::table('timetable as t')
+            ->join('tbluser as u', 'u.id', '=', 't.teacher_id')
+            ->leftJoin('standard as st', 'st.id', '=', 't.standard_id')
+            ->leftJoin('division as d', 'd.id', '=', 't.division_id')
+            ->leftJoin('subject as sj', 'sj.id', '=', 't.subject_id')
+            ->leftJoin('period as p', 'p.id', '=', 't.period_id')
+            ->leftJoin('proxy_master as pm', function ($j) {
+                $j->on('pm.timetable_id', '=', 't.id')->whereDate('pm.proxy_date', $this->today);
+            })
+            ->where('t.sub_institute_id', $this->tenant)->where('t.syear', $this->syear)->where('t.week_day', $letter)
+            ->whereIn('t.teacher_id', $onLeave)
+            ->selectRaw("t.id, CONCAT_WS(' ', u.first_name, u.last_name) as teacher, CONCAT_WS(' - ', st.name, d.name) as class_name, sj.subject_name as subject, p.title as period, p.sort_order, pm.id as proxy_id")
+            ->orderBy('p.sort_order')->get();
+
+        $open = $rows->filter(fn ($r) => $r->proxy_id === null);
+
+        return [
+            'teachers' => $rows->pluck('teacher')->unique()->count(),
+            'periods' => $rows->count(),
+            'uncovered' => $open->count(),
+            'items' => $open->take(8)->map(fn ($r) => ['id' => (int) $r->id, 'title' => trim((string) $r->teacher), 'detail' => trim(implode(' · ', array_filter([(string) $r->period, (string) $r->class_name, (string) $r->subject])))])->values()->all(),
+        ];
+    }
+
+    /** How long parent messages have been waiting: the oldest, and how many are under 3 days, 3–7 days, over a week. */
+    private function w_parent_msg_age(): array
+    {
+        $q = DB::table('parent_communication')->where('sub_institute_id', $this->tenant)
+            ->where(fn ($w) => $w->whereNull('reply')->orWhereRaw("TRIM(reply) = ''"));
+        $row = (clone $q)->selectRaw('COUNT(*) as total, MIN(date_) as oldest, SUM(DATEDIFF(CURDATE(), date_) < 3) as lt3, SUM(DATEDIFF(CURDATE(), date_) BETWEEN 3 AND 7) as d3_7, SUM(DATEDIFF(CURDATE(), date_) > 7) as gt7')->first();
+
+        return [
+            'total' => (int) ($row->total ?? 0),
+            'oldest_days' => $row && $row->oldest ? (int) Carbon::parse($row->oldest)->diffInDays(Carbon::today()) : null,
+            'lt3' => (int) ($row->lt3 ?? 0), 'd3_7' => (int) ($row->d3_7 ?? 0), 'gt7' => (int) ($row->gt7 ?? 0),
+        ];
+    }
+
+    /** Open tasks by how long ago they were raised. Tasks carry no due date, so "overdue" cannot be stated — age is. */
+    private function w_task_aging(): array
+    {
+        $row = $this->openTasks()->selectRaw('COUNT(*) as total, MIN(TASK_DATE) as oldest, SUM(DATEDIFF(CURDATE(), TASK_DATE) <= 7) as le7, SUM(DATEDIFF(CURDATE(), TASK_DATE) BETWEEN 8 AND 30) as d8_30, SUM(DATEDIFF(CURDATE(), TASK_DATE) > 30) as gt30')->first();
+
+        return [
+            'total' => (int) ($row->total ?? 0),
+            'oldest_days' => $row && $row->oldest ? (int) Carbon::parse($row->oldest)->diffInDays(Carbon::today()) : null,
+            'le7' => (int) ($row->le7 ?? 0), 'd8_30' => (int) ($row->d8_30 ?? 0), 'gt30' => (int) ($row->gt30 ?? 0),
+        ];
+    }
+
+    /** Share of homework given in the last 30 days that is marked completed (completion_status = Y), by class, lowest first. */
+    private function w_homework_rate(): array
+    {
+        $rows = DB::table('homework as h')->join('standard as s', 's.id', '=', 'h.standard_id')
+            ->where('h.sub_institute_id', $this->tenant)->where('h.syear', $this->syear)
+            ->when($this->standardId > 0, fn ($q) => $q->where('h.standard_id', $this->standardId))
+            ->whereDate('h.date', '>=', Carbon::today()->subDays(30)->toDateString())->whereDate('h.date', '<=', $this->today)
+            ->selectRaw("s.id, s.name, COUNT(*) as total, SUM(h.completion_status = 'Y') as done")
+            ->groupBy('s.id', 's.name', 's.sort_order')->get();
+
+        $total = (int) $rows->sum('total');
+        $done = (int) $rows->sum('done');
+
+        return [
+            'days' => 30,
+            'total' => $total,
+            'overall' => $total > 0 ? round($done / $total * 100, 1) : null,
+            'rows' => $rows->map(fn ($r) => ['standard_name' => (string) $r->name, 'total' => (int) $r->total, 'done' => (int) $r->done, 'rate' => (int) $r->total > 0 ? round($r->done / $r->total * 100, 1) : null])
+                ->filter(fn ($r) => $r['rate'] !== null)->sortBy('rate')->values()->take(10)->all(),
+        ];
+    }
+
+    /** Joined this month / this year, left this year (an end date on the enrolment), and transfer certificates issued. */
+    private function w_strength_changes(): array
+    {
+        $enr = DB::table('tblstudent_enrollment')->where('sub_institute_id', $this->tenant)->where('syear', $this->syear);
+        $month = Carbon::today()->startOfMonth()->toDateString();
+
+        return [
+            'joined_month' => (int) (clone $enr)->whereDate('start_date', '>=', $month)->count(),
+            'joined_year' => (int) (clone $enr)->whereYear('start_date', Carbon::today()->year)->count(),
+            'left_year' => (int) (clone $enr)->whereNotNull('end_date')->count(),
+            'tc_year' => (int) DB::table('tblstudent_tc_details')->where('sub_institute_id', $this->tenant)->where('syear', $this->syear)->count(),
+        ];
+    }
+
+    /** Students on transport and how full each bus is against its seating. */
+    private function w_transport_summary(): array
+    {
+        $buses = DB::table('transport_map_student as m')->join('transport_vehicle as v', 'v.id', '=', 'm.from_bus_id')
+            ->where('m.sub_institute_id', $this->tenant)->where('m.syear', $this->syear)
+            ->selectRaw('v.id, v.title, v.sitting_capacity as capacity, COUNT(*) as students')
+            ->groupBy('v.id', 'v.title', 'v.sitting_capacity')->get()
+            ->map(fn ($r) => ['id' => (int) $r->id, 'title' => (string) $r->title, 'students' => (int) $r->students, 'capacity' => (int) $r->capacity, 'fill' => (int) $r->capacity > 0 ? round($r->students / $r->capacity * 100) : null]);
+
+        return [
+            'students' => (int) $buses->sum('students'),
+            'buses' => $buses->count(),
+            'over_capacity' => $buses->filter(fn ($b) => $b['fill'] !== null && $b['fill'] > 100)->count(),
+            'top' => $buses->sortByDesc('fill')->values()->take(6)->all(),
+        ];
+    }
+
+    private function w_hostel_summary(): array
+    {
+        return [
+            'hostels' => (int) DB::table('hostel_master')->where('sub_institute_id', $this->tenant)->count(),
+            'rooms' => (int) DB::table('hostel_room_master')->where('sub_institute_id', $this->tenant)->count(),
+            'rooms_in_use' => (int) DB::table('hostel_room_allocation')->where('sub_institute_id', $this->tenant)->distinct()->count('room_id'),
+            'residents' => (int) DB::table('hostel_room_allocation')->where('sub_institute_id', $this->tenant)->count(),
+        ];
+    }
+
+    /**
+     * Quick student lookup for the front office: name or admission number in, class and a parent's number out.
+     * Limited to FIND_ROLES, to the current year's enrolled students, and to 8 results.
+     */
+    public function findStudent(Request $request): JsonResponse
+    {
+        $role = self::roleKeyFor((string) session()->get('user_profile_name'));
+        if (session()->get('is_student') || ! in_array($role, self::FIND_ROLES, true)) {
+            return response()->json(['status' => '0', 'message' => 'Student lookup is not available for your role.'], 403);
+        }
+
+        $term = trim((string) $request->input('q'));
+        if (mb_strlen($term) < 3) {
+            return response()->json(['status' => '1', 'message' => 'Success', 'items' => []]);
+        }
+        $like = '%'.str_replace(['%', '_'], ['\\%', '\\_'], $term).'%';
+
+        $items = DB::table('tblstudent as s')
+            ->join('tblstudent_enrollment as se', 'se.student_id', '=', 's.id')
+            ->leftJoin('standard as st', 'st.id', '=', 'se.standard_id')
+            ->leftJoin('division as d', 'd.id', '=', 'se.section_id')
+            ->where('se.sub_institute_id', (int) session()->get('sub_institute_id'))->where('se.syear', session()->get('syear'))->whereNull('se.end_date')
+            ->where(fn ($w) => $w->where('s.enrollment_no', 'like', $like)->orWhereRaw("CONCAT_WS(' ', s.first_name, s.middle_name, s.last_name) LIKE ?", [$like]))
+            ->selectRaw("s.id, CONCAT_WS(' ', s.first_name, s.last_name) as name, s.enrollment_no, CONCAT_WS(' - ', st.name, d.name) as class_name, NULLIF(TRIM(COALESCE(s.mobile, s.mother_mobile, s.student_mobile, '')), '') as phone")
+            ->orderBy('s.first_name')->limit(8)->get()
+            ->map(fn ($r) => ['id' => (int) $r->id, 'name' => trim((string) $r->name), 'enrollment_no' => $r->enrollment_no, 'class_name' => (string) $r->class_name, 'phone' => $r->phone]);
+
+        return response()->json(['status' => '1', 'message' => 'Success', 'items' => $items]);
     }
 
     /* ------------------------------------------------------------------ fees */

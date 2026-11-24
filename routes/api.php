@@ -184,6 +184,7 @@ Route::middleware('api.session')->group(function () {
     // and its figures are decided server-side from the session, see RoleWorkspaceApiController.
     Route::post('role-workspace/summary', [RoleWorkspaceApiController::class, 'summary'])->middleware('api.cache:60');
     Route::post('role-workspace/fees', [RoleWorkspaceApiController::class, 'fees'])->middleware('api.cache:300');
+    Route::post('role-workspace/find-student', [RoleWorkspaceApiController::class, 'findStudent']);
     // Self-service "My ID card" — scoped to the caller's own user_id only,
     // see App\Http\Controllers\api\TeacherIcardApiController::mine().
     Route::post('teacher-icard/mine', [TeacherIcardApiController::class, 'mine']);
