@@ -178,7 +178,8 @@ class ExplanationLabService
      */
     public function scopeOptions($studentId, int $chapterId, $subInstituteId): array
     {
-        $concepts = $this->context($studentId, $chapterId, $subInstituteId)['concepts'];
+        // Every concept of the chapter, not the first few that fit in a prompt: "the whole chapter is studied" must mean all of it.
+        $concepts = $this->context($studentId, $chapterId, $subInstituteId, null)['concepts'];
         $studied = array_values(array_filter($concepts, fn ($c) => $c['taught']));
 
         return [
@@ -207,7 +208,7 @@ class ExplanationLabService
             if (! $options['chapter_complete']) {
                 return ['ok' => false, 'reason' => 'chapter_incomplete', 'message' => 'The whole-chapter activity opens when you have studied every concept in the chapter. You can still choose the concepts you have studied.'];
             }
-            $all = $this->context($studentId, $chapterId, $subInstituteId)['concepts'];
+            $all = $this->context($studentId, $chapterId, $subInstituteId, null)['concepts'];
 
             return ['ok' => true, 'scope' => ['type' => 'chapter', 'key' => 'chapter', 'label' => 'Whole chapter', 'concepts' => array_column($all, 'name')]];
         }
@@ -319,7 +320,7 @@ class ExplanationLabService
     }
 
     /** @return array<string,mixed> */
-    public function context($studentId, int $chapterId, $subInstituteId): array
+    public function context($studentId, int $chapterId, $subInstituteId, ?int $limit = 30): array
     {
         $base = $this->applicationLab->buildContext($studentId, $chapterId, $subInstituteId);
 
@@ -333,7 +334,7 @@ class ExplanationLabService
 
         $taught = array_column($base['taught_concepts'], 'status', 'name');
         $concepts = DB::table('lms_concept')->where('chapter_id', $chapterId)
-            ->whereIn('sub_institute_id', [(int) $subInstituteId, 0])->orderBy('id')->limit(30)
+            ->whereIn('sub_institute_id', [(int) $subInstituteId, 0])->orderBy('id')->when($limit !== null, fn ($q) => $q->limit($limit))
             ->get(['name', 'description', 'definition'])->map(fn ($c) => [
                 'name' => (string) $c->name,
                 'description' => mb_substr(trim((string) ($c->description ?: $c->definition)), 0, 220),

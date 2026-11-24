@@ -25,6 +25,11 @@ class VirtualLabCatalogue
                 'id' => 'dissolving',
                 'title' => 'The Mechanics of Dissolving: A What and How Investigation',
                 'chapter_ids' => [8604],
+                // The concepts this mission assesses (as in the chapter) and who may open it: 'concepts' = any scope that touches
+                // them, 'chapter' = only when every concept of the chapter has been studied. The Application Lab uses these to
+                // choose which experiment a student is offered; nothing about a chapter is hard-coded in the selection itself.
+                'concepts' => ['Solute and solvent in a solution', 'Solubility definition', 'Saturated solution', 'Concentration of a solution'],
+                'scope_level' => 'concepts',
                 'stages' => ['intro', 'predict', 'setup', 'perform', 'compare', 'notebook', 'assess', 'feedback'],
                 'prediction_options' => ['cold', 'warm', 'same'],
                 'questions' => [
@@ -69,6 +74,8 @@ class VirtualLabCatalogue
             'id' => 'ice_melting',
             'title' => 'Does Temperature Affect How Fast Ice Melts?',
             'chapter_ids' => [8592],
+            'concepts' => ['Science asks what and how', 'Careful observation in exploration', 'Purposeful direction in exploration', 'Scientific terms are precise'],
+            'scope_level' => 'concepts',
             'stages' => ['intro', 'predict', 'setup', 'perform', 'compare', 'notebook', 'assess', 'feedback'],
             'prediction_options' => ['cool', 'warm', 'same'],
             'questions' => [
@@ -102,6 +109,12 @@ class VirtualLabCatalogue
                 'Credit careful observation words (smaller, clear water, how long) and correct use of: temperature, prediction, observation, evidence, fair test, conclusion.',
             ],
         ];
+    }
+
+    /** The missions written for a chapter. @return array<string,array<string,mixed>> */
+    public static function forChapter(int $chapterId): array
+    {
+        return array_filter(self::all(), fn ($m) => in_array($chapterId, $m['chapter_ids'], true));
     }
 
     /** @return array<string,mixed>|null */

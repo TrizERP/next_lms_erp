@@ -69,6 +69,9 @@ class LabSpecValidator
         if ($concepts === [] || count($concepts) > 12 || array_filter($concepts, fn ($c) => ! $text($c, 3, 120))) {
             $e[] = 'concepts: name between one and twelve concepts of the chapter this lab assesses.';
         }
+        if (isset($spec['scope_level']) && ! in_array($spec['scope_level'], ['concepts', 'chapter'], true)) {
+            $e[] = 'scope_level: "concepts" (offered for any scope that touches its concepts) or "chapter" (only when the whole chapter is studied).';
+        }
         if (! $text($spec['scenario'] ?? null, 60, 900)) {
             $e[] = 'scenario: a real-life problem of 60–900 characters.';
         } elseif (preg_match('/\b(step\s*\d|first,? (pour|put|take|add)|then (pour|put|add|measure))\b/i', (string) $spec['scenario'])) {
@@ -187,7 +190,7 @@ class LabSpecValidator
         foreach ($irrelevant as $id) {
             if (! isset($itemIds[$id])) {
                 $e[] = "irrelevant: '$id' is not on the shelf.";
-            } elseif (! empty($itemIds[$id]['props']) || in_array($itemIds[$id]['group'] ?? '', $essential, true)) {
+            } elseif (! empty($itemIds[$id]['props'] ?? []) || in_array($itemIds[$id]['group'] ?? '', $essential, true)) {
                 $e[] = "irrelevant: '$id' cannot be an essential item or have settings.";
             }
         }

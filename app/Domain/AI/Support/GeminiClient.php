@@ -61,6 +61,37 @@ class GeminiClient implements ModelClient, SupportsImageGeneration, SupportsVisi
 
     private const DEFAULT_MAX_TOKENS = 1466;
 
+    /**
+     * An opt-in, scoped limit on how many tokens the model may spend "thinking" before it answers, for ONE caller that needs the
+     * whole answer to fit (see withThinkingBudget()). Null (the default, and always outside that call) leaves every request exactly
+     * as it was.
+     */
+    private static ?int $thinkingBudget = null;
+
+    /**
+     * Runs $call with the model's thinking limited to $budget tokens (0 = none). Only requests made inside the call are affected.
+     *
+     * Why this exists: a thinking model counts its reasoning against maxOutputTokens. Asked for a long, structured JSON document it
+     * can spend nearly the whole allowance reasoning (measured: 15,356 of 16,000 tokens) and stop mid-document with finishReason
+     * MAX_TOKENS, which no amount of retrying or raising the allowance reliably fixes. Switching reasoning off for that one call
+     * returned the complete document in a few seconds.
+     *
+     * @template T
+     * @param  callable(): T  $call
+     * @return T
+     */
+    public static function withThinkingBudget(int $budget, callable $call): mixed
+    {
+        $previous = self::$thinkingBudget;
+        self::$thinkingBudget = max(0, $budget);
+
+        try {
+            return $call();
+        } finally {
+            self::$thinkingBudget = $previous;
+        }
+    }
+
     private const DEFAULT_TIMEOUT = 45;
 
     /**
@@ -207,6 +238,7 @@ class GeminiClient implements ModelClient, SupportsImageGeneration, SupportsVisi
             // removes the "prose wrapped around JSON" failure a validator would
             // otherwise have to recover from.
             'responseMimeType' => $expectJson ? 'application/json' : null,
+            'thinkingConfig' => self::$thinkingBudget === null ? null : ['thinkingBudget' => self::$thinkingBudget],
         ], static fn ($value) => $value !== null);
 
         $body = array_filter([

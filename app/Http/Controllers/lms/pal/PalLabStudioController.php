@@ -57,6 +57,7 @@ class PalLabStudioController extends Controller
             'source' => $lab['source'] ?? 'teacher', 'spec' => $spec,
             'validation' => $validation ?? LabSpecValidator::validate($spec),
             'preview' => LabSpecValidator::validate($spec)['errors'] === [] ? LabSpecPreview::build($spec) : null,
+            'scope_level' => $spec['scope_level'] ?? 'concepts',
             'reject_reason' => $lab['reject_reason'] ?? null,
         ];
     }
@@ -123,7 +124,9 @@ class PalLabStudioController extends Controller
         if ($ctx === null || $ctx['concepts'] === []) {
             return response()->json(['status' => 0, 'message' => 'This chapter has no concepts to build a lab from.'], 422);
         }
-        $out = app(LabSpecGenerator::class)->generate($chapterId, $ctx, $a['sub_institute_id'], (string) $request->input('note', ''));
+        // Which concepts the lab is for, and whether it is a whole-chapter lab (offered only once every concept is studied).
+        $level = $request->input('level') === 'chapter' ? 'chapter' : 'concepts';
+        $out = app(LabSpecGenerator::class)->generate($chapterId, $ctx, $a['sub_institute_id'], (string) $request->input('note', ''), array_map('strval', (array) $request->input('concepts', [])), $level);
         if ($out['spec'] === null) {
             return response()->json(['status' => 0, 'message' => $out['error'] ?? 'The AI could not draft a lab.'], 502);
         }

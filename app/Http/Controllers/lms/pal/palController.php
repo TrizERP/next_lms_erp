@@ -3682,6 +3682,74 @@ public function getData($request)
     }
 
     /**
+     * Application Lab: which experiment each card offers THIS student, for the scope they chose (GET).
+     *
+     * Chosen from the student's own studied concepts (the scope), the approved design labs and 3D missions of the chapter, and what
+     * they have already done, so that: several labs per chapter are supported; a whole-chapter experiment only opens with a
+     * whole-chapter scope (which needs every concept studied); the two cards never show the same experiment; a finished
+     * experiment is not repeated while another suitable one exists; and with nothing new the answer says so. Finished work is only listed
+     * here (history), never changed. The marker's key is removed from the design lab.
+     */
+    public function labSelection(Request $request, $chapterId)
+    {
+        $ctx = $this->resolveAuthorizedContext($request);
+        $scope = $this->applicationLabScopeFor($request, $ctx, (int) $chapterId);
+        if ($scope instanceof \Illuminate\Http\JsonResponse) {
+            return $scope;
+        }
+        $chapter = (int) $chapterId;
+        $sub = (int) $ctx['sub_institute_id'];
+        $builder = app(\App\Services\PAL\ApplicationLab\ExperimentBuilderService::class);
+
+        $designModels = \App\Services\PAL\ApplicationLab\ExperimentModelCatalogue::labsForChapter($chapter, $sub);
+        $designLabs = array_map(fn ($m) => ['key' => $m['id'], 'title' => $m['title'], 'version' => $m['version'], 'concepts' => $m['concepts'], 'scope_level' => $m['scope_level']], $designModels);
+        $missions = \App\Services\PAL\ApplicationLab\VirtualLabCatalogue::forChapter($chapter);
+        $missionLabs = array_values(array_map(fn ($m) => ['key' => $m['id'], 'title' => $m['title'], 'concepts' => $m['concepts'] ?? [], 'scope_level' => $m['scope_level'] ?? 'concepts'], $missions));
+
+        $history = array_merge($builder->history($ctx['student_id'], $chapter, $sub), app(\App\Services\PAL\ApplicationLab\VirtualLabService::class)->history($ctx['student_id'], $chapter));
+        $current = $builder->current($ctx['student_id'], $chapter, $sub, $scope)['record'] ?? null;
+        $scopeDesign = ($current !== null && ! empty($current['creation']['modelId'])) ? ['key' => $current['creation']['modelId'], 'status' => $current['status']] : null;
+        // Work saved before history was indexed (cache mode) is still this student's: it is counted, not forgotten.
+        if ($scopeDesign !== null && count(array_filter($history, fn ($h) => $h['format'] === 'design' && $h['key'] === $scopeDesign['key'] && $h['status'] === $scopeDesign['status'] && $h['scope_key'] === 'x:'.$scope['key'])) === 0) {
+            $history[] = ['format' => 'design', 'key' => $scopeDesign['key'], 'status' => $scopeDesign['status'], 'scope_key' => 'x:'.$scope['key'], 'scope_label' => $scope['label'], 'score' => $current['evaluation']['score_percent'] ?? null, 'finished_at' => $current['submitted_at'] ?? null];
+        }
+
+        $pick = \App\Services\PAL\LabSpec\LabSelector::select($designLabs, $missionLabs, $scope, $history, $scopeDesign);
+
+        $design = null;
+        if ($pick['design'] !== null) {
+            $pinned = $pick['design']['state'] === 'in_progress' ? (int) ($current['creation']['specVersion'] ?? 0) : 0;
+            $lab = \App\Services\PAL\ApplicationLab\ExperimentModelCatalogue::get($pick['design']['key'], $pinned > 0 ? $pinned : null, $sub);
+            if ($lab !== null) {
+                $design = ['key' => $lab['id'], 'version' => $lab['version'], 'state' => $pick['design']['state'], 'spec' => \App\Services\PAL\LabSpec\LabSpecRepository::studentView($lab['spec'])];
+            }
+        }
+        $titles = [];
+        foreach ($designLabs as $l) {
+            $titles[$l['key']] = $l['title'];
+        }
+        foreach ($missionLabs as $l) {
+            $titles[$l['key']] = $l['title'];
+        }
+
+        return response()->json([
+            'status' => 1,
+            'scope' => ['type' => $scope['type'], 'label' => $scope['label']],
+            'design' => $design,
+            'mission' => $pick['mission'] === null ? null : ['key' => $pick['mission']['key'], 'title' => $pick['mission']['title'], 'state' => $pick['mission']['state']],
+            'shared' => $pick['shared'],
+            'more_design' => $pick['more_design'],
+            'more_mission' => $pick['more_mission'],
+            'design_note' => $design === null ? $pick['design_note'] : null,
+            'mission_note' => $pick['mission_note'],
+            'history' => array_map(fn ($h) => [
+                'format' => $h['format'], 'key' => $h['key'], 'title' => $titles[$h['key']] ?? $h['key'], 'status' => $h['status'],
+                'score' => $h['score'], 'scope_label' => $h['scope_label'], 'finished_at' => $h['finished_at'],
+            ], array_values(array_filter($history, fn ($h) => in_array($h['status'], ['submitted', 'evaluated'], true)))),
+        ]);
+    }
+
+    /**
      * Application Lab, virtual lab: the APPROVED lab specification for the chapter, as a student may see it (GET).
      * The marker's key (what the experiment should show, and why) is removed here and never leaves the server.
      * A chapter with no approved lab answers with lab = null, and the guided design form is used instead.
@@ -3706,7 +3774,7 @@ public function getData($request)
         }
 
         return response()->json(['status' => 1, 'student_id' => $ctx['student_id']]
-            + app(\App\Services\PAL\ApplicationLab\ExperimentBuilderService::class)->current($ctx['student_id'], (int) $chapterId, $ctx['sub_institute_id'], $scope));
+            + app(\App\Services\PAL\ApplicationLab\ExperimentBuilderService::class)->current($ctx['student_id'], (int) $chapterId, $ctx['sub_institute_id'], $scope, (string) $request->input('lab', '') ?: null));
     }
 
     /** Application Lab, virtual experiment lab: save (POST, body: creation_json, fresh=1 to start another). */

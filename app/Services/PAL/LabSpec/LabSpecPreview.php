@@ -29,7 +29,7 @@ class LabSpecPreview
 
         $settings = [];
         foreach ($spec['items'] as $item) {
-            foreach ($item['props'] as $p) {
+            foreach (($item['props'] ?? []) as $p) {
                 $rows = [];
                 foreach ($p['options'] as $o) {
                     $rows[] = [
@@ -61,7 +61,7 @@ class LabSpecPreview
         $label = function (array $combo) use ($spec): array {
             $out = [];
             foreach ($spec['items'] as $item) {
-                foreach ($item['props'] as $p) {
+                foreach (($item['props'] ?? []) as $p) {
                     foreach ($p['options'] as $o) {
                         if ((string) $o['value'] === ($combo[$p['key']] ?? null)) {
                             $out[$p['label']] = $o['label'];

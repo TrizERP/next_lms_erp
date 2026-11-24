@@ -227,6 +227,7 @@ Route::group(['prefix' => 'lms', 'middleware' => ['session', 'menu', 'logRoute',
     Route::get('pal/application-lab/creation/chapter/{chapterId}', [palController::class, 'creationCurrent'])->whereNumber('chapterId')->name('pal.applicationLab.creation.current');
     Route::post('pal/application-lab/creation/chapter/{chapterId}/save', [palController::class, 'creationSave'])->whereNumber('chapterId')->name('pal.applicationLab.creation.save');
     Route::post('pal/application-lab/creation/chapter/{chapterId}/submit', [palController::class, 'creationSubmit'])->whereNumber('chapterId')->name('pal.applicationLab.creation.submit');
+    Route::get('pal/application-lab/lab-selection/chapter/{chapterId}', [palController::class, 'labSelection'])->whereNumber('chapterId')->name('pal.applicationLab.labSelection');
     Route::get('pal/application-lab/lab-spec/chapter/{chapterId}', [palController::class, 'labSpecCurrent'])->whereNumber('chapterId')->name('pal.applicationLab.labSpec');
     Route::get('pal/application-lab/builder/chapter/{chapterId}',[palController::class, 'builderCurrent'])->whereNumber('chapterId')->name('pal.applicationLab.builder.current');
     Route::post('pal/application-lab/builder/chapter/{chapterId}/save', [palController::class, 'builderSave'])->whereNumber('chapterId')->name('pal.applicationLab.builder.save');

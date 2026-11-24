@@ -106,6 +106,34 @@ class LabSpecRepository
     }
 
     /**
+     * Every approved lab of a chapter, one per lab key (a chapter can have several, each mapped to concepts). A school's own
+     * approved version of a lab wins over the shared one; a built-in lab is used only while no approved row exists for its key.
+     *
+     * @return array<int,array<string,mixed>> records as approvedForChapter() gives them, in a stable order (by key)
+     */
+    public static function approvedLabsForChapter(int $chapterId, int $subInstituteId = 0): array
+    {
+        $byKey = [];
+        if (self::tableReady()) {
+            $rows = DB::table(self::TABLE)->where('chapter_id', $chapterId)->where('status', 'approved')
+                ->whereIn('sub_institute_id', array_unique([$subInstituteId, 0]))
+                ->orderBy('sub_institute_id')->orderBy('version')->get();
+            foreach ($rows as $row) {
+                // ascending order: a later row (the school's own, or a higher version) replaces an earlier one
+                $byKey[$row->lab_key] = self::wrap((array) json_decode($row->spec, true), (int) $row->version, (string) $row->source, (int) $row->id);
+            }
+        }
+        foreach (self::builtins() as $key => $spec) {
+            if (! isset($byKey[$key]) && in_array($chapterId, $spec['chapter_ids'], true)) {
+                $byKey[$key] = self::wrap($spec, 1, 'builtin');
+            }
+        }
+        ksort($byKey);
+
+        return array_values($byKey);
+    }
+
+    /**
      * A lab by key: the given version if it is live or was live (so a student can finish it), else the approved one.
      *
      * @return array<string,mixed>|null
@@ -140,7 +168,8 @@ class LabSpecRepository
         $out = [];
         foreach (self::builtins() as $spec) {
             if (in_array($chapterId, $spec['chapter_ids'], true)) {
-                $out[] = ['id' => null, 'lab_key' => $spec['lab_key'], 'version' => 1, 'status' => 'approved', 'source' => 'builtin', 'title' => $spec['title'], 'created_at' => null, 'approved_at' => null, 'validation' => null];
+                $out[] = ['id' => null, 'lab_key' => $spec['lab_key'], 'version' => 1, 'status' => 'approved', 'source' => 'builtin', 'title' => $spec['title'], 'created_at' => null, 'approved_at' => null, 'validation' => null,
+                    'concepts' => $spec['concepts'] ?? [], 'scope_level' => $spec['scope_level'] ?? 'concepts'];
             }
         }
         if (self::tableReady()) {
@@ -151,6 +180,7 @@ class LabSpecRepository
                 $out[] = [
                     'id' => (int) $r->id, 'lab_key' => $r->lab_key, 'version' => (int) $r->version, 'status' => $r->status, 'source' => $r->source,
                     'title' => $spec['title'] ?? $r->lab_key, 'created_at' => $r->created_at, 'approved_at' => $r->approved_at,
+                    'concepts' => $spec['concepts'] ?? [], 'scope_level' => $spec['scope_level'] ?? 'concepts',
                     'reject_reason' => $r->reject_reason, 'validation' => json_decode((string) $r->validation, true),
                 ];
             }
