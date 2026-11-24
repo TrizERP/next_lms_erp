@@ -36,6 +36,7 @@ use App\Domain\K12\AcademicRisk\Metrics\AttendanceRateResolver;
 use App\Domain\K12\AcademicRisk\Metrics\PalMasteryTrendResolver;
 use App\Domain\K12\AcademicRisk\MissedAssignmentDetector;
 use App\Domain\K12\AcademicRisk\StudentScope;
+use App\Domain\K12\Fees\SendFeesReminderAction;
 use App\Domain\KnowledgeGraph\GraphQueryService;
 use App\Domain\Ontology\EntityResolver;
 use App\Domain\Ontology\OntologyRegistry;
@@ -236,6 +237,7 @@ class AiServiceProvider extends ServiceProvider
         // reachable from a workflow definition, however it is written.
         $this->app->tag([
             CreateAcademicInterventionAction::class,
+            SendFeesReminderAction::class,
         ], 'workflow.actions');
 
         $this->app->singleton(

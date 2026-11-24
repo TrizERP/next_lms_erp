@@ -44,6 +44,16 @@ class GraphDrain
     /** Guards against a projection that somehow emits another source event. */
     private const MAX_EXPANSION_DEPTH = 2;
 
+    /**
+     * How many extra oldest-pending rows beyond the batch limit to read when
+     * planning a fair split, capped so this never approaches a full-table
+     * scan (measured: ~442k pending rows platform-wide, this window never
+     * reads more than FAIRNESS_WINDOW_CAP of them).
+     */
+    private const FAIRNESS_WINDOW_MULTIPLIER = 6;
+
+    private const FAIRNESS_WINDOW_CAP = 3000;
+
     public function __construct(
         private readonly Neo4jService $neo4j,
         private readonly ProjectionRegistry $registry,
@@ -79,133 +89,332 @@ class GraphDrain
     /**
      * Drain pending node events.
      *
-     * @param  int[]  $ids  restrict to these sync_log ids; empty = all pending
+     * When `$ids` is empty, which table_name gets processed is no longer
+     * strictly oldest-first: `fairShareIds()` gives every distinct
+     * table_name present in the lookahead window, and every tenant within
+     * it, a bounded share of `$limit` instead. Measured live before this
+     * change: a 26k-row FeeRecord backlog got zero successes for over 40
+     * hours because a single other table's much larger backlog sat ahead
+     * of it in strict id order — this is the fix for that.
+     *
+     * Whatever is selected is then claimed with `FOR UPDATE SKIP LOCKED`
+     * inside a transaction, so two overlapping drain invocations (a
+     * scheduled run colliding with a manually started `--watch` worker,
+     * say) can never both pick up the same row — one simply sees fewer
+     * rows than it asked for, the same as if another pass had just
+     * finished them.
+     *
+     * @param  int[]  $ids  restrict to these sync_log ids; empty = fair-shared selection
      * @return array{ok: int, failed: int, errors: string[], queued: int[]}
      */
     public function drainNodes(int $limit = 500, int $maxRetries = 5, array $ids = [], int $depth = 0): array
     {
-        $rows = DB::table('sync_log')
-            ->where('status', 'PENDING')
-            ->where(fn ($q) => $q->where('retry_count', '<', $maxRetries)->orWhereNull('retry_count'))
-            ->when($ids !== [], fn ($q) => $q->whereIn('id', $ids))
-            ->orderBy('id')
-            ->limit($limit)
-            ->get();
+        $claimIds = $ids !== []
+            ? $ids
+            : $this->fairShareIds('sync_log', 'table_name', 'PENDING', $limit, $maxRetries, withTenant: true);
 
-        $rows = $this->supersedeDuplicates($rows);
-
-        $ok = 0; $failed = 0; $errors = []; $queued = [];
-
-        foreach ($rows as $row) {
-            try {
-                $expanded = $this->applyNode($row);
-
-                DB::table('sync_log')->where('id', $row->id)->update([
-                    'status'       => 'SUCCESS',
-                    'processed_at' => now(),
-                ]);
-                $ok++;
-
-                // A source event only becomes graph writes once its projection
-                // has run. Drain those immediately so one pass is enough.
-                if ($expanded !== null && $depth < self::MAX_EXPANSION_DEPTH) {
-                    $queued = array_merge($queued, $expanded['queue']);
-
-                    if ($expanded['log'] !== []) {
-                        $inner = $this->drainNodes($limit, $maxRetries, $expanded['log'], $depth + 1);
-                        $ok += $inner['ok'];
-                        $failed += $inner['failed'];
-                        $errors = array_merge($errors, $inner['errors']);
-                        $queued = array_merge($queued, $inner['queued']);
-                    }
-                }
-            } catch (Throwable $e) {
-                $retries = (int) $row->retry_count + 1;
-
-                // Stay PENDING until the retry budget is spent, so a transient
-                // Neo4j outage is retried rather than written off on first fail.
-                DB::table('sync_log')->where('id', $row->id)->update([
-                    'status'      => $retries >= $maxRetries ? 'FAILED' : 'PENDING',
-                    'retry_count' => $retries,
-                ]);
-
-                $errors[] = "sync_log#{$row->id} ({$row->table_name}#{$row->record_id}): {$e->getMessage()}";
-                $failed++;
-            }
+        if ($claimIds === []) {
+            return ['ok' => 0, 'failed' => 0, 'errors' => [], 'queued' => []];
         }
 
-        return ['ok' => $ok, 'failed' => $failed, 'errors' => $errors, 'queued' => $queued];
+        return DB::transaction(function () use ($claimIds, $limit, $maxRetries, $depth) {
+            // The explicit-$ids callers (flush(), repairEndpoints(), the
+            // depth+1 expansion recursion below) are not contractually
+            // bounded to $limit themselves, so the cap is re-applied here —
+            // matching the original unconditional ->limit($limit) — rather
+            // than trusting every caller to already respect it.
+            $rows = DB::table('sync_log')
+                ->where('status', 'PENDING')
+                ->whereIn('id', $claimIds)
+                ->orderBy('id')
+                ->limit($limit)
+                ->lock('for update skip locked')
+                ->get();
+
+            $rows = $this->supersedeDuplicates($rows);
+
+            $ok = 0; $failed = 0; $errors = []; $queued = [];
+
+            foreach ($rows as $row) {
+                try {
+                    $expanded = $this->applyNode($row);
+
+                    DB::table('sync_log')->where('id', $row->id)->update([
+                        'status'       => 'SUCCESS',
+                        'processed_at' => now(),
+                    ]);
+                    $ok++;
+
+                    // A source event only becomes graph writes once its projection
+                    // has run. Drain those immediately so one pass is enough.
+                    if ($expanded !== null && $depth < self::MAX_EXPANSION_DEPTH) {
+                        $queued = array_merge($queued, $expanded['queue']);
+
+                        if ($expanded['log'] !== []) {
+                            $inner = $this->drainNodes($limit, $maxRetries, $expanded['log'], $depth + 1);
+                            $ok += $inner['ok'];
+                            $failed += $inner['failed'];
+                            $errors = array_merge($errors, $inner['errors']);
+                            $queued = array_merge($queued, $inner['queued']);
+                        }
+                    }
+                } catch (Throwable $e) {
+                    $retries = (int) $row->retry_count + 1;
+
+                    // Stay PENDING until the retry budget is spent, so a transient
+                    // Neo4j outage is retried rather than written off on first fail.
+                    DB::table('sync_log')->where('id', $row->id)->update([
+                        'status'      => $retries >= $maxRetries ? 'FAILED' : 'PENDING',
+                        'retry_count' => $retries,
+                    ]);
+
+                    $errors[] = "sync_log#{$row->id} ({$row->table_name}#{$row->record_id}): {$e->getMessage()}";
+                    $failed++;
+                }
+            }
+
+            return ['ok' => $ok, 'failed' => $failed, 'errors' => $errors, 'queued' => $queued];
+        });
     }
 
     /**
-     * Drain pending relationship events.
+     * Drain pending relationship events. Same fair-share selection as
+     * `drainNodes()`, grouped by `source_table` — `neo4j_sync_queue` carries
+     * no tenant column or payload to split on, so this stays table-only.
      *
-     * @param  int[]  $ids  restrict to these neo4j_sync_queue ids; empty = all pending
+     * @param  int[]  $ids  restrict to these neo4j_sync_queue ids; empty = fair-shared selection
      * @return array{ok: int, failed: int, errors: string[]}
      */
     public function drainRelationships(int $limit = 500, array $ids = [], int $maxRetries = 5): array
     {
-        $rows = DB::table('neo4j_sync_queue')
-            ->where('status', 'pending')
-            ->where(fn ($q) => $q->where('retry_count', '<', $maxRetries)->orWhereNull('retry_count'))
-            ->when($ids !== [], fn ($q) => $q->whereIn('id', $ids))
-            ->orderBy('id')
-            ->limit($limit)
-            ->get();
+        $claimIds = $ids !== []
+            ? $ids
+            : $this->fairShareIds('neo4j_sync_queue', 'source_table', 'pending', $limit, $maxRetries, withTenant: false);
 
-        $ok = 0; $failed = 0; $errors = [];
+        if ($claimIds === []) {
+            return ['ok' => 0, 'failed' => 0, 'errors' => []];
+        }
 
-        foreach ($rows as $row) {
-            try {
-                $matched = $this->applyRelationship($row);
+        return DB::transaction(function () use ($claimIds, $limit, $maxRetries) {
+            // Same re-applied cap as drainNodes() — explicit-$ids callers are
+            // not contractually bounded to $limit on their own.
+            $rows = DB::table('neo4j_sync_queue')
+                ->where('status', 'pending')
+                ->whereIn('id', $claimIds)
+                ->orderBy('id')
+                ->limit($limit)
+                ->lock('for update skip locked')
+                ->get();
 
-                // Endpoints absent. Before giving up, try to build them: the
-                // usual cause is an edge draining ahead of a node whose own
-                // event has not been processed yet.
-                if ($matched === 0 && (int) $row->retry_count === 0 && $this->repairEndpoints($row)) {
+            $ok = 0; $failed = 0; $errors = [];
+
+            foreach ($rows as $row) {
+                try {
                     $matched = $this->applyRelationship($row);
+
+                    // Endpoints absent. Before giving up, try to build them: the
+                    // usual cause is an edge draining ahead of a node whose own
+                    // event has not been processed yet.
+                    if ($matched === 0 && (int) $row->retry_count === 0 && $this->repairEndpoints($row)) {
+                        $matched = $this->applyRelationship($row);
+                    }
+
+                    // A DELETE that matches nothing has already achieved what it
+                    // asked for: the edge is not there. Treating that as a failure
+                    // retries it five times and then parks it as `failed` forever,
+                    // which reads as a broken sync when the graph is in exactly the
+                    // right state. It also fires on every ordinary re-drain, because
+                    // the first attempt removed the edge and the second cannot find
+                    // it. Only a MERGE can genuinely miss its endpoints.
+                    $isDelete = strtoupper((string) $row->event_type) === 'DELETE'
+                        || $row->new_target_id === null;
+
+                    if ($matched === 0 && ! $isDelete) {
+                        throw new RuntimeException(
+                            "endpoint missing: ({$row->source_table}#{$row->source_id})"
+                            . "-[:{$row->rel_type}]->({$row->target_table}#{$row->new_target_id})"
+                        );
+                    }
+
+                    DB::table('neo4j_sync_queue')->where('id', $row->id)->update([
+                        'status'       => 'done',
+                        'processed_at' => now(),
+                    ]);
+                    $ok++;
+                } catch (Throwable $e) {
+                    $retries = (int) $row->retry_count + 1;
+
+                    // Relationships get the same retry budget nodes have always
+                    // had. Marking them `failed` on the first miss — as this did
+                    // until 2026-08-21 — permanently dropped any edge whose target
+                    // simply had not drained yet, with nothing to retry it.
+                    DB::table('neo4j_sync_queue')->where('id', $row->id)->update([
+                        'status'      => $retries >= $maxRetries ? 'failed' : 'pending',
+                        'retry_count' => $retries,
+                    ]);
+
+                    $errors[] = "queue#{$row->id}: {$e->getMessage()}";
+                    $failed++;
+                }
+            }
+
+            return ['ok' => $ok, 'failed' => $failed, 'errors' => $errors];
+        });
+    }
+
+    /**
+     * Bounded fair-share row selection — the fix for FIFO starvation.
+     *
+     * Reads an oldest-first lookahead window (never more than
+     * FAIRNESS_WINDOW_CAP rows — not a full-table scan, the same
+     * `(status, id)` index the old strict-FIFO query already used), then
+     * gives every distinct `$groupColumn` value present in that window a
+     * fair slice of `$limit` via `maxMinFairShare()`. When `$withTenant` is
+     * true, each table's own slice is further split fairly across the
+     * tenants found in its rows (degrading to a single "unknown" bucket —
+     * i.e. no split at all — for rows with no extractable tenant, so a
+     * table with no tenant data behaves exactly like `$withTenant=false`).
+     *
+     * This is a planning read only, never locked — it is fine for it to be
+     * slightly stale, because the caller re-checks `status` and claims with
+     * `FOR UPDATE SKIP LOCKED` before doing anything with the result. The
+     * total returned here can never exceed `$limit`, by construction of
+     * `maxMinFairShare()`.
+     *
+     * @return int[] row ids, at most $limit, not yet claimed or verified pending
+     */
+    private function fairShareIds(string $table, string $groupColumn, string $pendingValue, int $limit, int $maxRetries, bool $withTenant): array
+    {
+        $windowSize = min($limit * self::FAIRNESS_WINDOW_MULTIPLIER, self::FAIRNESS_WINDOW_CAP);
+
+        $columns = $withTenant ? ['id', $groupColumn, 'payload_json'] : ['id', $groupColumn];
+
+        $candidates = DB::table($table)
+            ->where('status', $pendingValue)
+            ->where(fn ($q) => $q->where('retry_count', '<', $maxRetries)->orWhereNull('retry_count'))
+            ->orderBy('id')
+            ->limit($windowSize)
+            ->get($columns);
+
+        if ($candidates->isEmpty()) {
+            return [];
+        }
+
+        // Level 1: group by table_name/source_table only. Each bucket's rows
+        // stay oldest-first, since the candidate query itself was ordered by id.
+        $rowsByGroup = [];
+
+        foreach ($candidates as $row) {
+            $rowsByGroup[(string) $row->{$groupColumn}][] = $row;
+        }
+
+        $groupAllocation = $this->maxMinFairShare(array_map('count', $rowsByGroup), $limit);
+
+        $selected = [];
+
+        foreach ($groupAllocation as $groupKey => $take) {
+            if ($take <= 0) {
+                continue;
+            }
+
+            $groupRows = $rowsByGroup[$groupKey];
+
+            if (! $withTenant) {
+                foreach (array_slice($groupRows, 0, $take) as $row) {
+                    $selected[] = (int) $row->id;
                 }
 
-                // A DELETE that matches nothing has already achieved what it
-                // asked for: the edge is not there. Treating that as a failure
-                // retries it five times and then parks it as `failed` forever,
-                // which reads as a broken sync when the graph is in exactly the
-                // right state. It also fires on every ordinary re-drain, because
-                // the first attempt removed the edge and the second cannot find
-                // it. Only a MERGE can genuinely miss its endpoints.
-                $isDelete = strtoupper((string) $row->event_type) === 'DELETE'
-                    || $row->new_target_id === null;
+                continue;
+            }
 
-                if ($matched === 0 && ! $isDelete) {
-                    throw new RuntimeException(
-                        "endpoint missing: ({$row->source_table}#{$row->source_id})"
-                        . "-[:{$row->rel_type}]->({$row->target_table}#{$row->new_target_id})"
-                    );
+            // Level 2: within this table's own allocation, fair-split across
+            // tenants. A row whose tenant cannot be read collapses into one
+            // shared '_unknown' bucket rather than failing — most tables have
+            // a consistent tenant shape, but this must not break the ones that
+            // genuinely don't carry one.
+            $rowsByTenant = [];
+
+            foreach ($groupRows as $row) {
+                $tenant = $this->extractTenant($row) ?? '_unknown';
+                $rowsByTenant[$tenant][] = $row;
+            }
+
+            $tenantAllocation = $this->maxMinFairShare(array_map('count', $rowsByTenant), $take);
+
+            foreach ($tenantAllocation as $tenantKey => $tenantTake) {
+                if ($tenantTake <= 0) {
+                    continue;
                 }
 
-                DB::table('neo4j_sync_queue')->where('id', $row->id)->update([
-                    'status'       => 'done',
-                    'processed_at' => now(),
-                ]);
-                $ok++;
-            } catch (Throwable $e) {
-                $retries = (int) $row->retry_count + 1;
-
-                // Relationships get the same retry budget nodes have always
-                // had. Marking them `failed` on the first miss — as this did
-                // until 2026-08-21 — permanently dropped any edge whose target
-                // simply had not drained yet, with nothing to retry it.
-                DB::table('neo4j_sync_queue')->where('id', $row->id)->update([
-                    'status'      => $retries >= $maxRetries ? 'failed' : 'pending',
-                    'retry_count' => $retries,
-                ]);
-
-                $errors[] = "queue#{$row->id}: {$e->getMessage()}";
-                $failed++;
+                foreach (array_slice($rowsByTenant[$tenantKey], 0, $tenantTake) as $row) {
+                    $selected[] = (int) $row->id;
+                }
             }
         }
 
-        return ['ok' => $ok, 'failed' => $failed, 'errors' => $errors];
+        sort($selected);
+
+        return $selected;
+    }
+
+    /**
+     * Max-min fair share ("progressive filling"): give the smallest,
+     * most-constrained bucket exactly what it has first, then split the
+     * leftover evenly across the rest, repeating. No bucket is ever
+     * allocated more than it actually has, and the sum of the result is
+     * always <= $budget. Pure and side-effect-free — the actual DB reads
+     * happen in the caller.
+     *
+     * @param  array<string, int>  $available  bucket key => how many candidate rows it has
+     * @return array<string, int>  bucket key => how many it is allocated this pass
+     */
+    private function maxMinFairShare(array $available, int $budget): array
+    {
+        asort($available);
+
+        $allocation = [];
+        $remainingBudget = max(0, $budget);
+        $remainingBuckets = count($available);
+
+        foreach ($available as $key => $count) {
+            $share = $remainingBuckets > 0 ? intdiv($remainingBudget, $remainingBuckets) : 0;
+            $take = max(0, min($count, $share));
+
+            $allocation[$key] = $take;
+            $remainingBudget -= $take;
+            $remainingBuckets--;
+        }
+
+        return $allocation;
+    }
+
+    /**
+     * Best-effort tenant id for a sync_log row, read from its own
+     * payload_json — the same `data.sub_institute_id` (current, enveloped
+     * format) / bare `sub_institute_id` (pre-2026-08-21 format) shape
+     * `applyNode()` already accepts. Returns null rather than throwing when
+     * the payload has no usable tenant — not every projected label carries
+     * sub_institute_id — so the caller can fall back to a single shared
+     * bucket instead of fairness failing outright.
+     */
+    private function extractTenant(object $row): ?string
+    {
+        $raw = $row->payload_json ?? null;
+
+        if ($raw === null || $raw === '') {
+            return null;
+        }
+
+        $payload = json_decode((string) $raw, true);
+
+        if (! is_array($payload)) {
+            return null;
+        }
+
+        $data = $payload['data'] ?? $payload;
+        $tenant = is_array($data) ? ($data['sub_institute_id'] ?? null) : null;
+
+        return $tenant === null ? null : (string) $tenant;
     }
 
     // -----------------------------------------------------------------------

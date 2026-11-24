@@ -96,19 +96,20 @@ class FeesRecommendationIntelligenceController extends AiController
 
     private function recommendationSection(array $validated, $scope): array
     {
-        if (! isset($validated['subject_entity_key'], $validated['subject_id'])) {
-            return [
-                'available' => false,
-                'reason' => 'Pass subject_entity_key and subject_id to get a next-best-action pick for one subject.',
-                'top_pick' => null,
-            ];
+        if (isset($validated['subject_entity_key'], $validated['subject_id'])) {
+            return $this->nextBestActionResolver->topPickFor(
+                $validated['subject_entity_key'],
+                $validated['subject_id'],
+                $scope
+            );
         }
 
-        return $this->nextBestActionResolver->topPickFor(
-            $validated['subject_entity_key'],
-            $validated['subject_id'],
-            $scope
-        );
+        // No subject named — the default page load. Rank across the whole
+        // tenant instead of refusing outright, so there is something to show
+        // without inventing a per-subject slice of a cohort statistic (that
+        // refusal is why Cross-Module/Graph Reasoning stay out of this
+        // ranking entirely — see FeesNextBestActionResolver's own docblock).
+        return $this->nextBestActionResolver->topPickForTenant($scope);
     }
 
     private function pendingApprovalsCount(int $tenant): int
