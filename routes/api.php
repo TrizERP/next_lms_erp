@@ -31,6 +31,7 @@ use App\Http\Controllers\fees\fees_circular\feesCircularController;
 use App\Http\Controllers\fees\fees_circular\feesCircularMasterController;
 use App\Http\Controllers\api\FeesDashboardApiController;
 use App\Http\Controllers\api\RoleDashboardApiController;
+use App\Http\Controllers\api\RoleWorkspaceApiController;
 use App\Http\Controllers\api\AdmissionsDashboardApiController;
 use App\Http\Controllers\api\StudentsDashboardApiController;
 use App\Http\Controllers\api\LibraryDashboardApiController;
@@ -179,6 +180,9 @@ Route::middleware('api.session')->group(function () {
     Route::post('teacher-timetable/summary', [TeacherTimetableApiController::class, 'summary'])->middleware('api.cache:60');
     Route::post('teacher-fee-dues/summary', [TeacherFeeDuesApiController::class, 'summary'])->middleware('api.cache:60');
     Route::post('student-dashboard/summary', [RoleDashboardApiController::class, 'studentSummary'])->middleware('api.cache:60');
+    // Principal / Clerk / Librarian / Store Keeper / Exam Dept / Trustee / Peon ... — the role
+    // and its figures are decided server-side from the session, see RoleWorkspaceApiController.
+    Route::post('role-workspace/summary', [RoleWorkspaceApiController::class, 'summary'])->middleware('api.cache:60');
     // Self-service "My ID card" — scoped to the caller's own user_id only,
     // see App\Http\Controllers\api\TeacherIcardApiController::mine().
     Route::post('teacher-icard/mine', [TeacherIcardApiController::class, 'mine']);
