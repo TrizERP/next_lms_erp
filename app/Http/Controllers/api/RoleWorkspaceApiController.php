@@ -22,21 +22,32 @@ use Illuminate\Support\Facades\DB;
  */
 class RoleWorkspaceApiController extends Controller
 {
-    /** Widgets each role receives. Anything not listed here is never computed for that role. */
+    /**
+     * Widgets each role receives. Anything not listed here is never computed for that role.
+     * The `fees` panel (collected vs outstanding, payment modes) is a separate lazy endpoint gated by FEES_ROLES.
+     * A per-student defaulter list is deliberately NOT here: the Fees defaulter report takes ~20 minutes on a school this size.
+     */
     private const WIDGETS = [
-        'assistant_admin' => ['students_total', 'staff_total', 'attendance_today', 'attendance_trend', 'class_attendance', 'fees_today', 'fees_month', 'admissions_year', 'admission_funnel', 'recent_enquiries', 'visitors_today', 'complaints', 'tasks_pending_all', 'parent_msgs_pending', 'recent_circulars', 'staff_on_leave_today', 'gender_split'],
-        'principal' => ['students_total', 'staff_total', 'attendance_today', 'attendance_trend', 'class_attendance', 'staff_on_leave_today', 'leaves_pending', 'fees_today', 'fees_month', 'fee_trend', 'admissions_year', 'admission_funnel', 'parent_msgs_pending', 'complaints', 'recent_circulars', 'upcoming_exams', 'students_by_class', 'gender_split'],
-        'vice_principal' => ['students_total', 'staff_total', 'attendance_today', 'attendance_trend', 'class_attendance', 'staff_on_leave_today', 'leaves_pending', 'fees_today', 'fees_month', 'fee_trend', 'admissions_year', 'admission_funnel', 'parent_msgs_pending', 'complaints', 'recent_circulars', 'upcoming_exams', 'students_by_class', 'gender_split'],
-        'counsellor' => ['students_total', 'attendance_today', 'parent_msgs_pending', 'recent_parent_messages', 'recent_circulars', 'tasks_pending_me', 'upcoming_exams'],
-        'clerk' => ['students_total', 'fees_today', 'fees_month', 'fee_trend', 'recent_fee_receipts', 'admissions_year', 'admission_funnel', 'recent_enquiries', 'visitors_today', 'inward_month', 'outward_month', 'petty_cash_month', 'tasks_pending_me', 'recent_circulars'],
-        'assistant_clerk' => ['fees_today', 'fees_month', 'fee_trend', 'recent_fee_receipts', 'admissions_year', 'admission_funnel', 'recent_enquiries', 'visitors_today', 'inward_month', 'tasks_pending_me', 'recent_circulars'],
-        'librarian' => ['tasks_pending_me', 'my_leaves_pending', 'recent_circulars'],
-        'store_keeper' => ['requisitions', 'po_status', 'items_total', 'vendors_total', 'purchases_month', 'recent_requisitions', 'tasks_pending_me', 'recent_circulars'],
-        'exam_department' => ['upcoming_exams', 'exam_evaluation', 'students_total', 'attendance_today', 'tasks_pending_me', 'recent_circulars'],
-        'trustee' => ['students_total', 'staff_total', 'attendance_today', 'attendance_trend', 'class_attendance', 'fees_today', 'fees_month', 'fee_trend', 'admissions_year', 'admission_funnel', 'students_by_class', 'gender_split', 'complaints', 'recent_circulars'],
-        'peon' => ['recent_circulars', 'tasks_pending_me', 'my_leaves_pending', 'visitors_today'],
-        'workspace' => ['tasks_pending_me', 'my_leaves_pending', 'recent_circulars'],
+        'admin' => ['students_total', 'staff_total', 'attendance_today', 'attendance_trend', 'class_attendance', 'absent_today', 'staff_on_leave_today', 'staff_on_leave_list', 'leaves_pending', 'fees_today', 'fees_period', 'fees_month', 'fee_trend', 'recent_fee_receipts', 'admissions_year', 'admissions_period', 'admission_funnel', 'followups_due', 'recent_enquiries', 'visitors_today', 'visitors_period', 'complaints', 'tasks_pending_all', 'parent_msgs_pending', 'pending_approvals', 'recent_circulars', 'upcoming_events', 'birthdays', 'upcoming_exams', 'exam_results', 'students_by_class', 'gender_split'],
+        'assistant_admin' => ['students_total', 'staff_total', 'attendance_today', 'attendance_trend', 'class_attendance', 'absent_today', 'staff_on_leave_list', 'fees_today', 'fees_period', 'fees_month', 'admissions_year', 'admissions_period', 'admission_funnel', 'followups_due', 'recent_enquiries', 'visitors_today', 'visitors_period', 'complaints', 'tasks_pending_all', 'parent_msgs_pending', 'pending_approvals', 'recent_circulars', 'staff_on_leave_today', 'upcoming_events', 'birthdays', 'gender_split'],
+        'principal' => ['students_total', 'staff_total', 'attendance_today', 'attendance_trend', 'class_attendance', 'absent_today', 'staff_on_leave_today', 'staff_on_leave_list', 'leaves_pending', 'fees_today', 'fees_period', 'fees_month', 'fee_trend', 'admissions_year', 'admissions_period', 'admission_funnel', 'parent_msgs_pending', 'complaints', 'pending_approvals', 'recent_circulars', 'upcoming_events', 'birthdays', 'upcoming_exams', 'exam_results', 'students_by_class', 'gender_split'],
+        'vice_principal' => ['students_total', 'staff_total', 'attendance_today', 'attendance_trend', 'class_attendance', 'absent_today', 'staff_on_leave_today', 'staff_on_leave_list', 'leaves_pending', 'fees_today', 'fees_period', 'fees_month', 'fee_trend', 'admissions_year', 'admissions_period', 'admission_funnel', 'parent_msgs_pending', 'complaints', 'pending_approvals', 'recent_circulars', 'upcoming_events', 'birthdays', 'upcoming_exams', 'exam_results', 'students_by_class', 'gender_split'],
+        'counsellor' => ['students_total', 'attendance_today', 'absent_today', 'parent_msgs_pending', 'recent_parent_messages', 'recent_circulars', 'tasks_pending_me', 'upcoming_exams', 'exam_results', 'upcoming_events', 'birthdays'],
+        'clerk' => ['students_total', 'fees_today', 'fees_period', 'fees_month', 'fee_trend', 'recent_fee_receipts', 'admissions_year', 'admissions_period', 'admission_funnel', 'followups_due', 'recent_enquiries', 'visitors_today', 'visitors_period', 'inward_month', 'outward_month', 'petty_cash_month', 'tasks_pending_me', 'recent_circulars', 'upcoming_events', 'birthdays'],
+        'assistant_clerk' => ['fees_today', 'fees_period', 'fees_month', 'fee_trend', 'recent_fee_receipts', 'admissions_year', 'admissions_period', 'admission_funnel', 'followups_due', 'recent_enquiries', 'visitors_today', 'visitors_period', 'inward_month', 'tasks_pending_me', 'recent_circulars', 'upcoming_events', 'birthdays'],
+        'librarian' => ['tasks_pending_me', 'my_leaves_pending', 'library_overdue', 'recent_circulars', 'upcoming_events', 'birthdays'],
+        'store_keeper' => ['requisitions', 'po_status', 'items_total', 'vendors_total', 'purchases_month', 'stock_reorder', 'recent_requisitions', 'tasks_pending_me', 'recent_circulars', 'upcoming_events'],
+        'exam_department' => ['upcoming_exams', 'exam_evaluation', 'exam_results', 'students_total', 'attendance_today', 'tasks_pending_me', 'recent_circulars', 'upcoming_events'],
+        'trustee' => ['students_total', 'staff_total', 'attendance_today', 'attendance_trend', 'class_attendance', 'fees_today', 'fees_period', 'fees_month', 'fee_trend', 'admissions_year', 'admissions_period', 'admission_funnel', 'students_by_class', 'gender_split', 'exam_results', 'complaints', 'recent_circulars', 'upcoming_events'],
+        'peon' => ['recent_circulars', 'tasks_pending_me', 'my_leaves_pending', 'visitors_today', 'visitors_period', 'upcoming_events', 'birthdays'],
+        'workspace' => ['tasks_pending_me', 'my_leaves_pending', 'recent_circulars', 'upcoming_events'],
     ];
+
+    /** Roles that may open the fees panel (school-wide money figures). */
+    private const FEES_ROLES = ['admin', 'assistant_admin', 'principal', 'vice_principal', 'trustee', 'clerk', 'assistant_clerk'];
+
+    /** Period choices for the headline money / enquiry / visitor figures. */
+    private const PERIODS = ['today', 'week', 'month', 'year'];
 
     private int $tenant;
 
@@ -45,6 +56,8 @@ class RoleWorkspaceApiController extends Controller
     private $userId;
 
     private string $today;
+
+    private string $period = 'today';
 
     /** Resolve a profile name to a dashboard key; unknown names get the plain workspace. */
     public static function roleKeyFor(string $profileName): string
@@ -86,6 +99,7 @@ class RoleWorkspaceApiController extends Controller
         $this->syear = session()->get('syear');
         $this->userId = session()->get('user_id');
         $this->today = Carbon::today()->toDateString();
+        $this->period = in_array($request->input('period'), self::PERIODS, true) ? $request->input('period') : 'today';
 
         $profile = (string) session()->get('user_profile_name');
         $role = self::roleKeyFor($profile);
@@ -106,7 +120,45 @@ class RoleWorkspaceApiController extends Controller
             'role' => $role,
             'label' => config("role_dashboards.roles.{$role}.label", 'My workspace'),
             'profile_name' => $profile,
+            'period' => $this->period,
+            'can_see_fees' => in_array($role, self::FEES_ROLES, true),
             'widgets' => $data,
+        ]);
+    }
+
+    /** A request for the existing Fees controllers. They read the session off the request, so it must carry the live one. */
+    private function internalRequest(array $body): Request
+    {
+        $request = Request::create('', 'POST', $body);
+        $request->setLaravelSession(app('session.store'));
+
+        return $request;
+    }
+
+    /**
+     * Fees panel: collected vs outstanding and payment modes. Loaded on its
+     * own, and refused outright for
+     * roles that are not meant to see money or parents' phone numbers. The figures come from the
+     * existing Fees dashboard, so they match that screen exactly.
+     */
+    public function fees(Request $request): JsonResponse
+    {
+        $role = self::roleKeyFor((string) session()->get('user_profile_name'));
+        if (session()->get('is_student') || ! in_array($role, self::FEES_ROLES, true)) {
+            return response()->json(['status' => '0', 'message' => 'The fees summary is not available for your role.'], 403);
+        }
+
+        $tenant = (int) session()->get('sub_institute_id');
+        $syear = session()->get('syear');
+        $body = ['sub_institute_id' => $tenant, 'syear' => $syear, 'type' => 'JSON'];
+
+        $summary = json_decode(app(FeesDashboardApiController::class)->summary($this->internalRequest($body))->getContent(), true) ?: [];
+
+        return response()->json([
+            'status' => '1',
+            'message' => 'Success',
+            'summary' => $summary['summary'] ?? null,
+            'payment_mode_mix' => $summary['payment_mode_mix'] ?? [],
         ]);
     }
 
@@ -252,6 +304,237 @@ class RoleWorkspaceApiController extends Controller
             'registered' => (int) (clone $reg)->count(),
             'admitted' => (int) (clone $reg)->where('admission_status', 'YES')->count(),
         ];
+    }
+
+    /* ------------------------------------------------- period figures (today / week / month / year) */
+
+    /**
+     * The chosen period up to today, and the period before it covering the same number of days
+     * (so "this week so far" is compared with the same days of last week, not a full week).
+     *
+     * @return array{0:Carbon,1:Carbon,2:Carbon,3:Carbon,4:string}
+     */
+    private function range(): array
+    {
+        $to = Carbon::today();
+        [$from, $prevFrom, $label] = match ($this->period) {
+            'week' => [$to->copy()->startOfWeek(), $to->copy()->startOfWeek()->subWeek(), 'This week'],
+            'month' => [$to->copy()->startOfMonth(), $to->copy()->startOfMonth()->subMonthNoOverflow(), 'This month'],
+            'year' => [$to->copy()->startOfYear(), $to->copy()->startOfYear()->subYear(), 'This year'],
+            default => [$to->copy(), $to->copy()->subDay(), 'Today'],
+        };
+        $prevTo = $prevFrom->copy()->addDays($from->diffInDays($to));
+
+        return [$from, $to, $prevFrom, $prevTo, $label];
+    }
+
+    private function feesBetween(Carbon $from, Carbon $to): float
+    {
+        $scope = ['sub_institute_id' => $this->tenant, 'syear' => $this->syear, 'is_deleted' => 'N'];
+        $a = (float) DB::table('fees_collect')->where($scope)->whereDate('receiptdate', '>=', $from->toDateString())->whereDate('receiptdate', '<=', $to->toDateString())->sum('amount');
+        $b = (float) DB::table('fees_paid_other')->where($scope)->whereDate('receiptdate', '>=', $from->toDateString())->whereDate('receiptdate', '<=', $to->toDateString())->sum('actual_amountpaid');
+
+        return round($a + $b, 2);
+    }
+
+    private function w_fees_period(): array
+    {
+        [$from, $to, $pf, $pt, $label] = $this->range();
+
+        return ['amount' => $this->feesBetween($from, $to), 'previous' => $this->feesBetween($pf, $pt), 'label' => $label];
+    }
+
+    private function w_admissions_period(): array
+    {
+        [$from, $to, $pf, $pt, $label] = $this->range();
+        $count = fn (Carbon $a, Carbon $b) => (int) DB::table('admission_enquiry')->where('sub_institute_id', $this->tenant)->whereNull('deleted_at')
+            ->whereDate('created_on', '>=', $a->toDateString())->whereDate('created_on', '<=', $b->toDateString())->count();
+
+        return ['count' => $count($from, $to), 'previous' => $count($pf, $pt), 'label' => $label];
+    }
+
+    private function w_visitors_period(): array
+    {
+        [$from, $to, $pf, $pt, $label] = $this->range();
+        $count = fn (Carbon $a, Carbon $b) => (int) DB::table('visitor_master')->where('sub_institute_id', $this->tenant)
+            ->whereDate('meet_date', '>=', $a->toDateString())->whereDate('meet_date', '<=', $b->toDateString())->count();
+
+        return ['count' => $count($from, $to), 'previous' => $count($pf, $pt), 'label' => $label];
+    }
+
+    /* ----------------------------------------------------- people who need a call today */
+
+    /** Latest day (within 30 days) that anyone marked attendance. */
+    private function latestMarkedDay(): ?string
+    {
+        $day = DB::table('attendance_student')
+            ->where('sub_institute_id', $this->tenant)->where('syear', $this->syear)
+            ->whereDate('attendance_date', '<=', $this->today)
+            ->whereDate('attendance_date', '>=', Carbon::today()->subDays(29)->toDateString())
+            ->max('attendance_date');
+
+        return $day ? substr((string) $day, 0, 10) : null;
+    }
+
+    /** Students marked absent on the latest marked day, with the parent's number to ring. */
+    private function w_absent_today(): array
+    {
+        $day = $this->latestMarkedDay();
+        if (! $day) {
+            return ['date' => null, 'total' => 0, 'items' => []];
+        }
+
+        $q = DB::table('attendance_student as a')
+            ->join('tblstudent as s', 's.id', '=', 'a.student_id')
+            ->leftJoin('standard as st', 'st.id', '=', 'a.standard_id')
+            ->leftJoin('division as d', 'd.id', '=', 'a.section_id')
+            ->where('a.sub_institute_id', $this->tenant)->where('a.syear', $this->syear)
+            ->whereDate('a.attendance_date', $day)->where('a.attendance_code', 'A');
+
+        return [
+            'date' => $day,
+            'total' => (int) (clone $q)->count(),
+            'items' => (clone $q)
+                ->selectRaw("s.id, CONCAT_WS(' ', s.first_name, s.last_name) as name, CONCAT_WS(' - ', st.name, d.name) as class_name, NULLIF(TRIM(COALESCE(s.mobile, s.mother_mobile, s.student_mobile, '')), '') as phone")
+                ->orderBy('st.sort_order')->orderBy('s.first_name')->limit(8)->get()
+                ->map(fn ($r) => ['id' => (int) $r->id, 'name' => trim((string) $r->name), 'class_name' => (string) $r->class_name, 'phone' => $r->phone])->all(),
+        ];
+    }
+
+    private function w_staff_on_leave_list(): array
+    {
+        $q = DB::table('hrms_emp_leaves as l')
+            ->join('tbluser as u', 'u.id', '=', 'l.user_id')
+            ->where('l.sub_institute_id', $this->tenant)->whereNull('l.deleted_at')
+            ->whereIn('l.status', ['approved', 'approved_lwp'])
+            ->whereDate('l.from_date', '<=', $this->today)->whereDate('l.to_date', '>=', $this->today);
+
+        return [
+            'total' => (int) (clone $q)->count(),
+            'items' => (clone $q)->selectRaw("l.id, CONCAT_WS(' ', u.first_name, u.last_name) as name, l.to_date")->orderBy('u.first_name')->limit(8)->get()
+                ->map(fn ($r) => ['id' => (int) $r->id, 'name' => trim((string) $r->name), 'until' => $r->to_date])->all(),
+        ];
+    }
+
+    /** Birthdays in the next 7 days (today included). Month-day matching, so December to January works. */
+    private function w_birthdays(): array
+    {
+        $days = [];
+        for ($i = 0; $i < 7; $i++) {
+            $days[Carbon::today()->addDays($i)->format('m-d')] = $i;
+        }
+        $keys = array_keys($days);
+        $pack = function ($rows, string $dobField) use ($days) {
+            return $rows->map(function ($r) use ($days, $dobField) {
+                $md = substr((string) $r->{$dobField}, 5, 5);
+
+                return ['id' => (int) $r->id, 'name' => trim((string) $r->name), 'detail' => $r->detail ?? null, 'in_days' => $days[$md] ?? 0, 'date' => Carbon::today()->addDays($days[$md] ?? 0)->toDateString()];
+            })->sortBy('in_days')->values()->all();
+        };
+
+        $students = $this->enrolled()->whereIn(DB::raw("DATE_FORMAT(ts.dob, '%m-%d')"), $keys)
+            ->selectRaw("ts.id, CONCAT_WS(' ', ts.first_name, ts.last_name) as name, ts.dob, '' as detail")->limit(40)->get();
+        $staff = DB::table('tbluser')->where('sub_institute_id', $this->tenant)->where('status', '1')
+            ->whereIn(DB::raw("DATE_FORMAT(birthdate, '%m-%d')"), $keys)
+            ->selectRaw("id, CONCAT_WS(' ', first_name, last_name) as name, birthdate, '' as detail")->limit(40)->get();
+
+        return [
+            'students' => array_slice($pack($students, 'dob'), 0, 8),
+            'staff' => array_slice($pack($staff, 'birthdate'), 0, 8),
+            'student_total' => $students->count(),
+            'staff_total' => $staff->count(),
+        ];
+    }
+
+    /** School calendar events and holidays from today onwards. */
+    private function w_upcoming_events(): array
+    {
+        $events = DB::table('calendar_events')->where('sub_institute_id', $this->tenant)->whereDate('school_date', '>=', $this->today)
+            ->selectRaw("id, title, school_date as date, event_type as kind")->orderBy('school_date')->limit(8)->get()
+            ->map(fn ($r) => ['id' => 'e'.$r->id, 'title' => (string) $r->title, 'date' => substr((string) $r->date, 0, 10), 'kind' => (string) ($r->kind ?: 'Event')]);
+        $holidays = DB::table('hrms_holidays')->where('sub_institute_id', $this->tenant)->whereNull('deleted_at')->whereDate('to_date', '>=', $this->today)
+            ->selectRaw('id, holiday_name as title, from_date as date')->orderBy('from_date')->limit(8)->get()
+            ->map(fn ($r) => ['id' => 'h'.$r->id, 'title' => (string) $r->title, 'date' => substr((string) $r->date, 0, 10), 'kind' => 'Holiday']);
+
+        return $events->concat($holidays)->sortBy('date')->values()->take(8)->all();
+    }
+
+    /** Enquiries whose follow-up is due today or overdue (last 30 days) and that have not registered yet. */
+    private function w_followups_due(): array
+    {
+        $q = DB::table('admission_enquiry as e')
+            ->leftJoin('admission_registration as r', 'r.enquiry_id', '=', 'e.id')
+            ->where('e.sub_institute_id', $this->tenant)->whereNull('e.deleted_at')->whereNull('r.id')
+            ->whereDate('e.followup_date', '<=', $this->today)
+            ->whereDate('e.followup_date', '>=', Carbon::today()->subDays(30)->toDateString());
+
+        return [
+            'total' => (int) (clone $q)->count(),
+            'items' => (clone $q)->selectRaw("e.id, CONCAT_WS(' ', e.first_name, e.last_name) as name, e.enquiry_no, e.mobile, e.followup_date")->orderBy('e.followup_date')->limit(6)->get()
+                ->map(fn ($r) => ['id' => (int) $r->id, 'name' => trim((string) $r->name), 'detail' => $r->enquiry_no, 'phone' => $r->mobile, 'date' => substr((string) $r->followup_date, 0, 10)])->all(),
+        ];
+    }
+
+    /** Everything waiting on one person's decision, in one place. */
+    private function w_pending_approvals(): array
+    {
+        $leaves = $this->w_leaves_pending();
+        $req = $this->w_requisitions();
+        $po = $this->w_po_status();
+
+        return ['leaves' => $leaves, 'requisitions' => $req['pending'], 'purchase_orders' => $po['awaiting'], 'total' => $leaves + $req['pending'] + $po['awaiting']];
+    }
+
+    /* ---------------------------------------------------------- library, stock, exams */
+
+    private function w_library_overdue(): array
+    {
+        $q = DB::table('library_book_circulations as c')
+            ->join('tblstudent as s', 's.id', '=', 'c.student_id')
+            ->join('library_books as b', 'b.id', '=', 'c.book_id')
+            ->where('c.sub_institute_id', $this->tenant)->where('c.syear', $this->syear)
+            ->whereRaw("(c.return_date IS NULL OR c.return_date LIKE '0000-00%')")
+            ->whereDate('c.due_date', '<', $this->today);
+
+        return [
+            'total' => (int) (clone $q)->count(),
+            'items' => (clone $q)->selectRaw("c.id, b.title as book, CONCAT_WS(' ', s.first_name, s.last_name) as student, c.due_date, DATEDIFF(CURDATE(), c.due_date) as days")->orderBy('c.due_date')->limit(8)->get()
+                ->map(fn ($r) => ['id' => (int) $r->id, 'title' => (string) $r->book, 'detail' => trim((string) $r->student), 'days' => (int) $r->days, 'date' => substr((string) $r->due_date, 0, 10)])->all(),
+        ];
+    }
+
+    /**
+     * Items whose RECORDED opening stock is at or below the reorder level. This estate keeps no running
+     * stock balance (issues never reduce opening_stock), so this is a prompt to check, not a stock count.
+     */
+    private function w_stock_reorder(): array
+    {
+        $q = DB::table('inventory_item_master')->where('sub_institute_id', $this->tenant)
+            ->whereRaw('COALESCE(minimum_stock, 0) > 0')->whereRaw('COALESCE(opening_stock, 0) <= COALESCE(minimum_stock, 0)');
+
+        return [
+            'total' => (int) (clone $q)->count(),
+            'items' => (clone $q)->selectRaw('id, title, opening_stock, minimum_stock')->orderBy('title')->limit(8)->get()
+                ->map(fn ($r) => ['id' => (int) $r->id, 'title' => (string) $r->title, 'recorded' => (float) $r->opening_stock, 'reorder_at' => (float) $r->minimum_stock])->all(),
+        ];
+    }
+
+    /** Average and best percentage per class for the most recent exam that has marks. Absent students are left out. */
+    private function w_exam_results(): ?array
+    {
+        $base = DB::table('result_marks')->where('sub_institute_id', $this->tenant)->whereNotNull('per')->where('per', '<>', '')
+            ->where(fn ($w) => $w->whereNull('is_absent')->orWhere('is_absent', '<>', 1));
+        $exam = (clone $base)->orderByDesc('created_at')->orderByDesc('id')->value('exam_title');
+        if (! $exam) {
+            return ['exam' => null, 'rows' => []];
+        }
+
+        $rows = (clone $base)->where('exam_title', $exam)
+            ->selectRaw('standard_name, COUNT(DISTINCT student_id) as students, AVG(CAST(per AS DECIMAL(7,2))) as avg_per, MAX(CAST(per AS DECIMAL(7,2))) as best')
+            ->groupBy('standard_name')->orderByDesc('avg_per')->limit(10)->get()
+            ->map(fn ($r) => ['standard_name' => (string) $r->standard_name, 'students' => (int) $r->students, 'average' => round((float) $r->avg_per, 1), 'best' => round((float) $r->best, 1)])->all();
+
+        return ['exam' => (string) $exam, 'rows' => $rows];
     }
 
     /* ------------------------------------------------------------------ fees */
