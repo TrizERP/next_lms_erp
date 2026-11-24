@@ -379,6 +379,14 @@ return [
             // but unwired projection.
             'fees_breackoff',
             'fees_collect',
+
+            // Workflow Knowledge Graph pass (added 2026-11-24) — see entity
+            // specs below. The Workflow nav tab's approval-chain config/run/
+            // step tables had zero sync at all (verified live: zero sync_log
+            // rows, zero matching Neo4j labels).
+            'platform_workflows',
+            'platform_workflow_runs',
+            'platform_workflow_run_steps',
         ],
 
         'entities' => [
@@ -1532,10 +1540,131 @@ return [
                     'receiptdate'      => 'receiptdate',
                     'receipt_no'       => 'receipt_no',
                     'sub_institute_id' => 'sub_institute_id',
+                    // Added 2026-11-24: a cancellation only flips this column, and it
+                    // was not watched, so cancelled receipts never re-synced and stayed
+                    // live in the graph. See the fees Knowledge Graph sync audit.
+                    'is_deleted'       => 'is_deleted',
                 ],
                 'display_label' => ['prefix' => 'Payment:', 'column' => 'receipt_no'],
                 'relationships' => [
                     ['type' => 'MADE_PAYMENT', 'from' => ['StuDetail', 'student_id'], 'to' => ['FeePayment', 'id']],
+                ],
+            ],
+
+            // ---------------------------------------------------------------
+            // Workflow Knowledge Graph pass (added 2026-11-24) — the Workflow
+            // nav tab's approval-chain config (`platform_workflows`) and its
+            // run-time tables. Verified live before this pass: zero sync_log
+            // rows and zero matching Neo4j labels for any of the three.
+            //
+            // `steps` (platform_workflows' own JSON step-ladder config) is
+            // deliberately NOT projected as a node property — it is config,
+            // already fully readable via the ordinary API, and the real
+            // per-step state for a RUN is `platform_workflow_run_steps`
+            // (its own node below), which is what a graph traversal actually
+            // wants to walk.
+            // ---------------------------------------------------------------
+            'platform_workflows' => [
+                'label' => 'WorkflowChain',
+                'properties' => [
+                    'sub_institute_id' => 'sub_institute_id',
+                    'flow_key'         => 'flow_key',
+                    'module'           => 'module',
+                    'component'        => 'component',
+                    'name'             => 'name',
+                    'description'      => 'description',
+                    'status'           => 'status',
+                    'condition'        => 'condition',
+                    // Added 2026-11-25: WorkflowController::index() now reads
+                    // chain data FROM Neo4j (not SQL) by user request, so the
+                    // step ladder itself — previously left out as "config,
+                    // already readable via the ordinary API" — has to travel
+                    // too, or the graph-backed read would be missing the
+                    // actual approver/SLA/escalation config per step. Stored
+                    // as its own JSON string (cast below), decoded back into
+                    // an array on read the same way PlatformWorkflow's own
+                    // Eloquent cast already does for the SQL row.
+                    'steps'            => 'steps',
+                    'on_reject'        => 'on_reject',
+                    'notify_requester' => 'notify_requester',
+                    'created_by'       => 'created_by',
+                    'updated_by'       => 'updated_by',
+                    // Named apart from a plain `created_at`/`updated_at`:
+                    // GraphDrain's MERGE unconditionally does
+                    // `SET n += $props, n.updated_at = datetime()` for every
+                    // label, so an `updated_at` property here would be
+                    // overwritten with the sync timestamp on every write,
+                    // not carry the real SQL value. These two are read back
+                    // under their own names in WorkflowController's graph
+                    // read, never as `updated_at` itself.
+                    'sql_created_at'   => 'created_at',
+                    'sql_updated_at'   => 'updated_at',
+                ],
+                'casts' => ['steps' => 'string'],
+                'display_label' => ['prefix' => 'Workflow:', 'column' => 'name'],
+            ],
+
+            // One request for sign-off against a chain. `entity_type`/
+            // `entity_id` are kept as plain string properties, not resolved
+            // into an edge to the real record: today the only value ever
+            // written is 'sample_tc_request' (no real caller exists yet, see
+            // EngineController), so there is no stable entity_type -> label
+            // mapping to build a generic resolver against without guessing.
+            'platform_workflow_runs' => [
+                'label' => 'WorkflowRun',
+                'properties' => [
+                    'sub_institute_id'  => 'sub_institute_id',
+                    'workflow_id'       => 'workflow_id',
+                    'flow_key'          => 'flow_key',
+                    'entity_type'       => 'entity_type',
+                    'entity_id'         => 'entity_id',
+                    'title'             => 'title',
+                    'requested_by'      => 'requested_by',
+                    'requested_by_name' => 'requested_by_name',
+                    'status'            => 'status',
+                    'current_step'      => 'current_step',
+                    'is_sample'         => 'is_sample',
+                ],
+                // `entity_id` is a human-assigned string ('S-001', 'KG-TEST-001'),
+                // not a real foreign key — but TableGraphProjection::cast()'s
+                // generic rule forces anything ending `_id` to int unless
+                // overridden, and `is_numeric('S-001')` is false, so every
+                // run's `entity_id` was silently stored as NULL until this
+                // override (found live during Task 2 testing, 2026-11-25:
+                // all 3 original sample runs had entity_id=NULL in Neo4j).
+                'casts' => ['current_step' => 'int', 'entity_id' => 'string'],
+                'display_label' => ['prefix' => 'Run:', 'column' => 'title'],
+                'relationships' => [
+                    ['type' => 'FOR_CHAIN', 'from' => ['WorkflowRun', 'id'], 'to' => ['WorkflowChain', 'workflow_id']],
+                ],
+            ],
+
+            // One step of one run. `assignee_user_id`/`acted_by` are both
+            // nullable — most steps carry neither edge until a person is
+            // actually resolved (Stage 3) or acts.
+            'platform_workflow_run_steps' => [
+                'label' => 'WorkflowRunStep',
+                'properties' => [
+                    'run_id'           => 'run_id',
+                    'step_order'       => 'step_order',
+                    'step_name'        => 'step_name',
+                    'approver_type'    => 'approver_type',
+                    'approver'         => 'approver',
+                    'status'           => 'status',
+                    'assignee_user_id' => 'assignee_user_id',
+                    'acted_by'         => 'acted_by',
+                    'acted_by_name'    => 'acted_by_name',
+                    'due_at'           => 'due_at',
+                    'on_breach'        => 'on_breach',
+                    'allow_delegate'   => 'allow_delegate',
+                    'require_comment'  => 'require_comment',
+                ],
+                'casts' => ['step_order' => 'int', 'acted_by' => 'int'],
+                'display_label' => ['prefix' => 'Step:', 'column' => 'step_name'],
+                'relationships' => [
+                    ['type' => 'PART_OF', 'from' => ['WorkflowRunStep', 'id'], 'to' => ['WorkflowRun', 'run_id']],
+                    ['type' => 'ASSIGNED_TO', 'from' => ['WorkflowRunStep', 'id'], 'to' => ['Staff', 'assignee_user_id']],
+                    ['type' => 'ACTED_BY', 'from' => ['WorkflowRunStep', 'id'], 'to' => ['Staff', 'acted_by']],
                 ],
             ],
         ],

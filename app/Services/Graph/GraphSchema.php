@@ -296,6 +296,15 @@ class GraphSchema
         'PtmBooking'          => ['key' => 'ptmbookingId',          'uid_syear' => null, 'uid_tenant' => null],
         'PtmTimeSlot'         => ['key' => 'ptmtimeslotId',         'uid_syear' => null, 'uid_tenant' => null],
         'ParentCommunication' => ['key' => 'parentcommunicationId', 'uid_syear' => null, 'uid_tenant' => null],
+
+        // -- Workflow Knowledge Graph pass (added 2026-11-24) -------------------
+        // platform_workflows (chain config) -> platform_workflow_runs (one
+        // request for sign-off) -> platform_workflow_run_steps (one step in
+        // that run). All three are new (2026-10-07) tenant-owned tables,
+        // integer-keyed on their own `id`, no existing label reused.
+        'WorkflowChain'       => ['key' => 'workflowChainId',       'uid_syear' => null, 'uid_tenant' => null],
+        'WorkflowRun'         => ['key' => 'workflowRunId',         'uid_syear' => null, 'uid_tenant' => null],
+        'WorkflowRunStep'     => ['key' => 'workflowRunStepId',     'uid_syear' => null, 'uid_tenant' => null],
     ];
 
     /**
@@ -418,6 +427,23 @@ class GraphSchema
         // PAID/PAID_FEES above belong to the unmaintained CSV-ingest finance
         // labels and are left exactly as they are.
         'HAS_FEE_SCHEDULE', 'MADE_PAYMENT',
+
+        // Workflow Knowledge Graph pass (added 2026-11-24) — four new types.
+        // (:WorkflowRun)-[:FOR_CHAIN]->(:WorkflowChain) from
+        // `platform_workflow_runs.workflow_id`. (:WorkflowRunStep)-[:PART_OF]->
+        // (:WorkflowRun) from `platform_workflow_run_steps.run_id`.
+        // (:WorkflowRunStep)-[:ASSIGNED_TO|:ACTED_BY]->(:Staff) from that same
+        // table's `assignee_user_id`/`acted_by` — both nullable, so most steps
+        // carry neither edge until a person is actually resolved/acts.
+        // ASSIGNED_TO/ACTED_BY are genuinely new. PART_OF is NOT: verified live
+        // on 2026-11-25 — 6,602 pre-existing (:CurriculumOutcome)-[:PART_OF]->
+        // (:CurriculumOutcome) edges already exist, written by a different,
+        // earlier ingest pipeline that was never registered in this whitelist.
+        // No functional collision (every real query here filters both node
+        // labels, confirmed against live data), but it is reused, not new —
+        // recorded here so the next reader does not repeat this file's own
+        // first draft of this comment, which claimed otherwise.
+        'FOR_CHAIN', 'PART_OF', 'ASSIGNED_TO', 'ACTED_BY',
     ];
 
     public static function knowsLabel(string $label): bool
