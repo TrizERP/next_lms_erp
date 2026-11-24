@@ -75,6 +75,8 @@ Route::middleware('lms.auth')->group(function () {
     | SLA may also delete the chain.
     */
     Route::get('/workflow', [WorkflowController::class, 'index']);
+    Route::get('/workflow/preview-approver', [WorkflowController::class, 'previewApprover']);
+    Route::get('/workflow/fees-intelligence', [WorkflowController::class, 'feesIntelligence']);
     Route::post('/workflow', [WorkflowController::class, 'store'])
         ->middleware('perm:platform.workflow,create');
     Route::put('/workflow/{id}', [WorkflowController::class, 'update'])

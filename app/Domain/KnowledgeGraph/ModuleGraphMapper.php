@@ -110,6 +110,10 @@ class ModuleGraphMapper
         'counselling'          => ['CounsellingCourse', 'CounsellingQuestion', 'CounsellingResult'],
         'career'               => ['JobRole', 'Skill', 'JobTask', 'CareerCluster'],
 
+        // -- Platform Services ---------------------------------------------------
+        // Approval-chain config/runs/steps behind the Workflow nav tab.
+        'workflow'             => ['WorkflowChain', 'WorkflowRun', 'WorkflowRunStep'],
+
         // -- Enterprise Brain (Module ID: 854) ---------------------------------
         'overview'             => ['Institute', 'Department', 'Role', 'Staff'],
         'foundation'           => ['Institute', 'Standard', 'Division', 'AcademicYear'],

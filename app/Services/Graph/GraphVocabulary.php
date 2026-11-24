@@ -194,6 +194,9 @@ class GraphVocabulary
         'Task' => self::FAMILY_PLATFORM,
         'TimeSlot' => self::FAMILY_PLATFORM,
         'LeaderboardRule' => self::FAMILY_PLATFORM,
+        'WorkflowChain' => self::FAMILY_PLATFORM,
+        'WorkflowRun' => self::FAMILY_PLATFORM,
+        'WorkflowRunStep' => self::FAMILY_PLATFORM,
     ];
 
     public static function family(string $label): string

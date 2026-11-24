@@ -132,6 +132,33 @@ class AiServiceProvider extends ServiceProvider
 
             return new GraphQueryService($app->make(OntologyRegistry::class), $neo4j);
         });
+
+        // Platform Services' Workflow (approval chains — platform_workflows /
+        // WorkflowController) — NOT the same class as registerWorkflow()'s
+        // App\Domain\Workflow\WorkflowEngine below, which is the separate
+        // AI-agent execution engine. Both constructors declare their Neo4j
+        // dependency as nullable-with-default, which the container resolves
+        // to null unless the class is explicitly bound (see this method's own
+        // GraphQueryService comment just above) — so without this block,
+        // every approver resolution would silently no-op.
+        $this->app->singleton(\App\Services\Platform\WorkflowApproverResolver::class, function ($app) {
+            $neo4j = null;
+
+            try {
+                $neo4j = $app->make(Neo4jService::class);
+            } catch (Throwable) {
+                $neo4j = null;
+            }
+
+            return new \App\Services\Platform\WorkflowApproverResolver($neo4j);
+        });
+
+        $this->app->singleton(
+            \App\Services\Platform\WorkflowEngine::class,
+            fn ($app) => new \App\Services\Platform\WorkflowEngine(
+                $app->make(\App\Services\Platform\WorkflowApproverResolver::class)
+            )
+        );
     }
 
     // ---- Governance kernel -------------------------------------------------
