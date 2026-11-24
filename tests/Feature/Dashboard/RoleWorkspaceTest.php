@@ -18,6 +18,20 @@ class RoleWorkspaceTest extends TestCase
         $this->postJson('api/role-workspace/summary')->assertStatus(401);
     }
 
+    public function test_fees_panel_refuses_a_request_with_no_token(): void
+    {
+        $this->postJson('api/role-workspace/fees')->assertStatus(401);
+    }
+
+    public function test_only_money_roles_may_open_the_fees_panel(): void
+    {
+        $roles = (new ReflectionClass(RoleWorkspaceApiController::class))->getReflectionConstant('FEES_ROLES')->getValue();
+
+        foreach (['peon', 'librarian', 'store_keeper', 'counsellor', 'exam_department', 'workspace'] as $role) {
+            $this->assertNotContains($role, $roles, "{$role} must not open the fees panel");
+        }
+    }
+
     public function test_profile_names_resolve_to_their_dashboard(): void
     {
         $cases = [
@@ -35,6 +49,8 @@ class RoleWorkspaceTest extends TestCase
             'STORE-KEEPER' => 'store_keeper',
             'Exam Department' => 'exam_department',
             'Trustee' => 'trustee',
+            'Admin' => 'admin',
+            'School admin' => 'admin',
             'Peon' => 'peon',
             // Unknown names get the plain workspace, never a wider dashboard.
             'Watchman' => 'workspace',
@@ -65,8 +81,8 @@ class RoleWorkspaceTest extends TestCase
         $widgets = (new ReflectionClass(RoleWorkspaceApiController::class))->getReflectionConstant('WIDGETS')->getValue();
 
         // Fee totals, receipts and leave figures are for leadership and the fees desk only.
-        foreach (['peon', 'librarian', 'counsellor', 'store_keeper', 'exam_department', 'workspace'] as $role) {
-            foreach (['fees_today', 'fee_trend', 'recent_fee_receipts', 'petty_cash_month', 'leaves_pending', 'staff_on_leave_today', 'staff_total'] as $sensitive) {
+        foreach (['peon', 'librarian', 'store_keeper', 'workspace'] as $role) {
+            foreach (['fees_today', 'fee_trend', 'recent_fee_receipts', 'petty_cash_month', 'leaves_pending', 'staff_on_leave_today', 'staff_total', 'fees_period', 'absent_today', 'followups_due', 'pending_approvals', 'staff_on_leave_list', 'exam_results'] as $sensitive) {
                 $this->assertNotContains($sensitive, $widgets[$role], "{$role} must not receive {$sensitive}");
             }
         }
