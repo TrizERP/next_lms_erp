@@ -170,7 +170,7 @@ class TopicRevisionWriter extends RevisionNotesWriter
             }
             foreach ($row['terms'] as $term) {
                 if (self::words($term) > self::TERM_WORDS) {
-                    $out[] = 'A key term in the row for concept ' . $id . ' is over ' . self::TERM_WORDS . ' words ("' . mb_substr($term, 0, 40) . '...").';
+                    $out[] = 'A key term in the row for concept ' . $id . ' is over ' . self::TERM_WORDS . ' words ("' . mb_substr($term, 0, 40) . '...", ' . self::words($term) . ' words): cut it, do not rephrase it.';
                 }
             }
         }
@@ -190,7 +190,7 @@ class TopicRevisionWriter extends RevisionNotesWriter
                 }
                 foreach ($row as $cell) {
                     if (self::words($cell) > self::CELL_WORDS) {
-                        $out[] = 'A cell of the comparison table is over ' . self::CELL_WORDS . ' words ("' . mb_substr($cell, 0, 40) . '...").';
+                        $out[] = 'A cell of the comparison table is over ' . self::CELL_WORDS . ' words ("' . mb_substr($cell, 0, 40) . '...", ' . self::words($cell) . ' words): cut it, do not rephrase it.';
                         break 2;
                     }
                 }
@@ -218,7 +218,7 @@ class TopicRevisionWriter extends RevisionNotesWriter
         }
         foreach ($sheet['recall'] as $r) {
             if (self::words($r) > self::RECALL_WORDS) {
-                $out[] = 'A recall point is over ' . self::RECALL_WORDS . ' words ("' . mb_substr($r, 0, 40) . '...").';
+                $out[] = 'A recall point is over ' . self::RECALL_WORDS . ' words ("' . mb_substr($r, 0, 40) . '...", ' . self::words($r) . ' words): cut it, do not rephrase it.';
             }
             foreach ($sheet['rows'] as $row) {
                 if (self::overlap($r, $row['essential']) >= 0.8) {
@@ -258,6 +258,27 @@ class TopicRevisionWriter extends RevisionNotesWriter
             }
             if ($chapterText !== '' && mb_stripos($chapterText, $t['term']) === false && !self::traces($t['term'], array_merge(array_column($work['concepts'], 'name'), ...array_column($work['concepts'], 'key_terms')))) {
                 $out[] = 'The term "' . $t['term'] . '" is not a word or phrase of the chapter text; use only terms the chapter names.';
+            }
+        }
+
+        // A number the chapter never gives (a model's own example or arithmetic) fails the whole document at the end; found here, the
+        // model is told which numbers to remove or correct while it can still rewrite them. Checked for every text of the sheet:
+        // rows, terms, recall points, mix-ups, checklist and table cells.
+        if ($chapterText !== '') {
+            $pool = [$chapterText];
+            array_walk_recursive($work, function ($v) use (&$pool): void {
+                if (is_string($v)) {
+                    $pool[] = $v;
+                }
+            });
+            $texts = [];
+            array_walk_recursive($sheet, function ($v) use (&$texts): void {
+                if (is_string($v)) {
+                    $texts[] = $v;
+                }
+            });
+            if ($bad = \App\Services\StudyDeck\GroundedNumbers::ungrounded(implode(' ', $texts), implode(' ', $pool))) {
+                $out[] = \App\Services\StudyDeck\GroundedNumbers::complaint($bad) . ' Remove or correct the number(s) ' . implode(', ', array_slice($bad, 0, 6)) . ' wherever they appear in this sheet, using only what the chapter says.';
             }
         }
 

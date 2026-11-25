@@ -899,6 +899,21 @@ class ContentGenerationService
         return DocumentKind::fromFilename($filename);
     }
 
+    /**
+     * The visible stored study document of this kind for the chapter and school (its strict file name says so), or null. An older
+     * template row filed under the same category is not a study document and never counts.
+     */
+    public static function storedStudyDocumentRow(int $chapterId, int $tenant, DocumentKind $kind): ?object
+    {
+        return DB::table('content_master')
+            ->where('chapter_id', $chapterId)->where('sub_institute_id', $tenant)
+            ->where('content_category', $kind->category())
+            ->where(fn ($q) => $q->whereNull('show_hide')->orWhere('show_hide', '<>', 0))
+            ->orderByDesc('id')
+            ->get(['id', 'title', 'filename'])
+            ->first(fn ($r) => DocumentKind::fromFilename($r->filename) === $kind);
+    }
+
     public static function isStudyDocumentFilename(?string $filename): bool
     {
         return DocumentKind::fromFilename($filename) !== null;

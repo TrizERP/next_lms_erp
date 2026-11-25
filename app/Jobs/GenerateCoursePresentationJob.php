@@ -12,8 +12,9 @@ use Illuminate\Queue\SerializesModels;
 
 /**
  * Runs one Course Presentation draft in the background (see GenerationRun). A generation takes a long time, so it
- * never runs inside the teacher's request when a queue worker is available. It stores nothing: the draft waits in its
- * review folder until a teacher approves it. Unique per chapter and school, so a double click is one run.
+ * never runs inside the teacher's request when a queue worker is available. A Create-button run stores nothing: the draft
+ * waits in its review folder until a teacher approves it. A run AI Stack started (`auto_store`) is stored by this job as soon
+ * as it passes. Unique per chapter and school, so a double click is one run.
  */
 class GenerateCoursePresentationJob implements ShouldQueue, ShouldBeUnique
 {
@@ -50,5 +51,7 @@ class GenerateCoursePresentationJob implements ShouldQueue, ShouldBeUnique
             return;
         }
         $runs->execute($this->chapterId, $this->tenant, $this->run);
+        // A run AI Stack started stores itself once it has passed (see GenerationRun::autoStore); a Create-button run does not.
+        $runs->autoStore($this->chapterId, $this->tenant, $this->run);
     }
 }

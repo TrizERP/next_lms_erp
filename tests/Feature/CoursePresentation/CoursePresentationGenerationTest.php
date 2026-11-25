@@ -813,4 +813,191 @@ class CoursePresentationGenerationTest extends CoursePresentationTestCase
         $this->asTeacher()->getJson('/api/lms/course-presentation/status?' . http_build_query(['chapter_id' => self::CHAPTER, 'run' => $run, 'pedagogy' => 'inquiry_based', 'format' => 'branching_scenario']))
             ->assertStatus(422);
     }
+
+    // ---- AI Stack (Teach/Learn automations) starting the same branching-scenario draft -------------------------------
+
+    public function test_ai_stack_starts_the_same_draft_as_create_and_stores_nothing(): void
+    {
+        $this->seedPilotChapter();
+        $this->seedStrategiesForGeneration();
+        $this->fake();
+        Bus::fake();
+        $starter = app(\App\Services\CoursePresentation\AutomationDraftStarter::class);
+
+        $first = $starter->start(self::CHAPTER, self::TENANT, 55, 'Inquiry-based learning');
+
+        $this->assertTrue($first['success'], (string) ($first['error'] ?? ''));
+        $this->assertSame('draft_started', $first['status']);
+        $run = app(GenerationRun::class)->read(self::CHAPTER, self::TENANT, $first['run']);
+        $this->assertSame(['queued', 'inquiry_based', 'branching_scenario'], [$run['state'], $run['method'], $run['format']]);
+        Bus::assertDispatched(GenerateCoursePresentationJob::class, fn ($job) => $job->chapterId === self::CHAPTER && $job->run === $first['run']);
+        $this->assertSame([], $this->commands, 'nothing runs inside the request');
+        $this->assertSame(0, DB::table('content_master')->count(), 'a draft stores nothing, replaces nothing and hides nothing');
+
+        // Pressing it again points at the draft that is already there instead of starting a second.
+        $again = $starter->start(self::CHAPTER, self::TENANT, 55, 'Inquiry-based learning');
+        $this->assertSame(['draft_pending', $first['run']], [$again['status'], $again['run']]);
+        Bus::assertDispatchedTimes(GenerateCoursePresentationJob::class, 1);
+    }
+
+    public function test_an_ai_stack_run_stores_itself_when_it_passes_and_a_create_button_run_still_waits_for_approval(): void
+    {
+        $this->seedPilotChapter();
+        $this->seedStrategiesForGeneration();
+        $runs = $this->fake();
+        Bus::fake();
+        $starter = app(\App\Services\CoursePresentation\AutomationDraftStarter::class);
+
+        $started = $starter->start(self::CHAPTER, self::TENANT, 55, 'Inquiry-based learning', 'interactive_slides', 'Teacher');
+        $runs->execute(self::CHAPTER, self::TENANT, $started['run']);
+        $this->assertSame('ready', $runs->read(self::CHAPTER, self::TENANT, $started['run'])['state'], 'generated and validated');
+
+        $stored = $runs->autoStore(self::CHAPTER, self::TENANT, $started['run']);
+        $this->assertTrue($stored['ok'], (string) ($stored['message'] ?? ''));
+        $status = $runs->read(self::CHAPTER, self::TENANT, $started['run']);
+        $this->assertSame(['stored', 777], [$status['state'], $status['stored']['content_id']]);
+        $this->assertSame(1, DB::table('content_master')->count());
+        $this->assertSame('verified_existing', $starter->start(self::CHAPTER, self::TENANT, 55, 'Inquiry-based learning', 'interactive_slides')['status'], 'a second press reuses it');
+
+        // A run started with the Create button carries no auto_store: autoStore leaves it for a teacher.
+        $manual = $runs->request(self::CHAPTER, self::TENANT, 55, 'experiential', 'interactive_slides');
+        $runs->execute(self::CHAPTER, self::TENANT, $manual['run']);
+        $this->assertNull($runs->autoStore(self::CHAPTER, self::TENANT, $manual['run']));
+        $this->assertSame('ready', $runs->read(self::CHAPTER, self::TENANT, $manual['run'])['state']);
+        $this->assertSame(1, DB::table('content_master')->count());
+    }
+
+    public function test_when_the_store_step_refuses_an_ai_stack_run_the_reason_is_kept_and_nothing_is_stored(): void
+    {
+        $this->seedPilotChapter();
+        $this->seedStrategiesForGeneration();
+        $runs = $this->fake(storeCode: 1);
+        Bus::fake();
+        $started = app(\App\Services\CoursePresentation\AutomationDraftStarter::class)->start(self::CHAPTER, self::TENANT, 55, 'Inquiry-based learning', 'interactive_slides');
+        $runs->execute(self::CHAPTER, self::TENANT, $started['run']);
+
+        $this->assertFalse($runs->autoStore(self::CHAPTER, self::TENANT, $started['run'])['ok']);
+        $status = $runs->read(self::CHAPTER, self::TENANT, $started['run']);
+        $this->assertNotEmpty($status['auto_store_error']);
+        $this->assertSame(0, DB::table('content_master')->count());
+    }
+
+    private function resourceStatus(array $items): array
+    {
+        $controller = app(\App\Http\Controllers\AI\TeachLearnCatalogueAgentController::class);
+        $request = \Illuminate\Http\Request::create('/x', 'POST', ['items' => $items]);
+        $request->attributes->set('mcp_auth', ['sub_institute_id' => (string) self::TENANT]);
+
+        return $controller->resourceStatus($request)->getData(true);
+    }
+
+    public function test_the_resource_status_endpoint_reports_stored_running_and_failed_for_presentations_and_documents(): void
+    {
+        $this->seedPilotChapter();
+        $this->seedStrategiesForGeneration();
+        $runs = $this->fake();
+        Bus::fake();
+        $starter = app(\App\Services\CoursePresentation\AutomationDraftStarter::class);
+        $run = $starter->start(self::CHAPTER, self::TENANT, 55, 'Inquiry-based learning', 'interactive_slides')['run'];
+        $deck = ['kind' => 'presentation', 'chapter_id' => self::CHAPTER, 'run' => $run];
+        $doc = ['kind' => 'document', 'chapter_id' => self::CHAPTER, 'document_kind' => 'revision_notes'];
+
+        $json = $this->resourceStatus([$deck, $doc]);
+        $items = $json['data']['items'] ?? $json['items'];
+        $this->assertSame(['running', 'running'], [$items[0]['state'], $items[1]['state']]);
+
+        // The deck is generated and stored by the job; the document's row appears when it is stored.
+        $runs->execute(self::CHAPTER, self::TENANT, $run);
+        $runs->autoStore(self::CHAPTER, self::TENANT, $run);
+        DB::table('content_master')->insert(['id' => 950, 'standard_id' => self::STANDARD, 'subject_id' => self::SUBJECT, 'chapter_id' => self::CHAPTER, 'sub_institute_id' => self::TENANT,
+            'content_category' => 'Revision Notes', 'filename' => 'study_revision_notes_8592_all_0123456789ab.pdf', 'title' => 'Revision Notes', 'show_hide' => 1]);
+        $items = ($this->resourceStatus([$deck, $doc])['data'] ?? $this->resourceStatus([$deck, $doc]))['items'];
+        $this->assertSame(['stored', 777], [$items[0]['state'], $items[0]['content_id']]);
+        $this->assertSame(['stored', 950], [$items[1]['state'], $items[1]['content_id']]);
+
+        // A failed document reports why; another school's chapter and an unknown kind are refused.
+        DB::table('content_master')->where('id', 950)->delete();
+        \Illuminate\Support\Facades\Cache::put(\App\Jobs\GenerateStudyDocumentJob::failureKey(self::TENANT, self::CHAPTER, 'revision_notes'), 'The revision notes failed validation.', 60);
+        $payload = $this->resourceStatus([$doc, ['kind' => 'document', 'chapter_id' => self::CHAPTER, 'document_kind' => 'nonsense']]);
+        $items = ($payload['data'] ?? $payload)['items'];
+        $this->assertSame(['failed', 'The revision notes failed validation.'], [$items[0]['state'], $items[0]['error']]);
+        $this->assertSame('failed', $items[1]['state']);
+    }
+
+    public function test_ai_stack_refuses_an_unknown_approach_and_reuses_a_stored_story_deck_of_the_same_approach(): void
+    {
+        $this->seedPilotChapter();
+        $this->seedStrategiesForGeneration();
+        $this->fake();
+        Bus::fake();
+        $starter = app(\App\Services\CoursePresentation\AutomationDraftStarter::class);
+
+        $this->assertFalse($starter->start(self::CHAPTER, self::TENANT, 55, 'Made-up approach')['success']);
+        $this->assertSame('inquiry_based', $starter->methodKey('Inquiry-based learning'));
+        $this->assertNull($starter->methodKey('Inquiry-based'));
+
+        DB::table('content_master')->insert(['id' => 900, 'standard_id' => self::STANDARD, 'subject_id' => self::SUBJECT, 'chapter_id' => self::CHAPTER, 'sub_institute_id' => self::TENANT,
+            'content_category' => \App\Services\StudyDeck\Story\StoryTemplate::CATEGORY, 'filename' => 'study_story_inquiry_based__atoms_abc123.pptx', 'title' => 'Atoms Story Lesson', 'show_hide' => 1]);
+        $reused = $starter->start(self::CHAPTER, self::TENANT, 55, 'Inquiry-based learning');
+        $this->assertSame(['verified_existing', 900], [$reused['status'], $reused['content_id']]);
+        // Another approach is a different deck: it is not "already there".
+        $this->assertNull($starter->existing(self::CHAPTER, self::TENANT, 'Socratic questioning / guided discovery'));
+        Bus::assertNotDispatched(GenerateCoursePresentationJob::class);
+    }
+
+    public function test_ai_stack_presentation_is_the_classroom_resource_slides_deck_and_duplicates_are_per_method_and_format(): void
+    {
+        $this->seedPilotChapter();
+        $this->seedStrategiesForGeneration();
+        $this->fake();
+        Bus::fake();
+        $starter = app(\App\Services\CoursePresentation\AutomationDraftStarter::class);
+
+        // An older deck stored WITHOUT a method (the kind that showed "Method/Format not configured") is not this choice.
+        DB::table('content_master')->insert(['id' => 901, 'standard_id' => self::STANDARD, 'subject_id' => self::SUBJECT, 'chapter_id' => self::CHAPTER, 'sub_institute_id' => self::TENANT,
+            'content_category' => 'Classroom Presentation', 'filename' => 'study_deck_atoms_abc123.pptx', 'title' => 'Atoms Study Deck', 'show_hide' => 1]);
+        $this->assertNull($starter->existing(self::CHAPTER, self::TENANT, 'Inquiry-based learning', 'interactive_slides'));
+
+        $started = $starter->start(self::CHAPTER, self::TENANT, 55, 'Inquiry-based learning', 'interactive_slides');
+        $this->assertSame(['draft_started', 'interactive_slides'], [$started['status'], $started['format']]);
+        $run = app(GenerationRun::class)->read(self::CHAPTER, self::TENANT, $started['run']);
+        $this->assertSame(['inquiry_based', 'interactive_slides'], [$run['method'], $run['format']]);
+        $this->assertSame(1, DB::table('content_master')->count(), 'the old deck is untouched and nothing new is stored');
+
+        // A slides deck stored for this method is "already there" for slides, not for a story lesson.
+        DB::table('content_master')->insert(['id' => 902, 'standard_id' => self::STANDARD, 'subject_id' => self::SUBJECT, 'chapter_id' => self::CHAPTER, 'sub_institute_id' => self::TENANT,
+            'content_category' => 'Classroom Presentation', 'filename' => 'study_deck_inquiry_based__atoms_def456.pptx', 'title' => 'Atoms Study Deck - Inquiry-based learning', 'show_hide' => 1]);
+        $this->assertSame(902, $starter->existing(self::CHAPTER, self::TENANT, 'Inquiry-based learning', 'interactive_slides')['id']);
+        $this->assertNull($starter->existing(self::CHAPTER, self::TENANT, 'Inquiry-based learning', 'branching_scenario'));
+    }
+
+    public function test_the_ai_stack_study_document_job_is_unique_uses_the_worker_queue_and_refuses_what_is_not_its_own(): void
+    {
+        config(['queue.default' => 'database']);
+        $job = new \App\Jobs\GenerateStudyDocumentJob(self::CHAPTER, self::TENANT, 'revision_notes', 55);
+        $this->assertSame('course_presentation', $job->connection, 'the queue a worker already runs');
+        $this->assertSame('study-document:1:8592:revision_notes', $job->uniqueId());
+        $this->assertNotSame($job->uniqueId(), (new \App\Jobs\GenerateStudyDocumentJob(self::CHAPTER, self::TENANT, 'remedial', 55))->uniqueId(), 'one per kind');
+
+        $this->seedPilotChapter();
+        $generator = \Mockery::mock(\App\Services\ContentGenerationService::class);
+        $generator->shouldNotReceive('generateStudyDocument');
+        // Another school's chapter and a made-up kind are refused before anything is written or any model is called.
+        (new \App\Jobs\GenerateStudyDocumentJob(self::CHAPTER, self::OTHER_TENANT, 'revision_notes'))->handle($generator);
+        (new \App\Jobs\GenerateStudyDocumentJob(self::CHAPTER, self::TENANT, 'nonsense'))->handle($generator);
+        $this->assertSame(0, DB::table('content_master')->count());
+    }
+
+    public function test_the_switch_opens_the_course_presentation_endpoints_to_other_chapters(): void
+    {
+        $this->seedPilotChapter();
+        DB::table('chapter_master')->insert(['id' => 8615, 'chapter_name' => 'Other', 'standard_id' => self::STANDARD, 'subject_id' => self::SUBJECT, 'sub_institute_id' => self::TENANT]);
+        $options = '/api/lms/course-presentation/options?chapter_id=8615';
+
+        $this->asTeacher()->getJson($options)->assertStatus(403);
+        config(['course_presentation_pilot.scope.all_chapters' => true]);
+        $this->asTeacher()->getJson($options)->assertOk();
+        // Opening the scope never opens another school's chapter.
+        $this->asTeacher(self::OTHER_TENANT)->getJson($options)->assertStatus(404);
+    }
 }

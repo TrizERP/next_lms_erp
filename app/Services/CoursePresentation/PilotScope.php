@@ -36,6 +36,18 @@ class PilotScope
         return false;
     }
 
+    /** The deployment-wide switch (config scope.all_chapters). It does not change allows(), which stays the exact list. */
+    public function openToAllChapters(): bool
+    {
+        return (bool) config('course_presentation_pilot.scope.all_chapters', false);
+    }
+
+    /** What the endpoints ask: any chapter when the switch is on, otherwise only a listed one. */
+    public function permits(object|array $chapter): bool
+    {
+        return $this->openToAllChapters() || $this->allows($chapter);
+    }
+
     public function message(): string
     {
         return "The Course Presentation workflow is available only for {$this->label}.";
