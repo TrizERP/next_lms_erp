@@ -172,6 +172,11 @@ class ActivityWriter extends DocumentWriter
             $progress
         );
 
+        // A text one or two words over its limit is not worth failing the whole set for, once the model has had its rewrites.
+        if ($compact) {
+            $activities = array_map(fn (array $a) => self::trimToLimits($a), $activities);
+        }
+
         return ['plan' => $plan, 'activities' => $this->finalise($activities, $work), 'questions' => $questions];
     }
 
@@ -205,7 +210,175 @@ class ActivityWriter extends DocumentWriter
             }
         }
 
+        // A model that keeps writing too many activities will not be talked down (18 written where 13 were required, three rounds running):
+        // fold the surplus ones into the others here, then judge the result by the same rules.
+        // The same for the variety a set of six or more must have (a quiz or matching, say) when the model leaves one out every time.
+        // A plan that leaves concepts out (18 of 42 in one run, every round) gets them added to activities that have room.
+        $merged = self::ensureVariety(self::fitToMax(self::coverMissing($plan, $scope, $map), $max));
+        if ($merged !== $plan) {
+            $mergedErrors = self::planProblems($merged, $scope, $map, $min, $max, $this->compact);
+            if ($mergedErrors === []) {
+                return $merged;
+            }
+            $errors = $mergedErrors;
+        }
+
         throw new \RuntimeException("The activity plan is invalid after two repair attempts:\n- " . implode("\n- ", $errors));
+    }
+
+    /**
+     * Adds every concept no activity covers to an activity that has room (fewer than MAX_CONCEPTS), preferring one whose concepts
+     * share the concept's topic, then the one with the fewest concepts. Nothing else changes. A concept with no room anywhere is
+     * left out, and the plan's rules report it.
+     *
+     * @param array<int,array<string,mixed>> $plan
+     * @param array<int,int> $scope
+     * @param array<string,mixed> $map
+     * @return array<int,array<string,mixed>>
+     */
+    public static function coverMissing(array $plan, array $scope, array $map): array
+    {
+        $plan = array_values($plan);
+        if ($plan === []) {
+            return $plan;
+        }
+        $covered = [];
+        foreach ($plan as $a) {
+            foreach ($a['concept_ids'] as $id) {
+                $covered[$id] = true;
+            }
+        }
+        $topic = fn (int $id) => $map['concepts'][$id]['topic_id'] ?? null;
+
+        foreach (array_diff($scope, array_keys($covered)) as $id) {
+            $host = null;
+            $hostScore = null;
+            foreach ($plan as $i => $a) {
+                if (count($a['concept_ids']) >= self::MAX_CONCEPTS) {
+                    continue;
+                }
+                $sameTopic = $topic($id) !== null && in_array($topic($id), array_map($topic, $a['concept_ids']), true) ? 0 : 1;
+                $score = [$sameTopic, count($a['concept_ids'])];
+                if ($hostScore === null || $score < $hostScore) {
+                    $host = $i;
+                    $hostScore = $score;
+                }
+            }
+            if ($host === null) {
+                break;
+            }
+            $plan[$host]['concept_ids'][] = $id;
+        }
+
+        return $plan;
+    }
+
+    /**
+     * What a plan of six or more activities must contain (the rules of planProblems), as: field => [what satisfies it, what to set].
+     * Each target is valid for a compact set too.
+     */
+    private const VARIETY = [
+        ['field' => 'grouping', 'any' => ['individual'], 'set' => 'individual'],
+        ['field' => 'grouping', 'any' => ['pair'], 'set' => 'pair'],
+        ['field' => 'grouping', 'any' => ['group'], 'set' => 'group'],
+        ['field' => 'format', 'any' => ['quiz', 'matching'], 'set' => 'quiz'],
+        ['field' => 'format', 'any' => ['inquiry', 'problem_solving', 'role_play'], 'set' => 'inquiry'],
+        ['field' => 'format', 'any' => ['discussion', 'reflection'], 'set' => 'reflection'],
+    ];
+
+    /**
+     * Adds what a plan of six or more activities is missing (a quiz, an inquiry, a pair activity ...) by changing ONE activity that
+     * can spare it: one whose value for that field is held by another activity too, and whose change does not leave another rule
+     * unmet. Nothing else about the plan changes. A plan that cannot be fixed this way is returned as it is.
+     *
+     * @param array<int,array<string,mixed>> $plan
+     * @return array<int,array<string,mixed>>
+     */
+    public static function ensureVariety(array $plan): array
+    {
+        if (count($plan) < 6) {
+            return $plan;
+        }
+        $unmet = function (array $p): int {
+            $n = 0;
+            foreach (self::VARIETY as $rule) {
+                if (!array_intersect(array_column($p, $rule['field']), $rule['any'])) {
+                    $n++;
+                }
+            }
+
+            return $n;
+        };
+
+        foreach (self::VARIETY as $rule) {
+            if (array_intersect(array_column($plan, $rule['field']), $rule['any'])) {
+                continue;
+            }
+            $counts = array_count_values(array_column($plan, $rule['field']));
+            foreach ($plan as $i => $a) {
+                if (($counts[$a[$rule['field']]] ?? 0) < 2) {
+                    continue; // the only activity of its kind
+                }
+                $try = $plan;
+                $try[$i][$rule['field']] = $rule['set'];
+                if ($unmet($try) < $unmet($plan)) {
+                    $plan = $try;
+                    break;
+                }
+            }
+        }
+
+        return $plan;
+    }
+
+    /**
+     * Brings a plan with too many activities down to `$max` by folding the activity with the fewest concepts into one that has room,
+     * so no concept loses its coverage. Stops, leaving what it has, when nothing has room (the rules then report the gap).
+     *
+     * @param array<int,array<string,mixed>> $plan
+     * @return array<int,array<string,mixed>>
+     */
+    public static function fitToMax(array $plan, int $max): array
+    {
+        $plan = array_values($plan);
+        while (count($plan) > $max) {
+            $smallest = 0;
+            foreach ($plan as $i => $a) {
+                if (count($a['concept_ids']) < count($plan[$smallest]['concept_ids'])) {
+                    $smallest = $i;
+                }
+            }
+            $gone = $plan[$smallest];
+            array_splice($plan, $smallest, 1);
+
+            foreach ($gone['concept_ids'] as $id) {
+                $covered = false;
+                foreach ($plan as $a) {
+                    if (in_array($id, $a['concept_ids'], true)) {
+                        $covered = true;
+                        break;
+                    }
+                }
+                if ($covered) {
+                    continue;
+                }
+                $host = null;
+                foreach ($plan as $i => $a) {
+                    if (count($a['concept_ids']) < self::MAX_CONCEPTS && ($host === null || count($a['concept_ids']) < count($plan[$host]['concept_ids']))) {
+                        $host = $i;
+                    }
+                }
+                if ($host === null) {
+                    return $plan;
+                }
+                $plan[$host]['concept_ids'][] = $id;
+            }
+        }
+        foreach ($plan as $i => $a) {
+            $plan[$i]['id'] = 'a' . ($i + 1);
+        }
+
+        return $plan;
     }
 
     /**
@@ -487,31 +660,35 @@ PROMPT;
         $words = fn (array $list) => array_map(fn ($x) => self::words((string) $x), $list);
 
         if (isset($a['objectives'][0]) && self::words($a['objectives'][0]['text']) > self::COMPACT_OBJECTIVE_WORDS + 2) {
-            $out[] = 'The first objective is over ' . self::COMPACT_OBJECTIVE_WORDS . ' words; it is the one printed on the card, so make it the main aim in one short sentence.';
+            $out[] = 'The first objective is over ' . self::COMPACT_OBJECTIVE_WORDS . ' words; it is the one printed on the card, so make it the main aim in one short sentence.' . self::overBy([$a['objectives'][0]['text']], self::COMPACT_OBJECTIVE_WORDS + 2, 'objective');
         }
         if (count($a['materials']) > self::COMPACT_MATERIALS || max([0, ...$words($a['materials'])]) > self::COMPACT_MATERIAL_WORDS) {
-            $out[] = 'List at most ' . self::COMPACT_MATERIALS . ' materials of at most ' . self::COMPACT_MATERIAL_WORDS . ' words each.';
+            $out[] = 'List at most ' . self::COMPACT_MATERIALS . ' materials of at most ' . self::COMPACT_MATERIAL_WORDS . ' words each.' . self::overBy($a['materials'], self::COMPACT_MATERIAL_WORDS, 'material');
         }
         if (count($a['teacher_steps']) !== 3 || max([0, ...$words(array_column($a['teacher_steps'], 'text'))]) > self::COMPACT_STEP_WORDS) {
-            $out[] = 'Write exactly 3 teacher steps of at most ' . self::COMPACT_STEP_WORDS . ' words each.';
+            $out[] = 'Write exactly 3 teacher steps of at most ' . self::COMPACT_STEP_WORDS . ' words each.' . self::overBy(array_column($a['teacher_steps'], 'text'), self::COMPACT_STEP_WORDS, 'teacher step');
         }
         if (count($a['student_steps']) !== 3 || max([0, ...$words($a['student_steps'])]) > self::COMPACT_STEP_WORDS) {
-            $out[] = 'Write exactly 3 student steps of at most ' . self::COMPACT_STEP_WORDS . ' words each.';
+            $out[] = 'Write exactly 3 student steps of at most ' . self::COMPACT_STEP_WORDS . ' words each.' . self::overBy($a['student_steps'], self::COMPACT_STEP_WORDS, 'student step');
         }
         if (count($a['expected_outcomes']) > 2 || max([0, ...$words($a['expected_outcomes'])]) > self::COMPACT_OUTCOME_WORDS) {
-            $out[] = 'Give 1 or 2 expected outcomes of at most ' . self::COMPACT_OUTCOME_WORDS . ' words each.';
+            $out[] = 'Give 1 or 2 expected outcomes of at most ' . self::COMPACT_OUTCOME_WORDS . ' words each.' . self::overBy($a['expected_outcomes'], self::COMPACT_OUTCOME_WORDS, 'expected outcome');
         }
         if (count($a['assessment']) !== 2
             || max([0, ...$words(array_column($a['assessment'], 'criterion'))]) > self::COMPACT_CRITERION_WORDS
             || max([0, ...$words(array_column($a['assessment'], 'evidence'))]) > self::COMPACT_EVIDENCE_WORDS) {
-            $out[] = 'Give exactly 2 assessment criteria: a criterion of at most ' . self::COMPACT_CRITERION_WORDS . ' words and evidence of at most ' . self::COMPACT_EVIDENCE_WORDS . '.';
+            $out[] = 'Give exactly 2 assessment criteria: a criterion of at most ' . self::COMPACT_CRITERION_WORDS . ' words and evidence of at most ' . self::COMPACT_EVIDENCE_WORDS . '.'
+                . self::overBy(array_column($a['assessment'], 'criterion'), self::COMPACT_CRITERION_WORDS, 'criterion')
+                . self::overBy(array_column($a['assessment'], 'evidence'), self::COMPACT_EVIDENCE_WORDS, 'evidence');
         }
         if (count($a['reflection']) !== 1 || max([0, ...$words($a['reflection'])]) > self::COMPACT_REFLECTION_WORDS) {
-            $out[] = 'Give exactly 1 reflection prompt of at most ' . self::COMPACT_REFLECTION_WORDS . ' words.';
+            $out[] = 'Give exactly 1 reflection prompt of at most ' . self::COMPACT_REFLECTION_WORDS . ' words.' . self::overBy($a['reflection'], self::COMPACT_REFLECTION_WORDS, 'reflection prompt');
         }
         if ($a['misconception'] !== null
             && (self::words($a['misconception']['wrong_idea']) > self::COMPACT_MISCONCEPTION_WORDS[0] || self::words($a['misconception']['correction']) > self::COMPACT_MISCONCEPTION_WORDS[1])) {
-            $out[] = 'The misconception is at most ' . self::COMPACT_MISCONCEPTION_WORDS[0] . ' words and its correction at most ' . self::COMPACT_MISCONCEPTION_WORDS[1] . '.';
+            $out[] = 'The misconception is at most ' . self::COMPACT_MISCONCEPTION_WORDS[0] . ' words and its correction at most ' . self::COMPACT_MISCONCEPTION_WORDS[1] . '.'
+                . self::overBy([$a['misconception']['wrong_idea']], self::COMPACT_MISCONCEPTION_WORDS[0], 'wrong idea')
+                . self::overBy([$a['misconception']['correction']], self::COMPACT_MISCONCEPTION_WORDS[1], 'correction');
         }
         // An interaction is allowed: the compact pages do not print it (the practical is on paper; the interaction is the online
         // preparation and capture for it), so it costs the pack no page space.
@@ -527,6 +704,66 @@ PROMPT;
         }
 
         return $out;
+    }
+
+    /**
+     * Names the items that are over their word limit and by how many words, so a rewrite shortens those and not everything.
+     *
+     * @param array<int,mixed> $texts
+     */
+    private static function overBy(array $texts, int $limit, string $what): string
+    {
+        $out = '';
+        foreach (array_values($texts) as $i => $text) {
+            $n = self::words((string) $text);
+            if ($n > $limit) {
+                $out .= ' The ' . $what . ' number ' . ($i + 1) . ' has ' . $n . ' words, ' . ($n - $limit) . ' too many: cut it to ' . $limit . ' or fewer.';
+            }
+        }
+
+        return $out;
+    }
+
+    /**
+     * A compact activity with every text that is a few words over its limit shortened (see shortenToLimit), by the same limits
+     * compactProblems holds it to. Run after the model's rewrites, so it only ever touches what they could not fix.
+     *
+     * @param array<string,mixed> $a a cleaned activity
+     * @return array<string,mixed>
+     */
+    public static function trimToLimits(array $a): array
+    {
+        $cut = fn ($text, int $limit) => is_string($text) ? self::shortenToLimit($text, $limit) : $text;
+
+        if (isset($a['objectives'][0]['text'])) {
+            $a['objectives'][0]['text'] = $cut($a['objectives'][0]['text'], self::COMPACT_OBJECTIVE_WORDS + 2);
+        }
+        foreach (['materials' => self::COMPACT_MATERIAL_WORDS, 'student_steps' => self::COMPACT_STEP_WORDS, 'expected_outcomes' => self::COMPACT_OUTCOME_WORDS, 'reflection' => self::COMPACT_REFLECTION_WORDS] as $field => $limit) {
+            if (isset($a[$field]) && is_array($a[$field])) {
+                $a[$field] = array_map(fn ($t) => $cut($t, $limit), $a[$field]);
+            }
+        }
+        foreach ((array) ($a['teacher_steps'] ?? []) as $i => $step) {
+            if (isset($step['text'])) {
+                $a['teacher_steps'][$i]['text'] = $cut($step['text'], self::COMPACT_STEP_WORDS);
+            }
+        }
+        foreach ((array) ($a['assessment'] ?? []) as $i => $row) {
+            foreach (['criterion' => self::COMPACT_CRITERION_WORDS, 'evidence' => self::COMPACT_EVIDENCE_WORDS] as $key => $limit) {
+                if (isset($row[$key])) {
+                    $a['assessment'][$i][$key] = $cut($row[$key], $limit);
+                }
+            }
+        }
+        if (isset($a['misconception']) && is_array($a['misconception'])) {
+            foreach ([['wrong_idea', self::COMPACT_MISCONCEPTION_WORDS[0]], ['correction', self::COMPACT_MISCONCEPTION_WORDS[1]]] as [$key, $limit]) {
+                if (isset($a['misconception'][$key])) {
+                    $a['misconception'][$key] = $cut($a['misconception'][$key], $limit);
+                }
+            }
+        }
+
+        return $a;
     }
 
     /** @param array<string,array<string,mixed>> $chunk work items by activity id */

@@ -2,7 +2,10 @@
 
 namespace App\Services\Lms;
 
+use App\Jobs\GenerateStudyDocumentJob;
 use App\Mcp\ToolRegistry;
+use App\Services\CoursePresentation\AutomationDraftStarter;
+use App\Services\StudyDeck\Documents\DocumentKind;
 use App\Services\Lms\Eso\TeachLearnEsoRegistry;
 use App\Services\Lms\Eso\TeachLearnQualityGateEngine;
 use App\Services\Mcp\McpRequestContext;
@@ -90,7 +93,10 @@ class TeachLearnAgentPipelineService
         $generateAssessment = array_key_exists('generate_assessment', $options) ? (bool) $options['generate_assessment'] : true;
         $selectedImages = PedagogicalContentBuilder::sanitizeSelectedImages($options['selected_images'] ?? []);
         $wantsBranching = in_array('branching_scenario', array_map('strval', $studentExperiences), true);
-        $branching = app(TeachLearnBranchingService::class);
+        // The branching scenario is the Course Presentation story deck (same as Classroom Resource), started as a draft.
+        $drafts = app(AutomationDraftStarter::class);
+        // The deck a Presentation becomes: a story lesson for the branching experience, otherwise interactive slides.
+        $deckFormat = $wantsBranching ? 'branching_scenario' : 'interactive_slides';
         $checkOnly = (bool) ($options['check_only'] ?? false);
         $requestedStep = isset($options['step']) ? (is_numeric($options['step']) ? (int) $options['step'] : strtolower((string)$options['step'])) : 'all';
         $daysBack = (int) ($options['days_back'] ?? 15);
@@ -425,6 +431,47 @@ class TeachLearnAgentPipelineService
                         continue;
                     }
 
+                    // A Presentation is the study deck of Classroom Resource (same player, layout and PPTX), never the old template
+                    // HTML, so the design template chosen here does not apply to it. "Already exists" means a deck of THIS chapter,
+                    // teaching approach and format - the rule Create uses - not any row filed under Presentation.
+                    if (strcasecmp($rType, 'Presentation') === 0) {
+                        $deck = $drafts->existing((int) $chapRecord->id, $subInstituteId, $teachingApproach, $deckFormat);
+                        $base = [
+                            'chapter_id' => (int) $chapRecord->id,
+                            'chapter_name' => $chapRecord->chapter_name,
+                            'standard_id' => $cStdId,
+                            'subject_id' => $cSubId,
+                            'resource_type' => 'Presentation',
+                        ];
+                        if ($deck) {
+                            $chapExisting[] = $base + ['content_id' => (int) $deck['id'], 'title' => $deck['title'], 'file_type' => 'pptx', 'status' => 'verified_existing', 'is_new' => false];
+                        } else {
+                            $chapMissing[] = $base + ['format' => $deckFormat, 'status' => 'missing'];
+                        }
+                        continue;
+                    }
+
+                    // Revision notes, a remedial class and classroom activities are the study documents of Classroom Resource (built from
+                    // the chapter's own data, with a PDF and online practice), never the old template HTML, so the design template
+                    // does not apply to them either. "Already exists" means a stored STUDY DOCUMENT of that kind: an old template
+                    // row filed under the same category does not count.
+                    if (($docKind = DocumentKind::fromCategory($rType)) !== null) {
+                        $doc = \App\Services\ContentGenerationService::storedStudyDocumentRow((int) $chapRecord->id, $subInstituteId, $docKind);
+                        $base = [
+                            'chapter_id' => (int) $chapRecord->id,
+                            'chapter_name' => $chapRecord->chapter_name,
+                            'standard_id' => $cStdId,
+                            'subject_id' => $cSubId,
+                            'resource_type' => $rType,
+                        ];
+                        if ($doc) {
+                            $chapExisting[] = $base + ['content_id' => (int) $doc->id, 'title' => $doc->title, 'file_type' => 'pdf', 'status' => 'verified_existing', 'is_new' => false];
+                        } else {
+                            $chapMissing[] = $base + ['status' => 'missing'];
+                        }
+                        continue;
+                    }
+
                     $found = null;
                     if (!empty($coverage['resources_status'])) {
                         foreach ($coverage['resources_status'] as $resStat) {
@@ -460,9 +507,10 @@ class TeachLearnAgentPipelineService
                     }
                 }
 
-                // Interactive branching scenario: lives in the H5P tables, not content_master.
-                if ($wantsBranching) {
-                    $scenario = $branching->findExisting($subInstituteId, (int) $chapRecord->id);
+                // Interactive branching scenario: the stored story deck of this chapter AND teaching approach (content_master).
+                // When Presentation is also selected it IS that deck (above), so it is not listed twice.
+                if ($wantsBranching && !in_array('Presentation', $targetResourceTypes, true)) {
+                    $scenario = $drafts->existing((int) $chapRecord->id, $subInstituteId, $teachingApproach);
                     if ($scenario) {
                         $chapExisting[] = [
                             'chapter_id' => (int) $chapRecord->id,
@@ -470,9 +518,9 @@ class TeachLearnAgentPipelineService
                             'standard_id' => $cStdId,
                             'subject_id' => $cSubId,
                             'resource_type' => TeachLearnBranchingService::RESOURCE_TYPE,
-                            'content_id' => (int) $scenario->id,
-                            'title' => $scenario->title,
-                            'file_type' => 'h5p_branching_scenario',
+                            'content_id' => (int) $scenario['id'],
+                            'title' => $scenario['title'],
+                            'file_type' => 'pptx',
                             'status' => 'verified_existing',
                             'is_new' => false,
                         ];
@@ -723,7 +771,10 @@ class TeachLearnAgentPipelineService
                     'content_id' => $cId,
                     'title' => $item['title'],
                     'file_type' => $item['file_type'] ?? 'html',
-                    'url' => ($item['file_type'] ?? '') === 'h5p_branching_scenario' ? null : url('/api/lms-content-view/' . $cId),
+                    // A story deck opens in the study-deck player; every other row in the content viewer.
+                    'url' => in_array($item['resource_type'], [TeachLearnBranchingService::RESOURCE_TYPE, 'Presentation'], true) && ($item['file_type'] ?? '') === 'pptx'
+                        ?'/student/study-deck/' . (int) $item['chapter_id'] . '?content=' . $cId
+                        : url('/api/lms-content-view/' . $cId),
                     'is_new' => false,
                     'message' => "Content already exists with ID #{$cId}. Kept without duplicate.",
                 ];
@@ -733,6 +784,9 @@ class TeachLearnAgentPipelineService
             $generatedResources = [];
             $skippedResources = [];
             $failedResources = [];
+            // Presentations and study documents handed to a background job (they take minutes). There is no review step: each stores
+            // itself once it has passed generation and validation, and the screen polls resource-status until it is stored or failed.
+            $pendingResources = [];
             $assessmentResult = null;
 
             if (!$checkOnly && !empty($missingContentAll)) {
@@ -745,8 +799,10 @@ class TeachLearnAgentPipelineService
                         return;
                     }
                     $cId = (int) ($gen['content_id'] ?? 0);
-                    $isScenario = $type === TeachLearnBranchingService::RESOURCE_TYPE;
-                    $problem = $isScenario ? null : $this->verifyContentRow($cId, $chapterId, $subInstituteId);
+                    // A story or slides deck (both are study decks stored as one content_master row).
+                    $isScenario = in_array($type, [TeachLearnBranchingService::RESOURCE_TYPE, 'Presentation'], true);
+                    // A reused story deck is a content_master row like any other, so it is read back the same way.
+                    $problem = $this->verifyContentRow($cId, $chapterId, $subInstituteId);
                     if ($problem !== null) {
                         $failedResources[] = ['chapter_id' => $chapterId, 'resource_type' => $type, 'error' => $problem];
                         return;
@@ -757,9 +813,9 @@ class TeachLearnAgentPipelineService
                         'resource_type' => $type,
                         'category' => $gen['category'] ?? $gen['content_category'] ?? $type,
                         'title' => $gen['title'] ?? ($mItem['chapter_name'] . ' - ' . $type),
-                        'file_type' => $gen['file_type'] ?? ($isScenario ? 'h5p_branching_scenario' : 'html'),
-                        'url' => $isScenario ? null : url('/api/lms-content-view/' . $cId),
-                        'storage_table' => $isScenario ? 'h5p_branching_scenario' : 'content_master',
+                        'file_type' => $gen['file_type'] ?? ($isScenario ? 'pptx' : 'html'),
+                        'url' => $isScenario ? '/student/study-deck/' . $chapterId . '?content=' . $cId : url('/api/lms-content-view/' . $cId),
+                        'storage_table' => 'content_master',
                         'status' => $gen['status'] ?? 'generated',
                         'template' => $template,
                         'chapter_id' => $chapterId,
@@ -786,8 +842,47 @@ class TeachLearnAgentPipelineService
                     }
 
                     try {
-                        if ($mResourceType === TeachLearnBranchingService::RESOURCE_TYPE) {
-                            $gen = $branching->generateAndStore($subInstituteId, $mChapterId, null, $this->currentUserId());
+                        // A study document takes many model calls: it is written in the background and stores itself, as the
+                        // Classroom Resource drawer does.
+                        if (($docKind = DocumentKind::fromCategory($mResourceType)) !== null) {
+                            $job = new GenerateStudyDocumentJob($mChapterId, $subInstituteId, $docKind->value, $this->currentUserId(), (string) $this->contentAgentService->currentSyear($subInstituteId), session('user_profile_name'));
+                            // The last attempt's failure reason is not this attempt's: forget it so the screen says "generating" until the new job really fails.
+                            \Illuminate\Support\Facades\Cache::forget(GenerateStudyDocumentJob::failureKey($subInstituteId, $mChapterId, $docKind->value));
+                            config('queue.default') === 'sync' ? dispatch($job)->afterResponse() : dispatch($job);
+                            $pendingResources[] = [
+                                'kind' => 'document',
+                                'document_kind' => $docKind->value,
+                                'chapter_id' => $mChapterId,
+                                'chapter_name' => $mItem['chapter_name'],
+                                'standard_id' => $mItem['standard_id'],
+                                'subject_id' => $mItem['subject_id'],
+                                'resource_type' => $mResourceType,
+                                'status' => 'generating',
+                                'message' => 'Being written; it is stored automatically in Classroom Resource.',
+                            ];
+                            continue;
+                        }
+                        if ($mResourceType === TeachLearnBranchingService::RESOURCE_TYPE || $mResourceType === 'Presentation') {
+                            $gen = $drafts->start($mChapterId, $subInstituteId, $this->currentUserId(), $teachingApproach, $mItem['format'] ?? 'branching_scenario', session('user_profile_name'));
+                            // A started (or already running) deck is neither generated nor failed yet: it stores itself when it passes.
+                            if (!empty($gen['success']) && in_array($gen['status'] ?? '', ['draft_started', 'draft_pending'], true)) {
+                                $pendingResources[] = [
+                                    'kind' => 'presentation',
+                                    'chapter_id' => $mChapterId,
+                                    'chapter_name' => $mItem['chapter_name'],
+                                    'standard_id' => $mItem['standard_id'],
+                                    'subject_id' => $mItem['subject_id'],
+                                    'resource_type' => $mResourceType,
+                                    'status' => 'generating',
+                                    'run' => $gen['run'],
+                                    'method' => $gen['method'],
+                                    'format' => $gen['format'],
+                                    'format_label' => $gen['format_label'],
+                                    'teaching_approach' => $teachingApproach,
+                                    'message' => $gen['message'],
+                                ];
+                                continue;
+                            }
                         } else {
                             $gen = $this->contentAgentService->generateClassroomResource(
                                 $subInstituteId,
@@ -830,7 +925,7 @@ class TeachLearnAgentPipelineService
             }
 
             // Never report a passed gate when generation was needed but nothing was stored.
-            if (!empty($failedResources) && empty($generatedResources) && empty($skippedResources)) {
+            if (!empty($failedResources) && empty($generatedResources) && empty($skippedResources) && empty($pendingResources)) {
                 $first = $failedResources[0];
                 throw new \RuntimeException(sprintf(
                     'Generation failed for %d resource(s); nothing was saved. First error (%s, chapter %d): %s',
@@ -857,7 +952,13 @@ class TeachLearnAgentPipelineService
             }
 
             // Synthesize clear summary
-            if (!empty($generatedResources)) {
+            $pendingNote = empty($pendingResources) ? '' : sprintf(
+                ' %d resource(s) are being generated in the background and are stored automatically in Classroom Resource once they pass validation.',
+                count($pendingResources)
+            );
+            if (empty($generatedResources) && !empty($pendingResources)) {
+                $step3Summary = trim($pendingNote) . sprintf(' Verified and reused %d existing resource(s).', count($verifiedResources));
+            } elseif (!empty($generatedResources)) {
                 $genTypes = array_unique(array_column($generatedResources, 'resource_type'));
                 $step3Summary = sprintf(
                     'Generated %d new missing resource(s) (%s) using "%s" approach. Verified and reused %d existing resource(s). Zero duplicate records created.',
@@ -865,7 +966,7 @@ class TeachLearnAgentPipelineService
                     implode(', ', $genTypes),
                     $teachingApproach,
                     count($verifiedResources)
-                );
+                ) . $pendingNote;
             } elseif (!empty($verifiedResources) && empty($missingContentAll)) {
                 $step3Summary = sprintf(
                     'All %d requested resource(s) already exist in database and were verified. Skipped generation; zero duplicate records created.',
@@ -942,10 +1043,12 @@ class TeachLearnAgentPipelineService
                 'generated_resources' => $generatedResources,
                 'skipped_resources' => $skippedResources,
                 'failed_resources' => $failedResources,
+                'pending_resources' => $pendingResources,
                 'verified_resources' => $verifiedResources,
                 'generated_count' => count($generatedResources),
                 'skipped_count' => $skippedCount,
                 'failed_count' => $failedCount,
+                'pending_count' => count($pendingResources),
                 'verified_count' => count($verifiedResources),
                 'assessment_created' => !empty($assessmentResult),
             ];
@@ -1062,10 +1165,12 @@ class TeachLearnAgentPipelineService
                 'generated_resources' => $generatedResources,
                 'skipped_resources' => $skippedResources,
                 'failed_resources' => $failedResources,
+                'pending_resources' => $pendingResources,
                 'verified_resources' => $verifiedResources,
                 'generated_count' => count($generatedResources),
                 'skipped_count' => $skippedCount,
                 'failed_count' => $failedCount,
+                'pending_count' => count($pendingResources),
                 'verified_count' => count($verifiedResources),
                 'images_applied' => !empty($selectedImages),
                 'duplicates_prevented' => count($verifiedResources),

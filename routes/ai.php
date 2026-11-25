@@ -359,6 +359,7 @@ Route::prefix(config('ai.route_prefix', 'api/ai'))
                 Route::match(['get', 'post'], 'subjects', [\App\Http\Controllers\AI\TeachLearnCatalogueAgentController::class, 'subjects']);
                 Route::match(['get', 'post'], 'chapters', [\App\Http\Controllers\AI\TeachLearnCatalogueAgentController::class, 'chapters']);
                 Route::post('check-content', [\App\Http\Controllers\AI\TeachLearnCatalogueAgentController::class, 'checkContent']);
+                Route::post('resource-status', [\App\Http\Controllers\AI\TeachLearnCatalogueAgentController::class, 'resourceStatus']);
                 Route::post('start', [\App\Http\Controllers\AI\TeachLearnCatalogueAgentController::class, 'start']);
                 Route::post('stop', [\App\Http\Controllers\AI\TeachLearnCatalogueAgentController::class, 'stop']);
                 Route::post('run-now', [\App\Http\Controllers\AI\TeachLearnCatalogueAgentController::class, 'runNow']);

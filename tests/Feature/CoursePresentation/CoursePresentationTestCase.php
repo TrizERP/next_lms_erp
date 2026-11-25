@@ -92,6 +92,8 @@ abstract class CoursePresentationTestCase extends TestCase
         DB::purge('sqlite');
         $this->assertSame('sqlite', DB::connection()->getDriverName(), 'refusing to run against a real database');
         $this->createTables();
+        // These suites assert the listed-chapters behaviour (403 elsewhere); the open-to-all switch has its own tests.
+        config(['course_presentation_pilot.scope.all_chapters' => false]);
         // Draft folders go to a scratch folder of this test run, never beside real drafts or stored decks.
         $this->runDir = 'framework/testing/course-presentation-' . getmypid() . '-' . uniqid();
         config(['course_presentation_pilot.generation.run_dir' => $this->runDir]);
