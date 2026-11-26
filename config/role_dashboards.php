@@ -15,7 +15,8 @@
  * 67 Exam · 173 Admission · 10 Inward Outward · 102 Circular · 99 Parent Communication ·
  * 258 PTM · 244 Visitor · 257 Inventory · 887 Library · 255 Front Desk · 253 Task ·
  * 254 Complaint · 146 Petty Cash · 18 Mobile Apps · 4 Reports · 230 LMS+PAL ·
- * 455 Career Counseling · 54 Exam (Master) · 130 Inventory (Master) · 358 Library (Master).
+ * 455 Career Counseling · 54 Exam (Master) · 130 Inventory (Master) · 358 Library (Master) ·
+ * 866 Signals · 869 Intelligence Workspace · 871 Executive Dashboard · 872 Decision Analytics · 873 Decision Intelligence (Enterprise Brain).
  */
 return [
     // Profile names whose dashboard is handled by the existing Admin / Teacher / Student screens.
@@ -40,6 +41,7 @@ return [
             'label' => 'Principal',
             'profiles' => ['principal'],
             'rights' => [
+                [866, 'v', false], [869, 'v', false], [871, 'v', false], [872, 'v', false], [873, 'v', false], // Enterprise Brain: signals, workspace and analytics, view only
                 [259, 'v', true], [265, 'v', true], [67, 'v', true], [173, 'v', true],
                 [434, 'v', true], [102, 'vae', false], [99, 'v', false], [13, 'va', true], [18, 'v', true],
                 [258, 'v', true], [518, 'v', false], [427, 'v', false], [975, 'v', false], [91, 'v', true], [36, 'v', true], [268, 'v', true], [299, 'v', true], [72, 'v', true], [309, 'v', true], [254, 'v', true], [255, 'v', true],
@@ -49,6 +51,7 @@ return [
             'label' => 'Vice Principal',
             'profiles' => ['vice principal'],
             'rights' => [
+                [866, 'v', false], [869, 'v', false], [871, 'v', false], [872, 'v', false], [873, 'v', false], // Enterprise Brain: signals, workspace and analytics, view only
                 [259, 'v', true], [265, 'v', true], [67, 'v', true], [173, 'v', true],
                 [434, 'v', true], [102, 'vae', false], [99, 'v', false], [13, 'va', true], [18, 'v', true],
                 [258, 'v', true], [518, 'v', false], [427, 'v', false], [975, 'v', false], [91, 'v', true], [36, 'v', true], [268, 'v', true], [299, 'v', true], [72, 'v', true], [309, 'v', true], [254, 'v', true], [255, 'v', true],
@@ -113,6 +116,7 @@ return [
             'label' => 'Trustee',
             'profiles' => ['trustee'],
             'rights' => [
+                [866, 'v', false], [869, 'v', false], [871, 'v', false], [872, 'v', false], [873, 'v', false], // Enterprise Brain: signals, workspace and analytics, view only
                 [36, 'v', true], [91, 'v', true], [268, 'v', true], [72, 'v', true], [299, 'v', true],
                 [102, 'v', false],
             ],
@@ -129,5 +133,28 @@ return [
             'profiles' => ['student'],
             'rights' => [], // already hold their rights
         ],
+    ],
+
+    /*
+     * Which Enterprise Brain signals each role's dashboard may show. `topics` are substrings matched against
+     * the signal's classification (null = every topic); `min_severity` hides anything quieter. A role that is
+     * not listed gets no signals. This is a relevance filter on top of the role's own widget list, not a grant:
+     * opening the Brain screens still needs the role's menu rights.
+     */
+    'signals' => [
+        'admin' => ['topics' => null, 'min_severity' => 'low'],
+        'assistant_admin' => ['topics' => null, 'min_severity' => 'low'],
+        'principal' => ['topics' => null, 'min_severity' => 'low'],
+        'vice_principal' => ['topics' => null, 'min_severity' => 'low'],
+        // Trustees see material issues only, not operational noise.
+        'trustee' => ['topics' => null, 'min_severity' => 'high'],
+        'counsellor' => ['topics' => ['student', 'attendance', 'engagement', 'result', 'academic'], 'min_severity' => 'low'],
+        'clerk' => ['topics' => ['collection', 'fees', 'admission', 'visitor', 'communication', 'data_quality'], 'min_severity' => 'low'],
+        'assistant_clerk' => ['topics' => ['collection', 'fees', 'admission', 'visitor', 'communication', 'data_quality'], 'min_severity' => 'low'],
+        'librarian' => ['topics' => ['library'], 'min_severity' => 'low'],
+        'store_keeper' => ['topics' => ['inventory', 'transport', 'purchase'], 'min_severity' => 'low'],
+        'exam_department' => ['topics' => ['result', 'academic', 'teach-learn', 'homework', 'exam'], 'min_severity' => 'low'],
+        // School-wide context for teaching; the Brain's signals are not per class, so a teacher sees only the teaching ones.
+        'teacher' => ['topics' => ['homework', 'academic', 'teach-learn', 'engagement', 'result'], 'min_severity' => 'medium'],
     ],
 ];
