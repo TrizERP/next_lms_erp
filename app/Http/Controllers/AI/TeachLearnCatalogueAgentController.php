@@ -491,6 +491,71 @@ class TeachLearnCatalogueAgentController extends AiController
      * POST /api/ai/teach-learn/catalogue-agent/check-content
      * Checks whether content already exists for the selected Standard, Subject, and Chapter.
      */
+    /**
+     * POST resource-status: where each resource AI Stack started in the background has got to. Presentations (a Course Presentation
+     * run) and study documents (revision notes, remedial class, classroom activities) take minutes, so Start Agents returns before
+     * they are stored and the screen asks again here until each one is `stored` (with its content id) or `failed` (with the reason).
+     * A document is `stored` only when its row exists; a presentation only when its run says so. Read-only, school from the session.
+     */
+    public function resourceStatus(Request $request): JsonResponse
+    {
+        try {
+            $tenant = $this->resolveInstituteId($request);
+            $runs = app(\App\Services\CoursePresentation\GenerationRun::class);
+            $out = [];
+
+            foreach (array_slice((array) $request->input('items', []), 0, 30) as $item) {
+                $item = (array) $item;
+                $chapterId = (int) ($item['chapter_id'] ?? 0);
+                $row = ['kind' => (string) ($item['kind'] ?? ''), 'chapter_id' => $chapterId, 'state' => 'running'];
+
+                if (!DB::table('chapter_master')->where('id', $chapterId)->where('sub_institute_id', $tenant)->exists()) {
+                    $out[] = ['state' => 'failed', 'error' => 'The chapter was not found for this school.'] + $row;
+                    continue;
+                }
+
+                if ($row['kind'] === 'presentation') {
+                    $runId = (string) ($item['run'] ?? '');
+                    $row['run'] = $runId;
+                    $status = \App\Services\CoursePresentation\GenerationRun::validId($runId) ? $runs->read($chapterId, $tenant, $runId) : null;
+                    if ($status === null) {
+                        $row = ['state' => 'failed', 'error' => 'That run was not found.'] + $row;
+                    } elseif (($status['state'] ?? '') === 'stored') {
+                        $row['state'] = 'stored';
+                        $row['content_id'] = (int) ($status['stored']['content_id'] ?? 0);
+                        $row['url'] = $status['stored']['deep_link'] ?? null;
+                    } elseif (($status['state'] ?? '') === 'failed') {
+                        $row = ['state' => 'failed', 'error' => (string) ($status['error'] ?? 'The presentation could not be generated.')] + $row;
+                    } elseif (!empty($status['auto_store_error'])) {
+                        // Generated and validated, but the store step refused it (for example a duplicate appeared meanwhile).
+                        $row = ['state' => 'failed', 'error' => (string) $status['auto_store_error']] + $row;
+                    }
+                    $out[] = $row;
+                    continue;
+                }
+
+                $kind = \App\Services\StudyDeck\Documents\DocumentKind::fromValue((string) ($item['document_kind'] ?? ''));
+                if ($kind === null) {
+                    $out[] = ['state' => 'failed', 'error' => 'Unknown document kind.'] + $row;
+                    continue;
+                }
+                $row['document_kind'] = $kind->value;
+                if ($stored = \App\Services\ContentGenerationService::storedStudyDocumentRow($chapterId, $tenant, $kind)) {
+                    $row['state'] = 'stored';
+                    $row['content_id'] = (int) $stored->id;
+                } elseif ($why = \Illuminate\Support\Facades\Cache::get(\App\Jobs\GenerateStudyDocumentJob::failureKey($tenant, $chapterId, $kind->value))) {
+                    $row['state'] = 'failed';
+                    $row['error'] = (string) $why;
+                }
+                $out[] = $row;
+            }
+
+            return $this->success('Resource status read.', ['items' => $out, 'server_time' => Carbon::now()->toIso8601String()]);
+        } catch (Throwable $e) {
+            return $this->handle($e);
+        }
+    }
+
     public function checkContent(Request $request): JsonResponse
     {
         try {

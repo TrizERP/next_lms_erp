@@ -20,6 +20,7 @@ use App\Http\Controllers\AI\KnowledgeGraphSettingsController;
 use App\Http\Controllers\AI\KnowledgeRagController;
 use App\Http\Controllers\AI\OntologyController;
 use App\Http\Controllers\AI\OutcomeController;
+use App\Http\Controllers\AI\PalRecommendationIntelligenceController;
 use App\Http\Controllers\AI\RecommendationController;
 use App\Http\Controllers\AI\ReportController;
 use App\Http\Controllers\AI\WorkflowController;
@@ -360,6 +361,7 @@ Route::prefix(config('ai.route_prefix', 'api/ai'))
                 Route::match(['get', 'post'], 'subjects', [\App\Http\Controllers\AI\TeachLearnCatalogueAgentController::class, 'subjects']);
                 Route::match(['get', 'post'], 'chapters', [\App\Http\Controllers\AI\TeachLearnCatalogueAgentController::class, 'chapters']);
                 Route::post('check-content', [\App\Http\Controllers\AI\TeachLearnCatalogueAgentController::class, 'checkContent']);
+                Route::post('resource-status', [\App\Http\Controllers\AI\TeachLearnCatalogueAgentController::class, 'resourceStatus']);
                 Route::post('start', [\App\Http\Controllers\AI\TeachLearnCatalogueAgentController::class, 'start']);
                 Route::post('stop', [\App\Http\Controllers\AI\TeachLearnCatalogueAgentController::class, 'stop']);
                 Route::post('run-now', [\App\Http\Controllers\AI\TeachLearnCatalogueAgentController::class, 'runNow']);
@@ -369,19 +371,6 @@ Route::prefix(config('ai.route_prefix', 'api/ai'))
                 Route::post('pipeline', [\App\Http\Controllers\AI\TeachLearnCatalogueAgentController::class, 'pipeline']);
                 Route::get('eso', [\App\Http\Controllers\AI\TeachLearnCatalogueAgentController::class, 'eso']);
             });
-            Route::prefix('fees/agent')->group(function () {
-                Route::get('state', [\App\Http\Controllers\AI\FeesAgentController::class, 'state']);
-                Route::post('start', [\App\Http\Controllers\AI\FeesAgentController::class, 'start']);
-                Route::post('stop', [\App\Http\Controllers\AI\FeesAgentController::class, 'stop']);
-                Route::post('run-now', [\App\Http\Controllers\AI\FeesAgentController::class, 'runNow']);
-                Route::post('interval', [\App\Http\Controllers\AI\FeesAgentController::class, 'setInterval']);
-                Route::post('pipeline', [\App\Http\Controllers\AI\FeesAgentController::class, 'pipeline']);
-                Route::get('eso', [\App\Http\Controllers\AI\FeesAgentController::class, 'eso']);
-                Route::get('standards', [\App\Http\Controllers\AI\FeesAgentController::class, 'standards']);
-                Route::get('students', [\App\Http\Controllers\AI\FeesAgentController::class, 'students']);
-                Route::post('send', [\App\Http\Controllers\AI\FeesAgentController::class, 'send']);
-            });
-
             Route::prefix('curriculum-planning/agent')->group(function () {
                 Route::get('state', [\App\Http\Controllers\AI\CurriculumPlanningAgentController::class, 'state']);
                 Route::post('start', [\App\Http\Controllers\AI\CurriculumPlanningAgentController::class, 'start']);
@@ -503,6 +492,17 @@ Route::prefix(config('ai.route_prefix', 'api/ai'))
             | See FeesRecommendationIntelligenceController.
             */
             Route::get('/fees/recommendation-intelligence', [FeesRecommendationIntelligenceController::class, 'index']);
+
+            /*
+            | Teach/Learn (PAL) — the five-capability aggregator, same shape
+            | as FeesRecommendationIntelligenceController. Ties PAL's own
+            | Coherence Map / CoherenceRecommender graph reasoning,
+            | pal_coherence_risk's governed signals, and
+            | PalNextBestActionResolver's ranked-or-real-time recommendation
+            | into one payload for Teach/Learn's Recommendation panel. See
+            | PalRecommendationIntelligenceController.
+            */
+            Route::get('/pal/recommendation-intelligence', [PalRecommendationIntelligenceController::class, 'index']);
 
             /*
             | Fees — Graph Reasoning capability (multi-hop/transitive

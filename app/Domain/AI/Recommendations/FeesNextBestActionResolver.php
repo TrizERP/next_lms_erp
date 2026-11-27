@@ -37,13 +37,13 @@ class FeesNextBestActionResolver
 
     public function topPickFor(string $subjectEntityKey, int|string $subjectId, McpRequestContext $scope): array
     {
-        $recommendation = $this->bestRecommendation($subjectEntityKey, $subjectId, $scope);
+        $recommendation = $this->bestRecommendation($scope, $subjectEntityKey, $subjectId);
 
         if ($recommendation !== null) {
             return ['available' => true, 'reason' => null, 'top_pick' => $recommendation];
         }
 
-        $case = $this->openCaseFallback($subjectEntityKey, $subjectId, $scope);
+        $case = $this->openCaseFallback($scope, $subjectEntityKey, $subjectId);
 
         if ($case !== null) {
             return ['available' => true, 'reason' => null, 'top_pick' => $case];
@@ -60,15 +60,45 @@ class FeesNextBestActionResolver
         ];
     }
 
-    private function bestRecommendation(string $subjectEntityKey, int|string $subjectId, McpRequestContext $scope): ?array
+    /**
+     * Same ranking as `topPickFor()`, without a subject filter — the single
+     * highest-priority governed recommendation (or, failing that, open case)
+     * anywhere in the tenant. Used only when the caller has not named a
+     * subject: it is still a read over real, already-governed output (never
+     * a new way to draft one), just scoped to "the school" instead of "this
+     * student". The result carries `subject_entity_key`/`subject_id` so the
+     * caller can tell which subject this pick is actually about.
+     */
+    public function topPickForTenant(McpRequestContext $scope): array
+    {
+        $recommendation = $this->bestRecommendation($scope);
+
+        if ($recommendation !== null) {
+            return ['available' => true, 'reason' => null, 'top_pick' => $recommendation];
+        }
+
+        $case = $this->openCaseFallback($scope);
+
+        if ($case !== null) {
+            return ['available' => true, 'reason' => null, 'top_pick' => $case];
+        }
+
+        return [
+            'available' => false,
+            'reason' => 'No governed recommendation and no open case exist anywhere in this school — there is nothing to recommend.',
+            'top_pick' => null,
+        ];
+    }
+
+    private function bestRecommendation(McpRequestContext $scope, ?string $subjectEntityKey = null, int|string|null $subjectId = null): ?array
     {
         if (! Schema::hasTable('ai_recommendations')) {
             return null;
         }
 
         $rows = DB::table('ai_recommendations')
-            ->where('subject_entity_key', $subjectEntityKey)
-            ->where('subject_id', $subjectId)
+            ->when($subjectEntityKey !== null, fn ($q) => $q->where('subject_entity_key', $subjectEntityKey))
+            ->when($subjectId !== null, fn ($q) => $q->where('subject_id', $subjectId))
             ->where('sub_institute_id', $scope->selectedInstituteId)
             ->whereIn('status', ['pending_approval', 'draft'])
             ->where('governance_passed', true)
@@ -108,6 +138,8 @@ class FeesNextBestActionResolver
             'workflow_key' => $best->workflow_key,
             'requires_approval' => (bool) $best->requires_approval,
             'status' => $best->status,
+            'subject_entity_key' => $best->subject_entity_key,
+            'subject_id' => $best->subject_id,
         ];
     }
 
@@ -137,15 +169,15 @@ class FeesNextBestActionResolver
             ->all();
     }
 
-    private function openCaseFallback(string $subjectEntityKey, int|string $subjectId, McpRequestContext $scope): ?array
+    private function openCaseFallback(McpRequestContext $scope, ?string $subjectEntityKey = null, int|string|null $subjectId = null): ?array
     {
         if (! Schema::hasTable('ai_cases')) {
             return null;
         }
 
         $case = DB::table('ai_cases')
-            ->where('subject_entity_key', $subjectEntityKey)
-            ->where('subject_id', $subjectId)
+            ->when($subjectEntityKey !== null, fn ($q) => $q->where('subject_entity_key', $subjectEntityKey))
+            ->when($subjectId !== null, fn ($q) => $q->where('subject_id', $subjectId))
             ->where('sub_institute_id', $scope->selectedInstituteId)
             ->whereIn('status', ['open', 'cased', 'in_progress'])
             ->orderByDesc('priority_score')
@@ -167,6 +199,8 @@ class FeesNextBestActionResolver
             'workflow_key' => null,
             'requires_approval' => null,
             'status' => $case->status,
+            'subject_entity_key' => $case->subject_entity_key,
+            'subject_id' => $case->subject_id,
         ];
     }
 }

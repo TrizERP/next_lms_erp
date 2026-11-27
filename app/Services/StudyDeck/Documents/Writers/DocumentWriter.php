@@ -24,6 +24,12 @@ abstract class DocumentWriter
     /** @var array<int,string> every raw model reply, kept so a rejected document can be inspected */
     public array $replies = [];
 
+    /** How many times an item that fails its rules is sent back to be rewritten before the document is judged. */
+    protected const REPAIR_ROUNDS = 3;
+
+    /** Further rewrites, one item at a time, for an item the group rounds could not fix. */
+    protected const SOLO_REPAIR_ROUNDS = 2;
+
     public function __construct(protected readonly Completer $completer, protected readonly int $chunkSize = 6)
     {
     }
@@ -162,24 +168,46 @@ RULES;
                 throw new \RuntimeException('No ' . $what . ' was written for ' . implode('; ', array_map(fn ($k) => $this->label($chunk[$k], (string) $k), array_keys($still))) . '.');
             }
 
-            $issues = [];
-            foreach ($got as $key => $item) {
-                if ($found = $problems($item, $chunk[$key])) {
-                    $issues[$key] = $found;
+            // Up to REPAIR_ROUNDS rewrites, each only for the items still wrong: a single round left a 35-word row in a 32-word limit
+            // and the whole document failed at the end. A rewrite replaces an item unless it is worse.
+            for ($round = 0; $round < self::REPAIR_ROUNDS; $round++) {
+                $issues = [];
+                foreach ($got as $key => $item) {
+                    if ($found = $problems($item, $chunk[$key])) {
+                        $issues[$key] = $found;
+                    }
                 }
-            }
-            if ($issues) {
+                if (!$issues) {
+                    break;
+                }
                 $notes = [];
                 foreach ($issues as $key => $found) {
                     $notes[] = $this->label($chunk[$key], (string) $key) . ': ' . implode(' ', $found) . ' Your current text: ' . json_encode($got[$key], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
                 }
                 $fix = $prompt(array_intersect_key($chunk, $issues))
-                    . "\n\nThese need fixing. Rewrite each one IN FULL, fixing what is wrong and keeping what was good:\n" . implode("\n", $notes);
+                    . "\n\nThese need fixing. Rewrite each one IN FULL, fixing what is wrong and keeping what was good. Where a word is over its limit, remove ONLY the extra words and keep the meaning and the rest of the wording as it is; where a word count is under, add only what is missing. Count the words of your new text before answering. Where a number is not in the chapter, remove it or replace it with what the chapter says:\n" . implode("\n", $notes);
                 $fixed = $this->take($this->ask($system, $fix, $maxTokens), $parse, array_intersect_key($chunk, $issues));
                 foreach ($fixed as $key => $item) {
-                    // A rewrite replaces the first attempt unless it is worse.
                     if (count($problems($item, $chunk[$key])) <= count($issues[$key])) {
                         $got[$key] = $item;
+                    }
+                }
+            }
+
+            // What is still wrong is rewritten ALONE: a rewrite of several items at once keeps changing the ones that were right, and
+            // an item one word over its limit failed whole documents after the group rounds.
+            foreach ($got as $key => $item) {
+                for ($solo = 0; $solo < self::SOLO_REPAIR_ROUNDS; $solo++) {
+                    $found = $problems($got[$key], $chunk[$key]);
+                    if (!$found) {
+                        break;
+                    }
+                    $one = [$key => $chunk[$key]];
+                    $fix = $prompt($one) . "\n\nThis one needs fixing. Rewrite it IN FULL: remove ONLY the extra words where a limit is exceeded and keep the meaning and the rest of the wording; count the words before answering; remove or replace any number the chapter does not give:\n"
+                        . $this->label($chunk[$key], (string) $key) . ': ' . implode(' ', $found) . ' Your current text: ' . json_encode($got[$key], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+                    $fixed = $this->take($this->ask($system, $fix, $maxTokens), $parse, $one);
+                    if (isset($fixed[$key]) && count($problems($fixed[$key], $chunk[$key])) <= count($found)) {
+                        $got[$key] = $fixed[$key];
                     }
                 }
             }
@@ -266,6 +294,44 @@ RULES;
     public static function words(string $s): int
     {
         return count(array_filter(preg_split('/\s+/u', trim($s)) ?: []));
+    }
+
+    /**
+     * The last resort for a text that is a little over its word limit after the model has been asked to shorten it: removes ONLY
+     * filler (adverbs such as "just" or "really", then articles), from the end backwards, and then trailing words, never leaving
+     * the text ending on a connector ("and", "of", "with"). It acts only when the text is over by at most $maxCut words; a text far
+     * over its limit is left for the model, because cutting that much would change what it says.
+     */
+    public static function shortenToLimit(string $text, int $limit, int $maxCut = 3): string
+    {
+        $over = self::words($text) - $limit;
+        if ($over <= 0 || $over > $maxCut) {
+            return $text;
+        }
+        $tokens = array_values(array_filter(preg_split('/\s+/u', trim($text)) ?: []));
+        $bare = fn (string $t): string => mb_strtolower(trim($t, " \t.,;:!?\"'()"));
+        $endsSentence = (bool) preg_match('/[.!?]$/u', (string) end($tokens));
+
+        foreach ([['very', 'really', 'just', 'also', 'then', 'simply', 'actually', 'quite', 'only'], ['the', 'a', 'an']] as $tier) {
+            for ($i = count($tokens) - 1; $i >= 1 && count($tokens) > $limit; $i--) {
+                if (in_array($bare($tokens[$i]), $tier, true)) {
+                    array_splice($tokens, $i, 1);
+                }
+            }
+        }
+        while (count($tokens) > $limit) {
+            array_pop($tokens);
+        }
+        $dangling = ['and', 'or', 'to', 'of', 'the', 'a', 'an', 'in', 'on', 'with', 'for', 'by', 'at', 'from', 'that', 'is', 'are', 'then'];
+        while (count($tokens) > 1 && in_array($bare((string) end($tokens)), $dangling, true)) {
+            array_pop($tokens);
+        }
+        $out = implode(' ', $tokens);
+        if ($endsSentence && !preg_match('/[.!?]$/u', $out)) {
+            $out = rtrim($out, ',;:') . '.';
+        }
+
+        return $out;
     }
 
     /**

@@ -191,12 +191,14 @@ return [
         'lms.content'    => ['label' => 'Content library',  'description' => 'Uploaded and authored learning content.'],
 
         // Fees
-        'fees.structure'  => ['label' => 'Fee structure',  'description' => 'Heads, instalments and class-wise amounts.'],
-        'fees.collection' => ['label' => 'Fee collection', 'description' => 'Payment capture, online and at the counter.'],
-        'fees.receipt'    => ['label' => 'Receipt',        'description' => 'The durable record issued for a payment.'],
-        'fees.defaulter'  => ['label' => 'Defaulters',     'description' => 'Overdue instalments and reminder runs.'],
-        'fees.concession' => ['label' => 'Concession',     'description' => 'Waivers, scholarships and sibling discounts.'],
-        'fees.refund'     => ['label' => 'Refund',         'description' => 'Money returned to a family.'],
+        'fees.structure'   => ['label' => 'Fee structure',   'description' => 'Heads, instalments and class-wise amounts.'],
+        'fees.collection'  => ['label' => 'Fee collection',  'description' => 'Payment capture, online and at the counter.'],
+        'fees.receipt'     => ['label' => 'Receipt',         'description' => 'The durable record issued for a payment.'],
+        'fees.defaulter'   => ['label' => 'Defaulters',      'description' => 'Overdue instalments and reminder runs.'],
+        'fees.concession'  => ['label' => 'Concession',      'description' => 'Waivers, scholarships and sibling discounts.'],
+        'fees.refund'      => ['label' => 'Refund',          'description' => 'Money returned to a family.'],
+        'fees.fine_waiver' => ['label' => 'Fine waiver',     'description' => 'Late payment fee and penalty waiver requests.'],
+        'fees.scholarship' => ['label' => 'Scholarship',     'description' => 'Merit, sports, and financial aid applications.'],
 
         // HR & Payroll
         'hr.staff'     => ['label' => 'Staff records', 'description' => 'Employment record, documents and roles.'],
@@ -1463,6 +1465,21 @@ return [
                 ['name' => 'Trustee approval', 'approver_type' => 'role', 'approver' => 'Trustee', 'sla_hours' => 72],
             ],
         ],
+        'fees.fine_waiver.flow' => [
+            'label' => 'Late fee waiver', 'description' => 'Waiving or reducing late payment fines and penalties.', 'subject' => 'Fine waiver request',
+            'suggested_steps' => [
+                ['name' => 'Accounts verification', 'approver_type' => 'role', 'approver' => 'Accounts', 'sla_hours' => 24],
+                ['name' => 'Principal approval', 'approver_type' => 'principal', 'approver' => '', 'sla_hours' => 48],
+            ],
+        ],
+        'fees.scholarship.flow' => [
+            'label' => 'Scholarship & financial aid', 'description' => 'Merit, economic need, or sports-based school scholarship grants.', 'subject' => 'Scholarship grant',
+            'suggested_steps' => [
+                ['name' => 'Academic / Sports scrutiny', 'approver_type' => 'role', 'approver' => 'Academic head', 'sla_hours' => 48],
+                ['name' => 'Principal recommendation', 'approver_type' => 'principal', 'approver' => '', 'sla_hours' => 48],
+                ['name' => 'Trustee / Management approval', 'approver_type' => 'role', 'approver' => 'Trustee', 'sla_hours' => 72],
+            ],
+        ],
         'hr.leave.flow' => [
             'label' => 'Staff leave', 'description' => 'A staff request for leave.', 'subject' => 'Leave application',
             'suggested_steps' => [
@@ -1653,6 +1670,7 @@ return [
         'none'         => ['label' => 'Do nothing',        'description' => 'The step waits indefinitely.'],
         'remind'       => ['label' => 'Remind the approver', 'description' => 'Sends the approver another notification and keeps waiting.'],
         'escalate'     => ['label' => 'Escalate',          'description' => 'Passes the step to the next step’s approver.'],
+        'escalate_to_manager' => ['label' => 'Escalate to manager', 'description' => 'Reassigns this same step to the current approver’s reporting manager, resolved from the organization chart. If no manager can be found, it is marked escalated and left pending.'],
         'auto_approve' => ['label' => 'Approve automatically', 'description' => 'Approves without a person. Use only where a delay is worse than no review.'],
         'auto_reject'  => ['label' => 'Reject automatically',  'description' => 'Rejects and returns the record to the requester.'],
     ],

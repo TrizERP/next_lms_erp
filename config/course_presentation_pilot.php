@@ -24,7 +24,11 @@ return [
     'resource' => 'course_presentation',
 
     'scope' => [
-        'label' => 'chapter 1 of Std 8 and Std 9 subjects and the four Std 4 EVS "Water" chapters',
+        // Open to every chapter (decided 2026-11-25 so AI Stack can start the same draft for any chapter). The list below is
+        // kept: set COURSE_PRESENTATION_ALL_CHAPTERS=false to go back to it. A chapter with too little source text or no model
+        // is still refused by the fit check, whatever this says.
+        'all_chapters' => (bool) env('COURSE_PRESENTATION_ALL_CHAPTERS', true),
+        'label' =>'chapter 1 of Std 8 and Std 9 subjects and the four Std 4 EVS "Water" chapters',
         'chapters' => [
             // Std 8, chapter 1 of every subject for school 1 (verified against chapter_master on 2026-11-04).
             ['chapter_id' => 25837, 'standard_id' => 41, 'subject_id' => 3975, 'sub_institute_id' => 1], // Science

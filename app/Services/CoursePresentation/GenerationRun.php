@@ -279,12 +279,15 @@ class GenerationRun
     }
 
     /** @return array<string,mixed> the new run's status */
-    public function request(int $chapterId, int $tenant, ?int $userId, string $method, string $format = 'interactive_slides'): array
+    public function request(int $chapterId, int $tenant, ?int $userId, string $method, string $format = 'interactive_slides', array $extra = []): array
     {
         $run = 'r' . bin2hex(random_bytes(6));
         mkdir($this->runDir($chapterId, $run), 0775, true);
-        $status = ['run' => $run, 'chapter_id' => $chapterId, 'tenant' => $tenant, 'user_id' => $userId, 'method' => $method, 'format' => $format,
+        // `$extra` may only carry `auto_store` (AI Stack: store the draft by itself once it passes) and the `profile` it is stored under.
+        $extra = array_intersect_key($extra, ['auto_store' => 1, 'profile' => 1]);
+        $status = $extra + ['run' => $run, 'chapter_id' => $chapterId, 'tenant' => $tenant, 'user_id' => $userId, 'method' => $method, 'format' => $format,
             'state' => 'queued', 'created_at' => date('c'), 'log' => [], 'error' => null, 'report' => null, 'outline' => null, 'stored' => null];
+        $status['run'] = $run;
         $this->write($status);
 
         return $status;
@@ -708,6 +711,30 @@ class GenerationRun
         $ok = count($linked) === count($wanted);
 
         return ['ok' => true, 'message' => $ok ? 'Stored.' : sprintf('Stored, but %d of %d pictures are not linked to the stored deck. Ask an administrator to check them before the library is cleaned up.', count($wanted) - count($linked), count($wanted)), 'status' => $status];
+    }
+
+    /**
+     * AI Stack runs: store a draft that passed generation and validation without a review step. It is exactly approve() - every
+     * check approve() makes (the quality rules again, no duplicate for this chapter, method and format, pictures linked) still
+     * applies - and a refusal is kept on the run as `auto_store_error`, so the screen can say why nothing was stored.
+     * Does nothing for a run that was not started with `auto_store`, or that is not ready.
+     *
+     * @return array{ok:bool,message:string,status:?array<string,mixed>}|null null when there was nothing to do
+     */
+    public function autoStore(int $chapterId, int $tenant, string $run): ?array
+    {
+        $status = $this->read($chapterId, $tenant, $run);
+        if ($status === null || empty($status['auto_store']) || $status['state'] !== 'ready') {
+            return null;
+        }
+        $result = $this->approve($chapterId, $tenant, $run, (int) ($status['user_id'] ?? 0) ?: 1, (string) ($status['profile'] ?? 'Teacher'));
+        if (!$result['ok']) {
+            $latest = $this->read($chapterId, $tenant, $run) ?? $status;
+            $latest['auto_store_error'] = self::clean($result['message']);
+            $this->write($latest);
+        }
+
+        return $result;
     }
 
     /**

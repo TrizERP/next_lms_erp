@@ -31,6 +31,8 @@ use App\Http\Controllers\fees\fees_circular\feesCircularController;
 use App\Http\Controllers\fees\fees_circular\feesCircularMasterController;
 use App\Http\Controllers\api\FeesDashboardApiController;
 use App\Http\Controllers\api\RoleDashboardApiController;
+use App\Http\Controllers\api\RoleWorkspaceApiController;
+use App\Http\Controllers\api\DashboardAssistantApiController;
 use App\Http\Controllers\api\AdmissionsDashboardApiController;
 use App\Http\Controllers\api\StudentsDashboardApiController;
 use App\Http\Controllers\api\LibraryDashboardApiController;
@@ -179,6 +181,19 @@ Route::middleware('api.session')->group(function () {
     Route::post('teacher-timetable/summary', [TeacherTimetableApiController::class, 'summary'])->middleware('api.cache:60');
     Route::post('teacher-fee-dues/summary', [TeacherFeeDuesApiController::class, 'summary'])->middleware('api.cache:60');
     Route::post('student-dashboard/summary', [RoleDashboardApiController::class, 'studentSummary'])->middleware('api.cache:60');
+    // Principal / Clerk / Librarian / Store Keeper / Exam Dept / Trustee / Peon ... — the role
+    // and its figures are decided server-side from the session, see RoleWorkspaceApiController.
+    Route::post('role-workspace/summary', [RoleWorkspaceApiController::class, 'summary'])->middleware('api.cache:60');
+    Route::post('role-workspace/fees', [RoleWorkspaceApiController::class, 'fees'])->middleware('api.cache:300');
+    Route::post('role-workspace/find-student', [RoleWorkspaceApiController::class, 'findStudent']);
+    Route::post('role-workspace/staff-search', [RoleWorkspaceApiController::class, 'staffSearch']);
+    Route::post('role-workspace/follow-up', [RoleWorkspaceApiController::class, 'followUp']);
+    Route::post('role-workspace/targets', [RoleWorkspaceApiController::class, 'setTarget']);
+    // "Tell the dashboard what you want": a chat that shows/hides panels and adds catalog widgets, for the caller only.
+    Route::post('role-workspace/assistant', [DashboardAssistantApiController::class, 'assistant'])->middleware('throttle:20,1,dashboard-assistant');
+    Route::post('role-workspace/custom-widgets', [DashboardAssistantApiController::class, 'widgets']);
+    Route::post('role-workspace/related', [DashboardAssistantApiController::class, 'related'])->middleware('throttle:60,1,dashboard-related');
+    Route::post('role-workspace/custom-widgets/remove', [DashboardAssistantApiController::class, 'remove']);
     // Self-service "My ID card" — scoped to the caller's own user_id only,
     // see App\Http\Controllers\api\TeacherIcardApiController::mine().
     Route::post('teacher-icard/mine', [TeacherIcardApiController::class, 'mine']);

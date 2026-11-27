@@ -89,6 +89,7 @@ class RevisionNotesWriter extends DocumentWriter
         }
 
         $compact = $this->compact;
+        $allowed = self::numbersAllowedFrom($context, $map);
         $notes = $this->inChunks(
             $work,
             self::SYSTEM,
@@ -96,7 +97,11 @@ class RevisionNotesWriter extends DocumentWriter
             'revision notes',
             fn (array $chunk) => $compact ? $this->compactPrompt($context, $chunk, count($scope)) : $this->prompt($context, $chunk, count($scope)),
             fn (array $json, array $chunk) => $this->parse($json, $chunk),
-            fn (array $note, array $item) => self::problems($note, $item, $compact),
+            fn (array $note, array $item) => array_merge(
+                self::problems($note, $item, $compact),
+                // The validator's grounding rule, applied while the model can still be asked to fix the numbers.
+                ($bad = self::ungroundedNumbers($note, $allowed)) ? [self::numberProblem($bad)] : []
+            ),
             $progress
         );
 

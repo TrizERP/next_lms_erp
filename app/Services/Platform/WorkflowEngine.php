@@ -14,16 +14,28 @@ use InvalidArgumentException;
  * into one row per step. Only one step is `pending` at a time: approving it opens
  * the next, rejecting it ends the run according to the chain's `on_reject`.
  *
- * ANYONE-WITH-RIGHTS RULE. A step names an approver type. `user` is enforced here
- * (only that user may act). `role`, `principal`, `class_teacher` and
- * `reporting_manager` are resolved from tables this service does not own, so for
- * those the route's `perm:platform.workflow` check is the gate and the acting
- * user is recorded against the step. The run says so in its step rows
- * (assignee_user_id stays null) rather than pretending it resolved a person.
+ * ANYONE-WITH-RIGHTS RULE, NARROWED BY THE GRAPH. A step names an approver type.
+ * `user` is enforced here (only that user may act). `role` is intentionally left
+ * to the route's `perm:platform.workflow` gate — a role name does not identify
+ * one person, and "anyone holding this role" is the type's real meaning, not a
+ * gap. `principal`, `class_teacher` and `reporting_manager` now ask
+ * WorkflowApproverResolver, which answers from the organization graph already
+ * live in Neo4j (REPORTS_TO/HAS_ROLE/CLASS_TEACHER_OF) when it can; when it
+ * cannot (the graph has no answer, or is unreachable), `assignee_user_id` stays
+ * null exactly as before and the permission gate remains the fallback.
  */
 class WorkflowEngine
 {
-    /** @return array<string,mixed> the run, with its steps */
+    public function __construct(private readonly ?WorkflowApproverResolver $approvers = null)
+    {
+    }
+
+    /**
+     * @param  array  $payload  May carry `student_id`/`division_id`, read only to
+     *                          resolve a `class_teacher` step — never stored as
+     *                          resolver input beyond this call.
+     * @return array<string,mixed> the run, with its steps
+     */
     public function start(
         int $tenantId,
         string $flowKey,
@@ -72,15 +84,15 @@ class WorkflowEngine
             foreach ($steps as $i => $step) {
                 $order = $i + 1;
                 $sla = (int) ($step['sla_hours'] ?? 0);
+                $type = (string) ($step['approver_type'] ?? 'role');
                 DB::table('platform_workflow_run_steps')->insert([
                     'run_id' => $runId,
                     'step_order' => $order,
                     'step_name' => (string) ($step['name'] ?? 'Step '.$order),
-                    'approver_type' => (string) ($step['approver_type'] ?? 'role'),
+                    'approver_type' => $type,
                     'approver' => (string) ($step['approver'] ?? ''),
                     'status' => $order === 1 ? 'pending' : 'waiting',
-                    'assignee_user_id' => ($step['approver_type'] ?? '') === 'user' && is_numeric($step['approver'] ?? null)
-                        ? (int) $step['approver'] : null,
+                    'assignee_user_id' => $this->resolveAssignee($type, $step['approver'] ?? null, $tenantId, $requestedBy, $payload),
                     'due_at' => $order === 1 && $sla > 0 ? $now->copy()->addHours($sla) : null,
                     'on_breach' => (string) ($step['on_breach'] ?? 'none'),
                     'allow_delegate' => ! empty($step['allow_delegate']) ? 1 : 0,
@@ -176,8 +188,12 @@ class WorkflowEngine
     }
 
     /**
-     * Steps past their SLA. `auto_approve`, `escalate_to_next` and `notify` are
-     * the escalation actions the chain can name; `none` leaves the step alone.
+     * Steps past their SLA. The escalation actions a chain can name are the
+     * keys declared in `config('platform_services.escalation_actions')` —
+     * `none`, `remind`, `escalate`, `auto_approve`, `auto_reject`, and now
+     * `escalate_to_manager`. (`remind`/`auto_reject` have no branch below
+     * beyond the `escalated_at` stamp every breached step gets — there is
+     * nothing further to automate for either today.)
      *
      * @return int number of steps acted on
      */
@@ -210,9 +226,29 @@ class WorkflowEngine
                         'acted_at' => $now,
                     ]);
                     $this->advance((int) $step->run_id, (int) $step->step_order, $now);
-                } elseif ($step->on_breach === 'escalate_to_next') {
+                } elseif ($step->on_breach === 'escalate') {
                     DB::table('platform_workflow_run_steps')->where('id', $step->id)->update(['status' => 'escalated']);
                     $this->advance((int) $step->run_id, (int) $step->step_order, $now);
+                } elseif ($step->on_breach === 'escalate_to_manager') {
+                    $manager = $step->assignee_user_id !== null && $this->approvers !== null
+                        ? $this->approvers->resolve((int) $step->tenant, 'reporting_manager', ['requested_by' => (int) $step->assignee_user_id])
+                        : null;
+
+                    if ($manager !== null) {
+                        // Stays on THIS step, reassigned up one level — unlike
+                        // `escalate`, which moves to the next configured step.
+                        // due_at is left as-is: it has already passed, but
+                        // `escalated_at` (stamped above) keeps this row out of
+                        // escalateOverdue()'s own query, so it is never
+                        // re-escalated on the next pass — the new assignee can
+                        // still act on it any time, same as any pending step.
+                        DB::table('platform_workflow_run_steps')->where('id', $step->id)->update([
+                            'assignee_user_id' => $manager,
+                        ]);
+                    }
+                    // No manager resolvable: same fallback as `escalate` above
+                    // minus the advance — the step stays pending, escalated_at
+                    // is already stamped, nothing is invented.
                 }
 
                 if (class_exists(AuditTrail::class)) {
@@ -227,6 +263,29 @@ class WorkflowEngine
         }
 
         return $count;
+    }
+
+    /**
+     * `user` stays exactly as before (the step's own stored id). `role` is
+     * left null on purpose — see this class's docblock. The other three ask
+     * the resolver; a null result (resolver unavailable, or the graph genuinely
+     * has no answer) falls back to the pre-existing unresolved behaviour.
+     */
+    private function resolveAssignee(string $approverType, mixed $approverValue, int $tenantId, ?int $requestedBy, array $payload): ?int
+    {
+        if ($approverType === 'user') {
+            return is_numeric($approverValue) ? (int) $approverValue : null;
+        }
+
+        if ($this->approvers === null || ! in_array($approverType, ['reporting_manager', 'principal', 'class_teacher'], true)) {
+            return null;
+        }
+
+        return $this->approvers->resolve($tenantId, $approverType, [
+            'requested_by' => $requestedBy,
+            'student_id' => $payload['student_id'] ?? null,
+            'division_id' => $payload['division_id'] ?? null,
+        ]);
     }
 
     private function advance(int $runId, int $fromOrder, $now): void

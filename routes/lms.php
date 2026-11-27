@@ -45,6 +45,7 @@ use App\Http\Controllers\bazar\bulkUploadSheetController;
 use App\Http\Controllers\bazar\bulkUploadedReportController;
 use App\Http\Controllers\lms\pal\palController;
 use App\Http\Controllers\lms\pal\PalFlowAdminController;
+use App\Http\Controllers\lms\pal\PalLabStudioController;
 use App\Http\Controllers\lms\pal\PalContentController;
 use App\Http\Controllers\lms\virtualclassroomController;
 use App\Http\Controllers\school_setup\sub_std_mapController;
@@ -170,6 +171,15 @@ Route::group(['prefix' => 'lms', 'middleware' => ['session', 'menu', 'logRoute',
     // admins and the profiles in config/pal_flow.php guards.writer_profiles may
     // change anything - staff may look.
     Route::get('pal/flow', [PalFlowAdminController::class, 'index'])->name('pal.flow');
+    // Lab Studio: teachers and admins prepare, preview and approve the virtual labs students use in the Application Lab.
+    // Every handler refuses students (403). Above the pal resource, like pal/flow, or it swallows these paths.
+    Route::get('pal/lab-studio/chapter/{chapterId}', [PalLabStudioController::class, 'index'])->whereNumber('chapterId')->name('pal.labStudio.index');
+    Route::get('pal/lab-studio/lab', [PalLabStudioController::class, 'show'])->name('pal.labStudio.show');
+    Route::post('pal/lab-studio/validate', [PalLabStudioController::class, 'validateSpec'])->name('pal.labStudio.validate');
+    Route::post('pal/lab-studio/generate', [PalLabStudioController::class, 'generate'])->name('pal.labStudio.generate');
+    Route::post('pal/lab-studio/save', [PalLabStudioController::class, 'save'])->name('pal.labStudio.save');
+    Route::post('pal/lab-studio/approve/{id}', [PalLabStudioController::class, 'approve'])->whereNumber('id')->name('pal.labStudio.approve');
+    Route::post('pal/lab-studio/reject/{id}', [PalLabStudioController::class, 'reject'])->whereNumber('id')->name('pal.labStudio.reject');
     Route::post('pal/flow', [PalFlowAdminController::class, 'assign'])->name('pal.flow.assign');
 
     // PAL Subject Diagnostic → Adaptive Learning (Web Routes)
@@ -205,6 +215,40 @@ Route::group(['prefix' => 'lms', 'middleware' => ['session', 'menu', 'logRoute',
     // rather than scheduling anything itself.
     Route::get('pal/mastery/chapter/{chapterId}', [palController::class, 'masteryOverview'])->whereNumber('chapterId')->name('pal.mastery.chapter');
     Route::get('pal/recall', [palController::class, 'recallQueue'])->name('pal.recall.queue');
+
+    // Application Lab: generates one personalised practical activity. Reads the
+    // journey, writes nothing to it. Above the pal resource like its siblings.
+    Route::post('pal/application-lab/chapter/{chapterId}', [palController::class, 'applicationLabGenerate'])->whereNumber('chapterId')->name('pal.applicationLab.generate');
+    // Application Lab, step 1: what the student has studied and whether the whole chapter is open.
+    Route::get('pal/application-lab/scope/chapter/{chapterId}', [palController::class, 'applicationLabScope'])->whereNumber('chapterId')->name('pal.applicationLab.scope');
+
+    // Application Lab, activity 2: the student creates their own demonstration.
+    Route::get('pal/application-lab/pictures', [palController::class, 'creationPictures'])->name('pal.applicationLab.creation.pictures');
+    Route::get('pal/application-lab/creation/chapter/{chapterId}', [palController::class, 'creationCurrent'])->whereNumber('chapterId')->name('pal.applicationLab.creation.current');
+    Route::post('pal/application-lab/creation/chapter/{chapterId}/save', [palController::class, 'creationSave'])->whereNumber('chapterId')->name('pal.applicationLab.creation.save');
+    Route::post('pal/application-lab/creation/chapter/{chapterId}/submit', [palController::class, 'creationSubmit'])->whereNumber('chapterId')->name('pal.applicationLab.creation.submit');
+    Route::get('pal/application-lab/lab-selection/chapter/{chapterId}', [palController::class, 'labSelection'])->whereNumber('chapterId')->name('pal.applicationLab.labSelection');
+    Route::get('pal/application-lab/lab-spec/chapter/{chapterId}', [palController::class, 'labSpecCurrent'])->whereNumber('chapterId')->name('pal.applicationLab.labSpec');
+    Route::get('pal/application-lab/builder/chapter/{chapterId}',[palController::class, 'builderCurrent'])->whereNumber('chapterId')->name('pal.applicationLab.builder.current');
+    Route::post('pal/application-lab/builder/chapter/{chapterId}/save', [palController::class, 'builderSave'])->whereNumber('chapterId')->name('pal.applicationLab.builder.save');
+    Route::post('pal/application-lab/builder/chapter/{chapterId}/submit', [palController::class, 'builderSubmit'])->whereNumber('chapterId')->name('pal.applicationLab.builder.submit');
+    Route::get('pal/application-lab/design/chapter/{chapterId}',[palController::class, 'designCurrent'])->whereNumber('chapterId')->name('pal.applicationLab.design.current');
+    Route::post('pal/application-lab/design/chapter/{chapterId}/save', [palController::class, 'designSave'])->whereNumber('chapterId')->name('pal.applicationLab.design.save');
+    Route::post('pal/application-lab/design/chapter/{chapterId}/submit', [palController::class, 'designSubmit'])->whereNumber('chapterId')->name('pal.applicationLab.design.submit');
+
+    // Explanation-style generated demonstration, now the Application Lab's activity 1.
+    Route::get('pal/explanation-lab/chapter/{chapterId}', [palController::class, 'explanationLabCurrent'])->whereNumber('chapterId')->name('pal.explanationLab.current');
+    Route::post('pal/explanation-lab/chapter/{chapterId}/generate', [palController::class, 'explanationLabGenerate'])->whereNumber('chapterId')->name('pal.explanationLab.generate');
+    Route::post('pal/explanation-lab/chapter/{chapterId}/save', [palController::class, 'explanationLabSave'])->whereNumber('chapterId')->name('pal.explanationLab.save');
+    Route::post('pal/explanation-lab/chapter/{chapterId}/submit', [palController::class, 'explanationLabSubmit'])->whereNumber('chapterId')->name('pal.explanationLab.submit');
+
+    // 3D Virtual Lab (inside the Application Lab step). Same identity rules; own table.
+    Route::get('pal/virtual-lab/chapter/{chapterId}/{labId}', [palController::class, 'virtualLabCurrent'])->whereNumber('chapterId')->where('labId', '[a-z0-9_]+')->name('pal.virtualLab.current');
+    Route::post('pal/virtual-lab/chapter/{chapterId}/{labId}/save', [palController::class, 'virtualLabSave'])->whereNumber('chapterId')->where('labId', '[a-z0-9_]+')->name('pal.virtualLab.save');
+    Route::post('pal/virtual-lab/chapter/{chapterId}/{labId}/submit', [palController::class, 'virtualLabSubmit'])->whereNumber('chapterId')->where('labId', '[a-z0-9_]+')->name('pal.virtualLab.submit');
+    Route::get('pal/application-lab/chapter/{chapterId}', [palController::class, 'applicationLabCurrent'])->whereNumber('chapterId')->name('pal.applicationLab.current');
+    Route::post('pal/application-lab/chapter/{chapterId}/save', [palController::class, 'applicationLabSave'])->whereNumber('chapterId')->name('pal.applicationLab.save');
+    Route::post('pal/application-lab/chapter/{chapterId}/submit', [palController::class, 'applicationLabSubmit'])->whereNumber('chapterId')->name('pal.applicationLab.submit');
 
     // Stage 6. Strictly read-only: it serves the same material the engine's
     // teach screen does, but stamps nothing and moves nobody. That is what lets

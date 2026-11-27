@@ -4,8 +4,12 @@ namespace App\Http\Controllers\api\Platform;
 
 use App\Models\Platform\PlatformWorkflow;
 use App\Services\Platform\PlatformRegistry;
+use App\Services\Graph\GraphSync;
+use App\Services\Platform\WorkflowApproverResolver;
+use App\Services\Neo4jService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 /**
@@ -50,7 +54,7 @@ class WorkflowController extends PlatformController
      * screen can show a point with no chain — which is most of them, and the
      * thing an administrator has come to fix.
      */
-    public function index(Request $request): JsonResponse
+    public function index(Request $request, Neo4jService $neo4j): JsonResponse
     {
         $tenantId = $this->tenantId($request);
         if ($tenantId === null) {
@@ -64,13 +68,7 @@ class WorkflowController extends PlatformController
             return $this->fail("\"{$flowKey}\" is not a known workflow point.", 404);
         }
 
-        $chains = PlatformWorkflow::forTenant($tenantId)
-            ->forModule($module)
-            ->forComponent($component)
-            ->forFlow($flowKey)
-            ->orderBy('flow_key')
-            ->orderBy('id')
-            ->get();
+        $chains = $this->chainsFromGraph($neo4j, $tenantId, $module, $component, $flowKey);
 
         $byFlow = $chains->groupBy('flow_key');
 
@@ -104,6 +102,58 @@ class WorkflowController extends PlatformController
     }
 
     /**
+     * GET /api/platform/workflow/preview-approver?approver_type=&requested_by=&student_id=&division_id=
+     *
+     * Runs the same graph resolution a real run would use at `start()` time,
+     * against a sample context, so an admin can see who a step actually
+     * resolves to before activating a chain — rather than finding out the
+     * first time a real record hits it. Read-only; nothing is created.
+     *
+     * `role` and `user` are not previewable here: `role` resolves to "anyone
+     * holding it" by design (see WorkflowEngine's docblock), and `user` is
+     * already a stored, visible value — there is nothing to look up.
+     */
+    public function previewApprover(Request $request, WorkflowApproverResolver $resolver): JsonResponse
+    {
+        $tenantId = $this->tenantId($request);
+        if ($tenantId === null) {
+            return $this->unauthenticated($request);
+        }
+
+        $type = trim((string) $request->query('approver_type', ''));
+        if (! in_array($type, ['reporting_manager', 'principal', 'class_teacher'], true)) {
+            return $this->fail("\"{$type}\" cannot be previewed — only reporting_manager, principal and class_teacher resolve from the graph.");
+        }
+
+        $requestedBy = $request->query('requested_by');
+        $requestedBy = is_numeric($requestedBy) ? (int) $requestedBy : (int) ($this->auth($request)['user_id'] ?? 0);
+
+        $studentId = $request->query('student_id');
+        $divisionId = $request->query('division_id');
+
+        $staffId = $resolver->resolve($tenantId, $type, [
+            'requested_by' => $requestedBy > 0 ? $requestedBy : null,
+            'student_id' => is_numeric($studentId) ? (int) $studentId : null,
+            'division_id' => is_numeric($divisionId) ? (int) $divisionId : null,
+        ]);
+
+        if ($staffId === null) {
+            return $this->ok(['resolved' => false, 'staff_id' => null, 'name' => null]);
+        }
+
+        $name = DB::table('tbluser')->where('id', $staffId)
+            ->selectRaw('TRIM(CONCAT_WS(" ", first_name, last_name)) as full_name')
+            ->value('full_name');
+        $name = is_string($name) ? trim($name) : '';
+
+        return $this->ok([
+            'resolved' => true,
+            'staff_id' => $staffId,
+            'name' => $name !== '' ? $name : "User {$staffId}",
+        ]);
+    }
+
+    /**
      * POST /api/platform/workflow
      *
      * Body: {"flow_key":"fees.concession.flow","name":"Concession above ₹10,000",
@@ -113,7 +163,7 @@ class WorkflowController extends PlatformController
      * starts intercepting real records the moment somebody experiments with the
      * screen. Making it live is a separate, deliberate edit.
      */
-    public function store(Request $request): JsonResponse
+    public function store(Request $request, GraphSync $graphSync): JsonResponse
     {
         $tenantId = $this->tenantId($request);
         if ($tenantId === null) {
@@ -435,6 +485,103 @@ class WorkflowController extends PlatformController
         return $result;
     }
 
+    /**
+     * The approval chains for this scope, read from Neo4j rather than
+     * `platform_workflows` directly (changed 2026-11-25, by request — the
+     * SQL table remains the only thing store()/update()/destroy() write to;
+     * there is no reverse Neo4j->SQL sync, and a save can take up to the
+     * drain's usual lag before it appears here).
+     *
+     * Returns `PlatformWorkflow` instances exactly like the old Eloquent
+     * query did, hydrated from graph properties via `setRawAttributes()`,
+     * so `chainRow()`/the rest of `index()` need no changes at all — the
+     * model's own `steps` (array) / `notify_requester` (boolean) / date
+     * casts apply identically whether the row came from MySQL or Neo4j.
+     *
+     * On a graph failure, returns an empty collection — the same honesty
+     * rule every other graph-reading class in this app already follows
+     * (GraphModuleBrowser, GraphQueryService): no silent SQL fallback, no
+     * fabricated rows.
+     *
+     * @return \Illuminate\Support\Collection<int, PlatformWorkflow>
+     */
+    private function chainsFromGraph(
+        Neo4jService $neo4j,
+        int $tenantId,
+        ?string $module,
+        ?string $component,
+        ?string $flowKey
+    ): \Illuminate\Support\Collection {
+        $cypher = 'MATCH (c:WorkflowChain) '
+            . 'WHERE c.sub_institute_id = $tenantId '
+            . 'AND ($module IS NULL OR c.module = $module) '
+            . 'AND ($component IS NULL OR c.component = $component) '
+            . 'AND ($flowKey IS NULL OR c.flow_key = $flowKey) '
+            . 'RETURN c AS props '
+            . 'ORDER BY c.flow_key, c.workflowChainId';
+
+        try {
+            $result = $neo4j->run($cypher, [
+                'tenantId' => $tenantId,
+                'module' => $module,
+                'component' => $component,
+                'flowKey' => $flowKey,
+            ]);
+        } catch (\Throwable $exception) {
+            \Illuminate\Support\Facades\Log::warning('[platform.workflow] Neo4j read failed, no chains returned', [
+                'tenant' => $tenantId,
+                'error' => $exception->getMessage(),
+            ]);
+
+            return collect();
+        }
+
+        if ($result === null) {
+            return collect();
+        }
+
+        $rows = collect();
+
+        foreach ($result as $record) {
+            $node = $record->get('props');
+            $properties = method_exists($node, 'getProperties') ? $node->getProperties() : $node;
+            $props = method_exists($properties, 'toArray') ? $properties->toArray() : (array) $properties;
+
+            $row = new PlatformWorkflow();
+            $row->setRawAttributes([
+                'id' => (int) ($props['workflowChainId'] ?? 0),
+                'sub_institute_id' => (int) ($props['sub_institute_id'] ?? $tenantId),
+                'flow_key' => (string) ($props['flow_key'] ?? ''),
+                'module' => (string) ($props['module'] ?? ''),
+                'component' => (string) ($props['component'] ?? ''),
+                'name' => (string) ($props['name'] ?? ''),
+                'description' => (string) ($props['description'] ?? ''),
+                'status' => (string) ($props['status'] ?? 'draft'),
+                'condition' => (string) ($props['condition'] ?? ''),
+                'steps' => $props['steps'] ?? '[]',
+                'on_reject' => (string) ($props['on_reject'] ?? 'return_to_requester'),
+                'notify_requester' => $props['notify_requester'] ?? true,
+                'created_by' => $props['created_by'] ?? null,
+                'updated_by' => $props['updated_by'] ?? null,
+                // Not `created_at`/`updated_at` — see config/neo4j.php's
+                // `sql_created_at`/`sql_updated_at` comment: the graph's own
+                // `updated_at` is GraphDrain's sync timestamp, not this row's.
+                'created_at' => $this->graphDateTime($props['sql_created_at'] ?? null),
+                'updated_at' => $this->graphDateTime($props['sql_updated_at'] ?? null),
+            ], true);
+
+            $rows->push($row);
+        }
+
+        return $rows;
+    }
+
+    /** Neo4j's own DateTime type -> a value Eloquent's date cast can parse, same as any other property. */
+    private function graphDateTime(mixed $value): mixed
+    {
+        return $value instanceof \Laudis\Neo4j\Types\DateTime ? $value->toDateTime() : $value;
+    }
+
     private function chainRow(PlatformWorkflow $row): array
     {
         $steps = (array) $row->steps;
@@ -466,6 +613,34 @@ class WorkflowController extends PlatformController
     }
 
     /** @param list<array<string,mixed>> $points */
+    /**
+     * Knowledge Graph Intelligence for Fees: sibling families, a bounded defaulter
+     * sample, real channel engagement, TC no-dues clearance and the concession/
+     * refund queue — all tenant-wide, since this banner has no selected student.
+     * GET /api/platform/workflow/fees-intelligence
+     */
+    public function feesIntelligence(Request $request, \App\Services\Platform\FeesIntelligenceService $intelligence): JsonResponse
+    {
+        $tenantId = $this->tenantId($request);
+        if ($tenantId === null) {
+            return response()->json([
+                'status_code' => 0,
+                'message' => 'Sign in again — this request carried no valid token.',
+                'data' => null,
+            ], 401);
+        }
+
+        $userId = (int) ($this->auth($request)['user_id'] ?? 0);
+
+        $data = $intelligence->tenantSummary($tenantId, $userId);
+
+        return response()->json([
+            'status_code' => 1,
+            'message' => 'Fees Knowledge Graph Intelligence retrieved successfully.',
+            'data' => $data,
+        ]);
+    }
+
     private function summarise(array $points): array
     {
         $governed = 0;

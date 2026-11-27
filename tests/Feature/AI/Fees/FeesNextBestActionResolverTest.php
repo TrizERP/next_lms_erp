@@ -253,4 +253,59 @@ class FeesNextBestActionResolverTest extends TestCase
 
         $this->assertFalse($result['available']);
     }
+
+    /**
+     * A tenant-wide query, unlike every per-subject one above, has no
+     * (student_id, action_type) narrowing — so running it against
+     * $this->subInstituteId (whichever real tenant setUp() happened to pick)
+     * would see that tenant's real, unrelated recommendations too. These
+     * three tests use a synthetic tenant id instead, guaranteed to carry
+     * nothing but what each test seeds.
+     */
+    private function syntheticTenantScope(): McpRequestContext
+    {
+        return new McpRequestContext(
+            userId: 1, role: 'admin', selectedInstituteId: 999888777, allowedInstituteIds: [999888777],
+            userProfileId: null, clientId: null, academicYear: 2026, termId: null,
+            isAdmin: true, isStudent: false
+        );
+    }
+
+    public function test_tenant_wide_pick_finds_the_same_recommendation_without_naming_a_subject(): void
+    {
+        $scope = $this->syntheticTenantScope();
+        $recId = $this->seedRecommendation(['sub_institute_id' => $scope->selectedInstituteId]);
+
+        $result = $this->resolver->topPickForTenant($scope);
+
+        $this->assertTrue($result['available']);
+        $this->assertSame($recId, $result['top_pick']['id']);
+        $this->assertSame('student', $result['top_pick']['subject_entity_key'], 'the tenant-wide pick must say which subject it is actually about');
+        $this->assertSame($this->studentId, $result['top_pick']['subject_id']);
+    }
+
+    public function test_tenant_wide_pick_ranks_across_subjects_the_same_way_as_per_subject(): void
+    {
+        $scope = $this->syntheticTenantScope();
+        $this->seedRecommendation(['sub_institute_id' => $scope->selectedInstituteId, 'risk_level' => 'low', 'confidence' => 0.4]);
+
+        $higherRiskId = $this->seedRecommendation([
+            'sub_institute_id' => $scope->selectedInstituteId,
+            'risk_level' => 'critical',
+            'confidence' => 0.9,
+            'subject_id' => $this->studentId + 1,
+        ]);
+
+        $result = $this->resolver->topPickForTenant($scope);
+
+        $this->assertSame($higherRiskId, $result['top_pick']['id'], 'the tenant-wide pick must still rank by risk/confidence, not just find the first subject with anything');
+    }
+
+    public function test_tenant_wide_pick_is_honestly_unavailable_when_nothing_qualifies_anywhere(): void
+    {
+        $result = $this->resolver->topPickForTenant($this->syntheticTenantScope());
+
+        $this->assertFalse($result['available']);
+        $this->assertStringContainsString('this school', $result['reason']);
+    }
 }

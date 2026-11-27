@@ -99,6 +99,13 @@ class ReconcileCommand extends Command
         ['Misconception', 'OCCURS_IN', 'Concept', 'lms_misconceptions does not exist in this database'],
         ['LearningContent', 'TEACHES', 'Concept', 'suggested_content has no concept_id/title/modality columns'],
         ['LearningContent', 'REMEDIATES', 'Misconception', 'suggested_content has no misconception_id column'],
+
+        // Added 2026-11-24 (fees Knowledge Graph sync audit): both existed in
+        // config/neo4j.php since 2026-11-03 but had no dedicated row here, so
+        // drift on either edge only ever showed up in the generic overflow
+        // list, not as its own SYNCED/STATIC/NO-SOURCE line.
+        ['Standard', 'HAS_FEE_SCHEDULE', 'FeeRecord', null],
+        ['StuDetail', 'MADE_PAYMENT', 'FeePayment', null],
     ];
 
     /**

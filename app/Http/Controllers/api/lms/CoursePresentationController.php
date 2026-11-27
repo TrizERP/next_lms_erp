@@ -644,7 +644,8 @@ class CoursePresentationController extends Controller
     }
 
     /** @return array{0:array<string,mixed>,1:array<string,array<string,mixed>>,2:array<string,mixed>,3:array<string,mixed>} sources, per-method suitability, fit, the loaded rows */
-    private function assess(array $chapter, string $pedagogy, string $format): array
+    // Public so AutomationDraftStarter applies the very same fit check as the Create button, not a copy of it.
+    public function assess(array $chapter, string $pedagogy, string $format): array
     {
         $registry = new SourceRegistry((int) config('course_presentation_pilot.min_text_chars', 2000));
         $raw = $this->loader->load($chapter);
@@ -734,7 +735,7 @@ class CoursePresentationController extends Controller
             return null;
         }
         // Checked after visibility, so a chapter this school cannot see still reads as "not found".
-        if (!$this->scope->allows($chapter)) {
+        if (!$this->scope->permits($chapter)) {
             $error = response()->json(['status_code' => 0, 'message' => $this->scope->message()], 403);
 
             return null;
