@@ -86,8 +86,10 @@ class CompletenessReportCommand extends Command
         'HAS_MASTERY  (:StuDetail)->(:Concept)'      => ['projectMastery',           'MATCH (:StuDetail)-[e:HAS_MASTERY]->(:Concept) RETURN count(e) AS c'],
         'REQUIRES     (:Chapter)->(:Chapter)'        => ['projectLearningRelations', 'MATCH (:Chapter)-[e:REQUIRES]->(:Chapter) RETURN count(e) AS c'],
         'REQUIRES     (:Topic)->(:Topic)'            => ['projectLearningRelations', 'MATCH (:Topic)-[e:REQUIRES]->(:Topic) RETURN count(e) AS c'],
+        'HAS_TOPIC    (:Chapter)->(:Topic)'           => ['projectTopics',            'MATCH (:Chapter)-[e:HAS_TOPIC]->(:Topic) RETURN count(e) AS c'],
         'AFFECTS      (:Misconception)->(:Concept)'  => ['projectMisconceptions',    'MATCH (:Misconception)-[e:AFFECTS]->(:Concept) RETURN count(e) AS c'],
         'CORRECTS_WITH(:Misconception)->(:Content)'  => ['projectMisconceptions',    'MATCH (:Misconception)-[e:CORRECTS_WITH]->(:Content) RETURN count(e) AS c'],
+        'CORRECTS_WITH(:Misconception)->(:CorrectiveContent)' => ['projectMisconceptions', 'MATCH (:Misconception)-[e:CORRECTS_WITH]->(:CorrectiveContent) RETURN count(e) AS c'],
         'HAS_NODE     (:Concept)->(:ConceptNode)'    => ['projectConceptNodes',      'MATCH (:Concept)-[e:HAS_NODE]->(:ConceptNode) RETURN count(e) AS c'],
         'MASTERS_NODE (:StuDetail)->(:ConceptNode)'  => ['projectNodeMastery',       'MATCH (:StuDetail)-[e:MASTERS_NODE]->(:ConceptNode) RETURN count(e) AS c'],
     ];

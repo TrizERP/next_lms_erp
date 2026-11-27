@@ -20,6 +20,7 @@ use App\Http\Controllers\AI\KnowledgeGraphSettingsController;
 use App\Http\Controllers\AI\KnowledgeRagController;
 use App\Http\Controllers\AI\OntologyController;
 use App\Http\Controllers\AI\OutcomeController;
+use App\Http\Controllers\AI\PalRecommendationIntelligenceController;
 use App\Http\Controllers\AI\RecommendationController;
 use App\Http\Controllers\AI\ReportController;
 use App\Http\Controllers\AI\WorkflowController;
@@ -490,6 +491,17 @@ Route::prefix(config('ai.route_prefix', 'api/ai'))
             | See FeesRecommendationIntelligenceController.
             */
             Route::get('/fees/recommendation-intelligence', [FeesRecommendationIntelligenceController::class, 'index']);
+
+            /*
+            | Teach/Learn (PAL) — the five-capability aggregator, same shape
+            | as FeesRecommendationIntelligenceController. Ties PAL's own
+            | Coherence Map / CoherenceRecommender graph reasoning,
+            | pal_coherence_risk's governed signals, and
+            | PalNextBestActionResolver's ranked-or-real-time recommendation
+            | into one payload for Teach/Learn's Recommendation panel. See
+            | PalRecommendationIntelligenceController.
+            */
+            Route::get('/pal/recommendation-intelligence', [PalRecommendationIntelligenceController::class, 'index']);
 
             /*
             | Fees — Graph Reasoning capability (multi-hop/transitive
