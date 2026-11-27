@@ -404,7 +404,9 @@ class tblhostelRoomAllocationController extends Controller
         }
 
         $student_id = $request->input("student_id");
-        $sub_institute_id = session()->get('sub_institute_id');
+        // The school comes from the session on the web, and from the verified token for the app
+        // (which has no session): the token was validated above, so its school can be trusted.
+        $sub_institute_id = session()->get('sub_institute_id') ?: ($this->jwtToken()->payload()['sub_institute_id'] ?? null);
         $syear = $request->input("syear");
 
         if ($student_id != "" && $sub_institute_id != "" && $syear != "") {

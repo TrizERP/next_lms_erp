@@ -92,6 +92,10 @@ class MobileBootstrapApiController extends Controller
                 'menu' => array_values($sections),
                 // Menus ticked "Mobile" in web Roles & Access (the `menu` above is the older homescreen table).
                 'role_menu' => MobileRoleMenuApiController::forSession($userId, $instituteId, $profileId, $isStudent),
+                // Native app screens granted in Roles & Access -> Mobile app, plus a fingerprint the app
+                // compares on resume so a change made by an admin reaches an open app.
+                'app_modules' => \App\Services\Access\MobileAppModules::sectionsFor($instituteId, $profileId, $profileName),
+                'rights_version' => \App\Services\Access\MobileAppModules::versionFor($instituteId, $profileId),
             ],
         ]);
     }

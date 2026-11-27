@@ -25,6 +25,7 @@ use function App\Helpers\SearchStudent;
 
 class studentTransferController extends Controller
 {
+    use \GenTux\Jwt\GetsJwtToken;
 
     /**
      * Display a listing of the resource.
@@ -539,6 +540,16 @@ class studentTransferController extends Controller
    
     $type = $request->type;
     $sub_institute_id = session()->get('sub_institute_id');
+    if (! $sub_institute_id) {
+        // The app has no web session: take the school from its verified token instead.
+        try {
+            if ($this->jwtToken()->validate()) {
+                $sub_institute_id = $this->jwtToken()->payload()['sub_institute_id'] ?? null;
+            }
+        } catch (\Throwable $e) {
+            $sub_institute_id = null;
+        }
+    }
     $document_type = $request->document_type;
     $student_id = $request->student_id;
         if(!isset($type) || $type != 'API'){

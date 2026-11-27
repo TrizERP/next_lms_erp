@@ -587,12 +587,14 @@ else
 
         $sql_grade = "SELECT dt.* 
                     FROM result_std_grd_maping  sgm
-                    INNER JOIN grade_master_data dt on dt.grade_id = sgm.grade_scale AND dt.syear = " . $syear . "
-                    WHERE sgm.standard = " . $standard_id. " AND 
-                    sgm.sub_institute_id = " .$sub_institute_id. "
+                    INNER JOIN grade_master_data dt on dt.grade_id = sgm.grade_scale AND dt.syear = " . (int) $syear . "
+                    WHERE sgm.standard = " . (int) $standard_id. " AND
+                    sgm.sub_institute_id = " . (int) $sub_institute_id. "
                     ORDER BY dt.breakoff DESC
                 ";
-        $ret_grade = DB::select(DB::raw($sql_grade));
+        // A plain string: this Laravel no longer accepts a DB::raw() Expression in DB::select(), which made the
+        // WRT report (and anything else calling getGradeScale) fail with a 500.
+        $ret_grade = DB::select($sql_grade);
 
         //converting it into array 
         $grade_arr = array();

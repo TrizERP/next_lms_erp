@@ -109,6 +109,25 @@ class studentHomeworkController extends Controller
      * @param  Request  $request
      * @return false|string
      */
+    /**
+     * The student's own WRT progress report. The staff report (`get_wrtreportAPI`) sits behind the staff-only
+     * mobile guard and trusts a `student_id` from the request, so a student could not open it, and a student who
+     * could would be able to ask for anybody's. This route runs behind `api.session`, takes the student and the
+     * school from the verified token only, and then reuses the same report.
+     */
+    public function wrtReport(Request $request)
+    {
+        if (! session()->get('is_student')) {
+            return response()->json(['status' => '0', 'message' => 'Only students can open this report.', 'data' => []], 403);
+        }
+        $request->merge([
+            'student_id' => (int) session()->get('user_id'),
+            'sub_institute_id' => (int) session()->get('sub_institute_id'),
+        ]);
+
+        return app(\App\Http\Controllers\api\adminapiController::class)->get_wrtreportAPI($request);
+    }
+
     public function fetchData(Request $request)
     {
         $response = ['response' => '', 'success' => false];

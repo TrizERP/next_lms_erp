@@ -111,6 +111,23 @@ Route::controller(apiController::class)->group(function () {
 });
 
 Route::post('api-login', [ApiLoginController::class, 'login'])->middleware('throttle:20,1')->name('api.api-login');
+
+// Mobile number + mPIN / biometric sign-in for the app (the web login above is untouched). Every route has its
+// own throttle bucket; the mPIN itself is also locked per number after repeated failures (see the controller).
+Route::prefix('mobile-auth')->controller(\App\Http\Controllers\api\MobileAuthController::class)->group(function () {
+    Route::post('status', 'status')->middleware('throttle:30,1,mauth-status');
+    Route::post('otp/send', 'sendOtp')->middleware('throttle:6,1,mauth-otp-send');
+    Route::post('otp/verify', 'verifyOtp')->middleware('throttle:10,1,mauth-otp-verify');
+    Route::post('pin/set', 'setPin')->middleware('throttle:10,1,mauth-pin-set');
+    Route::post('pin/login', 'pinLogin')->middleware('throttle:20,1,mauth-pin-login');
+    Route::post('device/register', 'registerDevice')->middleware('throttle:10,1,mauth-device-register');
+    Route::post('device/login', 'deviceLogin')->middleware('throttle:20,1,mauth-device-login');
+    Route::post('device/revoke', 'revokeDevice')->middleware('throttle:10,1,mauth-device-revoke');
+    Route::post('select', 'select')->middleware('throttle:30,1,mauth-select');
+    // Switching profile while signed in: the caller is the verified token (api.session), not a ticket.
+    Route::post('profiles', 'profiles')->middleware(['api.session', 'throttle:30,1,mauth-profiles']);
+    Route::post('switch', 'switchProfile')->middleware(['api.session', 'throttle:20,1,mauth-switch']);
+});
 Route::get('academic-terms', [ApiLoginController::class, 'academicTerms'])->name('api.academic-terms');
 // Isolated mobile Own Profile API; legacy profile controllers are unchanged.
 Route::middleware('api.session')->get('own-profile', [\App\Http\Controllers\api\OwnProfileApiController::class, 'show']);
@@ -940,6 +957,8 @@ Route::controller(\App\Http\Controllers\api\RoleAccessApiController::class)->pre
     Route::post('roles/{profileId}/rights', 'save')->whereNumber('profileId');
     Route::get('roles/{profileId}/categories', 'categories')->whereNumber('profileId');
     Route::post('roles/{profileId}/categories', 'saveCategories')->whereNumber('profileId');
+    Route::get('roles/{profileId}/mobile-modules', [\App\Http\Controllers\api\MobileAppModulesApiController::class, 'show'])->whereNumber('profileId');
+    Route::post('roles/{profileId}/mobile-modules', [\App\Http\Controllers\api\MobileAppModulesApiController::class, 'save'])->whereNumber('profileId');
     Route::post('roles/{profileId}/copy/preview', 'copyPreview')->whereNumber('profileId');
     Route::post('roles/{profileId}/copy/apply', 'copyApply')->whereNumber('profileId');
     Route::get('users', 'users');
