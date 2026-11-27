@@ -227,6 +227,7 @@ Route::post('circular/fetchData', [circularController::class, 'fetchData']);
 Route::post('circular/TeacherFetchData', [circularController::class, 'TeacherFetchData']);
 Route::get('circular/circular-types', [circularTypeApiController::class, 'index']);
 Route::post('homework/fetchData', [studentHomeworkController::class, 'fetchData'])->middleware('api.session');
+Route::post('student/api/wrt_report', [studentHomeworkController::class, 'wrtReport'])->middleware('api.session');
 Route::post('photo_video_gallary/fetchData', [photo_video_gallaryController::class, 'fetchData']);
 Route::post('photo_video_gallary/TeacherFetchData', [photo_video_gallaryController::class, 'TeacherFetchData']);
 Route::post('/notificationHubAPI', [tblstudentController::class, 'notificationHubAPI'])->middleware('mobile.identity:student');

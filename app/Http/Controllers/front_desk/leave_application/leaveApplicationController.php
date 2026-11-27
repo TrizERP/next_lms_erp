@@ -313,6 +313,10 @@ class leaveApplicationController extends Controller
             'to_date'          => 'required|date_format:Y-m-d',
         ]);//'apply_date'       => 'required|date_format:Y-m-d',
         if ($validator->fails()) {
+            // Keep the old `response` key for existing clients, and add a real status + message so a
+            // failed validation is no longer read as success by the mobile app.
+            $response['status'] = 0;
+            $response['message'] = $validator->messages()->first();
             $response['response'] = $validator->messages();
         } else {
 
