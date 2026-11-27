@@ -33,6 +33,8 @@ use App\Models\fees\fees_breackoff\fees_breackoff;
 use function App\Helpers\SearchStudent;
 use function App\Helpers\getStudents;
 use App\Http\Controllers\easy_com\send_sms_parents\send_sms_parents_controller;
+use App\Services\Platform\Fees\ConcessionGrantNotApplicable;
+use App\Services\Platform\Fees\FeesConcessionGrantService;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Crypt;
 use Carbon\CarbonPeriod;
@@ -403,6 +405,23 @@ class fees_collect_controller extends Controller
             $syear = $request->syear;
             $stu_arr[0] = $request->student_id;
         }
+
+        // An approved concession is applied by posting its grant id alongside
+        // the usual discount_data[] — checked fail-fast here, before the
+        // (expensive) breakoff computation below, and re-checked locked
+        // inside the transaction once the real discount amount is known.
+        // No grant id posted means today's behaviour is unchanged.
+        $concession_grant_id = (int) ($_REQUEST['concession_grant_id'] ?? 0);
+        if ($concession_grant_id > 0) {
+            try {
+                app(FeesConcessionGrantService::class)->assertApplicable(
+                    (int) $sub_institute_id, $concession_grant_id, (int) $stu_arr[0], 'concession'
+                );
+            } catch (ConcessionGrantNotApplicable $e) {
+                return ['status_code' => 0, 'message' => $e->getMessage()];
+            }
+        }
+
         // get all month name with month_id
         $month_arr = FeeMonthId($syear,$sub_institute_id);
         $currunt_month = date('m');
@@ -749,9 +768,10 @@ uksort($other_bk_off_month_head_wise, function($a, $b) {
         $insert_id = null;
         $collected_amount = 0;
 
+        try {
         DB::transaction(function () use (
             $new_insert_arr, $new_insert_other_arr, $stu_arr, $standard_ids, $syears,
-            $sub_institute_id, $syear, $user_id, $receipt_number,
+            $sub_institute_id, $syear, $user_id, $receipt_number, $concession_grant_id,
             &$regular_insert_arr, &$other_insert_arr, &$fees_receipt_insert, &$insert_id, &$collected_amount
         ) {
             // insert into fees_collect
@@ -880,7 +900,32 @@ uksort($other_bk_off_month_head_wise, function($a, $b) {
                 'old_values' => null,
                 'new_values' => $fees_receipt_insert,
             ]);
+
+            // Applying an approved concession: the actual discount the
+            // ledger just recorded (never what the request asked for) is
+            // what gets booked against the grant, inside this same
+            // transaction — a failed application rolls the receipt back
+            // with it, so the two can never disagree.
+            if ($concession_grant_id > 0) {
+                $applied = (float) DB::table('fees_collect')->whereIn('id', $regular_insert_arr)->sum('fees_discount')
+                    + (float) DB::table('fees_paid_other')->whereIn('id', $other_insert_arr)->sum('fees_discount');
+
+                if ($applied > 0) {
+                    app(FeesConcessionGrantService::class)->recordApplication(
+                        (int) $sub_institute_id,
+                        $concession_grant_id,
+                        (int) $stu_arr[0],
+                        'concession',
+                        $applied,
+                        ['fees_receipt_id' => $insert_id, 'fees_collect_ids' => $regular_insert_arr, 'fees_paid_other_ids' => $other_insert_arr],
+                        $user_id !== null ? (int) $user_id : null
+                    );
+                }
+            }
         });
+        } catch (ConcessionGrantNotApplicable $e) {
+            return ['status_code' => 0, 'message' => 'The approved concession did not reach this receipt — nothing was saved. '.$e->getMessage()];
+        }
 
         // added 2024-08-28 fees id or paid other fees id not found return status 0
         if(empty($regular_insert_arr) && empty($other_insert_arr)){

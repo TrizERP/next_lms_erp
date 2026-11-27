@@ -107,6 +107,13 @@ class FeesArrearsService
                 'standard_name' => $student['standard_name'] ?? null,
                 'outstanding' => round($outstanding, 2),
                 'pending_items' => count($items),
+                // The raw rows, not just the count — bounded by the cohort
+                // limit this whole sweep already enforces, and needed by
+                // callers deriving an overdue duration from month_id. Each
+                // item's own shape comes straight from the legacy fee
+                // ledger and is not guaranteed to carry month_id; callers
+                // must treat its absence as unknown, not zero.
+                'pending_items_detail' => $items,
             ];
         }
 
@@ -133,6 +140,12 @@ class FeesArrearsService
             );
         }
 
+        // Who was actually resolved, named rather than left to be inferred from a
+        // count. A caller classifying students as "clear of dues" must never read
+        // a failed lookup as a zero balance — see the TC no-dues card, which did
+        // exactly that before this key existed.
+        $checkedIds = array_values(array_diff($studentIds, array_column($failed, 'student_id')));
+
         return ToolResult::success(
             'fees.arrears',
             $this->summarise($defaulters, count($studentIds), $cohortSize, $truncated, count($failed)),
@@ -142,6 +155,7 @@ class FeesArrearsService
                 'total_outstanding' => round($total, 2),
                 'cohort_size' => $cohortSize,
                 'students_checked' => count($studentIds),
+                'checked_student_ids' => $checkedIds,
                 'truncated' => $truncated,
                 'failed' => $failed,
                 'min_amount' => $minimum,

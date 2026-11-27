@@ -68,6 +68,12 @@ Route::prefix('api/pal')->middleware('pal.auth')->group(function () {
     Route::get('/recommendations/next', [RecommendationFeedController::class, 'next']);
     Route::get('/context-graph/{learnerId}', [\App\Http\Controllers\api\PAL\ContextGraphController::class, 'show'])
         ->where('learnerId', '[0-9]+');
+    Route::get('/course-context/{standardId}/{subjectId}', [\App\Http\Controllers\api\PAL\CourseContextController::class, 'show'])
+        ->where(['standardId' => '[0-9]+', 'subjectId' => '[0-9]+']);
+    Route::get('/assessment-context/{assessmentId}', [\App\Http\Controllers\api\PAL\AssessmentContextController::class, 'show'])
+        ->where('assessmentId', '[0-9]+');
+    Route::get('/curriculum-context/{curriculumId}', [\App\Http\Controllers\api\PAL\CurriculumContextController::class, 'show'])
+        ->where('curriculumId', '[0-9]+');
 
     /*
     |--------------------------------------------------------------------------

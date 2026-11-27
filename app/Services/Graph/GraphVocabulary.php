@@ -67,6 +67,7 @@ class GraphVocabulary
         // -- student --------------------------------------------------------
         'StuDetail' => self::FAMILY_STUDENT,
         'Student' => self::FAMILY_STUDENT,
+        'AttendanceRecord' => self::FAMILY_STUDENT,
 
         // -- people -----------------------------------------------------------
         'Teacher' => self::FAMILY_PEOPLE,

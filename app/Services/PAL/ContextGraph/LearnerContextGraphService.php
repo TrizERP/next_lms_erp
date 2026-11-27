@@ -17,7 +17,9 @@ use Illuminate\Support\Facades\Schema;
  * 2. Learning Activities: Diagnostic attempts, practice scores, quizzes, engagement.
  * 3. Knowledge Graph Relationships: Subject curriculum, concepts, prerequisite edges,
  *    readiness classification (mastered/ready/blocked), and root prerequisite blockers.
- * 4. Historical Trajectory: BKT mastery states, spaced repetition schedules, and decision audit logs.
+ * 4. Historical Trajectory: recent mastery/confidence snapshots (pal_competencies),
+ *    engine decisions (eso_decision_log), and recommendation events
+ *    (pal_recommendation_log). No spaced-repetition scheduling is read here today.
  *
  * Multi-tenant isolation: Scoped strictly by `sub_institute_id` at every layer.
  */
@@ -101,6 +103,7 @@ class LearnerContextGraphService
                         'nodes' => $nodes,
                         'edges' => $mapData['edges'],
                         'chapters' => $mapData['chapters'] ?? [],
+                        'topics' => $mapData['topics'] ?? [],
                         'stats' => $mapData['stats'] ?? [],
                         'root_blockers' => array_values($allRoots),
                     ];
@@ -152,7 +155,7 @@ class LearnerContextGraphService
             ->when($tenantId, fn ($q) => $q->where('sub_institute_id', $tenantId))
             ->first([
                 'id', 'first_name', 'middle_name', 'last_name',
-                'admission_no', 'gender', 'dob', 'sub_institute_id'
+                'admission_id', 'gender', 'dob', 'sub_institute_id'
             ]);
 
         if ($student === null) {
@@ -180,12 +183,21 @@ class LearnerContextGraphService
                 ->value('name');
         }
 
-        // Available / Enrolled Subjects
+        // Available / Enrolled Subjects. `display_name` is the platform
+        // convention for a subject's label, but is absent on `subject` in
+        // some tenant schemas (a migration-drift gap, not a code decision) -
+        // select it only when it actually exists, falling back to
+        // `subject_name` alone rather than throwing.
+        $subjectColumns = ['s.id', 's.subject_name'];
+        if (Schema::hasColumn('subject', 'display_name')) {
+            $subjectColumns[] = 's.display_name';
+        }
+
         $subjects = DB::table('student_optional_subject as sos')
             ->join('subject as s', 'sos.subject_id', '=', 's.id')
             ->where('sos.student_id', $learnerId)
             ->where('sos.sub_institute_id', $subInstituteId)
-            ->select('s.id', 's.display_name', 's.subject_name')
+            ->select($subjectColumns)
             ->get();
 
         if ($subjects->isEmpty() && $enrollment) {
@@ -193,7 +205,7 @@ class LearnerContextGraphService
                 ->join('subject as s', 'ssm.subject_id', '=', 's.id')
                 ->where('ssm.standard_id', $enrollment->standard_id)
                 ->where('ssm.sub_institute_id', $subInstituteId)
-                ->select('s.id', 's.display_name', 's.subject_name')
+                ->select($subjectColumns)
                 ->get();
         }
 
@@ -208,7 +220,7 @@ class LearnerContextGraphService
         return [
             'learner_id' => (int) $student->id,
             'name' => $fullName ?: "Student #{$student->id}",
-            'admission_no' => $student->admission_no,
+            'admission_no' => $student->admission_id,
             'gender' => $student->gender,
             'sub_institute_id' => $subInstituteId,
             'institute_name' => $instituteName ?: "Institute #{$subInstituteId}",
@@ -220,7 +232,7 @@ class LearnerContextGraphService
             'syear' => $enrollment ? (int) $enrollment->syear : null,
             'enrolled_subjects' => $subjects->map(fn ($s) => [
                 'id' => (int) $s->id,
-                'name' => $s->display_name ?: $s->subject_name,
+                'name' => ($s->display_name ?? null) ?: $s->subject_name,
             ])->values()->all(),
             'primary_subject_id' => $primarySubjectId ? (int) $primarySubjectId : null,
         ];
@@ -290,17 +302,31 @@ class LearnerContextGraphService
     {
         $competencies = [];
         if (Schema::hasTable('pal_competencies')) {
+            // `confidence_score`/`attempts_count` were never created by any
+            // migration against this table (its real columns are
+            // bloom_level/proficiency_trend/last_assessed) - selecting them
+            // unconditionally throws. Select only columns that actually
+            // exist, rather than fabricating values for ones that don't.
+            $hasConfidence = Schema::hasColumn('pal_competencies', 'confidence_score');
+            $hasAttempts = Schema::hasColumn('pal_competencies', 'attempts_count');
+
+            $columns = array_values(array_filter([
+                'concept_id', 'mastery_score', 'updated_at',
+                $hasConfidence ? 'confidence_score' : null,
+                $hasAttempts ? 'attempts_count' : null,
+            ]));
+
             $competencies = DB::table('pal_competencies')
                 ->where('learner_id', $learnerId)
                 ->when($subjectId, fn ($q) => $q->where('subject_id', $subjectId))
                 ->orderByDesc('updated_at')
                 ->limit(10)
-                ->get(['concept_id', 'mastery_score', 'confidence_score', 'attempts_count', 'updated_at'])
+                ->get($columns)
                 ->map(fn ($c) => [
                     'concept_id' => (int) $c->concept_id,
                     'mastery_score' => round((float) $c->mastery_score, 2),
-                    'confidence_score' => round((float) ($c->confidence_score ?? 0), 2),
-                    'attempts' => (int) ($c->attempts_count ?? 1),
+                    'confidence_score' => $hasConfidence ? round((float) ($c->confidence_score ?? 0), 2) : null,
+                    'attempts' => $hasAttempts ? (int) ($c->attempts_count ?? 1) : null,
                     'last_updated' => $c->updated_at,
                 ])
                 ->all();

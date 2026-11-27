@@ -8,6 +8,8 @@ use App\Http\Controllers\fees\other_fees_collect\other_fees_collect_controller;
 use App\Models\fees\bank_master\bankmasterModel;
 use App\Models\fees\tblfeesConfigModel;
 use App\Models\student\tblstudentModel;
+use App\Services\Platform\Fees\ConcessionGrantNotApplicable;
+use App\Services\Platform\Fees\FeesConcessionGrantService;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
@@ -365,6 +367,37 @@ class feesRefundController extends Controller
             }
         }
 
+        // Paying out an approved refund request: its grant id is posted
+        // alongside the usual per-head refund_amount[]. No grant id means
+        // today's behaviour (a direct, approval-free refund) is unchanged.
+        $concession_grant_id = (int) $request->input('concession_grant_id', 0);
+        $concession_grant = null;
+        if ($concession_grant_id > 0) {
+            try {
+                $concession_grant = app(FeesConcessionGrantService::class)->assertApplicable(
+                    (int) $sub_institute_id, $concession_grant_id, (int) $student_id, 'refund'
+                );
+            } catch (ConcessionGrantNotApplicable $e) {
+                $res['status_code'] = 0;
+                $res['message'] = $e->getMessage();
+
+                return is_mobile($type, "fees_refund.index", $res);
+            }
+
+            $approvedHeads = $concession_grant->refund_heads !== null ? (json_decode((string) $concession_grant->refund_heads, true) ?: []) : [];
+            foreach ($fees_title as $fees_title_name => $fees_title_id) {
+                if (isset($refund_amount[$fees_title_id])) {
+                    $approved_for_title = (float) ($approvedHeads[$fees_title_id] ?? 0);
+                    if ((float) $refund_amount[$fees_title_id] > $approved_for_title + 0.01) {
+                        $res['status_code'] = 0;
+                        $res['message'] = "Refund amount for ".$fees_title_name." exceeds what this approved request allows (".$approved_for_title.").";
+
+                        return is_mobile($type, "fees_refund.index", $res);
+                    }
+                }
+            }
+        }
+
         $new_html = '';
 
         $style = '<style type="text/css">
@@ -638,17 +671,43 @@ class feesRefundController extends Controller
         $feesRefundLog['created_by'] = $user_id;
         $feesRefundLog['created_ip_address'] = $_SERVER['REMOTE_ADDR'];
 
-        DB::table('fees_refund')->insert($feesRefundLog);
-        $last_inserted_id = DB::getPdo()->lastInsertId();
+        try {
+            $last_inserted_id = DB::transaction(function () use ($feesRefundLog, $paid_amount_title_wise, $total_refund_amt, $concession_grant_id, $sub_institute_id, $student_id, $user_id) {
+                $id = DB::table('fees_refund')->insertGetId($feesRefundLog);
 
-        \App\Models\AuditLog::record([
-            'module' => 'fees',
-            'action' => 'fee_refund',
-            'entity_type' => 'fees_refund',
-            'entity_id' => $last_inserted_id,
-            'old_values' => ['collected_amount' => $paid_amount_title_wise],
-            'new_values' => ['refund_amount' => $total_refund_amt],
-        ]);
+                \App\Models\AuditLog::record([
+                    'module' => 'fees',
+                    'action' => 'fee_refund',
+                    'entity_type' => 'fees_refund',
+                    'entity_id' => $id,
+                    'old_values' => ['collected_amount' => $paid_amount_title_wise],
+                    'new_values' => ['refund_amount' => $total_refund_amt],
+                ]);
+
+                // Books the payout against the approved request in the same
+                // transaction as the refund row — a failed application
+                // rolls the refund back with it, so the two can never
+                // disagree.
+                if ($concession_grant_id > 0 && $total_refund_amt > 0) {
+                    app(FeesConcessionGrantService::class)->recordApplication(
+                        (int) $sub_institute_id,
+                        $concession_grant_id,
+                        (int) $student_id,
+                        'refund',
+                        (float) $total_refund_amt,
+                        ['fees_refund_id' => $id],
+                        $user_id !== null ? (int) $user_id : null
+                    );
+                }
+
+                return $id;
+            });
+        } catch (ConcessionGrantNotApplicable $e) {
+            $res['status_code'] = 0;
+            $res['message'] = 'The approved refund did not reach this payout — nothing was saved. '.$e->getMessage();
+
+            return is_mobile($type, "fees_refund.index", $res);
+        }
 
         $new_html .= '<div class="row">'.$style.$recHtml_for_insert.'</div>
         <div class="pagebreak"></div> <br><br>';

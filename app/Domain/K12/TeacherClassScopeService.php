@@ -81,6 +81,42 @@ class TeacherClassScopeService
     }
 
     /**
+     * Course-grain variant of `isClassInTeacherScope()`, for endpoints keyed
+     * on (standard, subject) rather than just (standard, section) — e.g. the
+     * Context Graph's course/assessment context endpoints.
+     *
+     * A homeroom `class_teacher` still reaches the whole class regardless of
+     * subject (correct, unchanged from `isClassInTeacherScope()`). A plain
+     * subject teacher via `timetable`, however, must additionally match
+     * `subject_id` — `isClassInTeacherScope()` deliberately does not require
+     * this (it answers "is this teacher assigned to this class at all", which
+     * is right for its own callers), but a course-grain check that ignored
+     * subject would let any subject teacher in the class reach every OTHER
+     * subject's course/assessment data too.
+     */
+    public function isCourseInTeacherScope(int $teacherId, int $subInstituteId, int $standardId, int $subjectId, string $syear): bool
+    {
+        $classTeacherMatch = DB::table('class_teacher')
+            ->where('teacher_id', $teacherId)
+            ->where('sub_institute_id', $subInstituteId)
+            ->where('standard_id', $standardId)
+            ->where('syear', $syear)
+            ->exists();
+
+        if ($classTeacherMatch) {
+            return true;
+        }
+
+        return DB::table('timetable')
+            ->where('teacher_id', $teacherId)
+            ->where('sub_institute_id', $subInstituteId)
+            ->where('standard_id', $standardId)
+            ->where('subject_id', $subjectId)
+            ->where('syear', $syear)
+            ->exists();
+    }
+
+    /**
      * Every student id this teacher reaches via either source, any syear —
      * the batch form `isStudentInTeacherScope()` has no equivalent for. An
      * empty result means "no assigned classes", which callers must treat as
