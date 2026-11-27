@@ -613,34 +613,6 @@ class WorkflowController extends PlatformController
     }
 
     /** @param list<array<string,mixed>> $points */
-    /**
-     * Knowledge Graph Intelligence for Fees: sibling families, a bounded defaulter
-     * sample, real channel engagement, TC no-dues clearance and the concession/
-     * refund queue — all tenant-wide, since this banner has no selected student.
-     * GET /api/platform/workflow/fees-intelligence
-     */
-    public function feesIntelligence(Request $request, \App\Services\Platform\FeesIntelligenceService $intelligence): JsonResponse
-    {
-        $tenantId = $this->tenantId($request);
-        if ($tenantId === null) {
-            return response()->json([
-                'status_code' => 0,
-                'message' => 'Sign in again — this request carried no valid token.',
-                'data' => null,
-            ], 401);
-        }
-
-        $userId = (int) ($this->auth($request)['user_id'] ?? 0);
-
-        $data = $intelligence->tenantSummary($tenantId, $userId);
-
-        return response()->json([
-            'status_code' => 1,
-            'message' => 'Fees Knowledge Graph Intelligence retrieved successfully.',
-            'data' => $data,
-        ]);
-    }
-
     private function summarise(array $points): array
     {
         $governed = 0;

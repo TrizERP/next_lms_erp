@@ -46,6 +46,49 @@ class GraphQueryService
             'ENROLLED_IN' => 'Student',
             'MADE_PAYMENT' => 'StuDetail',
         ],
+        // `lms_student_engagement.student_id` is the PERSON (tblstudent.id), and
+        // `EngagementGraphProjection` emits ENGAGED_WITH off `:StuDetail` directly —
+        // unlike ENROLLED_IN, this is NOT the enrolment. Without this override,
+        // `graphLabelFor('student')` naively resolves to `Student` (the enrolment),
+        // `resolveGraphStartIds()`'s bridge fires, and the query matches a label that
+        // has no outgoing ENGAGED_WITH edge — an empty-but-successful result that
+        // `expand()` treats as final rather than falling back to SQL (see
+        // `LABEL_OVERRIDE`'s docblock below for the same failure shape).
+        'student' => [
+            'ENGAGED_WITH' => 'StuDetail',
+            // `attendance_student.student_id` is likewise the PERSON, not
+            // the enrolment — same reasoning, same fix, see HAS_ATTENDANCE's
+            // EngagementGraphProjection-equivalent entity spec in config/neo4j.php.
+            'HAS_ATTENDANCE' => 'StuDetail',
+        ],
+    ];
+
+    /**
+     * Neo4j "to"/general label overrides for entity keys whose naive PascalCase
+     * transform does not match the real label — or, worse, collides with a real,
+     * unrelated label. `graphLabelFor()`'s default is right for almost every
+     * entity; these three are documented exceptions:
+     *
+     *  - `exam_paper` (source `question_paper`) is written to Neo4j as `:Assessment`
+     *    (`config/neo4j.php`'s `question_paper` spec), not the nonexistent `ExamPaper`.
+     *  - `learning_concept` naively resolves to `LearningConcept`, which is not a
+     *    whitelisted label at all (the real one is `Concept`) — `GraphSchema::key()`
+     *    throws, so this previously fell back to SQL silently. Harmless, but the
+     *    `chapter -> learning_concept` edge has therefore never actually used Neo4j
+     *    despite being marked `in_graph=true`.
+     *  - `content` naively resolves to `Content` — which IS a real, different,
+     *    unrelated whitelisted label (a legacy batch-pipeline node type), not
+     *    `TeachingResource` (the real label for `content_master`, per
+     *    `config/neo4j.php`'s own explicit warning against this exact collision).
+     *    This one is not harmless: the Cypher runs, matches the wrong/zero nodes,
+     *    and because an empty-but-successful graph result is final (not a signal
+     *    to fall back to SQL), any edge targeting `content` was returning
+     *    permanently empty results.
+     */
+    private const LABEL_OVERRIDE = [
+        'exam_paper' => 'Assessment',
+        'learning_concept' => 'Concept',
+        'content' => 'TeachingResource',
     ];
 
     public function __construct(
@@ -730,7 +773,8 @@ class GraphQueryService
     /** Neo4j labels are PascalCase; ontology keys are snake_case. */
     private function graphLabelFor(string $entityKey): string
     {
-        return str_replace(' ', '', ucwords(str_replace('_', ' ', $entityKey)));
+        return self::LABEL_OVERRIDE[$entityKey]
+            ?? str_replace(' ', '', ucwords(str_replace('_', ' ', $entityKey)));
     }
 
     /**

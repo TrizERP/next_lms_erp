@@ -94,7 +94,8 @@ class CoherenceMapRepository
                 'nodes'     => [],
                 'edges'     => [],
                 'chapters'  => [],
-                'stats'     => ['concepts' => 0, 'requires' => 0, 'cross_links' => 0],
+                'topics'    => [],
+                'stats'     => ['concepts' => 0, 'requires' => 0, 'cross_links' => 0, 'topics' => 0],
             ];
         }
 
@@ -113,6 +114,8 @@ class CoherenceMapRepository
                 'chapter_id'  => $n['chapter_id'],
                 'chapter'     => $n['chapter'],
                 'chapter_order' => $n['chapter_order'],
+                'topic_id'    => $n['topic_id'],
+                'topic'       => $n['topic'],
                 'standard_id' => $n['standard_id'],
                 'subject_id'  => $n['subject_id'],
                 'bloom'       => $n['bloom'],
@@ -142,11 +145,13 @@ class CoherenceMapRepository
             'nodes'     => $nodes,
             'edges'     => $scope['edges'],
             'chapters'  => array_values($scope['chapters']),
+            'topics'    => array_values($scope['topics']),
             'stats'     => [
                 'concepts'     => count($nodes),
                 'requires'     => $scope['requires_count'],
                 'cross_links'  => $scope['cross_count'],
                 'chapters'     => count($scope['chapters']),
+                'topics'       => count($scope['topics']),
                 'roots'        => count($scope['roots']),
                 'isolated'     => $scope['isolated'],
                 'max_depth'    => $scope['depth'] === [] ? 0 : max($scope['depth']),
@@ -733,7 +738,7 @@ class CoherenceMapRepository
 
         if ($nodes === []) {
             return $this->scopeCache[$key] = [
-                'nodes' => [], 'edges' => [], 'chapters' => [],
+                'nodes' => [], 'edges' => [], 'chapters' => [], 'topics' => [],
                 'requires' => [], 'unlocked_by' => [], 'depth' => [],
                 'roots' => [], 'cycle_nodes' => [], 'isolated' => 0,
                 'requires_count' => 0, 'cross_count' => 0, 'draft_edges' => 0,
@@ -766,6 +771,23 @@ class CoherenceMapRepository
 
         uasort($chapters, fn ($a, $b) => ($a['order'] ?? 999) <=> ($b['order'] ?? 999));
 
+        $topics = [];
+
+        foreach ($nodes as $n) {
+            $tid = $n['topic_id'];
+
+            if ($tid === null) {
+                continue;
+            }
+
+            $topics[$tid] ??= [
+                'id'       => $tid,
+                'name'     => $n['topic'],
+                'concepts' => 0,
+            ];
+            $topics[$tid]['concepts']++;
+        }
+
         $roots = [];
         $isolated = 0;
 
@@ -786,6 +808,7 @@ class CoherenceMapRepository
             'nodes'          => $nodes,
             'edges'          => $edges,
             'chapters'       => $chapters,
+            'topics'         => $topics,
             'requires'       => $requires,
             'unlocked_by'    => $unlockedBy,
             'depth'          => $depth,
@@ -816,6 +839,7 @@ class CoherenceMapRepository
             . 'OPTIONAL MATCH (ch:Chapter)-[:HAS_CONCEPT]->(c) '
             . 'OPTIONAL MATCH (ct:Content)-[:TEACHES]->(c) '
             . 'OPTIONAL MATCH (q:Question)-[:ASSESSES]->(c) '
+            . 'OPTIONAL MATCH (tp:Topic)-[:HAS_CONCEPT]->(c) '
             . 'RETURN c.conceptId AS id, c.name AS name, c.description AS description, '
             . '       c.concept_code AS code, c.chapter_id AS chapterId, '
             . '       ch.chapter_name AS chapter, toInteger(ch.sort_order) AS chapterOrder, '
@@ -823,6 +847,7 @@ class CoherenceMapRepository
             . '       c.bloom_ceiling AS bloom, c.priority_score AS priority, '
             . '       c.mastery_gate AS gate, c.est_minutes AS minutes, '
             . '       c.quality_status AS status, '
+            . '       tp.topicId AS topicId, tp.name AS topicName, '
             . '       count(DISTINCT ct) AS contentN, count(DISTINCT q) AS questionN '
             . 'ORDER BY chapterOrder, id';
 
@@ -849,6 +874,8 @@ class CoherenceMapRepository
                 'gate'          => $r->get('gate') === null ? self::GATE_FLOOR : (float) $r->get('gate'),
                 'minutes'       => $this->intOrNull($r->get('minutes')),
                 'status'        => $this->text($r->get('status')) ?: 'draft',
+                'topic_id'      => $r->get('topicId') === null ? null : (int) $r->get('topicId'),
+                'topic'         => $this->text($r->get('topicName')) ?: null,
                 'content_n'     => (int) $r->get('contentN'),
                 'question_n'    => (int) $r->get('questionN'),
             ];

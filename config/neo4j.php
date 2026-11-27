@@ -387,6 +387,17 @@ return [
             'platform_workflows',
             'platform_workflow_runs',
             'platform_workflow_run_steps',
+
+            // "Context Graph - Whole LMS Integration" pass, Engagement
+            // module (added 2026-11-27). `attendance_student` (one row per
+            // student per day) had NO live or batch sync at all before this
+            // — the only prior attendance-shaped graph data was a one-time
+            // CSV batch load of the term-AGGREGATE table
+            // (result_student_attendance_master), not this one. See the
+            // entity spec below for why this is a plain declarative
+            // TableGraphProjection (no bespoke class needed — one row always
+            // maps to exactly one node and one edge, no per-row branching).
+            'attendance_student',
         ],
 
         'entities' => [
@@ -1460,6 +1471,32 @@ return [
                 // existing relationship type fits cleanly; the core booking
                 // connection (student + slot) already resolves the "disconnected
                 // dot" problem without inventing a new type for a secondary edge.
+            ],
+
+            // "Context Graph - Whole LMS Integration" pass, Engagement
+            // module (added 2026-11-27). The first LIVE, per-day attendance
+            // edge in the graph — ATTENDED (a stale one-time cross-join) and
+            // the batch-only ATTENDANCE edge (term aggregates) are both left
+            // exactly as they are; this is a new, correctly-named edge, not
+            // a fix of either of those.
+            'attendance_student' => [
+                'label' => 'AttendanceRecord',
+                'properties' => [
+                    'syear'              => 'syear',
+                    'student_id'         => 'student_id',
+                    'term_id'            => 'term_id',
+                    'attendance_date'    => 'attendance_date',
+                    'attendance_code'    => 'attendance_code',
+                    'teacher_id'         => 'teacher_id',
+                    'standard_id'        => 'standard_id',
+                    'section_id'         => 'section_id',
+                    'sub_institute_id'   => 'sub_institute_id',
+                ],
+                'casts' => ['syear' => 'int', 'term_id' => 'int', 'teacher_id' => 'int', 'standard_id' => 'int', 'section_id' => 'int'],
+                'display_label' => ['prefix' => 'Attendance:', 'column' => 'attendance_date'],
+                'relationships' => [
+                    ['type' => 'HAS_ATTENDANCE', 'from' => ['StuDetail', 'student_id'], 'to' => ['AttendanceRecord', 'id']],
+                ],
             ],
 
             'ptm_time_slots_master' => [

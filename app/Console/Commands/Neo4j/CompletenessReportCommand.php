@@ -94,6 +94,28 @@ class CompletenessReportCommand extends Command
         'MASTERS_NODE (:StuDetail)->(:ConceptNode)'  => ['projectNodeMastery',       'MATCH (:StuDetail)-[e:MASTERS_NODE]->(:ConceptNode) RETURN count(e) AS c'],
     ];
 
+    /**
+     * Label-pair sanity checks for the ontology edges wired by the
+     * "Context Graph - Whole LMS Integration" task (exam_assessment /
+     * curriculum_planning / engagement) - distinct from section 1 (which
+     * already covers SQL-count-vs-node-count for every underlying table).
+     * This is specifically the check that would have caught a
+     * `GraphQueryService::graphLabelFor()` label-resolution bug (naive
+     * PascalCase transform resolving to the wrong or a nonexistent label)
+     * before it shipped: a zero here after the ontology migrations ran is a
+     * label-resolution problem to check first, not necessarily missing data.
+     */
+    private const ONTOLOGY_WIRING_EDGES = [
+        'HAS_ASSESSMENT (:Subject)->(:Assessment)'         => 'MATCH (:Subject)-[e:HAS_ASSESSMENT]->(:Assessment) RETURN count(e) AS c',
+        'HAS_QUESTION   (:Assessment)->(:Question)'        => 'MATCH (:Assessment)-[e:HAS_QUESTION]->(:Question) RETURN count(e) AS c',
+        'ATTEMPTED      (:Student)->(:Assessment)'         => 'MATCH (:Student)-[e:ATTEMPTED]->(:Assessment) RETURN count(e) AS c',
+        'HAS_UNIT       (:Curriculum)->(:Unit)'            => 'MATCH (:Curriculum)-[e:HAS_UNIT]->(:Unit) RETURN count(e) AS c',
+        'HAS_CHAPTER    (:Unit)->(:Chapter)'               => 'MATCH (:Unit)-[e:HAS_CHAPTER]->(:Chapter) RETURN count(e) AS c',
+        'ENGAGED_WITH   (:StuDetail)->(:Concept)'          => 'MATCH (:StuDetail)-[e:ENGAGED_WITH]->(:Concept) RETURN count(e) AS c',
+        'ENGAGED_WITH   (:StuDetail)->(:TeachingResource)' => 'MATCH (:StuDetail)-[e:ENGAGED_WITH]->(:TeachingResource) RETURN count(e) AS c',
+        'HAS_ATTENDANCE (:StuDetail)->(:AttendanceRecord)' => 'MATCH (:StuDetail)-[e:HAS_ATTENDANCE]->(:AttendanceRecord) RETURN count(e) AS c',
+    ];
+
     /** label => [cypher for "how many nodes of this label have zero of the named edge"] */
     private const CONNECTIVITY_CHECKS = [
         'Concept with no REQUIRES (either direction)' =>
@@ -117,6 +139,7 @@ class CompletenessReportCommand extends Command
         $this->nodeCoverage($neo4j, $registry, $only, $tenant);
         $this->triggerSpecGap($registry);
         $this->pipelineBEdges($neo4j, $only);
+        $this->ontologyWiringEdges($neo4j, $only);
         $this->connectivity($neo4j, $only);
 
         return self::SUCCESS;
@@ -273,9 +296,35 @@ class CompletenessReportCommand extends Command
         $this->newLine();
     }
 
+    private function ontologyWiringEdges(Neo4jService $neo4j, ?string $only): void
+    {
+        $this->line('<fg=cyan;options=bold>4. Ontology-layer wiring (exam_assessment / curriculum_planning / engagement, this pass)</>');
+
+        $rows = [];
+
+        foreach (self::ONTOLOGY_WIRING_EDGES as $name => $cypher) {
+            if ($only && stripos($name, $only) === false) {
+                continue;
+            }
+
+            try {
+                $count = (int) $neo4j->run($cypher)->first()->get('c');
+                $rows[] = [$name, number_format($count)];
+            } catch (\Throwable $e) {
+                $rows[] = [$name, 'ERROR: ' . $e->getMessage()];
+            }
+        }
+
+        $this->table(['edge', 'live count'], $rows);
+        $this->line('A zero here after the ontology migrations ran is a label-resolution problem to check '
+            . 'first (GraphQueryService::graphLabelFor()/LABEL_OVERRIDE), not necessarily missing data - '
+            . 'see that method\'s docblock for the exact failure mode this section is designed to catch.');
+        $this->newLine();
+    }
+
     private function connectivity(Neo4jService $neo4j, ?string $only): void
     {
-        $this->line('<fg=cyan;options=bold>4. Connectivity spot-checks</>');
+        $this->line('<fg=cyan;options=bold>5. Connectivity spot-checks</>');
 
         $rows = [];
 

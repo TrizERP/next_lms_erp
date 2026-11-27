@@ -295,6 +295,11 @@ class GraphSchema
         'Consent'             => ['key' => 'consentId',             'uid_syear' => null, 'uid_tenant' => null],
         'PtmBooking'          => ['key' => 'ptmbookingId',          'uid_syear' => null, 'uid_tenant' => null],
         'PtmTimeSlot'         => ['key' => 'ptmtimeslotId',         'uid_syear' => null, 'uid_tenant' => null],
+
+        // "Context Graph - Whole LMS Integration" pass, Engagement module
+        // (added 2026-11-27). One real attendance mark = one node (no
+        // key_column needed, same shape as PtmBooking above).
+        'AttendanceRecord'    => ['key' => 'attendancerecordId',    'uid_syear' => null, 'uid_tenant' => null],
         'ParentCommunication' => ['key' => 'parentcommunicationId', 'uid_syear' => null, 'uid_tenant' => null],
 
         // -- Workflow Knowledge Graph pass (added 2026-11-24) -------------------
@@ -444,6 +449,17 @@ class GraphSchema
         // recorded here so the next reader does not repeat this file's own
         // first draft of this comment, which claimed otherwise.
         'FOR_CHAIN', 'PART_OF', 'ASSIGNED_TO', 'ACTED_BY',
+
+        // "Context Graph - Whole LMS Integration" pass, Engagement module
+        // (added 2026-11-27) — (:StuDetail)-[:HAS_ATTENDANCE]->
+        // (:AttendanceRecord), from `attendance_student.student_id` (a real
+        // person FK, same shape as ENGAGED_WITH/MADE_PAYMENT above). A NEW
+        // type: does not overload ATTENDED (a stale one-time Pipeline-C
+        // cross-join, every student x every lesson in their standard — not
+        // real attendance) or the batch-only, term-aggregate ATTENDANCE
+        // edge (from result_student_attendance_master). This is the first
+        // LIVE, per-day, CDC-synced attendance edge in the graph.
+        'HAS_ATTENDANCE',
     ];
 
     public static function knowsLabel(string $label): bool

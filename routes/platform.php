@@ -76,7 +76,9 @@ Route::middleware('lms.auth')->group(function () {
     */
     Route::get('/workflow', [WorkflowController::class, 'index']);
     Route::get('/workflow/preview-approver', [WorkflowController::class, 'previewApprover']);
-    Route::get('/workflow/fees-intelligence', [WorkflowController::class, 'feesIntelligence']);
+    // The Fees Intelligence banner and its drill-downs/requests moved to
+    // routes/platform/fees_intelligence.php — it outgrew one endpoint and
+    // needs `lms.staff`, a stricter gate than the rest of this file.
     Route::post('/workflow', [WorkflowController::class, 'store'])
         ->middleware('perm:platform.workflow,create');
     Route::put('/workflow/{id}', [WorkflowController::class, 'update'])
