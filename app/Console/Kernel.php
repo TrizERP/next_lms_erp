@@ -46,6 +46,14 @@ class Kernel extends ConsoleKernel
         })->everyMinute()->name('fees-agent-tick')->withoutOverlapping();
 
 
+        // Users and Attendance agent automations: runs the next sequential cycle for every institute
+        // whose automation was started (POST /api/ai/{users|attendance}/agent/start) and is due.
+        // A no-op for everyone else.
+        $schedule->call(function () {
+            app(\App\Services\AI\Users\UsersAgentPipelineService::class)->tickActive();
+            app(\App\Services\AI\Attendance\AttendanceAgentPipelineService::class)->tickActive();
+        })->everyMinute()->name('users-attendance-agent-tick')->withoutOverlapping(15);
+
         // MariaDB -> Neo4j outbox. Controllers flush inline so a change is
         // visible immediately; this is the safety net that catches anything the
         // inline flush could not deliver (Neo4j restart, bolt timeout) and, more

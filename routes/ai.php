@@ -409,7 +409,27 @@ Route::prefix(config('ai.route_prefix', 'api/ai'))
                 Route::post('interval', [\App\Http\Controllers\AI\FeesAgentController::class, 'setInterval']);
                 Route::post('pipeline', [\App\Http\Controllers\AI\FeesAgentController::class, 'pipeline']);
                 Route::get('eso', [\App\Http\Controllers\AI\FeesAgentController::class, 'eso']);
+                Route::get('standards', [\App\Http\Controllers\AI\FeesAgentController::class, 'standards']);
+                Route::get('students', [\App\Http\Controllers\AI\FeesAgentController::class, 'students']);
+                Route::post('send', [\App\Http\Controllers\AI\FeesAgentController::class, 'send']);
             });
+
+            /*
+            | Users and Attendance — gated sequential agent pipelines (AI Stack → Automations).
+            | Read / analyse / draft only. start/stop switch the continuous automation on and off; there
+            | is deliberately no route that executes, sends or writes a business record.
+            */
+            foreach (['users', 'attendance'] as $pipelineModule) {
+                Route::prefix($pipelineModule . '/agent')->group(function () use ($pipelineModule) {
+                    Route::get('state', [\App\Http\Controllers\AI\ModuleAgentPipelineController::class, 'state'])->defaults('module', $pipelineModule);
+                    Route::get('eso', [\App\Http\Controllers\AI\ModuleAgentPipelineController::class, 'eso'])->defaults('module', $pipelineModule);
+                    Route::post('start', [\App\Http\Controllers\AI\ModuleAgentPipelineController::class, 'start'])->defaults('module', $pipelineModule);
+                    Route::post('stop', [\App\Http\Controllers\AI\ModuleAgentPipelineController::class, 'stop'])->defaults('module', $pipelineModule);
+                    Route::post('interval', [\App\Http\Controllers\AI\ModuleAgentPipelineController::class, 'interval'])->defaults('module', $pipelineModule);
+                    Route::get('outputs', [\App\Http\Controllers\AI\ModuleAgentPipelineController::class, 'outputs'])->defaults('module', $pipelineModule);
+                    Route::post('pipeline', [\App\Http\Controllers\AI\ModuleAgentPipelineController::class, 'pipeline'])->defaults('module', $pipelineModule);
+                });
+            }
 
             /*
             | Workflows. Note there is no "run this step" route: a run advances only

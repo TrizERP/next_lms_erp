@@ -217,10 +217,20 @@ class AgentRunner
             $query->where('agent_key', $agentKey);
         }
 
-        return $query->orderByDesc('id')
-            ->limit($limit)
-            ->get()
+        $rows = $query->orderByDesc('id')->limit($limit)->get();
+
+        // Who pressed Run, by name, within this institute only.
+        $names = $rows->pluck('triggered_by')->filter()->unique()->values()->all() === []
+            ? collect()
+            : DB::table('tbluser')->where('sub_institute_id', $scope->selectedInstituteId)
+                ->whereIn('id', $rows->pluck('triggered_by')->filter()->unique()->values()->all())
+                ->get(['id', 'first_name', 'last_name'])
+                ->mapWithKeys(fn ($u) => [(int) $u->id => trim($u->first_name . ' ' . $u->last_name)]);
+
+        return $rows
             ->map(fn ($row) => [
+                'triggered_by' => $row->triggered_by ? (int) $row->triggered_by : null,
+                'triggered_by_name' => $names[(int) $row->triggered_by] ?? null,
                 'id' => (int) $row->id,
                 'reference' => $row->run_reference,
                 'agent_key' => $row->agent_key,
