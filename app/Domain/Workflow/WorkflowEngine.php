@@ -574,7 +574,12 @@ class WorkflowEngine
             'decision_id' => $links['decision_id'] ?? null,
             'case_id' => $links['case_id'] ?? null,
             'agent_run_id' => $links['agent_run_id'] ?? null,
-            'subject_entity_key' => $links['subject_entity_key'] ?? $definition->subject_entity_key ?? null,
+            // The definition's default entity applies only when a record is actually named. A run
+            // started with no subject used to be filed as "student" with a null id, which every
+            // approval screen then printed as "Student #null".
+            'subject_entity_key' => isset($links['subject_id'])
+                ? ($links['subject_entity_key'] ?? $definition->subject_entity_key ?? null)
+                : ($links['subject_entity_key'] ?? null),
             'subject_id' => $links['subject_id'] ?? null,
             'input' => json_encode($input),
             'state' => json_encode([]),

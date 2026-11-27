@@ -166,8 +166,18 @@ class WorkflowController extends AiController
 
             $approvals = DB::table('workflow_approvals')
                 ->join('workflow_runs', 'workflow_runs.id', '=', 'workflow_approvals.run_id')
+                ->leftJoin('ai_recommendations', 'ai_recommendations.id', '=', 'workflow_runs.recommendation_id')
+                ->leftJoin('tblstudent', function ($join) use ($scope) {
+                    $join->on('tblstudent.id', '=', 'workflow_runs.subject_id')
+                        ->where('workflow_runs.subject_entity_key', '=', 'student')
+                        ->where('tblstudent.sub_institute_id', '=', $scope->selectedInstituteId);
+                })
                 ->where('workflow_approvals.sub_institute_id', $scope->selectedInstituteId)
                 ->where('workflow_approvals.status', 'pending')
+                ->where(function ($query) {
+                    $query->whereNull('workflow_approvals.expires_at')
+                        ->orWhere('workflow_approvals.expires_at', '>', now());
+                })
                 ->where(function ($query) use ($scope) {
                     // Assigned to me, to my role, or to nobody in particular.
                     $query->where('workflow_approvals.assigned_to', $scope->userId)
@@ -182,7 +192,9 @@ class WorkflowController extends AiController
                     'workflow_runs.subject_entity_key',
                     'workflow_runs.subject_id',
                     'workflow_runs.recommendation_id',
-                    'workflow_runs.case_id'
+                    'workflow_runs.case_id',
+                    'ai_recommendations.title as recommendation_title',
+                    DB::raw("TRIM(CONCAT_WS(' ', tblstudent.first_name, tblstudent.last_name)) as subject_label")
                 )
                 ->get()
                 ->map(fn ($row) => [
@@ -196,6 +208,8 @@ class WorkflowController extends AiController
                     'subject_id' => $row->subject_id,
                     'recommendation_id' => $row->recommendation_id,
                     'case_id' => $row->case_id,
+                    'recommendation_title' => $row->recommendation_title,
+                    'subject_label' => $row->subject_label ?: null,
                     'expires_at' => $row->expires_at,
                     'created_at' => $row->created_at,
                 ])

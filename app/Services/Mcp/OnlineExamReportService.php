@@ -121,11 +121,11 @@ class OnlineExamReportService
             ->leftJoin('subject as sub', 'sub.id', '=', 'qp.subject_id')
             ->leftJoin('standard as std', 'std.id', '=', 'qp.standard_id')
             ->leftJoin('lms_online_exam as oe', 'oe.question_paper_id', '=', 'qp.id')
-            ->selectRaw("qp.id, qp.paper_name, qp.total_marks, qp.passing_marks, qp.exam_type,
+            ->selectRaw("qp.id, qp.paper_name, qp.total_marks, ROUND(qp.total_marks * 0.4, 0) as passing_marks, qp.exam_type,
                 sub.subject_name, std.name as standard_name,
                 COUNT(oe.id) as attempt_count,
                 ROUND(AVG(oe.obtain_marks / NULLIF(qp.total_marks, 0) * 100), 1) as avg_percent")
-            ->groupBy('qp.id', 'qp.paper_name', 'qp.total_marks', 'qp.passing_marks', 'qp.exam_type', 'sub.subject_name', 'std.name')
+            ->groupBy('qp.id', 'qp.paper_name', 'qp.total_marks', 'qp.exam_type', 'sub.subject_name', 'std.name')
             ->orderByDesc('qp.id')
             ->limit(20)
             ->get()
