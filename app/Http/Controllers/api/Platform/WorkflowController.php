@@ -614,7 +614,9 @@ class WorkflowController extends PlatformController
 
     /** @param list<array<string,mixed>> $points */
     /**
-     * Knowledge Graph Intelligence for Fees: Sibling Concession, Defaulter Risk, Smart Eligibility.
+     * Knowledge Graph Intelligence for Fees: sibling families, a bounded defaulter
+     * sample, real channel engagement, TC no-dues clearance and the concession/
+     * refund queue — all tenant-wide, since this banner has no selected student.
      * GET /api/platform/workflow/fees-intelligence
      */
     public function feesIntelligence(Request $request, \App\Services\Platform\FeesIntelligenceService $intelligence): JsonResponse
@@ -628,20 +630,9 @@ class WorkflowController extends PlatformController
             ], 401);
         }
 
-        $studentId = $request->query('student_id') ? (int) $request->query('student_id') : 1;
-        $concessionAmount = $request->query('amount') ? (float) $request->query('amount') : 28000.0;
-        $type = (string) $request->query('type', 'all');
+        $userId = (int) ($this->auth($request)['user_id'] ?? 0);
 
-        $data = [
-            'student_id' => $studentId,
-            'siblings' => $intelligence->findSiblings($tenantId, $studentId),
-            'defaulter_risk' => $intelligence->assessDefaulterRisk($tenantId, $studentId),
-            'concession_evaluation' => $intelligence->evaluateConcessionEligibility($tenantId, $studentId),
-            'no_dues_clearance' => $intelligence->checkNoDuesClearance($tenantId, $studentId),
-            'notification_channel_routing' => $intelligence->resolveOptimalNotificationChannel($tenantId, $studentId),
-            'concession_escalation' => $intelligence->determineConcessionEscalation($concessionAmount),
-            'tc_auto_approval' => $intelligence->evaluateTcNoDuesApproval($tenantId, $studentId),
-        ];
+        $data = $intelligence->tenantSummary($tenantId, $userId);
 
         return response()->json([
             'status_code' => 1,
